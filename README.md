@@ -3,12 +3,32 @@
 Web pemantauan kebakaran hutan & lahan (karhutla) Indonesia: peta titik api, perkiraan sebaran
 asap, daerah terdampak, **atribusi tanggung jawab lahan**, dan dashboard berita penanganan.
 
-## Jalankan
+## Jalankan lokal
 
 ```bash
 npm install
-node server.js       # http://localhost:3000
+npm start            # http://localhost:3000
 ```
+
+## Deploy ke Vercel
+
+Repo ini sudah siap deploy tanpa konfigurasi tambahan:
+
+1. Buka <https://vercel.com/new> dan impor repositori ini.
+2. Framework Preset: **Other**. Biarkan Build & Output Command kosong.
+3. Klik **Deploy**.
+
+`vercel.json` mengarahkan semua permintaan ke `api/index.js`, yang memuat aplikasi
+Express dari `server.js`. Environment variable **tidak wajib** — tanpa kunci apa pun
+aplikasi tetap berjalan (titik api memakai data contoh, sisanya data nyata).
+
+Untuk mengaktifkan titik api satelit sungguhan, tambahkan `FIRMS_MAP_KEY` di
+**Settings → Environment Variables** lalu redeploy.
+
+> Catatan serverless: cache di memori tidak persisten antar-invocation, sehingga
+> permintaan pertama setelah idle lebih lambat (cold start). Untuk cache yang tetap
+> hidup, platform berbasis proses seperti Render/Railway/Fly.io juga bisa memakai
+> repo ini apa adanya lewat `npm start`.
 
 ## Data satelit langsung (opsional)
 
