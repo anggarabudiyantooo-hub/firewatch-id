@@ -3,12 +3,14 @@
   "version": 2,
   "functions": {
     "api/index.js": {
-      "memory": 1024,
       "maxDuration": 30,
       "includeFiles": "public/**"
     }
   },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/api/index.js" }
+    {
+      "source": "/(.*)",
+      "destination": "/api/index.js"
+    }
   ]
 }
