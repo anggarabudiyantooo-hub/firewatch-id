@@ -67,7 +67,7 @@
   var gImpact = L.layerGroup().addTo(map);
 
   var state = {
-    data: null, attr: null, news: [], minConf: 50,
+    data: null, attr: null, news: [], minConf: 0, minFrp: 10,
     concOn: false, concBusy: false, colorBy: 'confidence',
     wind: null, windKey: null, windOn: true, windBusy: false, particles: null, plumeHour: 0,
     air: null, airKey: null, airOn: false, airBusy: false,
@@ -112,7 +112,9 @@
   function drawFires() {
     gFire.clearLayers();
     if (!state.data) return;
-    var hs = state.data.hotspots.filter(function (h) { return h.confidence >= state.minConf; });
+    var hs = state.data.hotspots.filter(function (h) {
+      return h.confidence >= state.minConf && h.frp >= state.minFrp;
+    });
     hs.forEach(function (h) {
       var c = hotspotColor(h);
       var mk = L.circleMarker([h.lat, h.lon], {
@@ -218,7 +220,7 @@
         lines.push((p.wind.rh !== null ? 'Kelembapan ' + p.wind.rh + '%' : '') +
           (p.wind.temp !== null ? (p.wind.rh !== null ? ' · ' : '') + 'Suhu ' + p.wind.temp + '°C' : ''));
       } else {
-        lines.push('Prakiraan untuk ' + hourLabel(f.time) + ' WIB (+' + h + ' jam)');
+        lines.push('Prakiraan +' + h + ' jam' + (f.run ? ' · siklus GFS ' + f.run : ''));
       }
       var info = popupNode(h === 0 ? 'Perkiraan sebaran asap' : 'Prakiraan sebaran +' + h + ' jam', lines,
         { warn: 'Model perkiraan berbasis angin — bukan model dispersi atmosfer maupun pengukuran kualitas udara.' });
@@ -240,13 +242,6 @@
     });
   }
 
-  // "2026-09-07T16:00" (UTC) -> "23.00" WIB
-  function hourLabel(iso) {
-    if (!iso) return '-';
-    var d = new Date(iso + 'Z');
-    var wib = new Date(d.getTime() + 7 * 3600000);
-    return ('0' + wib.getUTCHours()).slice(-2) + '.00';
-  }
 
   function drawImpact() {
     gImpact.clearLayers();
@@ -493,7 +488,9 @@
 
   // Kerapatan grid mengikuti zoom agar panah tetap terlihat saat diperbesar.
   function windStepFor(z) {
-    return z >= 10 ? 0.25 : z >= 9 ? 0.5 : z >= 7 ? 1 : z >= 6 ? 1.5 : 2;
+    // Grid GFS aslinya 1 derajat; meminta lebih rapat dari itu tidak
+    // menambah informasi, hanya memperbesar hasil.
+    return z >= 8 ? 1 : z >= 6 ? 1.5 : z >= 4 ? 2 : 3;
   }
 
   function loadWind() {
@@ -502,7 +499,9 @@
     var step = windStepFor(z);
     var b = map.getBounds();
     var q = 'step=' + step;
-    // pada zoom nasional ambil seluruh Indonesia (hasilnya di-cache di server)
+    // Medan angin GFS mencakup seluruh dunia. Saat diperbesar kita minta
+    // hanya area yang terlihat agar kerapatannya naik tanpa memperbesar hasil;
+    // saat menjauh, ambil global supaya angin tidak terpotong di tepi peta.
     if (step < 2) {
       q += '&west=' + b.getWest().toFixed(2) + '&south=' + b.getSouth().toFixed(2) +
            '&east=' + b.getEast().toFixed(2) + '&north=' + b.getNorth().toFixed(2);
@@ -517,7 +516,7 @@
         state.windKey = q;
         drawWind();
         showHint(d.count
-          ? nf.format(d.count) + ' panah arah angin · Open-Meteo. Panah menunjuk ke arah asap terbawa.'
+          ? nf.format(d.count) + ' titik medan angin · ' + (d.source || 'NOAA GFS') + '. Garis mengalir ke arah asap terbawa.'
           : 'Tidak ada data angin pada area ini.');
         setTimeout(function () { if (state.windOn) showHint(null); }, 5000);
       })
@@ -816,16 +815,14 @@
       .then(function (d) {
         state.data = d;
         var b = $('modeBadge');
-        b.textContent = d.meta.mode === 'live' ? 'Data langsung' : 'Mode demo';
-        b.className = 'badge ' + (d.meta.mode === 'live' ? 'badge-live' : 'badge-demo');
+        b.textContent = 'Data langsung';
+        b.className = 'badge badge-live';
         buildTicker();
         $('updated').textContent = 'diperbarui ' + new Date(d.meta.updatedAt)
           .toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
         $('srcline').textContent = 'Sumber titik api: ' + d.meta.source + ' · rentang ' + d.meta.days +
           ' hari · atribusi: ' + d.meta.attribution.join(', ') + '.';
-        setNotice(d.meta.mode === 'demo'
-          ? (d.meta.notice || 'Mode demo: titik api adalah data contoh. Isi FIRMS_MAP_KEY di berkas .env pada server untuk mengaktifkan data satelit langsung. Angin, batas konsesi, dan berita tetap data nyata.')
-          : '');
+        setNotice(d.meta.notice || '');
         ['sHot', 'sConf', 'sFrp', 'sImp', 'sPop'].forEach(function (id) { $(id).classList.remove('skel'); });
         $('sHot').textContent = nf.format(d.stats.hotspots);
         $('sConf').textContent = nf.format(d.stats.highConfidence);
@@ -945,6 +942,12 @@
 
   $('confSel').addEventListener('change', function (e) {
     state.minConf = Number(e.target.value) || 0; drawFires();
+  });
+
+  // FRP menyaring jauh lebih tajam daripada keyakinan: VIIRS hanya punya tiga
+  // tingkat keyakinan, sehingga hampir semua titik masuk kategori "nominal".
+  $('frpSel').addEventListener('change', function (e) {
+    state.minFrp = Number(e.target.value) || 0; drawFires();
   });
 
   $('colorSel').addEventListener('change', function (e) {

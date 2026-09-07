@@ -110,9 +110,18 @@
         </label>
         <label class="sel">Keyakinan
           <select id="confSel">
+            <option value="0">semua tingkat</option>
+            <option value="50">nominal &amp; tinggi</option>
+            <option value="80">hanya tinggi</option>
+          </select>
+        </label>
+        <label class="sel">FRP minimum
+          <select id="frpSel">
             <option value="0">semua</option>
-            <option value="50" selected>≥ 50%</option>
-            <option value="80">≥ 80%</option>
+            <option value="5">≥ 5 MW</option>
+            <option value="10" selected>≥ 10 MW</option>
+            <option value="25">≥ 25 MW</option>
+            <option value="50">≥ 50 MW</option>
           </select>
         </label>
       </div>
@@ -245,7 +254,7 @@
       <div class="srccard">
         <h3>Timeline sebaran (+6/+12/+18 jam)</h3>
         <p><b>Cara pakai:</b> tombol di atas peta menggeser tampilan ke prakiraan beberapa jam ke depan. Kerudung <b>putus-putus biru</b> menandakan prakiraan, bukan kondisi terkini.</p>
-        <p><b>Dari mana:</b> prakiraan angin per jam Open-Meteo. Karena arah angin berubah sepanjang hari, kerucut bisa <i>berputar</i> — inilah sebabnya kota yang aman pagi ini bisa terkena asap malam nanti.</p>
+        <p><b>Dari mana:</b> prakiraan NOAA GFS jam +6/+12/+18 dari siklus yang sama. Karena arah angin berubah sepanjang hari, kerucut bisa <i>berputar</i> — inilah sebabnya kota yang aman pagi ini bisa terkena asap malam nanti.</p>
         <p><b>Batas:</b> asumsinya api tetap menyala dengan intensitas sama. Jika api padam atau turun hujan, sebaran nyata akan lebih kecil.</p>
       </div>
       <div class="srccard">
@@ -257,7 +266,7 @@
       </div>
       <div class="srccard">
         <h3>Angin &amp; kenapa ia menentukan segalanya</h3>
-        <p><b>Aliran garis</b> di peta menunjukkan ke mana udara bergerak — sekaligus ke mana asap akan dibawa. Makin cepat garis bergerak, makin kencang anginnya.</p>
+        <p><b>Aliran garis</b> di peta menunjukkan ke mana udara bergerak — sekaligus ke mana asap akan dibawa. Makin cepat garis bergerak, makin kencang anginnya. Medannya global (NOAA GFS), jadi angin yang masuk ke Indonesia dari Samudra Hindia atau Pasifik ikut terlihat, bukan terpotong di batas negara.</p>
         <p><b>Konvensi arah:</b> angin dinamai dari asalnya. &ldquo;Angin barat&rdquo; berarti bertiup <i>dari</i> barat <i>menuju</i> timur — jadi wilayah di sebelah timur api yang terkena asap.</p>
         <p><b>Angin lemah lebih berbahaya bagi warga sekitar:</b> asap tidak terbawa pergi, menumpuk, dan sering memicu kabut asap pekat di pagi hari.</p>
       </div>
@@ -280,15 +289,19 @@
     <div class="srcgrid">
       <div class="srccard">
         <h3>Titik api</h3>
-        <p>NASA FIRMS (VIIRS / MODIS, near real-time). Hotspot adalah anomali suhu permukaan — tidak semuanya kebakaran hutan.</p>
+        <p>NASA FIRMS VIIRS 24 jam dari tiga satelit (Suomi-NPP, NOAA-20, NOAA-21) lewat arsip terbuka. Hotspot adalah anomali suhu permukaan — tidak semuanya kebakaran hutan. Memasang <code>FIRMS_MAP_KEY</code> mengaktifkan endpoint area dengan rentang hari yang dapat diatur.</p>
       </div>
       <div class="srccard">
         <h3>Sebaran asap</h3>
-        <p>Model kerucut sederhana dari arah &amp; kecepatan angin permukaan Open-Meteo dikombinasi daya radiasi api. Bukan model dispersi atmosfer maupun pengukuran kualitas udara.</p>
+        <p>Model kerucut dari medan angin 10 m NOAA GFS (grid global 1°) dikombinasi daya radiasi api. Bukan model dispersi atmosfer maupun pengukuran kualitas udara.</p>
       </div>
       <div class="srccard">
         <h3>Batas konsesi</h3>
         <p>Global Forest Watch: sawit, HTI serat kayu, konsesi tebang, tambang, dan anggota RSPO. Kompilasi dapat tidak lengkap dan tahun sumbernya beragam.</p>
+      </div>
+      <div class="srccard">
+        <h3>Kota &amp; jumlah penduduk</h3>
+        <p>GeoNames (CC BY 4.0): 226 permukiman Indonesia berpenduduk ≥50.000 jiwa di 38 provinsi, memakai koordinat dan angka penduduk resmi basis data tersebut — bukan perkiraan.</p>
       </div>
       <div class="srccard">
         <h3>Berita</h3>

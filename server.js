@@ -30,6 +30,8 @@ const BBOX = { west: 94.5, south: -11.5, east: 141.5, north: 6.5 }; // Indonesia
 // melacak berkas ini secara statis dan ikut menyertakannya ke dalam deployment.
 const REGIONS = require('./data/regions.json');
 const { attributeHotspots } = require('./lib/concession');
+const { fetchWindField, sampleAt, gridPoints } = require('./lib/wind-gfs');
+const { openHotspots } = require('./lib/firms-open');
 const { volcanicAsh } = require('./lib/volcano');
 const { answer: ragAnswer } = require('./lib/rag');
 
@@ -171,53 +173,32 @@ async function firmsHotspots() {
   return parseFirmsCsv(text);
 }
 
-// Demo deterministik (harian) di area rawan karhutla
-function demoHotspots() {
-  const seedBase = Math.floor(Date.now() / 86400000);
-  let s = seedBase * 9301 + 49297;
-  const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
-  const clusters = [
-    { name: 'OKI, Sumsel', lat: -3.35, lon: 105.10, n: 34 },
-    { name: 'Pelalawan, Riau', lat: 0.30, lon: 102.10, n: 26 },
-    { name: 'Muaro Jambi', lat: -1.55, lon: 103.90, n: 21 },
-    { name: 'Pulang Pisau, Kalteng', lat: -2.75, lon: 114.20, n: 30 },
-    { name: 'Ketapang, Kalbar', lat: -1.85, lon: 110.20, n: 24 },
-    { name: 'Kubu Raya, Kalbar', lat: -0.35, lon: 109.50, n: 14 },
-    { name: 'Kotawaringin Timur', lat: -2.45, lon: 112.85, n: 18 },
-    { name: 'Merauke, Papua Selatan', lat: -8.20, lon: 140.10, n: 12 },
-    { name: 'Sumba Timur, NTT', lat: -9.75, lon: 120.30, n: 9 }
-  ];
-  const now = Date.now();
-  const out = [];
-  for (const c of clusters) {
-    for (let i = 0; i < c.n; i++) {
-      const lat = c.lat + (rnd() - 0.5) * 0.55;
-      const lon = c.lon + (rnd() - 0.5) * 0.75;
-      const t = new Date(now - rnd() * 20 * 3600 * 1000);
-      out.push({
-        lat: +lat.toFixed(4), lon: +lon.toFixed(4),
-        frp: +(3 + rnd() * 120).toFixed(1),
-        confidence: Math.round(40 + rnd() * 60),
-        acq: `${t.toISOString().slice(0, 10)} ${String(t.getUTCHours()).padStart(2, '0')}${String(t.getUTCMinutes()).padStart(2, '0')}`,
-        satellite: 'DEMO', daynight: rnd() > 0.5 ? 'D' : 'N'
-      });
-    }
-  }
-  return out;
-}
 
 async function getHotspots() {
   return cached('hotspots', 10 * 60 * 1000, async () => {
+    // 1) Bila pengguna memasang MAP_KEY, pakai endpoint area FIRMS
+    //    (rentang hari dapat diatur dan pembaruannya paling cepat).
     if (FIRMS_MAP_KEY) {
       try {
         const rows = await firmsHotspots();
-        return { mode: 'live', source: `NASA FIRMS ${FIRMS_SOURCE}`, days: FIRMS_DAYS, hotspots: rows };
+        return {
+          mode: 'live',
+          source: `NASA FIRMS ${FIRMS_SOURCE} (MAP_KEY)`,
+          days: FIRMS_DAYS,
+          hotspots: rows
+        };
       } catch (e) {
-        console.error('[firms]', e.message);
-        return { mode: 'demo', source: 'Data contoh (FIRMS tidak tersedia saat ini)', days: 1, hotspots: demoHotspots(), notice: 'Gagal mengambil data FIRMS, menampilkan data contoh.' };
+        console.error('[firms:key]', e.message);
       }
     }
-    return { mode: 'demo', source: 'Data contoh (FIRMS MAP_KEY belum diisi)', days: 1, hotspots: demoHotspots() };
+    // 2) Tanpa kunci: arsip terbuka VIIRS 24 jam, tetap data satelit nyata.
+    const r = await openHotspots(fetchWithTimeout, BBOX);
+    return {
+      mode: 'live',
+      source: `NASA FIRMS VIIRS 24 jam — ${r.satellites.join(', ')} (arsip terbuka)`,
+      days: 1,
+      hotspots: r.hotspots
+    };
   });
 }
 
@@ -238,22 +219,32 @@ function clusterHotspots(hs, cell = 0.5) {
 async function windAt(lat, lon) {
   const key = `w:${lat.toFixed(1)},${lon.toFixed(1)}`;
   return cached(key, 30 * 60 * 1000, async () => {
+    // Angin diambil dari medan GFS global yang sudah di-cache — satu berkas
+    // melayani semua klaster, jadi tidak ada permintaan per titik.
+    let base = null;
     try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=wind_speed_10m,wind_direction_10m,relative_humidity_2m,temperature_2m&wind_speed_unit=ms`;
-      const r = await fetchWithTimeout(url, {}, 10000);
-      if (!r.ok) throw new Error('meteo_' + r.status);
-      const j = await r.json();
-      const c = j.current || {};
-      return {
-        speed: Number(c.wind_speed_10m) || 2,
-        from: Number(c.wind_direction_10m) || 90,
-        rh: Number(c.relative_humidity_2m) || null,
-        temp: Number(c.temperature_2m) || null,
-        estimated: false
-      };
-    } catch {
-      return { speed: 3, from: 100, rh: null, temp: null, estimated: true };
+      const f = await gfsField(0);
+      const w = sampleAt(f, lat, lon);
+      if (w) base = { speed: +w.speed.toFixed(2), from: Math.round(w.from), estimated: false };
+    } catch (e) {
+      console.error('[windAt:gfs]', e.message);
     }
+    // Suhu & kelembapan tidak ada di berkas angin; ambil terpisah, dan
+    // kegagalannya tidak boleh menghilangkan data angin.
+    let rh = null, temp = null;
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+        + '&current=relative_humidity_2m,temperature_2m';
+      const r = await fetchWithTimeout(url, {}, 8000);
+      if (r.ok) {
+        const c = (await r.json()).current || {};
+        if (Number.isFinite(Number(c.relative_humidity_2m))) rh = Number(c.relative_humidity_2m);
+        if (Number.isFinite(Number(c.temperature_2m))) temp = Number(c.temperature_2m);
+      }
+    } catch { /* opsional */ }
+
+    if (base) return { ...base, rh, temp };
+    return { speed: 3, from: 100, rh, temp, estimated: true };
   });
 }
 
@@ -271,58 +262,47 @@ function plumePolygon(lat, lon, bearingTo, lengthKm, halfAngleDeg) {
 
 // Prakiraan angin per jam (untuk timeline sebaran asap ke depan).
 // Dipisah dari windAt() agar cache-nya sendiri dan hanya diambil sekali per klaster.
-async function windForecast(lat, lon) {
-  const key = `wf:${lat.toFixed(1)},${lon.toFixed(1)}`;
-  return cached(key, 30 * 60 * 1000, async () => {
-    try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-        `&hourly=wind_speed_10m,wind_direction_10m&forecast_days=2&wind_speed_unit=ms&timezone=UTC`;
-      const r = await fetchWithTimeout(url, {}, 10000);
-      if (!r.ok) throw new Error('meteo_' + r.status);
-      const h = (await r.json()).hourly || {};
-      const times = h.time || [];
-      // Cari indeks jam saat ini agar offset +6/+12/+18 relatif terhadap sekarang.
-      const nowIso = new Date().toISOString().slice(0, 13);
-      let base = times.findIndex(t => t.slice(0, 13) >= nowIso);
-      if (base < 0) base = 0;
-      return { times, base, speed: h.wind_speed_10m || [], dir: h.wind_direction_10m || [] };
-    } catch {
-      return null;
-    }
-  });
-}
-
 // Offset jam yang ditampilkan pada timeline sebaran.
 const PLUME_STEPS = [0, 6, 12, 18];
+
+async function windForecast(lat, lon) {
+  // Prakiraan diambil dari siklus GFS yang sama (jam +6/+12/+18), sehingga
+  // timeline konsisten dengan medan angin yang digambar di peta.
+  const out = [];
+  for (const h of PLUME_STEPS) {
+    try {
+      const f = await gfsField(h);
+      const w = sampleAt(f, lat, lon);
+      if (!w) continue;
+      out.push({ hour: h, speed: w.speed, from: w.from, run: f.run });
+    } catch { /* jam ini dilewati bila berkasnya belum terbit */ }
+  }
+  return out.length ? out : null;
+}
 
 // Bentuk pluma pada beberapa jam ke depan, memakai angin prakiraan tiap jam.
 // Asap yang sudah dilepas tidak hilang: jangkauan diakumulasi dari jarak tempuh
 // angin sejak sekarang, sehingga kerucut memanjang seiring waktu.
 function plumeForecast(c, fc) {
-  if (!fc || !fc.speed.length) return null;
-  const out = [];
-  for (const hOff of PLUME_STEPS) {
-    const idx = Math.min(fc.base + hOff, fc.speed.length - 1);
-    const sp = Number(fc.speed[idx]);
-    const dr = Number(fc.dir[idx]);
-    if (!Number.isFinite(sp) || !Number.isFinite(dr)) continue;
-    const bearingTo = (dr + 180) % 360;
-    // jangkauan dasar (seperti saat ini) + tambahan transpor angin selama hOff jam
-    const base = Math.min(320, 18 + Math.sqrt(c.frp) * 6 + sp * 12);
-    const len = Math.min(600, base + sp * 3.6 * hOff * 0.55);
-    const half = Math.max(12, 34 - sp * 2);
-    out.push({
-      hour: hOff,
-      time: fc.times[idx] || null,
-      windSpeed: +sp.toFixed(1),
-      windFrom: Math.round(dr),
+  if (!fc || !fc.length) return null;
+  return fc.map(w => {
+    const bearingTo = (w.from + 180) % 360;
+    const base = Math.min(320, 18 + Math.sqrt(c.frp) * 6 + w.speed * 12);
+    // Asap yang sudah dilepas terus terbawa, jadi jangkauan bertambah
+    // seiring lamanya transpor angin.
+    const len = Math.min(600, base + w.speed * 3.6 * w.hour * 0.55);
+    const half = Math.max(12, 34 - w.speed * 2);
+    return {
+      hour: w.hour,
+      run: w.run,
+      windSpeed: +w.speed.toFixed(1),
+      windFrom: Math.round(w.from),
       bearingTo: Math.round(bearingTo),
       lengthKm: Math.round(len),
       polygon: plumePolygon(c.lat, c.lon, bearingTo, len, half),
       corePolygon: plumePolygon(c.lat, c.lon, bearingTo, len * 0.45, half * 0.7)
-    });
-  }
-  return out.length ? out : null;
+    };
+  });
 }
 async function buildPlumes(clusters) {
   const top = clusters.slice(0, 14);
@@ -594,82 +574,44 @@ app.get('/api/attribution', async (_req, res) => {
 
 // ---------- medan angin (grid) ----------
 // Satu permintaan Open-Meteo multi-titik untuk seluruh Indonesia.
-async function windField(stepDeg, box) {
-  const step = [0.25, 0.5, 1, 1.5, 2, 3].includes(stepDeg) ? stepDeg : 2;
-  const b = box || BBOX;
-  const key = box
-    ? `wf:${step}:${b.west.toFixed(1)},${b.south.toFixed(1)},${b.east.toFixed(1)},${b.north.toFixed(1)}`
-    : `wf:${step}`;
-  return cached(key, 30 * 60 * 1000, async () => {
-    const lats = [], lons = [];
-    for (let la = b.south + step / 2; la <= b.north && lats.length < 320; la += step) {
-      for (let lo = b.west + step / 2; lo <= b.east && lats.length < 320; lo += step) {
-        lats.push(la.toFixed(2)); lons.push(lo.toFixed(2));
-      }
-    }
-    if (!lats.length) return { step, count: 0, points: [] };
-    const url = 'https://api.open-meteo.com/v1/forecast'
-      + `?latitude=${lats.join(',')}&longitude=${lons.join(',')}`
-      + '&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms';
-    const r = await fetchWithTimeout(url, {}, 20000);
-    if (!r.ok) throw new Error('windfield_' + r.status);
-    const j = await r.json();
-    const arr = Array.isArray(j) ? j : [j];
-    const points = [];
-    for (let i = 0; i < arr.length; i++) {
-      const p = arr[i];
-      const c = p && p.current;
-      if (!c) continue;
-      const speed = Number(c.wind_speed_10m), from = Number(c.wind_direction_10m);
-      if (!Number.isFinite(speed) || !Number.isFinite(from)) continue;
-      // Open-Meteo membalas koordinat pusat sel modelnya, bukan titik yang diminta.
-      // Untuk animasi partikel kisi harus teratur, jadi pakai koordinat grid asli.
-      points.push({
-        lat: +Number(lats[i]),
-        lon: +Number(lons[i]),
-        speed: +speed.toFixed(1),
-        from: Math.round(from),               // arah datangnya angin
-        to: Math.round((from + 180) % 360)    // arah tujuan (pergerakan asap)
-      });
-    }
-    return { step, count: points.length, points };
-  });
+// Medan angin global dari GFS. Satu berkas GRIB2 (~160 KB) memuat seluruh
+// bumi, jadi tidak ada lagi batas 320 titik maupun jepitan ke bbox Indonesia.
+async function gfsField(fhour) {
+  return cached(`gfs:${fhour}`, 60 * 60 * 1000, () => fetchWindField(fetchWithTimeout, fhour));
 }
+
+async function windField(stepDeg, box) {
+  const step = [0.25, 0.5, 1, 1.5, 2, 3, 5].includes(stepDeg) ? stepDeg : 2;
+  const f = await gfsField(0);
+  const points = gridPoints(f, step, box);
+  return { step, count: points.length, points, run: f.run, global: !box };
+}
+
 
 app.get('/api/wind-field', async (req, res) => {
   const step = Number(req.query.step);
-  const w = Number(req.query.west), s = Number(req.query.south);
+  const w = Number(req.query.west), so = Number(req.query.south);
   const e = Number(req.query.east), n = Number(req.query.north);
   let box = null;
-  if ([w, s, e, n].every(Number.isFinite)) {
-    if (w >= e || s >= n || s < -90 || n > 90 || w < -180 || e > 180) {
+  if ([w, so, e, n].every(Number.isFinite)) {
+    if (w >= e || so >= n || so < -90 || n > 90 || w < -180 || e > 180) {
       return res.status(400).json({ error: 'Area peta tidak valid.' });
     }
-    // dibatasi ke wilayah pantauan agar tidak memicu permintaan berlebihan
-    box = {
-      west: Math.max(BBOX.west, w), south: Math.max(BBOX.south, s),
-      east: Math.min(BBOX.east, e), north: Math.min(BBOX.north, n)
-    };
-    // area yang diminta tidak beririsan dengan wilayah pantauan
-    if (box.west >= box.east || box.south >= box.north) {
-      return res.json({
-        updatedAt: new Date().toISOString(),
-        source: 'Open-Meteo (angin permukaan 10 m)',
-        step: 0, count: 0, points: []
-      });
-    }
+    // Tidak lagi dijepit ke Indonesia: medan angin GFS mencakup seluruh dunia,
+    // hanya dibatasi lintang agar kutub tidak memenuhi hasil.
+    box = { west: w, south: Math.max(-85, so), east: e, north: Math.min(85, n) };
   }
   try {
     const wf = await windField(Number.isFinite(step) ? step : 2, box);
-    res.set('Cache-Control', 'public, max-age=900');
+    res.set('Cache-Control', 'public, max-age=1800');
     res.json({
       updatedAt: new Date().toISOString(),
-      source: 'Open-Meteo (angin permukaan 10 m)',
+      source: `NOAA GFS 1° (siklus ${wf.run}) — angin permukaan 10 m`,
       ...wf
     });
   } catch (e) {
     console.error('[wind-field]', e.message);
-    res.status(502).json({ error: 'Data arah angin sedang tidak tersedia.' });
+    res.status(502).json({ error: 'Data angin gagal dimuat.' });
   }
 });
 
@@ -1040,7 +982,7 @@ app.use((err, _req, res, _next) => { console.error('[err]', err && err.message);
 // sehingga server hanya boleh listen saat dijalankan langsung: `node server.js`.
 if (require.main === module) {
   app.listen(PORT, '0.0.0.0', () =>
-    console.log(`FireWatch ID berjalan di :${PORT} (mode kunci: ${FIRMS_MAP_KEY ? 'live' : 'demo'})`));
+    console.log(`FireWatch ID berjalan di :${PORT} (FIRMS: ${FIRMS_MAP_KEY ? 'MAP_KEY' : 'arsip terbuka'})`));
 }
 
 module.exports = app;
