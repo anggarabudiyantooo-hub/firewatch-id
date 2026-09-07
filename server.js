@@ -522,7 +522,10 @@ async function buildOverview() {
         totalFrp: +totalFrp.toFixed(0),
         clusters: clusters.length,
         impactedRegions: impacted.length,
-        peopleExposed: impacted.reduce((s, r) => s + (r.score >= 33 ? r.population : 0), 0)
+        // Semua kota di jalur asap dihitung; ambang 'sedang' dipisah agar
+        // angka tidak menjadi nol saat paparan tersebar tipis di banyak kota.
+        peopleExposed: impacted.reduce((s, r) => s + r.population, 0),
+        peopleExposedModerate: impacted.reduce((s, r) => s + (r.score >= 33 ? r.population : 0), 0)
       },
       hotspots, clusters: clusters.slice(0, 40), plumes, impacted,
       provinceScores: byProvince, provinceRanking, worstAir

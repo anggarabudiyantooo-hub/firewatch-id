@@ -831,6 +831,11 @@
         $('sPop').textContent = d.stats.peopleExposed >= 1e6
           ? (d.stats.peopleExposed / 1e6).toFixed(1).replace('.', ',') + ' jt'
           : nf.format(d.stats.peopleExposed);
+        var mod = d.stats.peopleExposedModerate || 0;
+        $('sPopSub').textContent = mod > 0
+          ? (mod >= 1e6 ? (mod / 1e6).toFixed(1).replace('.', ',') + ' jt' : nf.format(mod)) +
+            ' pada paparan sedang–berat'
+          : 'semuanya paparan ringan saat ini';
         var wa = d.worstAir;
         $('sAir').classList.remove('skel');
         if (wa) {
