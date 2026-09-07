@@ -753,8 +753,14 @@ async function buildOverview() {
 
 app.get('/api/overview', async (_req, res) => {
   try {
-    res.set('Cache-Control', 'public, max-age=120');
-    res.json(await buildOverview());
+    const d = await buildOverview();
+    // Pada instance yang baru hidup, data gunung bisa belum selesai ditarik
+    // sehingga ringkasan sementara melaporkan "0 gunung meletus". Balasan
+    // seperti itu tidak boleh mengendap di cache CDN selama dua menit dan
+    // menampilkan angka yang salah kepada pengguna berikutnya.
+    const incomplete = !d.volcano || d.volcano.eruptionReports === null;
+    res.set('Cache-Control', incomplete ? 'no-store' : 'public, max-age=120');
+    res.json(d);
   } catch (e) {
     console.error('[overview]', e.message);
     res.status(502).json({ error: 'Data pemantauan sedang tidak tersedia. Silakan coba lagi.' });
