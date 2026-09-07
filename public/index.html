@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FireWatch ID — Pemantauan Karhutla, Sebaran Asap & Tanggung Jawab Lahan</title>
+<meta name="description" content="Peta titik api, perkiraan sebaran asap, daerah terdampak, atribusi konsesi lahan, dan berita penanganan kebakaran hutan dan lahan di Indonesia." />
+<link rel="stylesheet" href="/vendor/leaflet.css" />
+<link rel="stylesheet" href="/app.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111a24'/%3E%3Cpath d='M16 5c3 5-1 6 1 9 1.4 2.1 4-1 4-1 1.6 2.4 2 4.4 2 6a7 7 0 11-14 0c0-4 3-7 4-9 1.2-2.4 2-4 3-5z' fill='%23ff6b35'/%3E%3C/svg%3E" />
+</head>
+<body>
+<a class="skip" href="#main">Lewati ke konten utama</a>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark-tag">FWID</span>
+    <div class="brand-txt">
+      <h1>FIREWATCH ID <span class="brand-sep">/</span> <span class="brand-sub">KARHUTLA TERMINAL</span></h1>
+      <p>HOTSPOT · SMOKE · AIR · VOLCANIC ASH · LAND ATTRIBUTION</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="modeBadge" class="badge badge-neutral">memuat…</span>
+    <span class="clock-box"><span class="clock-lab">WIB</span><span id="clockLocal" class="clock-val">--:--:--</span></span>
+    <span class="clock-box"><span class="clock-lab">UTC</span><span id="clockUtc" class="clock-val">--:--:--</span></span>
+    <span id="updated" class="stamp"></span>
+    <button id="refreshBtn" class="btn btn-primary" type="button">REFRESH</button>
+  </div>
+</header>
+
+<div class="ticker" role="marquee" aria-label="Ringkasan data berjalan">
+  <div class="ticker-tag">LIVE</div>
+  <div class="ticker-view"><div id="tickerTrack" class="ticker-track"></div></div>
+</div>
+
+<div id="notice" class="notice" hidden role="status"></div>
+
+<main id="main">
+  <section class="stats" aria-label="Ringkasan situasi nasional">
+    <article class="stat">
+      <span class="stat-label">Titik api terdeteksi</span>
+      <strong id="sHot" class="skel">—</strong>
+      <span class="stat-sub" id="sHotSub">&nbsp;</span>
+    </article>
+    <article class="stat">
+      <span class="stat-label">Keyakinan tinggi</span>
+      <strong id="sConf" class="skel">—</strong>
+      <span class="stat-sub">deteksi ≥ 80%</span>
+    </article>
+    <article class="stat">
+      <span class="stat-label">Total daya radiasi</span>
+      <strong id="sFrp" class="skel">—</strong>
+      <span class="stat-sub">megawatt (FRP)</span>
+    </article>
+    <article class="stat">
+      <span class="stat-label">Daerah terdampak asap</span>
+      <strong id="sImp" class="skel">—</strong>
+      <span class="stat-sub">kota / kabupaten</span>
+    </article>
+    <article class="stat">
+      <span class="stat-label">Warga terpapar</span>
+      <strong id="sPop" class="skel">—</strong>
+      <span class="stat-sub">dampak sedang–berat</span>
+    </article>
+    <article class="stat stat-accent">
+      <span class="stat-label">Di dalam batas konsesi</span>
+      <strong id="sConc" class="skel">—</strong>
+      <span class="stat-sub" id="sConcSub">dari titik api dianalisis</span>
+    </article>
+    <article class="stat" id="airStat">
+      <span class="stat-label">Udara terburuk (US AQI)</span>
+      <strong id="sAir" class="skel">—</strong>
+      <span class="stat-sub" id="sAirSub">memuat…</span>
+    </article>
+  </section>
+
+  <section class="layout">
+    <div class="map-card">
+      <div class="map-toolbar" role="group" aria-label="Pengaturan lapisan peta">
+        <span class="tool-label">Lapisan</span>
+        <label class="chk"><input type="checkbox" id="lyFire" checked /><span>Titik api</span></label>
+        <label class="chk"><input type="checkbox" id="lyAir" /><span>Kualitas udara</span></label>
+        <label class="chk"><input type="checkbox" id="lyWind" checked /><span>Arah angin</span></label>
+        <label class="chk"><input type="checkbox" id="lySmoke" checked /><span>Sebaran asap</span></label>
+        <label class="chk"><input type="checkbox" id="lyImpact" checked /><span>Daerah terdampak</span></label>
+        <label class="chk"><input type="checkbox" id="lyConc" /><span>Batas konsesi</span></label>
+        <label class="chk"><input type="checkbox" id="lyAsh" /><span>Abu vulkanik</span></label>
+        <span class="spacer"></span>
+        <label class="sel">Angin
+          <select id="windModeSel">
+            <option value="particle" selected>partikel (Windy)</option>
+            <option value="arrow">panah</option>
+          </select>
+        </label>
+        <label class="sel">Citra Himawari
+          <select id="himaSel">
+            <option value="" selected>nonaktif</option>
+            <option value="ir">inframerah (siang &amp; malam)</option>
+            <option value="vis">warna alami (siang)</option>
+            <option value="ash">uap air</option>
+          </select>
+        </label>
+        <label class="sel">Warna titik
+          <select id="colorSel">
+            <option value="confidence" selected>tingkat keyakinan</option>
+            <option value="frp">daya radiasi (FRP)</option>
+          </select>
+        </label>
+        <label class="sel">Keyakinan
+          <select id="confSel">
+            <option value="0">semua</option>
+            <option value="50" selected>≥ 50%</option>
+            <option value="80">≥ 80%</option>
+          </select>
+        </label>
+      </div>
+      <div class="map-wrap">
+        <div id="map" role="application" aria-label="Peta titik api dan sebaran asap Indonesia"></div>
+        <div id="confSummary" class="conf-summary" aria-live="polite"></div>
+        <div id="airLegend" class="air-legend" hidden aria-live="polite"></div>
+        <div id="ashLegend" class="ash-legend" hidden aria-live="polite"></div>
+        <div id="himaInfo" class="hima-info" hidden aria-live="polite"></div>
+        <div class="basemap-switch" role="group" aria-label="Jenis peta dasar">
+          <button type="button" class="bm active" data-base="gelap">Gelap</button>
+          <button type="button" class="bm" data-base="citra">Citra satelit</button>
+          <button type="button" class="bm" data-base="relief">Relief</button>
+        </div>
+        <div id="mapHint" class="map-hint" hidden></div>
+      </div>
+      <div class="legend">
+        <span id="legendPoints">
+          <i class="dot" style="background:#ef4444"></i>keyakinan tinggi
+          <i class="dot" style="background:#facc15;margin-left:10px"></i>sedang
+          <i class="dot" style="background:#22c55e;margin-left:10px"></i>rendah
+        </span>
+        <span><i class="sw sw-wind"></i>arah angin</span>
+        <span><i class="sw sw-smoke"></i>pluma asap</span>
+        <span><i class="sw sw-ring"></i>kota terdampak</span>
+        <span><i class="sw sw-conc"></i>batas konsesi</span>
+        <span class="legend-tip">Klik titik mana pun di peta untuk memeriksa status lahannya.</span>
+      </div>
+    </div>
+
+    <aside class="side">
+      <section class="panel">
+        <header class="panel-head panel-head-tight">
+          <h2><span class="pnum">02</span> Analisis wilayah</h2>
+        </header>
+        <div class="tabs" role="tablist" aria-label="Daftar analisis">
+          <button class="tab active" id="tabImpact" role="tab" aria-selected="true" aria-controls="paneImpact" type="button">Terdampak</button>
+          <button class="tab" id="tabProv" role="tab" aria-selected="false" aria-controls="paneProv" type="button">Provinsi</button>
+          <button class="tab" id="tabCluster" role="tab" aria-selected="false" aria-controls="paneCluster" type="button">Klaster</button>
+        </div>
+        <div id="paneImpact" role="tabpanel" class="pane" tabindex="0"><p class="empty">Memuat…</p></div>
+        <div id="paneProv" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
+        <div id="paneCluster" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
+      </section>
+
+      <section class="panel panel-ask">
+        <header class="panel-head">
+          <h2><span class="pnum">03</span> Kueri data</h2>
+          <span class="panel-sub" id="askMeta">indeks lokal</span>
+        </header>
+        <form id="askForm" class="ask-bar" autocomplete="off">
+          <label class="sr-only" for="askQ">Tanyakan tentang data karhutla</label>
+          <span class="ask-prompt">&gt;</span>
+          <input id="askQ" type="text" placeholder="siapa perusahaan yang bertanggung jawab?" maxlength="200" />
+          <button class="btn btn-ghost" type="submit">JALANKAN</button>
+        </form>
+        <div class="ask-chips">
+          <button type="button" class="chip" data-q="siapa perusahaan yang bertanggung jawab">konsesi</button>
+          <button type="button" class="chip" data-q="provinsi mana paling banyak titik api">provinsi</button>
+          <button type="button" class="chip" data-q="bagaimana kualitas udara">udara</button>
+          <button type="button" class="chip" data-q="gunung apa yang sedang erupsi">gunung</button>
+          <button type="button" class="chip" data-q="kemana arah sebaran asap">angin</button>
+        </div>
+        <div id="askOut" class="ask-out"><p class="empty">Ajukan pertanyaan; jawaban disusun dari data langsung di dashboard ini.</p></div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-head">
+          <h2><span class="pnum">04</span> Berita penanganan</h2>
+          <span class="panel-sub" id="newsCount"></span>
+        </header>
+        <div class="searchbar">
+          <label class="sr-only" for="newsQ">Cari berita</label>
+          <input id="newsQ" type="search" placeholder="Cari BNPB, water bombing, Riau…" autocomplete="off" />
+        </div>
+        <div id="news" class="news"><p class="empty">Memuat berita…</p></div>
+      </section>
+    </aside>
+  </section>
+
+  <section class="panel wide" id="attrSection">
+    <header class="panel-head">
+      <h2><span class="pnum">05</span> Siapa yang bertanggung jawab — atribusi lahan</h2>
+      <span class="panel-sub" id="attrMeta"></span>
+    </header>
+
+    <div class="callout callout-warn">
+      <strong>Baca dulu sebelum menyimpulkan.</strong>
+      <span id="attrDisclaimer">Batas konsesi berasal dari kompilasi Global Forest Watch atas data KLHK, ESDM, dan RSPO — bukan sertifikat HGU resmi ATR/BPN, yang tidak dibuka ke publik. Titik api di dalam batas konsesi tidak otomatis berarti perusahaan itu membakar; api dapat merambat dari luar. Gunakan sebagai indikasi awal, bukan bukti hukum.</span>
+    </div>
+
+    <div class="tabs tabs-inline" role="tablist" aria-label="Tampilan atribusi">
+      <button class="tab active" id="tabUnit" role="tab" aria-selected="true" aria-controls="paneUnit" type="button">Per unit lahan</button>
+      <button class="tab" id="tabGroup" role="tab" aria-selected="false" aria-controls="paneGroup" type="button">Per grup korporasi</button>
+    </div>
+    <div id="paneUnit" role="tabpanel" tabindex="0"><p class="empty">Menganalisis titik api terhadap batas konsesi…</p></div>
+    <div id="paneGroup" role="tabpanel" tabindex="0" hidden><p class="empty">Memuat…</p></div>
+  </section>
+
+  <section class="panel wide">
+    <header class="panel-head"><h2><span class="pnum">06</span> Sumber data &amp; batasan</h2></header>
+    <div class="srcgrid">
+      <div class="srccard">
+        <h3>Titik api</h3>
+        <p>NASA FIRMS (VIIRS / MODIS, near real-time). Hotspot adalah anomali suhu permukaan — tidak semuanya kebakaran hutan.</p>
+      </div>
+      <div class="srccard">
+        <h3>Sebaran asap</h3>
+        <p>Model kerucut sederhana dari arah &amp; kecepatan angin permukaan Open-Meteo dikombinasi daya radiasi api. Bukan model dispersi atmosfer maupun pengukuran kualitas udara.</p>
+      </div>
+      <div class="srccard">
+        <h3>Batas konsesi</h3>
+        <p>Global Forest Watch: sawit, HTI serat kayu, konsesi tebang, tambang, dan anggota RSPO. Kompilasi dapat tidak lengkap dan tahun sumbernya beragam.</p>
+      </div>
+      <div class="srccard">
+        <h3>Berita</h3>
+        <p>Google Berita RSS dengan cadangan GDELT Project. Tautan mengarah ke penerbit asli; FireWatch ID tidak menyunting isinya.</p>
+      </div>
+    </div>
+    <p class="fineprint">Untuk keputusan darurat, rujuk BMKG, BNPB/BPBD, dan KLHK. <span id="srcline"></span></p>
+  </section>
+</main>
+
+<footer class="foot">FireWatch ID · dibangun di atas data sumber terbuka · untuk pemantauan publik dan edukasi</footer>
+
+<script src="/vendor/leaflet.js"></script>
+<script src="/wind-particles.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

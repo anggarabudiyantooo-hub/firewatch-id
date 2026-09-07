@@ -1,0 +1,33 @@
+{
+  "name": "firewatch-id",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "karhutla",
+    "wildfire",
+    "indonesia",
+    "firms",
+    "leaflet",
+    "open-data",
+    "himawari"
+  ],
+  "author": "",
+  "license": "MIT",
+  "description": "Pemantauan karhutla Indonesia: titik api, sebaran asap, kualitas udara, abu vulkanik, dan atribusi tanggung jawab lahan — dari data terbuka.",
+  "dependencies": {
+    "@mapbox/vector-tile": "^3.0.0",
+    "compression": "^1.8.1",
+    "express": "^4.22.2",
+    "helmet": "^8.3.0",
+    "leaflet": "^1.9.4",
+    "pbf": "^3.3.0"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}
