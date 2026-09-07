@@ -1129,7 +1129,7 @@ scheduler
     label: 'Gunung api & sebaran abu',
     everyMs: 30 * 60 * 1000,
     critical: true,
-    run: () => volcanicAsh(fetchWithTimeout, pvmbgStatus)
+    run: () => volcanicAsh(fetchWithTimeout, pvmbgStatus, eruptionReports)
   })
   .register('pvmbg', {
     label: 'Status resmi PVMBG (MAGMA)',
@@ -1163,7 +1163,9 @@ app.get('/api/cron', async (req, res) => {
     }
   }
   try {
-    const r = await scheduler.tick({ force: req.query.force === '1' });
+    // Batas fungsi Vercel 60 detik; sisakan ruang untuk menyusun balasan
+    // agar cron tidak pernah dibunuh di tengah jalan dan terbaca "gagal".
+    const r = await scheduler.tick({ force: req.query.force === '1', budgetMs: 45000 });
     res.set('Cache-Control', 'no-store');
     res.json({ ok: true, ...r });
   } catch {
@@ -1226,6 +1228,11 @@ let ashLast = null;
  */
 function pvmbgStatus() {
   return scheduler.get('pvmbg');
+}
+
+/** Laporan letusan pos pengamatan, lewat cache penjadwal. */
+function eruptionReports() {
+  return scheduler.get('eruption');
 }
 app.get('/api/volcano-ash', async (_req, res) => {
   try {
