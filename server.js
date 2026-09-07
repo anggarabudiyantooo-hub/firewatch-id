@@ -704,8 +704,11 @@ async function buildOverview() {
       // sedangkan laporan letusan tiap 10 menit. Hitung jumlah gunung yang
       // meletus dari tugas letusan secara langsung supaya angka di kepala
       // halaman tidak tertinggal satu siklus di belakang panel kejadian.
-      let er = null;
-      try { er = await scheduler.get('eruption'); } catch { er = null; }
+      // Hanya pakai nilai yang SUDAH ada di cache. scheduler.get() akan
+      // menarik dari MAGMA bila kosong, dan halaman itu bisa memakan 40 detik
+      // sehingga permintaan overview ikut kehabisan waktu (504). Penyegaran
+      // laporan letusan sudah ditangani penjadwalnya sendiri.
+      const er = scheduler.peek('eruption');
 
       volcanoSummary = {
         // "dipantau" = berstatus Waspada ke atas; "meletus" = ada laporan
