@@ -615,3 +615,23 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
 .so2act::-webkit-scrollbar-thumb{background:var(--term-grid)}
 .so2meta{margin:0;font-size:10px;color:var(--muted);opacity:.7;border-top:1px solid var(--term-grid);padding-top:6px}
 .hd-note{font-size:10.5px;color:var(--muted);letter-spacing:.04em}
+
+/* Penyaring topik berita */
+.ntopics{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.ntopic{
+  font:inherit;font-size:10.5px;letter-spacing:.02em;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;padding:3px 8px;
+  background:transparent;color:var(--muted);border:1px solid var(--term-grid);
+}
+.ntopic:hover{color:var(--fg);border-color:var(--muted)}
+.ntopic.active{background:var(--term-amber);color:#12161c;border-color:var(--term-amber);font-weight:600}
+.ntopic i{font-style:normal;opacity:.65;font-size:9.5px}
+.ntopic.active i{opacity:.8}
+.news-tag{
+  font-size:9.5px;letter-spacing:.03em;color:var(--term-amber);
+  border:1px solid rgba(255,176,0,.32);padding:0 5px;opacity:.9;
+}
+
+/* Pemisah & nilai pada legenda gunung api */
+.cs-sep{height:1px;background:var(--term-grid);margin:6px 0}
+.cs-val{margin-left:auto;font-weight:600;color:var(--fg)}

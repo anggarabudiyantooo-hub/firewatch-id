@@ -217,35 +217,47 @@ function clusterHotspots(hs, cell = 0.5) {
 }
 
 async function windAt(lat, lon) {
-  const key = `w:${lat.toFixed(1)},${lon.toFixed(1)}`;
-  return cached(key, 30 * 60 * 1000, async () => {
-    // Angin diambil dari medan GFS global yang sudah di-cache — satu berkas
-    // melayani semua klaster, jadi tidak ada permintaan per titik.
-    let base = null;
-    try {
-      const f = await gfsField(0);
-      const w = sampleAt(f, lat, lon);
-      if (w) base = { speed: +w.speed.toFixed(2), from: Math.round(w.from), estimated: false };
-    } catch (e) {
-      console.error('[windAt:gfs]', e.message);
-    }
-    // Suhu & kelembapan tidak ada di berkas angin; ambil terpisah, dan
-    // kegagalannya tidak boleh menghilangkan data angin.
-    let rh = null, temp = null;
-    try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
-        + '&current=relative_humidity_2m,temperature_2m';
-      const r = await fetchWithTimeout(url, {}, 8000);
-      if (r.ok) {
-        const c = (await r.json()).current || {};
-        if (Number.isFinite(Number(c.relative_humidity_2m))) rh = Number(c.relative_humidity_2m);
-        if (Number.isFinite(Number(c.temperature_2m))) temp = Number(c.temperature_2m);
-      }
-    } catch { /* opsional */ }
+  // Angin murni dari medan GFS global yang sudah di-cache: tidak ada
+  // permintaan jaringan per klaster. Suhu & kelembapan diambil terpisah
+  // secara massal oleh enrichWeather().
+  try {
+    const f = await gfsField(0);
+    const w = sampleAt(f, lat, lon);
+    if (w) return { speed: +w.speed.toFixed(2), from: Math.round(w.from), rh: null, temp: null, estimated: false };
+  } catch (e) {
+    console.error('[windAt:gfs]', e.message);
+  }
+  return { speed: 3, from: 100, rh: null, temp: null, estimated: true };
+}
 
-    if (base) return { ...base, rh, temp };
-    return { speed: 3, from: 100, rh, temp, estimated: true };
-  });
+/**
+ * Lengkapi daftar pluma dengan suhu & kelembapan dalam SATU permintaan.
+ * Open-Meteo menghitung kuota per koordinat, jadi menggabungkan 14 titik
+ * ke satu panggilan jauh lebih hemat daripada 14 panggilan terpisah.
+ * Kegagalan di sini tidak boleh menghilangkan data angin.
+ */
+async function enrichWeather(plumes) {
+  if (!plumes.length) return;
+  const key = 'wx:' + plumes.map(p => p.lat.toFixed(1) + ',' + p.lon.toFixed(1)).join(';');
+  try {
+    const data = await cached(key, 30 * 60 * 1000, async () => {
+      const lats = plumes.map(p => p.lat.toFixed(3)).join(',');
+      const lons = plumes.map(p => p.lon.toFixed(3)).join(',');
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}`
+        + '&current=relative_humidity_2m,temperature_2m';
+      const r = await fetchWithTimeout(url, {}, 12000);
+      if (!r.ok) throw new Error('meteo_' + r.status);
+      const j = await r.json();
+      return Array.isArray(j) ? j : [j];
+    });
+    plumes.forEach((p, i) => {
+      const c = (data[i] && data[i].current) || {};
+      if (Number.isFinite(Number(c.relative_humidity_2m))) p.wind.rh = Number(c.relative_humidity_2m);
+      if (Number.isFinite(Number(c.temperature_2m))) p.wind.temp = Number(c.temperature_2m);
+    });
+  } catch (e) {
+    console.error('[enrichWeather]', e.message);
+  }
 }
 
 // Poligon pluma: kerucut searah angin, panjang ~ f(FRP, kecepatan angin)
@@ -310,7 +322,7 @@ async function buildPlumes(clusters) {
     Promise.all(top.map(c => windAt(c.lat, c.lon))),
     Promise.all(top.map(c => windForecast(c.lat, c.lon)))
   ]);
-  return top.map((c, i) => {
+  const built = top.map((c, i) => {
     const w = winds[i];
     const bearingTo = (w.from + 180) % 360;                  // arah tujuan asap
     const len = Math.min(320, 18 + Math.sqrt(c.frp) * 6 + w.speed * 12);
@@ -326,6 +338,8 @@ async function buildPlumes(clusters) {
       forecast: plumeForecast(c, fcs[i])
     };
   });
+  await enrichWeather(built);
+  return built;
 }
 
 // ---------- daerah terdampak ----------
@@ -416,9 +430,45 @@ function toSeendate(d) {
   const x = new Date(t);
   return `${x.getUTCFullYear()}${String(x.getUTCMonth() + 1).padStart(2, '0')}${String(x.getUTCDate()).padStart(2, '0')}`;
 }
-async function googleNews() {
-  const q = 'karhutla OR "kebakaran hutan" OR "kebakaran lahan" OR "titik api" OR "kabut asap"';
-  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=id&gl=ID&ceid=ID:id`;
+/**
+ * Kanal berita. Dipisah per topik supaya kabar penanganan tingkat pusat
+ * (rapat terbatas, instruksi presiden, BNPB) tidak tenggelam oleh berita
+ * kejadian kebakaran yang jumlahnya jauh lebih banyak.
+ */
+const NEWS_TOPICS = [
+  {
+    id: 'kejadian', label: 'Kejadian & titik api',
+    q: 'karhutla OR "kebakaran hutan" OR "kebakaran lahan" OR "titik api" OR "kabut asap"'
+  },
+  {
+    id: 'pusat', label: 'Kebijakan pusat',
+    q: '("rapat terbatas" OR ratas OR "instruksi presiden" OR "Presiden Prabowo" OR "Kepala Negara") '
+      + '(karhutla OR "kebakaran hutan" OR "kabut asap" OR bencana)'
+  },
+  {
+    id: 'penanganan', label: 'Operasi penanganan',
+    q: '(BNPB OR BPBD OR Manggala Agni OR "water bombing" OR "modifikasi cuaca" OR "hujan buatan" '
+      + 'OR "satgas karhutla" OR TNI OR Polri) (karhutla OR "kebakaran hutan" OR "kebakaran lahan")'
+  },
+  {
+    id: 'daerah', label: 'Tanggap darurat daerah',
+    q: '("status siaga darurat" OR "tanggap darurat" OR "darurat asap" OR gubernur OR bupati) '
+      + '(karhutla OR "kebakaran hutan" OR "kabut asap")'
+  },
+  {
+    id: 'penegakan', label: 'Penegakan hukum',
+    q: '(KLHK OR "Gakkum" OR tersangka OR "segel lahan" OR "sanksi perusahaan" OR penyidikan) '
+      + '(karhutla OR "kebakaran hutan" OR "kebakaran lahan")'
+  },
+  {
+    id: 'kesehatan', label: 'Dampak kesehatan & pendidikan',
+    q: '(ISPA OR "kualitas udara" OR ISPU OR "sekolah diliburkan" OR "libur sekolah" OR posko kesehatan) '
+      + '(kabut asap OR karhutla)'
+  }
+];
+
+async function googleNewsTopic(topic) {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(topic.q)}&hl=id&gl=ID&ceid=ID:id`;
   const r = await fetchWithTimeout(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FireWatchID/1.0)' } }, 15000);
   if (!r.ok) throw new Error('gnews_' + r.status);
   const xml = await r.text();
@@ -435,10 +485,44 @@ async function googleNews() {
     if (!domain) { try { domain = new URL(link).hostname.replace(/^www\./, ''); } catch { domain = ''; } }
     let title = pick('title');
     if (domain && title.endsWith(' - ' + domain)) title = title.slice(0, -(domain.length + 3));
-    out.push({ title: title.slice(0, 300), url: link, domain: domain.slice(0, 80), seendate: toSeendate(pick('pubDate')) });
+    out.push({
+      title: title.slice(0, 300), url: link, domain: domain.slice(0, 80),
+      seendate: toSeendate(pick('pubDate')),
+      pubDate: pick('pubDate'),
+      topic: topic.id, topicLabel: topic.label
+    });
   }
-  if (!out.length) throw new Error('empty');
-  return { ok: true, source: 'Google Berita (agregator media Indonesia)', articles: out.slice(0, 40) };
+  return out;
+}
+
+async function googleNews() {
+  const batches = await Promise.all(
+    NEWS_TOPICS.map(t => googleNewsTopic(t).catch(e => {
+      console.error('[news:' + t.id + ']', e.message);
+      return [];
+    }))
+  );
+  // Gabung lalu buang duplikat: satu artikel bisa cocok di beberapa topik.
+  const seen = new Set();
+  const all = [];
+  for (const arr of batches) {
+    for (const a of arr) {
+      const key = a.url.split('?')[0];
+      if (seen.has(key)) continue;
+      seen.add(key);
+      all.push(a);
+    }
+  }
+  if (!all.length) throw new Error('empty');
+  all.sort((a, b) => (Date.parse(b.pubDate) || 0) - (Date.parse(a.pubDate) || 0));
+  const counts = {};
+  for (const t of NEWS_TOPICS) counts[t.id] = all.filter(a => a.topic === t.id).length;
+  return {
+    ok: true,
+    source: 'Google Berita (agregator media Indonesia)',
+    topics: NEWS_TOPICS.map(t => ({ id: t.id, label: t.label, count: counts[t.id] })),
+    articles: all.slice(0, 120)
+  };
 }
 async function gdeltNews() {
   const q = '(karhutla OR "kebakaran hutan") sourcecountry:indonesia';
@@ -579,8 +663,25 @@ app.get('/api/attribution', async (_req, res) => {
 // Satu permintaan Open-Meteo multi-titik untuk seluruh Indonesia.
 // Medan angin global dari GFS. Satu berkas GRIB2 (~160 KB) memuat seluruh
 // bumi, jadi tidak ada lagi batas 320 titik maupun jepitan ke bbox Indonesia.
+// Cache lama disimpan terpisah agar tetap bisa dipakai bila NOMADS sedang
+// menolak permintaan (batas laju). Angin 3 jam lalu jauh lebih berguna
+// daripada tidak ada angin sama sekali.
+const gfsLast = new Map();
+
 async function gfsField(fhour) {
-  return cached(`gfs:${fhour}`, 60 * 60 * 1000, () => fetchWindField(fetchWithTimeout, fhour));
+  try {
+    const f = await cached(`gfs:${fhour}`, 3 * 60 * 60 * 1000,
+      () => fetchWindField(fetchWithTimeout, fhour));
+    gfsLast.set(fhour, f);
+    return f;
+  } catch (e) {
+    const stale = gfsLast.get(fhour);
+    if (stale) {
+      console.error('[gfs] memakai data lama:', e.message);
+      return stale;
+    }
+    throw e;
+  }
 }
 
 async function windField(stepDeg, box) {
@@ -848,12 +949,20 @@ app.get('/api/ask', async (req, res) => {
 });
 
 /* ---------- gunung api & sebaran abu vulkanik ---------- */
+// Hasil sukses terakhir; dipakai bila sumber hulu (MAGMA/GVP) sedang gagal
+// agar peta tidak tiba-tiba kosong.
+let ashLast = null;
 app.get('/api/volcano-ash', async (_req, res) => {
   try {
     const d = await cached('volcano-ash', 30 * 60 * 1000, () => volcanicAsh(fetchWithTimeout));
+    if (d && d.activeCount) ashLast = d;
     res.set('Cache-Control', 'public, max-age=900');
     res.json(d);
   } catch {
+    if (ashLast) {
+      res.set('Cache-Control', 'no-store');
+      return res.json({ ...ashLast, stale: true });
+    }
     res.status(502).json({ error: 'Data gunung api gagal dimuat.' });
   }
 });
@@ -873,7 +982,12 @@ app.get('/api/volcano-so2', async (_req, res) => {
   try {
     const out = await cached('volcano-so2', 30 * 60 * 1000, async () => {
       const d = await cached('volcano-ash', 30 * 60 * 1000, () => volcanicAsh(fetchWithTimeout));
-      const act = (d.active || []).slice(0, 10);
+      // Open-Meteo menghitung tiap koordinat sebagai satu permintaan, dan
+      // kuota hariannya terbatas. Batasi ke gunung paling berisiko saja
+      // (status resmi Siaga/Awas, atau dilaporkan erupsi oleh GVP).
+      const act = (d.active || [])
+        .filter(v => (v.official && v.official.level >= 3) || v.activity)
+        .slice(0, 6);
       if (!act.length) return { volcanoes: [] };
       const lats = act.map(v => v.lat).join(',');
       const lons = act.map(v => v.lon).join(',');

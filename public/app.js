@@ -67,7 +67,7 @@
   var gImpact = L.layerGroup().addTo(map);
 
   var state = {
-    data: null, attr: null, news: [], minConf: 0, minFrp: 10,
+    data: null, attr: null, news: [], newsTopics: [], newsTopic: 'semua', minConf: 0, minFrp: 10,
     concOn: false, concBusy: false, colorBy: 'confidence',
     wind: null, windKey: null, windOn: true, windBusy: false, particles: null, plumeHour: 0,
     air: null, airKey: null, airOn: false, airBusy: false,
@@ -285,8 +285,11 @@
 
   /* ---------- gunung api & sebaran abu vulkanik ---------- */
   // Sumber: Smithsonian GVP + angin ketinggian Open-Meteo. Indikatif, bukan advisory VAAC.
-  function volcanoIcon(status) {
-    var col = status === 'baru' ? '#f87171' : '#fb923c';
+  function volcanoIcon(v) {
+    // Warna mengikuti status resmi PVMBG; bila tak ada, pakai status GVP.
+    var col = v.official
+      ? v.official.color
+      : (v.activity && v.activity.status === 'baru' ? '#f87171' : '#fb923c');
     var svg =
       '<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">' +
         '<path d="M13 5.5 L21.5 20.5 H4.5 Z" fill="' + col + '" fill-opacity="0.9" ' +
@@ -315,17 +318,21 @@
           .addTo(gAsh);
       });
 
-      L.marker([v.lat, v.lon], { icon: volcanoIcon(v.activity.status), pane: 'volcanoPane' })
+      var o = v.official;
+      L.marker([v.lat, v.lon], { icon: volcanoIcon(v), pane: 'volcanoPane' })
         .bindPopup(popupNode('Gunung ' + v.name, [
-          'Status: erupsi ' + v.activity.status + (v.activity.period ? ' · ' + v.activity.period : ''),
+          o ? 'Status resmi PVMBG: Level ' + o.roman + ' — ' + o.status : 'Status resmi PVMBG: tidak tercatat',
+          o && o.province ? 'Wilayah administratif: ' + o.province : null,
+          v.activity
+            ? 'Laporan GVP: erupsi ' + v.activity.status + (v.activity.period ? ' · ' + v.activity.period : '')
+            : 'Tidak ada laporan erupsi pada laporan mingguan GVP terakhir',
           v.type ? 'Tipe: ' + v.type : null,
           v.elevM ? 'Ketinggian: ' + nf.format(v.elevM) + ' mdpl' : null,
-          v.region ? 'Wilayah: ' + v.region : null,
           'Koordinat: ' + v.lat.toFixed(3) + ', ' + v.lon.toFixed(3),
           v.plumes.length
             ? 'Abu terbawa ke ' + v.plumes.map(function (p) { return compass(p.to); }).join(' / ')
-            : 'Data angin ketinggian belum tersedia'
-        ], { warn: v.activity.summary || null }))
+            : 'Sebaran abu tidak dimodelkan (belum berstatus Siaga dan tidak dilaporkan erupsi)'
+        ], { warn: (o ? o.meaning : null) || (v.activity && v.activity.summary) || null }))
         .addTo(gAsh);
     });
   }
@@ -339,9 +346,10 @@
         state.ash = d;
         drawAsh();
         renderAshInfo();
+        var oc = d.official && d.official.counts;
         showHint(d.activeCount
-          ? d.activeCount + ' gunung api sedang erupsi · sebaran abu dari angin ketinggian.'
-          : 'Tidak ada laporan erupsi aktif pekan ini.');
+          ? d.activeCount + ' gunung dipantau' + (oc ? ' · ' + oc.Awas + ' Awas, ' + oc.Siaga + ' Siaga, ' + oc.Waspada + ' Waspada (PVMBG)' : '') + '.'
+          : 'Tidak ada gunung berstatus siaga maupun erupsi saat ini.');
         setTimeout(function () { if (state.ashOn) showHint(null); }, 6000);
       })
       .catch(function () { showHint('Gagal memuat data gunung api.'); })
@@ -363,7 +371,22 @@
       row.appendChild(el('span', 'cs-lab', lv.label));
       box.appendChild(row);
     });
-    box.appendChild(el('div', 'cs-note', state.ash.activeCount + ' gunung erupsi · GVP Smithsonian'));
+    var oc = state.ash.official && state.ash.official.counts;
+    if (oc) {
+      box.appendChild(el('div', 'cs-sep'));
+      [['Awas', oc.Awas, '#ef4444'], ['Siaga', oc.Siaga, '#fb923c'],
+       ['Waspada', oc.Waspada, '#facc15']].forEach(function (x) {
+        var row = el('div', 'cs-row');
+        var sw = el('i', 'cs-dot');
+        sw.style.background = x[2];
+        row.appendChild(sw);
+        row.appendChild(el('span', 'cs-lab', x[0]));
+        row.appendChild(el('b', 'cs-val', String(x[1])));
+        box.appendChild(row);
+      });
+    }
+    box.appendChild(el('div', 'cs-note',
+      state.ash.activeCount + ' gunung dipantau · status resmi PVMBG + laporan GVP'));
   }
 
   /* ---------- citra satelit Himawari-9 (JMA, Jepang) ---------- */
@@ -777,6 +800,7 @@
     var box = $('news'); clear(box);
     var q = $('newsQ').value.trim().toLowerCase();
     var list = state.news.filter(function (a) {
+      if (state.newsTopic !== 'semua' && a.topic !== state.newsTopic) return false;
       return !q || a.title.toLowerCase().indexOf(q) >= 0 || a.domain.toLowerCase().indexOf(q) >= 0;
     });
     $('newsCount').textContent = state.news.length
@@ -793,11 +817,33 @@
       link.appendChild(el('div', 'news-t', a.title || '(tanpa judul)'));
       var meta = el('div', 'news-m');
       if (a.domain) meta.appendChild(el('span', 'news-src', a.domain));
+      if (a.topicLabel && state.newsTopic === 'semua') {
+        meta.appendChild(el('span', 'news-tag', a.topicLabel));
+      }
       var d = a.seendate && a.seendate.length >= 8
         ? a.seendate.slice(6, 8) + '-' + a.seendate.slice(4, 6) + '-' + a.seendate.slice(0, 4) : '';
       if (d) meta.appendChild(el('span', null, d));
       link.appendChild(meta);
       box.appendChild(link);
+    });
+  }
+
+  function renderNewsTopics() {
+    var box = $('newsTopics'); clear(box);
+    if (!state.newsTopics.length) return;
+    var opts = [{ id: 'semua', label: 'Semua', count: state.news.length }]
+      .concat(state.newsTopics.filter(function (t) { return t.count > 0; }));
+    opts.forEach(function (t) {
+      var b = el('button', 'ntopic' + (state.newsTopic === t.id ? ' active' : ''));
+      b.type = 'button';
+      b.appendChild(document.createTextNode(t.label));
+      b.appendChild(el('i', null, String(t.count)));
+      b.addEventListener('click', function () {
+        state.newsTopic = t.id;
+        renderNewsTopics();
+        renderNews();
+      });
+      box.appendChild(b);
     });
   }
 
@@ -876,7 +922,9 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         state.news = Array.isArray(d.articles) ? d.articles : [];
+        state.newsTopics = Array.isArray(d.topics) ? d.topics : [];
         state.newsAt = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        renderNewsTopics();
         renderNews();
         buildTicker();
         if (!state.news.length && d.message) {
@@ -1197,7 +1245,10 @@
         });
         $('so2Panel').hidden = false;
       })
-      .catch(function () { /* panel tetap tersembunyi bila gagal */ });
+      .catch(function () {
+        // Kuota model CAMS bisa habis; panel disembunyikan, bukan menampilkan
+        // angka kosong yang bisa disalahartikan sebagai "SO2 nol".
+      });
   }
   loadSo2();
 
