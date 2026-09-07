@@ -34,6 +34,7 @@ const { attributeHotspots } = require('./lib/concession');
 const { fetchWindField, sampleAt, gridPoints } = require('./lib/wind-gfs');
 const { openHotspots } = require('./lib/firms-open');
 const { volcanicAsh } = require('./lib/volcano');
+const { fetchStatus: fetchPvmbgStatus } = require('./lib/pvmbg');
 const { answer: ragAnswer } = require('./lib/rag');
 
 // batas kotak provinsi (kasar) untuk peringkat provinsi
@@ -933,7 +934,7 @@ app.get('/api/ask', async (req, res) => {
       buildOverview().catch(() => ({})),
       buildAttribution().catch(() => ({})),
       getNews().catch(() => ({ articles: [] })),
-      cached('volcano-ash', 30 * 60 * 1000, () => volcanicAsh(fetchWithTimeout)).catch(() => ({}))
+      cached('volcano-ash', 30 * 60 * 1000, () => volcanicAsh(fetchWithTimeout, pvmbgStatus)).catch(() => ({}))
     ]);
     const ctx = {
       overview,
@@ -953,9 +954,19 @@ app.get('/api/ask', async (req, res) => {
 // Hasil sukses terakhir; dipakai bila sumber hulu (MAGMA/GVP) sedang gagal
 // agar peta tidak tiba-tiba kosong.
 let ashLast = null;
+
+/**
+ * Status resmi PVMBG dengan cache sendiri (3 jam).
+ * MAGMA butuh ~22 detik, hampir seluruh anggaran waktu fungsi serverless
+ * (30 detik). Dengan cache terpisah dan berumur panjang, biaya itu hanya
+ * dibayar sesekali, bukan tiap kali data gunung dibangun ulang.
+ */
+function pvmbgStatus() {
+  return cached('pvmbg:status', 3 * 60 * 60 * 1000, () => fetchPvmbgStatus(fetchWithTimeout));
+}
 app.get('/api/volcano-ash', async (_req, res) => {
   try {
-    const d = await cached('volcano-ash', 30 * 60 * 1000, () => volcanicAsh(fetchWithTimeout));
+    const d = await cached('volcano-ash', 30 * 60 * 1000, () => volcanicAsh(fetchWithTimeout, pvmbgStatus));
     if (d && d.activeCount) ashLast = d;
     res.set('Cache-Control', 'public, max-age=900');
     res.json(d);

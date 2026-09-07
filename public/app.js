@@ -387,8 +387,10 @@
         box.appendChild(row);
       });
     }
+    var stale = state.ash.official && state.ash.official.stale;
     box.appendChild(el('div', 'cs-note',
-      state.ash.activeCount + ' gunung dipantau · status resmi PVMBG + laporan GVP'));
+      state.ash.activeCount + ' gunung dipantau · status resmi PVMBG + laporan GVP'
+      + (stale ? ' · status tersimpan (MAGMA tidak merespons)' : '')));
   }
 
   /* ---------- citra satelit Himawari-9 (JMA, Jepang) ---------- */
