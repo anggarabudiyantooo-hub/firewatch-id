@@ -269,9 +269,67 @@ function plumePolygon(lat, lon, bearingTo, lengthKm, halfAngleDeg) {
   return pts;
 }
 
+// Prakiraan angin per jam (untuk timeline sebaran asap ke depan).
+// Dipisah dari windAt() agar cache-nya sendiri dan hanya diambil sekali per klaster.
+async function windForecast(lat, lon) {
+  const key = `wf:${lat.toFixed(1)},${lon.toFixed(1)}`;
+  return cached(key, 30 * 60 * 1000, async () => {
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+        `&hourly=wind_speed_10m,wind_direction_10m&forecast_days=2&wind_speed_unit=ms&timezone=UTC`;
+      const r = await fetchWithTimeout(url, {}, 10000);
+      if (!r.ok) throw new Error('meteo_' + r.status);
+      const h = (await r.json()).hourly || {};
+      const times = h.time || [];
+      // Cari indeks jam saat ini agar offset +6/+12/+18 relatif terhadap sekarang.
+      const nowIso = new Date().toISOString().slice(0, 13);
+      let base = times.findIndex(t => t.slice(0, 13) >= nowIso);
+      if (base < 0) base = 0;
+      return { times, base, speed: h.wind_speed_10m || [], dir: h.wind_direction_10m || [] };
+    } catch {
+      return null;
+    }
+  });
+}
+
+// Offset jam yang ditampilkan pada timeline sebaran.
+const PLUME_STEPS = [0, 6, 12, 18];
+
+// Bentuk pluma pada beberapa jam ke depan, memakai angin prakiraan tiap jam.
+// Asap yang sudah dilepas tidak hilang: jangkauan diakumulasi dari jarak tempuh
+// angin sejak sekarang, sehingga kerucut memanjang seiring waktu.
+function plumeForecast(c, fc) {
+  if (!fc || !fc.speed.length) return null;
+  const out = [];
+  for (const hOff of PLUME_STEPS) {
+    const idx = Math.min(fc.base + hOff, fc.speed.length - 1);
+    const sp = Number(fc.speed[idx]);
+    const dr = Number(fc.dir[idx]);
+    if (!Number.isFinite(sp) || !Number.isFinite(dr)) continue;
+    const bearingTo = (dr + 180) % 360;
+    // jangkauan dasar (seperti saat ini) + tambahan transpor angin selama hOff jam
+    const base = Math.min(320, 18 + Math.sqrt(c.frp) * 6 + sp * 12);
+    const len = Math.min(600, base + sp * 3.6 * hOff * 0.55);
+    const half = Math.max(12, 34 - sp * 2);
+    out.push({
+      hour: hOff,
+      time: fc.times[idx] || null,
+      windSpeed: +sp.toFixed(1),
+      windFrom: Math.round(dr),
+      bearingTo: Math.round(bearingTo),
+      lengthKm: Math.round(len),
+      polygon: plumePolygon(c.lat, c.lon, bearingTo, len, half),
+      corePolygon: plumePolygon(c.lat, c.lon, bearingTo, len * 0.45, half * 0.7)
+    });
+  }
+  return out.length ? out : null;
+}
 async function buildPlumes(clusters) {
   const top = clusters.slice(0, 14);
-  const winds = await Promise.all(top.map(c => windAt(c.lat, c.lon)));
+  const [winds, fcs] = await Promise.all([
+    Promise.all(top.map(c => windAt(c.lat, c.lon))),
+    Promise.all(top.map(c => windForecast(c.lat, c.lon)))
+  ]);
   return top.map((c, i) => {
     const w = winds[i];
     const bearingTo = (w.from + 180) % 360;                  // arah tujuan asap
@@ -284,7 +342,8 @@ async function buildPlumes(clusters) {
       halfAngle: Math.round(half), intensity: +intensity.toFixed(2),
       polygon: plumePolygon(c.lat, c.lon, bearingTo, len, half),
       // Inti pekat: 45% jangkauan & kerucut lebih sempit (asap paling tebal dekat sumber).
-      corePolygon: plumePolygon(c.lat, c.lon, bearingTo, len * 0.45, half * 0.7)
+      corePolygon: plumePolygon(c.lat, c.lon, bearingTo, len * 0.45, half * 0.7),
+      forecast: plumeForecast(c, fcs[i])
     };
   });
 }
@@ -719,7 +778,7 @@ app.get('/api/air-point', async (req, res) => {
   try {
     const out = await cached(`ap:${lat.toFixed(2)},${lon.toFixed(2)}`, 30 * 60 * 1000, async () => {
       const url = 'https://air-quality-api.open-meteo.com/v1/air-quality'
-        + `?latitude=${lat}&longitude=${lon}&current=pm2_5,pm10,us_aqi`;
+        + `?latitude=${lat}&longitude=${lon}&current=pm2_5,pm10,us_aqi,sulphur_dioxide,carbon_monoxide`;
       const r = await fetchWithTimeout(url, {}, 12000);
       if (!r.ok) throw new Error('aqp_' + r.status);
       const c = (await r.json()).current || {};
@@ -730,6 +789,8 @@ app.get('/api/air-point', async (req, res) => {
         aqi: Math.round(aqi),
         pm25: Number.isFinite(Number(c.pm2_5)) ? +Number(c.pm2_5).toFixed(1) : null,
         pm10: Number.isFinite(Number(c.pm10)) ? +Number(c.pm10).toFixed(1) : null,
+        so2: Number.isFinite(Number(c.sulphur_dioxide)) ? +Number(c.sulphur_dioxide).toFixed(1) : null,
+        co: Number.isFinite(Number(c.carbon_monoxide)) ? Math.round(Number(c.carbon_monoxide)) : null,
         label: band.label, color: band.color, advice: band.advice
       };
     });
@@ -849,6 +910,61 @@ app.get('/api/volcano-ash', async (_req, res) => {
     res.json(d);
   } catch {
     res.status(502).json({ error: 'Data gunung api gagal dimuat.' });
+  }
+});
+
+// Gas SO2 di sekitar gunung yang sedang erupsi.
+// SO2 adalah indikator magma bergerak naik, dan menyebar terpisah dari abu.
+// Ambang SO2 permukaan (ug/m3). WHO: rata-rata 24 jam sebaiknya <= 40 ug/m3.
+function so2Band(v) {
+  if (!Number.isFinite(v)) return { label: 'tidak ada data', color: '#64748b', note: 'Model CAMS belum memberi nilai untuk titik ini.' };
+  if (v < 40) return { label: 'normal', color: '#22c55e', note: 'Di bawah acuan WHO (40 ug/m3 rata-rata 24 jam).' };
+  if (v < 120) return { label: 'meningkat', color: '#facc15', note: 'Di atas acuan WHO. Penderita asma sebaiknya waspada.' };
+  if (v < 350) return { label: 'tinggi', color: '#fb923c', note: 'Bisa memicu iritasi mata dan saluran napas.' };
+  return { label: 'sangat tinggi', color: '#ef4444', note: 'Hindari aktivitas luar ruang di sekitar kawah.' };
+}
+
+app.get('/api/volcano-so2', async (_req, res) => {
+  try {
+    const out = await cached('volcano-so2', 30 * 60 * 1000, async () => {
+      const d = await cached('volcano-ash', 30 * 60 * 1000, () => volcanicAsh(fetchWithTimeout));
+      const act = (d.active || []).slice(0, 10);
+      if (!act.length) return { volcanoes: [] };
+      const lats = act.map(v => v.lat).join(',');
+      const lons = act.map(v => v.lon).join(',');
+      const url = 'https://air-quality-api.open-meteo.com/v1/air-quality'
+        + `?latitude=${lats}&longitude=${lons}&current=sulphur_dioxide,pm2_5,us_aqi`;
+      const r = await fetchWithTimeout(url, {}, 12000);
+      if (!r.ok) throw new Error('so2_' + r.status);
+      let j = await r.json();
+      if (!Array.isArray(j)) j = [j];
+      return {
+        volcanoes: act.map((v, i) => {
+          const c = (j[i] && j[i].current) || {};
+          const so2 = Number(c.sulphur_dioxide);
+          return {
+            name: v.name, lat: v.lat, lon: v.lon, elevM: v.elevM,
+            // v.activity adalah objek laporan mingguan GVP; ambil periode + ringkasannya.
+            activity: v.activity ? {
+              period: v.activity.period || null,
+              status: v.activity.status || null,
+              summary: typeof v.activity.summary === 'string'
+                ? (v.activity.summary.length > 260
+                    ? v.activity.summary.slice(0, 260).replace(/\s+\S*$/, '') + '…'
+                    : v.activity.summary)
+                : null
+            } : null,
+            so2: Number.isFinite(so2) ? +so2.toFixed(1) : null,
+            band: so2Band(so2),
+            aqi: Number.isFinite(Number(c.us_aqi)) ? Math.round(Number(c.us_aqi)) : null
+          };
+        })
+      };
+    });
+    res.set('Cache-Control', 'public, max-age=900');
+    res.json(out);
+  } catch {
+    res.status(502).json({ error: 'Data gas SO2 gagal dimuat.' });
   }
 });
 

@@ -87,6 +87,13 @@
         <label class="chk"><input type="checkbox" id="lyConc" /><span>Batas konsesi</span></label>
         <label class="chk"><input type="checkbox" id="lyAsh" /><span>Abu vulkanik</span></label>
         <span class="spacer"></span>
+        <div class="tl" role="group" aria-label="Timeline sebaran asap">
+          <span class="tl-lb">Sebaran</span>
+          <button type="button" class="tl-b active" data-h="0">sekarang</button>
+          <button type="button" class="tl-b" data-h="6">+6j</button>
+          <button type="button" class="tl-b" data-h="12">+12j</button>
+          <button type="button" class="tl-b" data-h="18">+18j</button>
+        </div>
         <label class="sel">Citra Himawari
           <select id="himaSel">
             <option value="" selected>nonaktif</option>
@@ -205,8 +212,23 @@
     <div id="paneGroup" role="tabpanel" tabindex="0" hidden><p class="empty">Memuat…</p></div>
   </section>
 
+  <section class="panel wide" id="so2Panel" hidden>
+    <header class="panel-head">
+      <h2><span class="pnum">06</span> Gas SO<sub>2</sub> gunung api</h2>
+      <span class="hd-note">model CAMS · diperbarui tiap 30 menit</span>
+    </header>
+    <div class="so2-intro">
+      <p><b>Apa itu:</b> sulfur dioksida adalah gas tak berwarna berbau tajam yang keluar dari magma naik ke permukaan — salah satu gas vulkanik utama selain uap air dan CO<sub>2</sub>.</p>
+      <p><b>Kenapa dipantau:</b> kenaikan fluks SO<sub>2</sub> sering menjadi tanda awal magma bergerak naik, sehingga dipakai lembaga vulkanologi sebagai indikator peningkatan aktivitas.</p>
+      <p><b>Beda dari abu:</b> abu adalah partikel padat yang dipantau untuk keselamatan penerbangan. SO<sub>2</sub> adalah gas tak kasat mata yang bisa terbawa terpisah dari abu, menyebar lebih jauh dan bertahan lebih lama.</p>
+      <p><b>Acuan WHO:</b> paparan rata-rata 24 jam sebaiknya tidak melebihi 40 µg/m³.</p>
+    </div>
+    <div class="so2grid" id="so2Grid"></div>
+    <p class="fineprint">Nilai adalah konsentrasi SO<sub>2</sub> permukaan dari model CAMS (Open-Meteo) di koordinat puncak — bukan pengukuran fluks kawah langsung oleh PVMBG. Ringkasan aktivitas dikutip apa adanya dari laporan mingguan Smithsonian Global Volcanism Program (berbahasa Inggris).</p>
+  </section>
+
   <section class="panel wide">
-    <header class="panel-head"><h2><span class="pnum">06</span> Memahami data ini</h2></header>
+    <header class="panel-head"><h2><span class="pnum">07</span> Memahami data ini</h2></header>
     <div class="srcgrid">
       <div class="srccard">
         <h3>Apa itu titik api (hotspot)?</h3>
@@ -219,6 +241,12 @@
         <p><b>Cara baca:</b> ujung sempit adalah sumber api, kerucut melebar mengikuti arah angin. Bagian <b>pekat</b> di dekat sumber = asap paling tebal; bagian <b>tipis</b> = asap makin encer karena tercampur udara.</p>
         <p><b>Kenapa melebar:</b> angin tidak pernah bertiup satu arah persis. Makin lemah anginnya, makin lebar sudut sebarannya — dan makin lambat asap pergi dari sumber.</p>
         <p><b>Batas:</b> ini model geometri sederhana, bukan model dispersi atmosfer seperti HYSPLIT. Hujan, inversi suhu, dan topografi belum diperhitungkan.</p>
+      </div>
+      <div class="srccard">
+        <h3>Timeline sebaran (+6/+12/+18 jam)</h3>
+        <p><b>Cara pakai:</b> tombol di atas peta menggeser tampilan ke prakiraan beberapa jam ke depan. Kerudung <b>putus-putus biru</b> menandakan prakiraan, bukan kondisi terkini.</p>
+        <p><b>Dari mana:</b> prakiraan angin per jam Open-Meteo. Karena arah angin berubah sepanjang hari, kerucut bisa <i>berputar</i> — inilah sebabnya kota yang aman pagi ini bisa terkena asap malam nanti.</p>
+        <p><b>Batas:</b> asumsinya api tetap menyala dengan intensitas sama. Jika api padam atau turun hujan, sebaran nyata akan lebih kecil.</p>
       </div>
       <div class="srccard">
         <h3>Arti &ldquo;daerah terdampak&rdquo;</h3>
@@ -248,7 +276,7 @@
   </section>
 
   <section class="panel wide">
-    <header class="panel-head"><h2><span class="pnum">07</span> Sumber data &amp; batasan</h2></header>
+    <header class="panel-head"><h2><span class="pnum">08</span> Sumber data &amp; batasan</h2></header>
     <div class="srcgrid">
       <div class="srccard">
         <h3>Titik api</h3>

@@ -69,7 +69,7 @@
   var state = {
     data: null, attr: null, news: [], minConf: 50,
     concOn: false, concBusy: false, colorBy: 'confidence',
-    wind: null, windKey: null, windOn: true, windBusy: false, particles: null,
+    wind: null, windKey: null, windOn: true, windBusy: false, particles: null, plumeHour: 0,
     air: null, airKey: null, airOn: false, airBusy: false,
     ash: null, ashOn: false, ashBusy: false, newsAt: '',
     hima: null, himaProduct: 'ir', himaLayer: null
@@ -192,31 +192,60 @@
   function drawSmoke() {
     gSmoke.clearLayers();
     if (!state.data) return;
+    var h = state.plumeHour;
     state.data.plumes.forEach(function (p) {
+      // Pada jam > 0 pakai bentuk hasil prakiraan angin; jika tak tersedia, lewati.
+      var f = p;
+      if (h > 0) {
+        var found = null;
+        if (p.forecast) {
+          p.forecast.forEach(function (x) { if (x.hour === h) found = x; });
+        }
+        if (!found) return;
+        f = found;
+      }
+
       // Dua lapis: inti pekat di dekat sumber + selubung tipis sejauh jangkauan,
       // supaya bentuk kepulan terbaca jelas di atas peta gelap.
       var op = Math.min(0.55, 0.22 + p.intensity * 0.33);
-      var info = popupNode('Perkiraan sebaran asap', [
+      var spd = h > 0 ? f.windSpeed : p.wind.speed;
+      var lines = [
         'Sumber: klaster ' + p.count + ' titik api · FRP ' + nf.format(p.frp) + ' MW',
-        'Angin ' + p.wind.speed.toFixed(1) + ' m/s, asap bergerak ke ' + compass(p.bearingTo) + ' (' + p.bearingTo + '°)' + (p.wind.estimated ? ' — estimasi' : ''),
-        'Jangkauan perkiraan: ± ' + nf.format(p.lengthKm) + ' km',
-        (p.wind.rh !== null ? 'Kelembapan ' + p.wind.rh + '%' : '') +
-          (p.wind.temp !== null ? (p.wind.rh !== null ? ' · ' : '') + 'Suhu ' + p.wind.temp + '°C' : '')
-      ], { warn: 'Model perkiraan berbasis angin permukaan — bukan pengukuran kualitas udara.' });
+        'Angin ' + spd.toFixed(1) + ' m/s, asap bergerak ke ' + compass(f.bearingTo) + ' (' + f.bearingTo + '°)',
+        'Jangkauan perkiraan: ± ' + nf.format(f.lengthKm) + ' km'
+      ];
+      if (h === 0) {
+        lines.push((p.wind.rh !== null ? 'Kelembapan ' + p.wind.rh + '%' : '') +
+          (p.wind.temp !== null ? (p.wind.rh !== null ? ' · ' : '') + 'Suhu ' + p.wind.temp + '°C' : ''));
+      } else {
+        lines.push('Prakiraan untuk ' + hourLabel(f.time) + ' WIB (+' + h + ' jam)');
+      }
+      var info = popupNode(h === 0 ? 'Perkiraan sebaran asap' : 'Prakiraan sebaran +' + h + ' jam', lines,
+        { warn: 'Model perkiraan berbasis angin — bukan model dispersi atmosfer maupun pengukuran kualitas udara.' });
 
-      L.polygon(p.polygon, {
-        color: '#e2b184', weight: 1.2, opacity: 0.75,
-        fillColor: '#d9a273', fillOpacity: op * 0.45,
-        smoothFactor: 1, className: 'plume-outer'
+      L.polygon(f.polygon, {
+        color: h > 0 ? '#8ab4d8' : '#e2b184', weight: 1.2, opacity: 0.75,
+        fillColor: h > 0 ? '#6f9bc4' : '#d9a273',
+        fillOpacity: op * (h > 0 ? 0.35 : 0.45),
+        smoothFactor: 1, dashArray: h > 0 ? '4,3' : null
       }).bindPopup(info).addTo(gSmoke);
 
-      if (p.corePolygon) {
-        L.polygon(p.corePolygon, {
+      if (f.corePolygon) {
+        L.polygon(f.corePolygon, {
           color: 'transparent', weight: 0,
-          fillColor: '#c98b52', fillOpacity: op, smoothFactor: 1
+          fillColor: h > 0 ? '#4f7ea8' : '#c98b52',
+          fillOpacity: op * (h > 0 ? 0.75 : 1), smoothFactor: 1
         }).bindPopup(info).addTo(gSmoke);
       }
     });
+  }
+
+  // "2026-09-07T16:00" (UTC) -> "23.00" WIB
+  function hourLabel(iso) {
+    if (!iso) return '-';
+    var d = new Date(iso + 'Z');
+    var wib = new Date(d.getTime() + 7 * 3600000);
+    return ('0' + wib.getUTCHours()).slice(-2) + '.00';
   }
 
   function drawImpact() {
@@ -1105,6 +1134,64 @@
       runAsk(c.getAttribute('data-q'));
     });
   });
+
+  // Timeline sebaran: 0 = kondisi sekarang, >0 = prakiraan angin ke depan.
+  Array.prototype.forEach.call(document.querySelectorAll('.tl-b'), function (b) {
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('.tl-b'), function (o) {
+        o.classList.remove('active');
+      });
+      b.classList.add('active');
+      state.plumeHour = Number(b.getAttribute('data-h')) || 0;
+      if (!$('lySmoke').checked) { $('lySmoke').checked = true; map.addLayer(gSmoke); }
+      drawSmoke();
+      showHint(state.plumeHour === 0
+        ? 'Menampilkan sebaran asap saat ini.'
+        : 'Prakiraan sebaran ' + state.plumeHour + ' jam ke depan (garis putus-putus).');
+    });
+  });
+
+  // Panel SO2: hanya muncul bila ada gunung yang sedang erupsi.
+  function loadSo2() {
+    fetch('/api/volcano-so2', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !d.volcanoes || !d.volcanoes.length) return;
+        var grid = $('so2Grid'); clear(grid);
+        d.volcanoes.forEach(function (v) {
+          var card = el('div', 'so2card');
+          var hd = el('div', 'so2hd');
+          hd.appendChild(el('h3', null, 'G. ' + v.name));
+          var b = el('span', 'so2badge', v.band.label);
+          b.style.color = v.band.color;
+          b.style.borderColor = v.band.color;
+          hd.appendChild(b);
+          card.appendChild(hd);
+
+          var val = el('div', 'so2val');
+          val.appendChild(el('b', null, v.so2 === null ? '—' : String(v.so2)));
+          val.appendChild(el('span', null, ' µg/m³'));
+          card.appendChild(val);
+
+          card.appendChild(el('p', 'so2note', v.band.note));
+          if (v.activity && v.activity.summary) {
+            var act = el('p', 'so2act');
+            if (v.activity.period) act.appendChild(el('b', null, 'Laporan GVP ' + v.activity.period + ': '));
+            act.appendChild(document.createTextNode(v.activity.summary));
+            card.appendChild(act);
+          }
+          card.appendChild(el('p', 'so2meta',
+            'Puncak ' + nf.format(v.elevM) + ' m' + (v.aqi !== null ? ' · US AQI sekitar ' + v.aqi : '')));
+
+          card.addEventListener('click', function () { map.setView([v.lat, v.lon], 9); });
+          card.title = 'Klik untuk memusatkan peta ke G. ' + v.name;
+          grid.appendChild(card);
+        });
+        $('so2Panel').hidden = false;
+      })
+      .catch(function () { /* panel tetap tersembunyi bila gagal */ });
+  }
+  loadSo2();
 
   var tickerView = document.querySelector('.ticker-view');
   if (tickerView) {

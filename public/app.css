@@ -580,3 +580,38 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
   font-size: 11.5px;
   line-height: 1.5;
 }
+
+/* Timeline prakiraan sebaran asap */
+.tl{display:flex;align-items:center;gap:0}
+.tl-lb{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:8px}
+.tl-b{
+  font:inherit;font-size:11px;padding:3px 9px;cursor:pointer;
+  background:transparent;color:var(--muted);
+  border:1px solid var(--term-grid);border-right:0;
+}
+.tl-b:last-child{border-right:1px solid var(--term-grid)}
+.tl-b:hover{color:var(--fg);background:rgba(255,176,0,.07)}
+.tl-b.active{background:var(--term-amber);color:#12161c;border-color:var(--term-amber);font-weight:600}
+.tl-b:focus-visible{outline:2px solid var(--term-amber);outline-offset:1px}
+
+/* Panel gas SO2 gunung api */
+.so2-intro{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px 22px;margin-bottom:16px}
+.so2-intro p{margin:0;font-size:12px;line-height:1.65;color:var(--muted)}
+.so2-intro b{color:var(--fg)}
+.so2grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:12px}
+.so2card{border:1px solid var(--term-grid);background:rgba(255,255,255,.015);padding:12px 13px;cursor:pointer;transition:border-color .12s,background .12s}
+.so2card:hover{border-color:var(--term-amber);background:rgba(255,176,0,.05)}
+.so2hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.so2hd h3{margin:0;font-size:12.5px;letter-spacing:.02em}
+.so2badge{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;border:1px solid;padding:1px 6px}
+.so2val{display:flex;align-items:baseline;gap:3px;margin-bottom:7px}
+.so2val b{font-size:22px;font-weight:600;color:var(--fg)}
+.so2val span{font-size:10.5px;color:var(--muted)}
+.so2note{margin:0 0 6px;font-size:11px;line-height:1.5;color:var(--muted)}
+.so2act{margin:0 0 6px;font-size:10px;line-height:1.55;color:var(--muted);
+  max-height:88px;overflow:auto;padding-right:4px}
+.so2act b{color:var(--term-amber);font-weight:600}
+.so2act::-webkit-scrollbar{width:4px}
+.so2act::-webkit-scrollbar-thumb{background:var(--term-grid)}
+.so2meta{margin:0;font-size:10px;color:var(--muted);opacity:.7;border-top:1px solid var(--term-grid);padding-top:6px}
+.hd-note{font-size:10.5px;color:var(--muted);letter-spacing:.04em}
