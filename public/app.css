@@ -682,3 +682,44 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
 .st-name{font-size:11.5px;color:var(--fg);line-height:1.35}
 .st-age{font-size:14px;color:var(--term-amber);font-weight:600;margin-top:5px}
 .st-every{font-size:9.5px;color:var(--muted);letter-spacing:.03em;margin-top:2px}
+
+/* ============================================================
+   PANEL KEJADIAN AKTIF
+   Satu daftar lintas jenis bencana, diurutkan menurut keparahan.
+   Pita warna di tepi kiri memberi jenis bencana identitas visual
+   yang bisa dipindai sekilas tanpa harus membaca labelnya.
+   ============================================================ */
+.panel-events { border-color: #2b3a4a; }
+.ev-body { display: flex; flex-direction: column; gap: 1px; background: #1a2430; }
+.ev {
+  background: var(--panel, #111a24);
+  padding: 9px 11px 10px 13px;
+  border-left: 3px solid #475569;
+}
+.ev-volcano { border-left-color: #fb923c; }
+.ev-quake   { border-left-color: #7dd3fc; }
+.ev-tsunami { border-left-color: #ef4444; }
+.ev-shelter { border-left-color: #a78bfa; }
+.ev-fire    { border-left-color: var(--accent, #ff6b35); }
+
+.ev-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.ev-kind {
+  font-size: 10px; letter-spacing: .09em; text-transform: uppercase;
+  color: #94a3b8; font-weight: 700;
+}
+.ev-volcano .ev-kind { color: #fb923c; }
+.ev-quake   .ev-kind { color: #7dd3fc; }
+.ev-tsunami .ev-kind { color: #ef4444; }
+.ev-shelter .ev-kind { color: #a78bfa; }
+.ev-fire    .ev-kind { color: var(--accent, #ff6b35); }
+
+.ev-age { font-size: 10px; color: #64748b; white-space: nowrap; }
+.ev-title {
+  margin: 3px 0 2px; font-size: 13px; font-weight: 600;
+  color: #e2e8f0; line-height: 1.3;
+}
+.ev-detail { margin: 0; font-size: 11px; color: #94a3b8; line-height: 1.45; }
+.ev-note {
+  margin: 4px 0 0; font-size: 10px; color: #cbd5e1;
+  border-left: 2px solid #475569; padding-left: 6px;
+}

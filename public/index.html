@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>FireWatch ID — Pemantauan Karhutla, Sebaran Asap & Tanggung Jawab Lahan</title>
-<meta name="description" content="Peta titik api, perkiraan sebaran asap, daerah terdampak, atribusi konsesi lahan, dan berita penanganan kebakaran hutan dan lahan di Indonesia." />
+<title>SIAGA ID — Pemantauan Bencana Indonesia: Gunung Api, Gempa, Karhutla</title>
+<meta name="description" content="Pemantauan bencana Indonesia dari sumber resmi dan terbuka: letusan gunung api dan sebaran abu dari pos pengamatan PVMBG, gempa BMKG, tsunami, pengungsi BNPB, titik api dan asap karhutla." />
 <link rel="stylesheet" href="/vendor/leaflet.css" />
 <link rel="stylesheet" href="/app.css" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111a24'/%3E%3Cpath d='M16 5c3 5-1 6 1 9 1.4 2.1 4-1 4-1 1.6 2.4 2 4.4 2 6a7 7 0 11-14 0c0-4 3-7 4-9 1.2-2.4 2-4 3-5z' fill='%23ff6b35'/%3E%3C/svg%3E" />
@@ -14,10 +14,10 @@
 
 <header class="topbar">
   <div class="brand">
-    <span class="mark-tag">FWID</span>
+    <span class="mark-tag">SIAGA</span>
     <div class="brand-txt">
-      <h1>FIREWATCH ID <span class="brand-sep">/</span> <span class="brand-sub">KARHUTLA TERMINAL</span></h1>
-      <p>HOTSPOT · SMOKE · AIR · VOLCANIC ASH · LAND ATTRIBUTION</p>
+      <h1>SIAGA ID <span class="brand-sep">/</span> <span class="brand-sub">TERMINAL BENCANA</span></h1>
+      <p>GUNUNG API · GEMPA · TSUNAMI · PENGUNGSI · KARHUTLA &amp; ASAP</p>
     </div>
   </div>
   <div class="topbar-right">
@@ -37,21 +37,31 @@
 <div id="notice" class="notice" hidden role="status"></div>
 
 <main id="main">
-  <section class="stats" aria-label="Ringkasan situasi nasional">
+  <section class="stats" aria-label="Ringkasan situasi bencana nasional">
+    <article class="stat stat-accent">
+      <span class="stat-label">Gunung api meletus</span>
+      <strong id="sErupt" class="skel">—</strong>
+      <span class="stat-sub" id="sEruptSub">laporan pos pengamatan 24 jam</span>
+    </article>
+    <article class="stat">
+      <span class="stat-label">Status Siaga &amp; Awas</span>
+      <strong id="sVolLvl" class="skel">—</strong>
+      <span class="stat-sub" id="sVolLvlSub">tingkat aktivitas PVMBG</span>
+    </article>
+    <article class="stat">
+      <span class="stat-label">Gempa dirasakan</span>
+      <strong id="sQuake" class="skel">—</strong>
+      <span class="stat-sub" id="sQuakeSub">BMKG, 24 jam terakhir</span>
+    </article>
+    <article class="stat">
+      <span class="stat-label">Warga mengungsi</span>
+      <strong id="sShelter" class="skel">—</strong>
+      <span class="stat-sub" id="sShelterSub">data BNPB</span>
+    </article>
     <article class="stat">
       <span class="stat-label">Titik api terdeteksi</span>
       <strong id="sHot" class="skel">—</strong>
       <span class="stat-sub" id="sHotSub">&nbsp;</span>
-    </article>
-    <article class="stat">
-      <span class="stat-label">Keyakinan tinggi</span>
-      <strong id="sConf" class="skel">—</strong>
-      <span class="stat-sub">deteksi ≥ 80%</span>
-    </article>
-    <article class="stat">
-      <span class="stat-label">Total daya radiasi</span>
-      <strong id="sFrp" class="skel">—</strong>
-      <span class="stat-sub">megawatt (FRP)</span>
     </article>
     <article class="stat">
       <span class="stat-label">Daerah terdampak asap</span>
@@ -59,11 +69,6 @@
       <span class="stat-sub">kota / kabupaten</span>
     </article>
     <article class="stat">
-      <span class="stat-label">Warga di jalur asap</span>
-      <strong id="sPop" class="skel">—</strong>
-      <span class="stat-sub" id="sPopSub">di kota yang dilalui asap</span>
-    </article>
-    <article class="stat stat-accent">
       <span class="stat-label">Di dalam batas konsesi</span>
       <strong id="sConc" class="skel">—</strong>
       <span class="stat-sub" id="sConcSub">dari titik api dianalisis</span>
@@ -130,7 +135,7 @@
         </label>
       </div>
       <div class="map-wrap">
-        <div id="map" role="application" aria-label="Peta titik api dan sebaran asap Indonesia"></div>
+        <div id="map" role="application" aria-label="Peta kejadian bencana Indonesia: gunung api, gempa, titik api, dan sebaran asap"></div>
         <div id="confSummary" class="conf-summary" aria-live="polite"></div>
         <div id="airLegend" class="air-legend" hidden aria-live="polite"></div>
         <div id="ashLegend" class="ash-legend" hidden aria-live="polite"></div>
@@ -157,6 +162,14 @@
     </div>
 
     <aside class="side">
+      <section class="panel panel-events" id="eventsPanel">
+        <header class="panel-head">
+          <h2><span class="pnum">01</span> Kejadian aktif</h2>
+          <span class="panel-sub" id="eventsMeta">memuat…</span>
+        </header>
+        <div id="eventsBody" class="ev-body"><p class="empty">Memeriksa kejadian…</p></div>
+      </section>
+
       <section class="panel">
         <header class="panel-head panel-head-tight">
           <h2><span class="pnum">02</span> Analisis wilayah</h2>
@@ -179,7 +192,7 @@
           <span class="panel-sub" id="askMeta">indeks lokal</span>
         </header>
         <form id="askForm" class="ask-bar" autocomplete="off">
-          <label class="sr-only" for="askQ">Tanyakan tentang data karhutla</label>
+          <label class="sr-only" for="askQ">Tanyakan tentang data bencana</label>
           <span class="ask-prompt">&gt;</span>
           <input id="askQ" type="text" placeholder="siapa perusahaan yang bertanggung jawab?" maxlength="200" />
           <button class="btn btn-ghost" type="submit">JALANKAN</button>
@@ -301,11 +314,14 @@
       </div>
       <div class="srccard">
         <h3>Abu vulkanik &mdash; bahaya yang berbeda</h3>
-        <p>Daftar gunung dipantau otomatis dari dua sumber sekaligus: <b>status resmi PVMBG</b> (MAGMA Indonesia) yang diperbarui harian, dan <b>laporan mingguan Smithsonian GVP</b>. Gunung yang naik status ke Waspada langsung muncul tanpa menunggu laporan GVP pekan berikutnya.</p>
+        <p><b>Status bukan berarti sedang meletus.</b> Ini pembedaan terpenting di panel ini. <b>Normal/Waspada/Siaga/Awas</b> adalah tingkat <i>kewaspadaan</i> yang ditetapkan PVMBG dari kegempaan dan deformasi — sebuah gunung bisa berstatus Siaga bertahun-tahun tanpa sekali pun melontarkan abu. Merapi adalah contohnya.</p>
+        <p>Karena itu <b>sebaran abu di peta ini hanya digambar bila ada laporan letusan dari pos pengamatan gunung api</b> dalam 24 jam terakhir. Laporan itu ditulis petugas PGA yang berjaga di lapangan dan merupakan satu-satunya pernyataan resmi bahwa sebuah gunung benar-benar meletus. Gunung berstatus Siaga yang sedang tenang tetap terdaftar sebagai <i>dipantau</i>, tetapi tidak menghasilkan kepulan abu maupun daftar wilayah terdampak.</p>
+        <p>Laporan pos pantau juga memberi dua angka yang tidak bisa ditebak model: <b>tinggi kolom abu</b> dan <b>arah condongnya</b>, keduanya hasil pengamatan mata langsung. Tinggi kolom membatasi lapisan mana yang masuk akal digambar — letusan dengan kolom 700 m tidak akan digambarkan mencapai 10 km. Bila kolom tidak teramati (malam hari atau tertutup kabut), hanya lapisan terendah yang ditampilkan dan diberi catatan, karena tidak teramati berarti <i>tidak diketahui</i>, bukan berarti besar.</p>
+        <p>Daftar gunung yang dipantau tetap disusun dari <b>status resmi PVMBG</b> (MAGMA Indonesia) dan katalog <b>Smithsonian GVP</b>, sehingga gunung yang baru naik status langsung muncul.</p>
         <p>Lapisan <b>Deteksi abu vulkanik (RGB Ash)</b> memakai produk RGB resmi JMA yang menggabungkan beberapa kanal inframerah untuk membedakan abu vulkanik dari awan air dan es — inilah lapisan yang benar-benar dapat memperlihatkan semburan abu dari satelit. Perlu diingat abu hanya tampak bila kolomnya cukup tebal dan tidak tertutup awan tebal di atasnya; erupsi kecil sering tidak terlihat.</p>
         <p>Indonesia berada di wilayah tanggung jawab <b>VAAC Darwin</b> (BoM Australia), otoritas yang dipakai maskapai untuk mengalihkan rute penerbangan. BoM tidak menyediakan umpan data terbuka yang stabil, sehingga kerucut abu di peta ini adalah <b>model indikatif</b> dari angin ketinggian — bukan poligon resmi VAAC.</p>
         <p>Berbeda dari asap karhutla, abu vulkanik terangkat sampai ketinggian jelajah pesawat. Karena itu sebarannya dimodelkan per lapisan ketinggian (3, 6, 10 km) dengan angin masing-masing lapisan &mdash; arahnya bisa berbeda jauh dari angin permukaan.</p>
-        <p>Status <b>Normal/Waspada/Siaga/Awas</b> ditetapkan PVMBG dari kegempaan dan deformasi, sumber yang berbeda dari deteksi abu satelit.</p>
+        
       </div>
     </div>
   </section>
@@ -313,6 +329,11 @@
   <section class="panel wide">
     <header class="panel-head"><h2><span class="pnum">10</span> Sumber data &amp; batasan</h2></header>
     <div class="srcgrid">
+      <div class="srccard">
+        <h3>Letusan gunung api</h3>
+        <p>Laporan <b>Pos Pengamatan Gunung Api (PGA)</b> PVMBG lewat MAGMA Indonesia, ditulis petugas yang berjaga di lapangan dan memuat waktu erupsi, tinggi kolom abu, arah condong, serta amplitudo dan durasi rekaman seismograf. Inilah acuan yang menentukan apakah sebaran abu digambar di peta. Jendela pantau 24 jam terakhir.</p>
+        <p>Tingkat aktivitas <b>Normal/Waspada/Siaga/Awas</b> dan katalog gunung berasal dari PVMBG dan Smithsonian GVP. Perlu diingat status menyatakan kewaspadaan, bukan bahwa gunung sedang meletus.</p>
+      </div>
       <div class="srccard">
         <h3>Titik api</h3>
         <p>NASA FIRMS VIIRS 24 jam dari tiga satelit (Suomi-NPP, NOAA-20, NOAA-21) lewat arsip terbuka. Hotspot adalah anomali suhu permukaan — tidak semuanya kebakaran hutan. Memasang <code>FIRMS_MAP_KEY</code> mengaktifkan endpoint area dengan rentang hari yang dapat diatur.</p>
@@ -339,14 +360,14 @@
         <p>Seluruh sumber disegarkan oleh satu penjadwal terpusat dengan interval berbeda mengikuti irama penerbitan masing-masing: gempa 2 menit, berita dan titik api 10 menit, pengungsi dan gunung api 30 menit, status PVMBG 3 jam. Panel <b>Status pembaruan data</b> menampilkan kapan tiap sumber terakhir berhasil diperbarui, sehingga data usang tidak pernah tersamar sebagai data terkini.</p>
 
         <h3>Berita</h3>
-        <p>Google Berita RSS ditarik otomatis untuk enam topik terpisah — kejadian, kebijakan pusat (rapat terbatas/instruksi presiden), operasi penanganan (BNPB, BPBD, Manggala Agni, water bombing), tanggap darurat daerah, penegakan hukum, dan dampak kesehatan — lalu digabung dan disaring duplikatnya. Cadangan GDELT Project. Tautan mengarah ke penerbit asli; FireWatch ID tidak menyunting isinya.</p>
+        <p>Google Berita RSS ditarik otomatis untuk enam topik terpisah — kejadian, kebijakan pusat (rapat terbatas/instruksi presiden), operasi penanganan (BNPB, BPBD, Manggala Agni, water bombing), tanggap darurat daerah, penegakan hukum, dan dampak kesehatan — lalu digabung dan disaring duplikatnya. Cadangan GDELT Project. Tautan mengarah ke penerbit asli; SIAGA ID tidak menyunting isinya.</p>
       </div>
     </div>
     <p class="fineprint">Untuk keputusan darurat, rujuk BMKG, BNPB/BPBD, dan KLHK. <span id="srcline"></span></p>
   </section>
 </main>
 
-<footer class="foot">FireWatch ID · dibangun di atas data sumber terbuka · untuk pemantauan publik dan edukasi</footer>
+<footer class="foot">SIAGA ID · pemantauan bencana dari data resmi &amp; sumber terbuka · untuk kepentingan publik dan edukasi<br />Dalam keadaan darurat hubungi <b>112</b>. Rujukan resmi: BNPB, BMKG, dan PVMBG/MAGMA ESDM.</footer>
 
 <script src="/vendor/leaflet.js"></script>
 <script src="/wind-particles.js"></script>

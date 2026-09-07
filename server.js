@@ -1,6 +1,7 @@
 'use strict';
 /**
- * FireWatch ID - server pemantauan kebakaran hutan & lahan.
+ * SIAGA ID - server pemantauan bencana Indonesia.
+ * Gunung api & sebaran abu, gempa, tsunami, pengungsi, karhutla & asap.
  * Semua kunci API dibaca di server saja dan tidak pernah dikirim ke browser.
  */
 const fs = require('fs');
@@ -35,6 +36,7 @@ const { fetchWindField, sampleAt, gridPoints } = require('./lib/wind-gfs');
 const { openHotspots } = require('./lib/firms-open');
 const { volcanicAsh } = require('./lib/volcano');
 const { fetchStatus: fetchPvmbgStatus } = require('./lib/pvmbg');
+const { fetchEruptions } = require('./lib/eruption');
 const { fetchQuakes, fetchTsunamiBulletins, fetchShelters } = require('./lib/hazard');
 const { summarize: summarizeCasualties } = require('./lib/casualty');
 const { Scheduler } = require('./lib/scheduler');
@@ -126,7 +128,7 @@ function destination(lat, lon, bearingDeg, distKm) {
 async function fetchWithTimeout(url, opts = {}, ms = 12000) {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), ms);
-  try { return await fetch(url, { ...opts, signal: ac.signal, headers: { 'User-Agent': 'FireWatchID/1.0', ...(opts.headers || {}) } }); }
+  try { return await fetch(url, { ...opts, signal: ac.signal, headers: { 'User-Agent': 'SiagaID/1.0', ...(opts.headers || {}) } }); }
   finally { clearTimeout(t); }
 }
 // cache in-memory
@@ -559,7 +561,7 @@ const NEWS_TOPICS = [
 
 async function googleNewsTopic(topic) {
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(topic.q)}&hl=id&gl=ID&ceid=ID:id`;
-  const r = await fetchWithTimeout(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FireWatchID/1.0)' } }, 15000);
+  const r = await fetchWithTimeout(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SiagaID/1.0)' } }, 15000);
   if (!r.ok) throw new Error('gnews_' + r.status);
   const xml = await r.text();
   const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
@@ -698,8 +700,13 @@ async function buildOverview() {
       const va = await scheduler.get('volcano');
       ashImpacted = ashImpactedRegions(va.active || []);
       volcanoSummary = {
-        monitored: va.activeCount || 0,
-        erupting: (va.active || []).filter(v => (v.plumes || []).length).length,
+        // "dipantau" = berstatus Waspada ke atas; "meletus" = ada laporan
+        // pos pengamatan dalam 24 jam. Keduanya sengaja dipisah agar gunung
+        // berstatus tinggi yang sedang tenang tidak terhitung sebagai erupsi.
+        monitored: va.monitoredCount || va.activeCount || 0,
+        erupting: va.eruptingCount || 0,
+        eruptionReports: va.eruptions ? va.eruptions.total : null,
+        eruptingNames: (va.active || []).filter(v => v.eruption).map(v => v.name),
         counts: va.official ? va.official.counts : null,
         stale: !!(va.official && va.official.stale)
       };
@@ -985,7 +992,7 @@ app.get('/api/place', async (req, res) => {
       const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}` +
                   `&format=json&zoom=12&accept-language=id`;
       const r = await fetchWithTimeout(url, {
-        headers: { 'User-Agent': 'FireWatchID/1.0 (pemantauan karhutla)' }
+        headers: { 'User-Agent': 'SiagaID/1.0 (pemantauan bencana)' }
       }, 10000);
       if (!r.ok) throw new Error('nominatim_' + r.status);
       const j = await r.json();
@@ -1128,6 +1135,15 @@ scheduler
     label: 'Status resmi PVMBG (MAGMA)',
     everyMs: 3 * 60 * 60 * 1000,
     run: () => fetchPvmbgStatus(fetchWithTimeout)
+  })
+  .register('eruption', {
+    // Laporan pos pengamatan adalah satu-satunya bukti resmi bahwa sebuah
+    // gunung benar-benar meletus, dan menentukan apakah sebaran abu digambar.
+    // Rentetan erupsi bisa dimulai kapan saja, jadi intervalnya rapat.
+    label: 'Laporan letusan pos pengamatan',
+    everyMs: 10 * 60 * 1000,
+    critical: true,
+    run: () => fetchEruptions(fetchWithTimeout)
   });
 
 /**
@@ -1226,6 +1242,23 @@ app.get('/api/volcano-ash', async (_req, res) => {
   }
 });
 
+/**
+ * Laporan letusan mentah dari pos pengamatan gunung api.
+ *
+ * Dipisah dari /api/volcano-ash supaya panel kejadian bisa menampilkan
+ * rentetan letusan (waktu, tinggi kolom, nama petugas) tanpa harus memuat
+ * seluruh geometri sebaran abu.
+ */
+app.get('/api/eruptions', async (_req, res) => {
+  try {
+    const d = await scheduler.get('eruption');
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json(d);
+  } catch {
+    res.status(502).json({ error: 'Laporan letusan gagal dimuat.' });
+  }
+});
+
 // Gas SO2 di sekitar gunung yang sedang erupsi.
 // SO2 adalah indikator magma bergerak naik, dan menyebar terpisah dari abu.
 // Ambang SO2 permukaan (ug/m3). WHO: rata-rata 24 jam sebaiknya <= 40 ug/m3.
@@ -1242,18 +1275,21 @@ app.get('/api/volcano-so2', async (_req, res) => {
     const out = await cached('volcano-so2', 30 * 60 * 1000, async () => {
       const d = await scheduler.get('volcano');
       // Open-Meteo menghitung tiap koordinat sebagai satu permintaan, dan
-      // kuota hariannya terbatas. Batasi ke gunung paling berisiko saja
-      // (status resmi Siaga/Awas, atau dilaporkan erupsi oleh GVP).
-      const act = (d.active || [])
-        .filter(v => (v.official && v.official.level >= 3) || v.activity)
-        .slice(0, 6);
+      // kuota hariannya terbatas. Prioritaskan gunung yang benar-benar
+      // dilaporkan meletus pos pengamatan; sisanya baru yang berstatus
+      // Siaga/Awas, karena SO2 juga bisa naik sebelum erupsi.
+      const all = d.active || [];
+      const act = [
+        ...all.filter(v => v.eruption),
+        ...all.filter(v => !v.eruption && v.official && v.official.level >= 3)
+      ].slice(0, 6);
       if (!act.length) return { volcanoes: [] };
       const lats = act.map(v => v.lat).join(',');
       const lons = act.map(v => v.lon).join(',');
       const url = 'https://air-quality-api.open-meteo.com/v1/air-quality'
         + `?latitude=${lats}&longitude=${lons}&current=sulphur_dioxide,pm2_5,us_aqi`;
       const r = await fetchWithTimeout(url, {}, 12000);
-      if (!r.ok) throw new Error('so2_' + r.status);
+      if (!r.ok) throw new Error('so2_' + r.status + (r.status === 429 ? '_limit' : ''));
       let j = await r.json();
       if (!Array.isArray(j)) j = [j];
       return {
@@ -1281,8 +1317,21 @@ app.get('/api/volcano-so2', async (_req, res) => {
     });
     res.set('Cache-Control', 'public, max-age=900');
     res.json(out);
-  } catch {
-    res.status(502).json({ error: 'Data gas SO2 gagal dimuat.' });
+  } catch (e) {
+    // Kuota harian Open-Meteo bisa habis, dan itu bukan kondisi galat yang
+    // perlu ditampilkan sebagai kegagalan sistem. Balas 200 dengan daftar
+    // kosong + alasan, supaya panel menyembunyikan diri dengan tenang
+    // alih-alih memunculkan 502 di konsol pengguna.
+    const quota = /429|limit/i.test(e.message || '');
+    console.error('[so2]', e.message);
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      volcanoes: [],
+      unavailable: true,
+      reason: quota
+        ? 'Kuota harian layanan kualitas udara terbuka sudah tercapai. Data akan tersedia lagi besok.'
+        : 'Data gas SO2 sedang tidak tersedia dari sumbernya.'
+    });
   }
 });
 
@@ -1424,7 +1473,7 @@ if (require.main === module) {
   // diserahkan ke /api/cron yang dipanggil penjadwal luar.
   scheduler.start();
   app.listen(PORT, '0.0.0.0', () =>
-    console.log(`FireWatch ID berjalan di :${PORT} (FIRMS: ${FIRMS_MAP_KEY ? 'MAP_KEY' : 'arsip terbuka'})`));
+    console.log(`SIAGA ID berjalan di :${PORT} (FIRMS: ${FIRMS_MAP_KEY ? 'MAP_KEY' : 'arsip terbuka'})`));
 }
 
 module.exports = app;

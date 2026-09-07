@@ -1,4 +1,4 @@
-/* FireWatch ID — frontend.
+/* SIAGA ID — frontend.
    Semua data eksternal dirender lewat textContent / createElement (tidak ada innerHTML). */
 (function () {
   'use strict';
@@ -78,7 +78,7 @@
     // jika tidak, state dan tampilan kontrol saling bertentangan.
     hima: null, himaProduct: '', himaLayer: null,
     hazard: null, hazardAt: null, quakeOn: false, shelterOn: false,
-    casualties: null, status: null
+    casualties: null, status: null, eruptions: null
   };
 
   /* ---------- util DOM ---------- */
@@ -354,7 +354,8 @@
         renderAshInfo();
         var oc = d.official && d.official.counts;
         showHint(d.activeCount
-          ? d.activeCount + ' gunung dipantau' + (oc ? ' · ' + oc.Awas + ' Awas, ' + oc.Siaga + ' Siaga, ' + oc.Waspada + ' Waspada (PVMBG)' : '') + '.'
+          ? (d.eruptingCount || 0) + ' gunung meletus (24 jam)'
+            + (oc ? ' · ' + oc.Awas + ' Awas, ' + oc.Siaga + ' Siaga, ' + oc.Waspada + ' Waspada (PVMBG)' : '') + '.'
           : 'Tidak ada gunung berstatus siaga maupun erupsi saat ini.');
         setTimeout(function () { if (state.ashOn) showHint(null); }, 6000);
       })
@@ -393,7 +394,8 @@
     }
     var stale = state.ash.official && state.ash.official.stale;
     box.appendChild(el('div', 'cs-note',
-      state.ash.activeCount + ' gunung dipantau · status resmi PVMBG + laporan GVP'
+      (state.ash.eruptingCount || 0) + ' meletus · '
+      + (state.ash.monitoredCount || 0) + ' dipantau · laporan pos pengamatan PVMBG'
       + (stale ? ' · status tersimpan (MAGMA tidak merespons)' : '')));
   }
 
@@ -497,6 +499,35 @@
     var q = d.quakes;
     var t = d.tsunami;
     var sh = d.shelters;
+
+    // Kartu ringkas di kepala halaman ikut disegarkan dari sumber yang sama,
+    // supaya tidak ada dua angka berbeda untuk kejadian yang sama.
+    if ($('sQuake')) {
+      $('sQuake').classList.remove('skel');
+      var qc = (q && q.counts) || null;
+      $('sQuake').textContent = qc ? nf.format(qc.total) : '—';
+      if (q && q.latest && q.latest.magnitude !== null) {
+        $('sQuakeSub').textContent = 'terkini M ' + q.latest.magnitude
+          + ' · ' + String(q.latest.area || '').slice(0, 34);
+      } else if (qc) {
+        $('sQuakeSub').textContent = qc.kuat + ' gempa M ≥ 5';
+      }
+    }
+    if ($('sShelter')) {
+      $('sShelter').classList.remove('skel');
+      var tot = sh && sh.totalPeople ? sh.totalPeople : 0;
+      $('sShelter').textContent = tot >= 1e6
+        ? (tot / 1e6).toFixed(1).replace('.', ',') + ' jt'
+        : nf.format(tot);
+      var ev = (sh && sh.events && sh.events[0]) || null;
+      var top = ev && ev.topAreas && ev.topAreas[0];
+      if (top) {
+        $('sShelterSub').textContent = 'terbanyak ' + top.area + ' · ' + nf.format(top.people) + ' jiwa';
+      } else if (!tot) {
+        $('sShelterSub').textContent = 'tidak ada pengungsian tercatat';
+      }
+    }
+
     if (meta) {
       meta.textContent = 'BMKG · NOAA PTWC · BNPB'
         + (state.hazardAt ? ' · ' + state.hazardAt : '');
@@ -591,6 +622,159 @@
     }
   }
 
+  /* ============================================================
+   * KEJADIAN AKTIF
+   *
+   * Satu daftar lintas jenis bencana, diurutkan menurut tingkat
+   * keparahan, bukan menurut jenisnya. Pengguna yang membuka halaman
+   * ini ingin tahu "apa yang sedang terjadi", bukan harus memeriksa
+   * empat panel terpisah satu per satu.
+   * ============================================================ */
+
+  function timeAgo(iso) {
+    var t = new Date(iso).getTime();
+    if (!isFinite(t)) return '';
+    var m = Math.round((Date.now() - t) / 60000);
+    if (m < 1) return 'baru saja';
+    if (m < 60) return m + ' menit lalu';
+    var h = Math.round(m / 60);
+    if (h < 24) return h + ' jam lalu';
+    return Math.round(h / 24) + ' hari lalu';
+  }
+
+  /** Kumpulkan kejadian dari semua sumber yang sudah dimuat. */
+  function collectEvents() {
+    var ev = [];
+
+    // -- letusan gunung api (laporan pos pengamatan) --
+    var er = state.eruptions;
+    if (er && er.volcanoes) {
+      er.volcanoes.forEach(function (v) {
+        var det = [v.count + 'x letusan'];
+        if (v.maxHeightM) det.push('kolom ' + nf.format(v.maxHeightM) + ' m di atas puncak');
+        if (v.bearingLabel) det.push('condong ke ' + v.bearingLabel);
+        // Kolom tinggi = ancaman penerbangan & hujan abu lebih luas.
+        var sev = 60 + Math.min(30, (v.maxHeightM || 0) / 100) + Math.min(10, v.count);
+        ev.push({
+          kind: 'Gunung api', tone: 'volcano', severity: sev,
+          title: 'Erupsi ' + v.name,
+          detail: det.join(' · '),
+          at: v.lastAt,
+          note: v.maxHeightM ? null : 'tinggi kolom tidak teramati'
+        });
+      });
+    }
+
+    // -- gempa bumi --
+    var hz = state.hazard;
+    if (hz && hz.quakes && hz.quakes.quakes) {
+      hz.quakes.quakes.slice(0, 6).forEach(function (q) {
+        if (!(q.magnitude >= 5) && !q.tsunami) return;
+        ev.push({
+          kind: 'Gempa', tone: 'quake',
+          severity: 40 + q.magnitude * 8 + (q.tsunami ? 40 : 0),
+          title: 'M ' + q.magnitude + ' — ' + (q.area || 'wilayah tidak disebut'),
+          detail: 'kedalaman ' + (q.depthKm !== undefined && q.depthKm !== null ? q.depthKm + ' km' : '-')
+            + (q.felt ? ' · dirasakan ' + String(q.felt).slice(0, 60) : ''),
+          at: q.time,
+          note: q.tsunami ? 'berpotensi tsunami' : (q.potensi || null)
+        });
+      });
+    }
+
+    // -- buletin tsunami --
+    if (hz && hz.tsunami && hz.tsunami.bulletins) {
+      hz.tsunami.bulletins.slice(0, 3).forEach(function (b) {
+        ev.push({
+          kind: 'Tsunami', tone: 'tsunami', severity: 95,
+          title: b.title || 'Buletin tsunami',
+          detail: b.region || b.category || 'NOAA PTWC',
+          at: b.updated
+        });
+      });
+    }
+
+    // -- pengungsi --
+    if (hz && hz.shelters && hz.shelters.events) {
+      hz.shelters.events.forEach(function (e) {
+        if (!e.total) return;
+        var top = (e.topAreas && e.topAreas[0]) ? e.topAreas[0].area : null;
+        ev.push({
+          kind: 'Pengungsi', tone: 'shelter',
+          severity: 50 + Math.min(35, e.total / 6000),
+          title: nf.format(e.total) + ' jiwa mengungsi',
+          detail: e.label + (top ? ' · terbanyak ' + top : '') + ' · ' + nf.format(e.sites) + ' titik',
+          at: e.updatedAt
+        });
+      });
+    }
+
+    // -- karhutla: hanya diangkat bila memang menonjol --
+    var ov = state.data;
+    if (ov && ov.stats && ov.stats.hotspots > 0) {
+      var prov = (ov.provinceRanking && ov.provinceRanking[0]) || null;
+      ev.push({
+        kind: 'Karhutla', tone: 'fire',
+        severity: 30 + Math.min(35, ov.stats.hotspots / 150),
+        title: nf.format(ov.stats.hotspots) + ' titik api terdeteksi',
+        detail: (prov ? 'terbanyak ' + (prov.province || prov.name) : '')
+          + ' · ' + nf.format(ov.stats.impactedRegions) + ' daerah terdampak asap',
+        at: ov.meta ? ov.meta.updatedAt : null
+      });
+    }
+
+    // Kejadian lama harus turun peringkat. Tanpa ini, pengungsian yang
+    // tercatat dua pekan lalu bisa menutupi erupsi yang terjadi satu jam
+    // lalu, padahal yang mendesak justru yang sedang berlangsung.
+    // Pelemahan dibuat landai supaya peristiwa besar tidak langsung hilang:
+    // penuh sampai 24 jam, lalu meluruh perlahan hingga separuh bobot.
+    ev.forEach(function (e) {
+      var days = e.at ? (Date.now() - new Date(e.at).getTime()) / 86400000 : 0;
+      var decay = days <= 1 ? 1 : Math.max(0.5, 1 - (days - 1) * 0.05);
+      e.severity = e.severity * decay;
+    });
+
+    return ev.sort(function (a, b) { return b.severity - a.severity; });
+  }
+
+  function renderEvents() {
+    var body = $('eventsBody');
+    var meta = $('eventsMeta');
+    if (!body) return;
+    var ev = collectEvents();
+    clear(body);
+
+    if (meta) {
+      meta.textContent = ev.length
+        ? ev.length + ' kejadian dipantau'
+        : 'memuat…';
+    }
+
+    if (!ev.length) {
+      body.appendChild(el('p', 'empty', 'Belum ada kejadian menonjol yang terpantau.'));
+      return;
+    }
+
+    ev.slice(0, 8).forEach(function (e) {
+      var row = el('article', 'ev ev-' + e.tone);
+      var top = el('div', 'ev-top');
+      top.appendChild(el('span', 'ev-kind', e.kind));
+      if (e.at) top.appendChild(el('span', 'ev-age', timeAgo(e.at)));
+      row.appendChild(top);
+      row.appendChild(el('h3', 'ev-title', e.title));
+      row.appendChild(el('p', 'ev-detail', e.detail));
+      if (e.note) row.appendChild(el('p', 'ev-note', e.note));
+      body.appendChild(row);
+    });
+  }
+
+  function loadEruptions() {
+    return fetch('/api/eruptions')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (d) { state.eruptions = d; renderEvents(); } })
+      .catch(function () { /* panel kejadian tetap tampil dari sumber lain */ });
+  }
+
   /**
    * Angka korban dari berita. Dipisah visual dari data resmi BNPB dan
    * setiap angka menautkan artikel sumbernya agar bisa diverifikasi.
@@ -675,6 +859,7 @@
         state.hazardAt = new Date().toLocaleTimeString('id-ID',
           { hour: '2-digit', minute: '2-digit' });
         renderHazard();
+        renderEvents();
         drawQuakes();
         drawShelters();
       })
@@ -1006,7 +1191,8 @@
 
     if (v) {
       var head = el('p', 'pane-note',
-        v.monitored + ' gunung dipantau, ' + v.erupting + ' dengan sebaran abu aktif.'
+        v.erupting + ' gunung dilaporkan meletus pos pengamatan dalam 24 jam, '
+        + v.monitored + ' dipantau (status minimal Waspada).'
         + (v.counts ? ' Status resmi PVMBG: ' + v.counts.Awas + ' Awas, '
           + v.counts.Siaga + ' Siaga, ' + v.counts.Waspada + ' Waspada.' : '')
         + (v.stale ? ' (status dari data tersimpan)' : ''));
@@ -1209,19 +1395,33 @@
         $('srcline').textContent = 'Sumber titik api: ' + d.meta.source + ' · rentang ' + d.meta.days +
           ' hari · atribusi: ' + d.meta.attribution.join(', ') + '.';
         setNotice(d.meta.notice || '');
-        ['sHot', 'sConf', 'sFrp', 'sImp', 'sPop'].forEach(function (id) { $(id).classList.remove('skel'); });
+        renderEvents();
+        ['sHot', 'sImp'].forEach(function (id) { $(id).classList.remove('skel'); });
         $('sHot').textContent = nf.format(d.stats.hotspots);
-        $('sConf').textContent = nf.format(d.stats.highConfidence);
-        $('sFrp').textContent = nf.format(d.stats.totalFrp);
         $('sImp').textContent = nf.format(d.stats.impactedRegions);
-        $('sPop').textContent = d.stats.peopleExposed >= 1e6
-          ? (d.stats.peopleExposed / 1e6).toFixed(1).replace('.', ',') + ' jt'
-          : nf.format(d.stats.peopleExposed);
-        var mod = d.stats.peopleExposedModerate || 0;
-        $('sPopSub').textContent = mod > 0
-          ? (mod >= 1e6 ? (mod / 1e6).toFixed(1).replace('.', ',') + ' jt' : nf.format(mod)) +
-            ' pada paparan sedang–berat'
-          : 'semuanya paparan ringan saat ini';
+        $('sHotSub').textContent = nf.format(d.stats.highConfidence) + ' keyakinan tinggi · '
+          + nf.format(d.stats.totalFrp) + ' MW';
+
+        // Kartu gunung api diisi dari ringkasan overview supaya angka di
+        // kepala halaman selalu konsisten dengan panel kejadian.
+        var vs = d.volcano;
+        $('sErupt').classList.remove('skel');
+        $('sVolLvl').classList.remove('skel');
+        if (vs) {
+          $('sErupt').textContent = nf.format(vs.erupting || 0);
+          var names = (vs.eruptingNames || []).slice(0, 3).join(', ');
+          $('sEruptSub').textContent = vs.erupting
+            ? names + (vs.eruptingNames.length > 3 ? ' +' + (vs.eruptingNames.length - 3) : '')
+            : 'tidak ada laporan letusan 24 jam';
+          var c = vs.counts || {};
+          var sa = (c.Siaga || 0) + (c.Awas || 0);
+          $('sVolLvl').textContent = nf.format(sa);
+          $('sVolLvlSub').textContent = 'Awas ' + (c.Awas || 0) + ' · Siaga ' + (c.Siaga || 0)
+            + ' · Waspada ' + (c.Waspada || 0);
+        } else {
+          $('sErupt').textContent = '—';
+          $('sVolLvl').textContent = '—';
+        }
         var wa = d.worstAir;
         $('sAir').classList.remove('skel');
         if (wa) {
@@ -1629,6 +1829,10 @@
   // Gempa & tsunami harus sesegar mungkin: perbarui tiap 2 menit.
   loadHazard();
   setInterval(loadHazard, 2 * 60 * 1000);
+  // Laporan letusan menentukan apakah sebaran abu digambar, jadi disegarkan
+  // serapat data gempa.
+  loadEruptions();
+  setInterval(loadEruptions, 5 * 60 * 1000);
   loadCasualties();
   setInterval(loadCasualties, 10 * 60 * 1000);
   loadStatus();
