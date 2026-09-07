@@ -4,6 +4,7 @@
  * Semua kunci API dibaca di server saja dan tidak pernah dikirim ke browser.
  */
 const fs = require('fs');
+const crypto = require('crypto');
 const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
@@ -1090,10 +1091,63 @@ app.get('/api/himawari/:product/:z/:x/:y.jpg', async (req, res) => {
   }
 });
 
-app.use(express.static(path.join(__dirname, 'public'), { maxAge: '5m', index: 'index.html' }));
+/**
+ * Versi aset: hash isi app.js/app.css/wind-particles.js.
+ * Ditempelkan ke URL aset di index.html sehingga setiap penerapan baru
+ * menghasilkan URL baru — peramban pengguna tidak akan lagi memakai
+ * berkas lama dari cache tanpa perlu hard-refresh manual.
+ */
+const ASSET_FILES = ['app.js', 'app.css', 'wind-particles.js'];
+let assetVersion = null;
+
+function getAssetVersion() {
+  if (assetVersion) return assetVersion;
+  const h = crypto.createHash('sha1');
+  for (const f of ASSET_FILES) {
+    try { h.update(fs.readFileSync(path.join(__dirname, 'public', f))); }
+    catch { /* berkas opsional */ }
+  }
+  assetVersion = h.digest('hex').slice(0, 10);
+  return assetVersion;
+}
+
+let indexCache = null;
+
+function renderIndex() {
+  if (indexCache) return indexCache;
+  const v = getAssetVersion();
+  const html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
+    .replace(/(href|src)="\/(app\.css|app\.js|wind-particles\.js)"/g,
+      (_m, attr, file) => `${attr}="/${file}?v=${v}"`);
+  indexCache = html;
+  return html;
+}
+
+function sendIndex(res, status = 200) {
+  res.status(status);
+  res.set('Content-Type', 'text/html; charset=utf-8');
+  res.set('Cache-Control', 'no-cache, must-revalidate');
+  res.send(renderIndex());
+}
+
+app.get('/', (_req, res) => sendIndex(res));
+
+// index.html tidak boleh di-cache: berkas inilah yang menunjuk versi aset,
+// sehingga peramban wajib memeriksanya ulang setiap kunjungan. Aset lain
+// aman di-cache lama karena URL-nya sudah bertanda versi (?v=ASSET_VERSION).
+app.use(express.static(path.join(__dirname, 'public'), {
+  index: false,
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+}));
 app.use((req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Endpoint tidak ditemukan.' });
-  res.status(404).sendFile(path.join(__dirname, 'public', 'index.html'));
+  sendIndex(res, 404);
 });
 // jangan bocorkan stack trace
 app.use((err, _req, res, _next) => { console.error('[err]', err && err.message); res.status(500).json({ error: 'Terjadi kesalahan pada server.' }); });

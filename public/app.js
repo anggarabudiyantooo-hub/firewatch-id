@@ -72,7 +72,9 @@
     wind: null, windKey: null, windOn: true, windBusy: false, particles: null, plumeHour: 0,
     air: null, airKey: null, airOn: false, airBusy: false,
     ash: null, ashOn: false, ashBusy: false, newsAt: '',
-    hima: null, himaProduct: 'ir', himaLayer: null
+    // Harus cocok dengan <option selected> pada #himaSel (nonaktif),
+    // jika tidak, state dan tampilan kontrol saling bertentangan.
+    hima: null, himaProduct: '', himaLayer: null
   };
 
   /* ---------- util DOM ---------- */
