@@ -282,7 +282,9 @@ async function buildPlumes(clusters) {
       lat: c.lat, lon: c.lon, frp: c.frp, count: c.count,
       wind: w, bearingTo: Math.round(bearingTo), lengthKm: Math.round(len),
       halfAngle: Math.round(half), intensity: +intensity.toFixed(2),
-      polygon: plumePolygon(c.lat, c.lon, bearingTo, len, half)
+      polygon: plumePolygon(c.lat, c.lon, bearingTo, len, half),
+      // Inti pekat: 45% jangkauan & kerucut lebih sempit (asap paling tebal dekat sumber).
+      corePolygon: plumePolygon(c.lat, c.lon, bearingTo, len * 0.45, half * 0.7)
     };
   });
 }
@@ -294,6 +296,15 @@ function bearingBetween(lat1, lon1, lat2, lon2) {
   return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }
 function angDiff(a, b) { return Math.abs(((a - b + 540) % 360) - 180); }
+
+// Arah mata angin dalam Bahasa Indonesia (16 penjuru).
+function compassId(deg) {
+  const N = ['utara', 'utara-timur laut', 'timur laut', 'timur-timur laut',
+             'timur', 'timur-tenggara', 'tenggara', 'selatan-tenggara',
+             'selatan', 'selatan-barat daya', 'barat daya', 'barat-barat daya',
+             'barat', 'barat-barat laut', 'barat laut', 'utara-barat laut'];
+  return N[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16];
+}
 
 function impactedRegions(plumes) {
   const out = [];
@@ -308,16 +319,43 @@ function impactedRegions(plumes) {
       const distFactor = Math.max(0, 1 - dist / (p.lengthKm * 1.15));
       const angFactor = Math.max(0, 1 - off / (p.halfAngle * 1.25));
       const s = 100 * p.intensity * distFactor * angFactor;
-      if (s > 0.5) { score += s; causes.push({ km: Math.round(dist), frp: p.frp }); }
+      if (s > 0.5) {
+        // Perkiraan waktu tempuh asap = jarak / kecepatan angin.
+        const etaH = p.wind.speed > 0.3 ? dist / (p.wind.speed * 3.6) : null;
+        causes.push({
+          km: Math.round(dist), frp: p.frp, etaH,
+          from: compassId(p.bearingTo), windSpeed: p.wind.speed
+        });
+        score += s;
+      }
     }
     if (score <= 0.5) continue;
     score = Math.min(100, score);
+    const nearest = causes.reduce((a, b) => (b.km < a.km ? b : a));
+    const level = score >= 66 ? 'Berat' : score >= 33 ? 'Sedang' : 'Ringan';
+    // ETA tercepat di antara pluma yang mengenai kota ini.
+    const etas = causes.map(c => c.etaH).filter(v => v !== null);
+    const etaH = etas.length ? Math.min(...etas) : null;
     out.push({
       name: reg.name, prov: reg.prov, lat: reg.lat, lon: reg.lon, population: reg.pop,
-      score: +score.toFixed(1),
-      level: score >= 66 ? 'Berat' : score >= 33 ? 'Sedang' : 'Ringan',
-      nearestKm: Math.min(...causes.map(c => c.km)),
-      plumes: causes.length
+      score: +score.toFixed(1), level,
+      nearestKm: nearest.km,
+      plumes: causes.length,
+      windSpeed: +nearest.windSpeed.toFixed(1),
+      fromDir: nearest.from,
+      etaHours: etaH === null ? null : +etaH.toFixed(1),
+      etaText: etaH === null ? 'angin nyaris diam — asap cenderung mengendap di sekitar sumber'
+        : etaH < 1 ? 'asap bisa tiba di bawah 1 jam'
+        : etaH < 24 ? 'asap diperkirakan tiba ~' + Math.round(etaH) + ' jam lagi'
+        : 'asap diperkirakan tiba lebih dari sehari',
+      etaShort: etaH === null ? 'angin diam'
+        : etaH < 1 ? 'tiba <1 jam' : etaH < 24 ? 'tiba ~' + Math.round(etaH) + ' jam' : 'tiba >1 hari',
+      proximity: nearest.km <= 50 ? 'sangat dekat' : nearest.km <= 150 ? 'dekat' : 'jauh',
+      advice: level === 'Berat'
+        ? 'Batasi aktivitas luar ruang, kenakan masker N95, dan pantau kelompok rentan (anak, lansia, penderita ISPA).'
+        : level === 'Sedang'
+        ? 'Kurangi aktivitas luar ruang yang berat dan siapkan masker bila kabut asap menebal.'
+        : 'Paparan diperkirakan tipis; tetap pantau perkembangan arah angin.'
     });
   }
   return out.sort((a, b) => b.score - a.score);

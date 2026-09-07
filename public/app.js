@@ -69,7 +69,7 @@
   var state = {
     data: null, attr: null, news: [], minConf: 50,
     concOn: false, concBusy: false, colorBy: 'confidence',
-    wind: null, windKey: null, windOn: true, windBusy: false, windMode: 'particle', particles: null,
+    wind: null, windKey: null, windOn: true, windBusy: false, particles: null,
     air: null, airKey: null, airOn: false, airBusy: false,
     ash: null, ashOn: false, ashBusy: false, newsAt: '',
     hima: null, himaProduct: 'ir', himaLayer: null
@@ -193,18 +193,29 @@
     gSmoke.clearLayers();
     if (!state.data) return;
     state.data.plumes.forEach(function (p) {
-      L.polygon(p.polygon, {
-        color: '#aeb9c6', weight: 1, opacity: 0.4,
-        fillColor: '#c9d3de', fillOpacity: Math.min(0.3, 0.07 + p.intensity * 0.22),
-        smoothFactor: 1
-      }).bindPopup(popupNode('Perkiraan sebaran asap', [
+      // Dua lapis: inti pekat di dekat sumber + selubung tipis sejauh jangkauan,
+      // supaya bentuk kepulan terbaca jelas di atas peta gelap.
+      var op = Math.min(0.55, 0.22 + p.intensity * 0.33);
+      var info = popupNode('Perkiraan sebaran asap', [
         'Sumber: klaster ' + p.count + ' titik api · FRP ' + nf.format(p.frp) + ' MW',
         'Angin ' + p.wind.speed.toFixed(1) + ' m/s, asap bergerak ke ' + compass(p.bearingTo) + ' (' + p.bearingTo + '°)' + (p.wind.estimated ? ' — estimasi' : ''),
         'Jangkauan perkiraan: ± ' + nf.format(p.lengthKm) + ' km',
         (p.wind.rh !== null ? 'Kelembapan ' + p.wind.rh + '%' : '') +
           (p.wind.temp !== null ? (p.wind.rh !== null ? ' · ' : '') + 'Suhu ' + p.wind.temp + '°C' : '')
-      ], { warn: 'Model perkiraan berbasis angin permukaan — bukan pengukuran kualitas udara.' }))
-        .addTo(gSmoke);
+      ], { warn: 'Model perkiraan berbasis angin permukaan — bukan pengukuran kualitas udara.' });
+
+      L.polygon(p.polygon, {
+        color: '#e2b184', weight: 1.2, opacity: 0.75,
+        fillColor: '#d9a273', fillOpacity: op * 0.45,
+        smoothFactor: 1, className: 'plume-outer'
+      }).bindPopup(info).addTo(gSmoke);
+
+      if (p.corePolygon) {
+        L.polygon(p.corePolygon, {
+          color: 'transparent', weight: 0,
+          fillColor: '#c98b52', fillOpacity: op, smoothFactor: 1
+        }).bindPopup(info).addTo(gSmoke);
+      }
     });
   }
 
@@ -217,10 +228,13 @@
         radius: 7 + r.score / 14, color: col, weight: 2, fillColor: col, fillOpacity: 0.15
       }).bindPopup(popupNode(r.name + ' — ' + r.prov, [
         'Tingkat paparan: ' + r.level + ' (indeks ' + r.score + '/100)',
-        'Klaster api terdekat: ' + nf.format(r.nearestKm) + ' km',
+        'Sumber asap terdekat: ' + nf.format(r.nearestKm) + ' km (' + r.proximity + ')',
+        'Asap datang dari arah ' + r.fromDir + ' · angin ' + r.windSpeed + ' m/s',
+        r.etaText.charAt(0).toUpperCase() + r.etaText.slice(1),
+        'Terpapar oleh ' + r.plumes + ' pluma asap',
         'Perkiraan penduduk: ' + nf.format(r.population) + ' jiwa',
-        'Terpapar oleh ' + r.plumes + ' pluma asap'
-      ])).addTo(gImpact);
+        'Saran: ' + r.advice
+      ], { warn: 'Indeks paparan adalah model perkiraan dari arah angin dan intensitas api, bukan hasil pengukuran ISPU di lapangan.' })).addTo(gImpact);
     });
   }
 
@@ -436,46 +450,16 @@
     return a[Math.round((deg % 360) / 45) % 8];
   }
 
-  // Panah dibuat sebagai divIcon SVG yang diputar ke arah tujuan angin.
-  function windArrow(p) {
-    var col = windColor(p.speed);
-    var len = Math.max(15, Math.min(30, 13 + p.speed * 1.9));
-    var svg =
-      '<svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true" ' +
-      'style="transform:rotate(' + p.to + 'deg);overflow:visible">' +
-        '<g stroke="' + col + '" stroke-width="2" stroke-linecap="round" fill="none" ' +
-           'opacity="0.95" transform="translate(17,17)">' +
-          '<line x1="0" y1="' + (len / 2) + '" x2="0" y2="' + (-len / 2) + '"/>' +
-          '<polyline points="-4.5,' + (-len / 2 + 5.5) + ' 0,' + (-len / 2) + ' 4.5,' + (-len / 2 + 5.5) + '"/>' +
-        '</g>' +
-      '</svg>';
-    // svg dibangun dari angka hasil perhitungan sendiri, bukan input pengguna
-    return L.divIcon({ className: 'wind-arrow', html: svg, iconSize: [34, 34], iconAnchor: [17, 17] });
-  }
 
   function drawWind() {
     gWind.clearLayers();
     if (!state.wind) return;
 
-    // Mode partikel: animasi garis arus bergaya Windy di atas canvas.
-    if (state.windMode === 'particle') {
-      if (!state.particles) state.particles = new WindParticles(map, {});
-      state.particles.setField(state.wind);
-      if (state.windOn) state.particles.start();
-      return;
-    }
-    if (state.particles) state.particles.stop();
+    // Aliran angin bergaya Windy (animasi garis arus). Mode panah dihapus.
+    if (!state.particles) state.particles = new WindParticles(map, {});
+    state.particles.setField(state.wind);
+    if (state.windOn) state.particles.start();
 
-    state.wind.points.forEach(function (p) {
-      L.marker([p.lat, p.lon], { icon: windArrow(p), interactive: true, keyboard: false })
-        .bindPopup(popupNode('Angin permukaan (10 m)', [
-          'Kecepatan: ' + p.speed.toFixed(1) + ' m/s (' + windLabel(p.speed) + ')',
-          'Bertiup dari ' + compass(p.from) + ' (' + p.from + '°)',
-          'Menuju ' + compass(p.to) + ' (' + p.to + '°)',
-          'Asap akan terbawa ke arah ' + compass(p.to) + '.',
-          'Koordinat: ' + p.lat.toFixed(2) + ', ' + p.lon.toFixed(2)
-        ])).addTo(gWind);
-    });
   }
 
   // Kerapatan grid mengikuti zoom agar panah tetap terlihat saat diperbesar.
@@ -649,9 +633,15 @@
     var pane = $('paneImpact'); clear(pane);
     var list = state.data ? state.data.impacted : [];
     if (!list.length) { pane.appendChild(el('p', 'empty', 'Tidak ada daerah dengan perkiraan paparan asap saat ini.')); return; }
+    // Konteks singkat supaya angka indeks tidak disalahartikan sebagai ISPU resmi.
+    var note = el('p', 'pane-note',
+      'Perkiraan kota yang berada di jalur sebaran asap, dihitung dari arah angin ' +
+      'dan intensitas api. Indeks 0-100 menandakan seberapa kuat paparan, ' +
+      'bukan angka ISPU resmi.');
+    pane.appendChild(note);
     list.slice(0, 60).forEach(function (r, i) {
       pane.appendChild(makeRow(i + 1, r.name + ' · ' + r.prov,
-        'indeks ' + r.score + ' · ' + nf.format(r.nearestKm) + ' km dari klaster · ' + nf.format(r.population) + ' jiwa',
+        nf.format(r.nearestKm) + ' km · dari ' + r.fromDir + ' · ' + r.etaShort,
         r.level, 'p-' + r.level, r.score,
         function () { map.setView([r.lat, r.lon], 8); }));
     });
@@ -1114,12 +1104,6 @@
       $('askQ').value = c.getAttribute('data-q');
       runAsk(c.getAttribute('data-q'));
     });
-  });
-
-  $('windModeSel').addEventListener('change', function (e) {
-    state.windMode = e.target.value;
-    if (state.windMode !== 'particle' && state.particles) state.particles.stop();
-    drawWind();
   });
 
   var tickerView = document.querySelector('.ticker-view');
