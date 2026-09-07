@@ -26,7 +26,9 @@ const FIRMS_SOURCE = ALLOWED_SOURCES.includes(process.env.FIRMS_SOURCE) ? proces
 const FIRMS_DAYS = Math.min(10, Math.max(1, Number(process.env.FIRMS_DAYS || 1)));
 const BBOX = { west: 94.5, south: -11.5, east: 141.5, north: 6.5 }; // Indonesia
 
-const REGIONS = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'regions.json'), 'utf8'));
+// Pakai require() (bukan fs.readFileSync) supaya bundler serverless seperti Vercel
+// melacak berkas ini secara statis dan ikut menyertakannya ke dalam deployment.
+const REGIONS = require('./data/regions.json');
 const { attributeHotspots } = require('./lib/concession');
 const { volcanicAsh } = require('./lib/volcano');
 const { answer: ragAnswer } = require('./lib/rag');
