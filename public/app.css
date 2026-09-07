@@ -638,3 +638,23 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
 
 /* Umur citra satelit */
 .hi-age{color:var(--muted);font-size:10px;letter-spacing:.03em}
+
+/* ---------- panel gempa, tsunami & pengungsi ---------- */
+.hazard-body{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.hz-block{border:1px solid var(--term-grid);padding:12px 13px;background:rgba(255,255,255,.012)}
+.hz-head{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.hz-title{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.hz-badge{margin-left:auto;font-size:10.5px;font-weight:700;color:#12161c;padding:1px 7px;letter-spacing:.04em}
+.hz-main{font-size:13.5px;line-height:1.45;color:var(--fg)}
+.hz-sub{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.5}
+.hz-note{font-size:11px;color:var(--muted);margin-top:7px;line-height:1.5;
+  border-left:2px solid var(--term-grid);padding-left:8px}
+.hz-alert{border-left-color:#ef4444;color:#fca5a5}
+.hz-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:7px;margin-top:10px}
+.hz-card{border:1px solid var(--term-grid);padding:7px 8px}
+.hz-card-t{font-size:16px;font-weight:700;color:var(--term-amber);line-height:1.2}
+.hz-card-s{font-size:9.5px;color:var(--muted);letter-spacing:.03em;margin-top:2px;line-height:1.35}
+.hz-bul{margin-top:9px;padding-top:8px;border-top:1px solid var(--term-grid)}
+.hz-bul-t{font-size:12px;color:var(--fg);text-decoration:none;display:block;line-height:1.4}
+.hz-bul-t:hover{color:var(--term-amber);text-decoration:underline}
+.hz-bul-s{font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.5}

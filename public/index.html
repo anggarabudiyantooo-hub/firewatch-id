@@ -86,6 +86,8 @@
         <label class="chk"><input type="checkbox" id="lyImpact" checked /><span>Daerah terdampak</span></label>
         <label class="chk"><input type="checkbox" id="lyConc" /><span>Batas konsesi</span></label>
         <label class="chk"><input type="checkbox" id="lyAsh" /><span>Abu vulkanik</span></label>
+        <label class="chk"><input type="checkbox" id="lyQuake" /><span>Gempa bumi</span></label>
+        <label class="chk"><input type="checkbox" id="lyShelter" /><span>Pengungsian</span></label>
         <span class="spacer"></span>
         <div class="tl" role="group" aria-label="Timeline sebaran asap">
           <span class="tl-lb">Sebaran</span>
@@ -99,7 +101,9 @@
             <option value="" selected>nonaktif</option>
             <option value="ir">inframerah (siang &amp; malam)</option>
             <option value="vis">warna alami (siang)</option>
-            <option value="ash">uap air</option>
+            <option value="ash">deteksi abu vulkanik (RGB)</option>
+            <option value="dust">debu &amp; aerosol (RGB)</option>
+            <option value="wv">uap air</option>
           </select>
         </label>
         <label class="sel">Warna titik
@@ -160,9 +164,11 @@
         <div class="tabs" role="tablist" aria-label="Daftar analisis">
           <button class="tab active" id="tabImpact" role="tab" aria-selected="true" aria-controls="paneImpact" type="button">Terdampak</button>
           <button class="tab" id="tabProv" role="tab" aria-selected="false" aria-controls="paneProv" type="button">Provinsi</button>
+          <button class="tab" id="tabAsh" role="tab" aria-selected="false" aria-controls="paneAsh" type="button">Abu vulkanik</button>
           <button class="tab" id="tabCluster" role="tab" aria-selected="false" aria-controls="paneCluster" type="button">Klaster</button>
         </div>
         <div id="paneImpact" role="tabpanel" class="pane" tabindex="0"><p class="empty">Memuat…</p></div>
+        <div id="paneAsh" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
         <div id="paneProv" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
         <div id="paneCluster" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
       </section>
@@ -222,9 +228,17 @@
     <div id="paneGroup" role="tabpanel" tabindex="0" hidden><p class="empty">Memuat…</p></div>
   </section>
 
+  <section class="panel wide" id="hazardPanel" hidden>
+    <header class="panel-head">
+      <h2><span class="pnum">06</span> Gempa, tsunami &amp; pengungsi</h2>
+      <span class="panel-sub" id="hazardMeta"></span>
+    </header>
+    <div id="hazardBody" class="hazard-body"></div>
+  </section>
+
   <section class="panel wide" id="so2Panel" hidden>
     <header class="panel-head">
-      <h2><span class="pnum">06</span> Gas SO<sub>2</sub> gunung api</h2>
+      <h2><span class="pnum">07</span> Gas SO<sub>2</sub> gunung api</h2>
       <span class="hd-note">model CAMS · diperbarui tiap 30 menit</span>
     </header>
     <div class="so2-intro">
@@ -238,7 +252,7 @@
   </section>
 
   <section class="panel wide">
-    <header class="panel-head"><h2><span class="pnum">07</span> Memahami data ini</h2></header>
+    <header class="panel-head"><h2><span class="pnum">08</span> Memahami data ini</h2></header>
     <div class="srcgrid">
       <div class="srccard">
         <h3>Apa itu titik api (hotspot)?</h3>
@@ -279,6 +293,7 @@
       <div class="srccard">
         <h3>Abu vulkanik &mdash; bahaya yang berbeda</h3>
         <p>Daftar gunung dipantau otomatis dari dua sumber sekaligus: <b>status resmi PVMBG</b> (MAGMA Indonesia) yang diperbarui harian, dan <b>laporan mingguan Smithsonian GVP</b>. Gunung yang naik status ke Waspada langsung muncul tanpa menunggu laporan GVP pekan berikutnya.</p>
+        <p>Lapisan <b>Deteksi abu vulkanik (RGB Ash)</b> memakai produk RGB resmi JMA yang menggabungkan beberapa kanal inframerah untuk membedakan abu vulkanik dari awan air dan es — inilah lapisan yang benar-benar dapat memperlihatkan semburan abu dari satelit. Perlu diingat abu hanya tampak bila kolomnya cukup tebal dan tidak tertutup awan tebal di atasnya; erupsi kecil sering tidak terlihat.</p>
         <p>Indonesia berada di wilayah tanggung jawab <b>VAAC Darwin</b> (BoM Australia), otoritas yang dipakai maskapai untuk mengalihkan rute penerbangan. BoM tidak menyediakan umpan data terbuka yang stabil, sehingga kerucut abu di peta ini adalah <b>model indikatif</b> dari angin ketinggian — bukan poligon resmi VAAC.</p>
         <p>Berbeda dari asap karhutla, abu vulkanik terangkat sampai ketinggian jelajah pesawat. Karena itu sebarannya dimodelkan per lapisan ketinggian (3, 6, 10 km) dengan angin masing-masing lapisan &mdash; arahnya bisa berbeda jauh dari angin permukaan.</p>
         <p>Status <b>Normal/Waspada/Siaga/Awas</b> ditetapkan PVMBG dari kegempaan dan deformasi, sumber yang berbeda dari deteksi abu satelit.</p>
@@ -287,7 +302,7 @@
   </section>
 
   <section class="panel wide">
-    <header class="panel-head"><h2><span class="pnum">08</span> Sumber data &amp; batasan</h2></header>
+    <header class="panel-head"><h2><span class="pnum">09</span> Sumber data &amp; batasan</h2></header>
     <div class="srcgrid">
       <div class="srccard">
         <h3>Titik api</h3>
@@ -306,6 +321,10 @@
         <p>GeoNames (CC BY 4.0): 226 permukiman Indonesia berpenduduk ≥50.000 jiwa di 38 provinsi, memakai koordinat dan angka penduduk resmi basis data tersebut — bukan perkiraan.</p>
       </div>
       <div class="srccard">
+        <h3>Gempa, tsunami &amp; pengungsi</h3>
+        <p>Gempa bumi dari <b>BMKG</b> (autogempa, gempa terkini, gempa dirasakan) diperbarui tiap 2 menit. Status potensi tsunami mengikuti pernyataan resmi BMKG. Sebagai pembanding lembaga asing, buletin <b>NOAA Pacific/National Tsunami Warning Center (AS)</b> ditarik dan disaring hanya untuk kejadian yang menyangkut Indonesia dan kawasan sekitarnya — buletin Pasifik lain sengaja tidak ditampilkan agar tidak menimbulkan kepanikan keliru.</p>
+        <p>Jumlah pengungsi berasal dari layanan GIS resmi <b>BNPB</b>, memuat pengungsi di posko terpusat maupun mandiri per desa. Angka mengikuti laporan BPBD daerah dan dapat berubah. Data ini terbatas pada kejadian yang layanannya diterbitkan BNPB; tidak semua bencana memilikinya.</p>
+
         <h3>Berita</h3>
         <p>Google Berita RSS ditarik otomatis untuk enam topik terpisah — kejadian, kebijakan pusat (rapat terbatas/instruksi presiden), operasi penanganan (BNPB, BPBD, Manggala Agni, water bombing), tanggap darurat daerah, penegakan hukum, dan dampak kesehatan — lalu digabung dan disaring duplikatnya. Cadangan GDELT Project. Tautan mengarah ke penerbit asli; FireWatch ID tidak menyunting isinya.</p>
       </div>

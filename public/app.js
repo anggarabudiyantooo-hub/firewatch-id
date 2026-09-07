@@ -65,6 +65,8 @@
   var gConc = L.layerGroup();
   var gFire = L.layerGroup().addTo(map);
   var gImpact = L.layerGroup().addTo(map);
+  var gQuake = L.layerGroup();
+  var gShelter = L.layerGroup();
 
   var state = {
     data: null, attr: null, news: [], newsTopics: [], newsTopic: 'semua', minConf: 0, minFrp: 10,
@@ -74,7 +76,8 @@
     ash: null, ashOn: false, ashBusy: false, newsAt: '',
     // Harus cocok dengan <option selected> pada #himaSel (nonaktif),
     // jika tidak, state dan tampilan kontrol saling bertentangan.
-    hima: null, himaProduct: '', himaLayer: null
+    hima: null, himaProduct: '', himaLayer: null,
+    hazard: null, hazardAt: null, quakeOn: false, shelterOn: false
   };
 
   /* ---------- util DOM ---------- */
@@ -405,7 +408,7 @@
     // 5, Leaflet meregangkan petak z=5 untuk zoom lebih dalam.
     state.himaLayer = L.tileLayer('/api/himawari/' + product + '/{z}/{x}/{y}.jpg', {
       pane: 'himaPane', maxNativeZoom: 5, maxZoom: 12,
-      opacity: product === 'vis' ? 0.85 : 0.62,
+      opacity: (product === 'vis' || product === 'ash' || product === 'dust') ? 0.85 : 0.62,
       attribution: 'Citra: Himawari-9 / JMA'
     }).addTo(map);
     fetch('/api/himawari/meta')
@@ -422,8 +425,9 @@
     if (!state.himaProduct || !state.himaLayer) { box.hidden = true; return; }
     box.hidden = false;
     var t = state.hima && state.hima.time ? new Date(state.hima.time) : null;
-    var label = state.himaProduct === 'ir' ? 'Inframerah'
-      : state.himaProduct === 'vis' ? 'Warna alami' : 'Uap air';
+    var LBL = { ir: 'Inframerah', vis: 'Warna alami', ash: 'RGB Abu Vulkanik',
+      dust: 'RGB Debu', wv: 'Uap air' };
+    var label = LBL[state.himaProduct] || state.himaProduct;
     box.appendChild(el('span', 'hi-sat', 'Himawari-9'));
     box.appendChild(el('span', 'hi-mode', label));
     if (t) {
@@ -467,6 +471,181 @@
         renderHimaInfo();
       })
       .catch(function () { /* biarkan citra lama tetap tampil */ });
+  }
+
+  /* ---------- gempa, tsunami & pengungsi ---------- */
+  // Sumber: BMKG (gempa), NOAA PTWC (tsunami kawasan), BNPB GIS (pengungsi).
+
+  function hazardCard(title, sub) {
+    var c = el('div', 'hz-card');
+    c.appendChild(el('div', 'hz-card-t', title));
+    if (sub) c.appendChild(el('div', 'hz-card-s', sub));
+    return c;
+  }
+
+  function renderHazard() {
+    var panel = $('hazardPanel');
+    var body = $('hazardBody');
+    var meta = $('hazardMeta');
+    if (!panel || !body) return;
+    var d = state.hazard;
+    if (!d) { panel.hidden = true; return; }
+    panel.hidden = false;
+    clear(body);
+
+    var q = d.quakes;
+    var t = d.tsunami;
+    var sh = d.shelters;
+    if (meta) {
+      meta.textContent = 'BMKG · NOAA PTWC · BNPB'
+        + (state.hazardAt ? ' · ' + state.hazardAt : '');
+    }
+
+    /* --- gempa terbaru --- */
+    if (q && q.latest) {
+      var L = q.latest;
+      var box = el('div', 'hz-block');
+      var hd = el('div', 'hz-head');
+      hd.appendChild(el('span', 'hz-title', 'Gempa terkini'));
+      var badge = el('span', 'hz-badge', 'M ' + (L.magnitude !== null ? L.magnitude : '-'));
+      badge.style.background = L.color;
+      hd.appendChild(badge);
+      box.appendChild(hd);
+
+      box.appendChild(el('div', 'hz-main', L.area || '-'));
+      box.appendChild(el('div', 'hz-sub',
+        [L.dateLabel, L.depthKm !== null ? 'kedalaman ' + L.depthKm + ' km' : null,
+          L.severityLabel].filter(Boolean).join(' · ')));
+
+      if (L.potensi) {
+        var p = el('div', 'hz-note' + (L.tsunami ? ' hz-alert' : ''));
+        p.textContent = 'Status BMKG: ' + L.potensi;
+        box.appendChild(p);
+      }
+      if (L.felt) box.appendChild(el('div', 'hz-note', 'Dirasakan: ' + L.felt));
+
+      var grid = el('div', 'hz-cards');
+      grid.appendChild(hazardCard(nf.format(q.counts.total), 'gempa tercatat'));
+      grid.appendChild(hazardCard(nf.format(q.counts.kuat), 'magnitudo ≥ 5'));
+      grid.appendChild(hazardCard(nf.format(q.counts.tsunami), 'berpotensi tsunami'));
+      box.appendChild(grid);
+      body.appendChild(box);
+    }
+
+    /* --- tsunami / lembaga asing --- */
+    if (t) {
+      var tb = el('div', 'hz-block');
+      var th = el('div', 'hz-head');
+      th.appendChild(el('span', 'hz-title', 'Peringatan tsunami kawasan'));
+      var tbadge = el('span', 'hz-badge', t.active ? 'AKTIF' : 'aman');
+      tbadge.style.background = t.active ? '#ef4444' : '#22c55e';
+      th.appendChild(tbadge);
+      tb.appendChild(th);
+      tb.appendChild(el('div', 'hz-sub',
+        t.source + (t.scope ? ' · disaring untuk ' + t.scope : '')));
+
+      if (!t.bulletins.length) {
+        tb.appendChild(el('div', 'hz-note',
+          'Tidak ada buletin tsunami yang menyangkut Indonesia saat ini. '
+          + 'Buletin untuk kawasan Pasifik lain sengaja tidak ditampilkan.'));
+      } else {
+        t.bulletins.slice(0, 3).forEach(function (b) {
+          var row = el('div', 'hz-bul');
+          var a = el('a', 'hz-bul-t', b.title);
+          if (b.url) { a.href = b.url; a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+          row.appendChild(a);
+          if (b.summary) row.appendChild(el('div', 'hz-bul-s', b.summary.slice(0, 190)));
+          tb.appendChild(row);
+        });
+      }
+      body.appendChild(tb);
+    }
+
+    /* --- pengungsi --- */
+    if (sh && sh.events && sh.events.length) {
+      sh.events.forEach(function (ev) {
+        var sb = el('div', 'hz-block');
+        var sh2 = el('div', 'hz-head');
+        sh2.appendChild(el('span', 'hz-title', 'Pengungsi · ' + ev.label));
+        sb.appendChild(sh2);
+
+        var g = el('div', 'hz-cards');
+        g.appendChild(hazardCard(nf.format(ev.total), 'total mengungsi'));
+        g.appendChild(hazardCard(nf.format(ev.terpusat), 'di posko terpusat'));
+        g.appendChild(hazardCard(nf.format(ev.mandiri), 'mengungsi mandiri'));
+        g.appendChild(hazardCard(nf.format(ev.sites), 'titik pengungsian'));
+        sb.appendChild(g);
+
+        if (ev.topAreas && ev.topAreas.length) {
+          var max = ev.topAreas[0].people || 1;
+          ev.topAreas.forEach(function (a, i) {
+            sb.appendChild(makeRow(i + 1, a.area, nf.format(a.people) + ' jiwa',
+              null, null, (a.people / max) * 100, null));
+          });
+        }
+        sb.appendChild(el('div', 'hz-note',
+          'Sumber: ' + sh.source + (ev.updatedAt ? ' · diperbarui ' + ev.updatedAt.slice(0, 10) : '')));
+        body.appendChild(sb);
+      });
+    }
+  }
+
+  function loadHazard() {
+    return fetch('/api/hazard')
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('hz')); })
+      .then(function (d) {
+        state.hazard = d;
+        state.hazardAt = new Date().toLocaleTimeString('id-ID',
+          { hour: '2-digit', minute: '2-digit' });
+        renderHazard();
+        drawQuakes();
+        drawShelters();
+      })
+      .catch(function () { /* panel disembunyikan bila data tidak tersedia */ });
+  }
+
+  /** Lingkaran gempa: ukuran mengikuti magnitudo agar cepat terbaca. */
+  function drawQuakes() {
+    gQuake.clearLayers();
+    if (!state.quakeOn || !state.hazard || !state.hazard.quakes) return;
+    state.hazard.quakes.quakes.forEach(function (q) {
+      if (q.magnitude === null) return;
+      var r = Math.max(5, Math.pow(q.magnitude, 2) * 0.9);
+      L.circleMarker([q.lat, q.lon], {
+        pane: 'volcanoPane', radius: r,
+        color: q.color, weight: 1.6, opacity: 0.95,
+        fillColor: q.color, fillOpacity: 0.22
+      }).bindPopup(popupNode('Gempa M ' + q.magnitude, [
+        q.area,
+        q.dateLabel,
+        q.depthKm !== null ? 'Kedalaman: ' + q.depthKm + ' km' : null,
+        q.potensi ? 'Status: ' + q.potensi : null,
+        q.felt ? 'Dirasakan: ' + q.felt : null
+      ], { warn: q.tsunami ? 'BMKG menyatakan gempa ini BERPOTENSI TSUNAMI.' : null }))
+        .addTo(gQuake);
+    });
+  }
+
+  function drawShelters() {
+    gShelter.clearLayers();
+    if (!state.shelterOn || !state.hazard || !state.hazard.shelters) return;
+    (state.hazard.shelters.events || []).forEach(function (ev) {
+      (ev.points || []).forEach(function (p) {
+        var r = Math.max(4, Math.min(18, Math.sqrt(p.jumlah) / 3));
+        L.circleMarker([p.lat, p.lon], {
+          pane: 'volcanoPane', radius: r,
+          color: '#38bdf8', weight: 1.2, opacity: 0.9,
+          fillColor: '#38bdf8', fillOpacity: 0.25
+        }).bindPopup(popupNode('Pengungsian · ' + (p.desa || p.kec), [
+          'Jumlah: ' + nf.format(p.jumlah) + ' jiwa',
+          p.kec ? 'Kecamatan: ' + p.kec : null,
+          p.kab ? 'Kabupaten: ' + p.kab : null,
+          p.jenis ? 'Jenis: ' + p.jenis : null,
+          'Kejadian: ' + ev.label
+        ], { warn: 'Data resmi BNPB; angka dapat berubah mengikuti laporan BPBD.' }))
+          .addTo(gShelter);
+      });
+    });
   }
 
   function airAdvice(aqi) {
@@ -743,6 +922,45 @@
     });
   }
 
+  function renderAshList() {
+    var pane = $('paneAsh'); clear(pane);
+    var v = state.data && state.data.volcano;
+    var list = (state.data && state.data.ashImpacted) || [];
+
+    if (v) {
+      var head = el('p', 'pane-note',
+        v.monitored + ' gunung dipantau, ' + v.erupting + ' dengan sebaran abu aktif.'
+        + (v.counts ? ' Status resmi PVMBG: ' + v.counts.Awas + ' Awas, '
+          + v.counts.Siaga + ' Siaga, ' + v.counts.Waspada + ' Waspada.' : '')
+        + (v.stale ? ' (status dari data tersimpan)' : ''));
+      pane.appendChild(head);
+    }
+
+    if (!list.length) {
+      pane.appendChild(el('p', 'empty',
+        'Tidak ada kota yang diperkirakan berada di jalur sebaran abu saat ini.'));
+      return;
+    }
+
+    pane.appendChild(el('p', 'pane-note',
+      'Kota di bawah jalur abu menurut arah angin tiap lapisan ketinggian. '
+      + 'Abu rendah (~3 km) paling berdampak ke permukaan; abu ~10 km umumnya '
+      + 'melintas di atas dan lebih memengaruhi penerbangan. Model indikatif, '
+      + 'bukan advisory resmi Darwin VAAC.'));
+
+    list.forEach(function (r, i) {
+      var eta = r.etaH === null ? 'waktu tiba tidak diperkirakan'
+        : r.etaH < 1 ? 'tiba <1 jam'
+          : r.etaH < 24 ? 'tiba ~' + Math.round(r.etaH) + ' jam' : 'tiba >1 hari';
+      var sub = 'Gunung ' + r.volcano + ' · ' + nf.format(r.nearestKm) + ' km · '
+        + eta + ' · lapisan ' + r.layers.join('/') + ' km'
+        + (r.officialLevel ? ' · ' + r.officialLevel : '');
+      pane.appendChild(makeRow(i + 1, r.name + ' · ' + r.prov, sub,
+        r.level, 'p-' + r.level, r.score,
+        function () { map.setView([r.lat, r.lon], 8); }));
+    });
+  }
+
   function renderProvList() {
     var pane = $('paneProv'); clear(pane);
     var list = (state.data && state.data.provinceRanking) || [];
@@ -938,7 +1156,7 @@
           $('sAirSub').textContent = 'data tidak tersedia';
         }
         drawFires(); drawSmoke(); drawImpact();
-        renderImpactList(); renderProvList(); renderClusterList();
+        renderImpactList(); renderAshList(); renderProvList(); renderClusterList();
       })
       .catch(function () { setNotice('Gagal memuat data pemantauan. Periksa koneksi lalu tekan "Muat ulang".'); })
       .then(function () { $('refreshBtn').disabled = false; });
@@ -1005,6 +1223,22 @@
     state.ashOn = e.target.checked;
     if (state.ashOn) { map.addLayer(gAsh); loadAsh(); }
     else { map.removeLayer(gAsh); renderAshInfo(); showHint(null); }
+  });
+
+  $('lyQuake').addEventListener('change', function (e) {
+    state.quakeOn = e.target.checked;
+    if (state.quakeOn) {
+      map.addLayer(gQuake);
+      (state.hazard ? Promise.resolve() : loadHazard()).then(drawQuakes);
+    } else { map.removeLayer(gQuake); }
+  });
+
+  $('lyShelter').addEventListener('change', function (e) {
+    state.shelterOn = e.target.checked;
+    if (state.shelterOn) {
+      map.addLayer(gShelter);
+      (state.hazard ? Promise.resolve() : loadHazard()).then(drawShelters);
+    } else { map.removeLayer(gShelter); }
   });
 
   $('himaSel').addEventListener('change', function (e) {
@@ -1217,6 +1451,7 @@
   }
   tabGroup([
     { tab: 'tabImpact', pane: 'paneImpact' },
+    { tab: 'tabAsh', pane: 'paneAsh' },
     { tab: 'tabProv', pane: 'paneProv' },
     { tab: 'tabCluster', pane: 'paneCluster' }
   ]);
@@ -1314,6 +1549,9 @@
   setInterval(function () { loadOverview(); loadAttribution(); }, 10 * 60 * 1000);
   // Berita disegarkan tiap 5 menit agar panel penanganan selalu terkini.
   setInterval(loadNews, 5 * 60 * 1000);
+  // Gempa & tsunami harus sesegar mungkin: perbarui tiap 2 menit.
+  loadHazard();
+  setInterval(loadHazard, 2 * 60 * 1000);
   // Citra Himawari terbit tiap 10 menit; periksa tiap menit agar slot baru
   // langsung tampil tanpa perlu memuat ulang halaman.
   setInterval(refreshHimawari, 60 * 1000);

@@ -35,6 +35,7 @@ const { fetchWindField, sampleAt, gridPoints } = require('./lib/wind-gfs');
 const { openHotspots } = require('./lib/firms-open');
 const { volcanicAsh } = require('./lib/volcano');
 const { fetchStatus: fetchPvmbgStatus } = require('./lib/pvmbg');
+const { fetchQuakes, fetchTsunamiBulletins, fetchShelters } = require('./lib/hazard');
 const { answer: ragAnswer } = require('./lib/rag');
 
 // batas kotak provinsi (kasar) untuk peringkat provinsi
@@ -361,6 +362,76 @@ function compassId(deg) {
   return N[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16];
 }
 
+/**
+ * Kota yang berada di bawah jalur sebaran abu vulkanik.
+ *
+ * Berbeda dari asap karhutla, abu dinilai per lapisan ketinggian: abu di
+ * ~3 km jauh lebih berdampak ke permukaan (kesehatan, jarak pandang,
+ * penerbangan rendah) daripada abu di ~10 km yang umumnya melintas di atas.
+ * Bobot lapisan mencerminkan hal itu.
+ */
+function ashImpactedRegions(volcanoes) {
+  const LAYER_WEIGHT = { 3: 1, 6: 0.55, 10: 0.3 };
+  const out = [];
+
+  for (const reg of REGIONS) {
+    let score = 0;
+    const hits = [];
+
+    for (const v of (volcanoes || [])) {
+      for (const p of (v.plumes || [])) {
+        const reach = p.reachKm;
+        if (!reach) continue;
+        const dist = haversine(reg.lat, reg.lon, v.lat, v.lon);
+        if (dist > reach) continue;
+        const br = bearingBetween(v.lat, v.lon, reg.lat, reg.lon);
+        const half = p.halfAngleDeg || 20;
+        const off = angDiff(br, p.to);
+        if (off > half) continue;
+
+        const w = LAYER_WEIGHT[p.altKm] || 0.3;
+        const distFactor = Math.max(0, 1 - dist / reach);
+        const angFactor = Math.max(0, 1 - off / half);
+        const s = 100 * w * distFactor * angFactor;
+        if (s <= 0.5) continue;
+
+        const etaH = p.speed > 0.3 ? dist / (p.speed * 3.6) : null;
+        hits.push({
+          volcano: v.name,
+          km: Math.round(dist),
+          altKm: p.altKm,
+          etaH,
+          level: v.official ? v.official.status : null
+        });
+        score += s;
+      }
+    }
+
+    if (score <= 0.5) continue;
+    score = Math.min(100, score);
+    const nearest = hits.reduce((a, b) => (b.km < a.km ? b : a));
+    const etas = hits.map(h => h.etaH).filter(x => x !== null);
+
+    out.push({
+      name: reg.name,
+      prov: reg.prov,
+      lat: reg.lat,
+      lon: reg.lon,
+      population: reg.pop,
+      score: +score.toFixed(1),
+      level: score >= 66 ? 'Berat' : score >= 33 ? 'Sedang' : 'Ringan',
+      nearestKm: nearest.km,
+      volcano: nearest.volcano,
+      officialLevel: nearest.level,
+      layers: [...new Set(hits.map(h => h.altKm))].sort((a, b) => a - b),
+      etaH: etas.length ? Math.min(...etas) : null
+    });
+  }
+
+  out.sort((a, b) => b.score - a.score);
+  return out.slice(0, 20);
+}
+
 function impactedRegions(plumes) {
   const out = [];
   for (const reg of REGIONS) {
@@ -438,6 +509,15 @@ function toSeendate(d) {
  * kejadian kebakaran yang jumlahnya jauh lebih banyak.
  */
 const NEWS_TOPICS = [
+  {
+    id: 'internasional', label: 'Peringatan luar negeri',
+    q: '(BOM OR "Bureau of Meteorology" OR Australia OR Japan OR JMA OR Singapore OR NEA OR ASEAN '
+      + 'OR "Darwin VAAC" OR PTWC) (Indonesia) (haze OR smoke OR "volcanic ash" OR tsunami OR earthquake OR wildfire)'
+  },
+  {
+    id: 'kebencanaan', label: 'Gempa & tsunami',
+    q: '(gempa OR tsunami OR "peringatan dini" OR BMKG OR erupsi OR "gunung api") Indonesia'
+  },
   {
     id: 'kejadian', label: 'Kejadian & titik api',
     q: 'karhutla OR "kebakaran hutan" OR "kebakaran lahan" OR "titik api" OR "kabut asap"'
@@ -517,13 +597,40 @@ async function googleNews() {
   }
   if (!all.length) throw new Error('empty');
   all.sort((a, b) => (Date.parse(b.pubDate) || 0) - (Date.parse(a.pubDate) || 0));
+
+  // Memotong daftar gabungan begitu saja membuat topik bervolume rendah
+  // (mis. peringatan luar negeri) hilang sepenuhnya. Karena itu tiap topik
+  // dijamin mendapat jatah minimum lebih dulu, sisanya diisi yang terbaru.
+  const LIMIT = 160;
+  const QUOTA = 14;
+  const chosen = new Set();
+  const picked = [];
+
+  for (const t of NEWS_TOPICS) {
+    let n = 0;
+    for (const a of all) {
+      if (n >= QUOTA) break;
+      if (a.topic !== t.id || chosen.has(a.url)) continue;
+      chosen.add(a.url);
+      picked.push(a);
+      n++;
+    }
+  }
+  for (const a of all) {
+    if (picked.length >= LIMIT) break;
+    if (chosen.has(a.url)) continue;
+    chosen.add(a.url);
+    picked.push(a);
+  }
+  picked.sort((a, b) => (Date.parse(b.pubDate) || 0) - (Date.parse(a.pubDate) || 0));
+
   const counts = {};
-  for (const t of NEWS_TOPICS) counts[t.id] = all.filter(a => a.topic === t.id).length;
+  for (const t of NEWS_TOPICS) counts[t.id] = picked.filter(a => a.topic === t.id).length;
   return {
     ok: true,
-    source: 'Google Berita (agregator media Indonesia)',
+    source: 'Google Berita (agregator media Indonesia & internasional)',
     topics: NEWS_TOPICS.map(t => ({ id: t.id, label: t.label, count: counts[t.id] })),
-    articles: all.slice(0, 120)
+    articles: picked
   };
 }
 async function gdeltNews() {
@@ -583,6 +690,24 @@ async function buildOverview() {
       .map(p => ({ ...p, frp: +p.frp.toFixed(0) }))
       .sort((a, b) => b.hotspots - a.hotspots).slice(0, 15);
 
+    // Kota di jalur abu vulkanik. Opsional: kegagalan data gunung tidak
+    // boleh menggugurkan seluruh ringkasan karhutla.
+    let ashImpacted = [];
+    let volcanoSummary = null;
+    try {
+      const va = await cached('volcano-ash', 30 * 60 * 1000,
+        () => volcanicAsh(fetchWithTimeout, pvmbgStatus));
+      ashImpacted = ashImpactedRegions(va.active || []);
+      volcanoSummary = {
+        monitored: va.activeCount || 0,
+        erupting: (va.active || []).filter(v => (v.plumes || []).length).length,
+        counts: va.official ? va.official.counts : null,
+        stale: !!(va.official && va.official.stale)
+      };
+    } catch (e) {
+      console.error('[overview:ash]', e.message);
+    }
+
     // titik AQI terburuk secara nasional (opsional — jangan gagalkan overview)
     let worstAir = null;
     try {
@@ -614,6 +739,7 @@ async function buildOverview() {
         peopleExposedModerate: impacted.reduce((s, r) => s + (r.score >= 33 ? r.population : 0), 0)
       },
       hotspots, clusters: clusters.slice(0, 40), plumes, impacted,
+      ashImpacted, volcano: volcanoSummary,
       provinceScores: byProvince, provinceRanking, worstAir
     };
   }
@@ -930,23 +1056,46 @@ app.get('/api/ask', async (req, res) => {
   const q = String(req.query.q || '').trim().slice(0, 200);
   if (!q) return res.status(400).json({ error: 'Pertanyaan tidak boleh kosong.' });
   try {
-    const [overview, attribution, news, volcano] = await Promise.all([
+    const [overview, attribution, news, volcano, quakes, shelters] = await Promise.all([
       buildOverview().catch(() => ({})),
       buildAttribution().catch(() => ({})),
       getNews().catch(() => ({ articles: [] })),
-      cached('volcano-ash', 30 * 60 * 1000, () => volcanicAsh(fetchWithTimeout, pvmbgStatus)).catch(() => ({}))
+      cached('volcano-ash', 30 * 60 * 1000, () => volcanicAsh(fetchWithTimeout, pvmbgStatus)).catch(() => ({})),
+      cached('hz:quake', 2 * 60 * 1000, () => fetchQuakes(fetchWithTimeout)).catch(() => null),
+      cached('hz:shelter', 30 * 60 * 1000, () => fetchShelters(fetchWithTimeout)).catch(() => null)
     ]);
+    const hazard = { quakes, shelters };
     const ctx = {
       overview,
       attribution,
       news: (news && news.articles) || [],
       volcano,
+      hazard,
       air: { worst: overview && overview.worstAir }
     };
     res.set('Cache-Control', 'no-store');
     res.json(ragAnswer(q, ctx));
   } catch {
     res.status(502).json({ error: 'Pencarian sedang tidak tersedia.' });
+  }
+});
+
+/* ---------- gempa, tsunami & pengungsi ---------- */
+// Gempa diperbarui sangat sering, jadi cache-nya pendek (2 menit).
+app.get('/api/hazard', async (_req, res) => {
+  try {
+    const [quakes, tsunami, shelters] = await Promise.all([
+      cached('hz:quake', 2 * 60 * 1000, () => fetchQuakes(fetchWithTimeout)).catch(() => null),
+      cached('hz:tsunami', 10 * 60 * 1000, () => fetchTsunamiBulletins(fetchWithTimeout)).catch(() => null),
+      cached('hz:shelter', 30 * 60 * 1000, () => fetchShelters(fetchWithTimeout)).catch(() => null)
+    ]);
+    if (!quakes && !tsunami && !shelters) {
+      return res.status(502).json({ error: 'Data kebencanaan tidak tersedia.' });
+    }
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json({ updatedAt: new Date().toISOString(), quakes, tsunami, shelters });
+  } catch {
+    res.status(502).json({ error: 'Data kebencanaan tidak tersedia.' });
   }
 });
 
@@ -1043,10 +1192,16 @@ app.get('/api/volcano-so2', async (_req, res) => {
  * Diproksikan lewat server agar CSP klien tetap ketat ('self') dan
  * agar rentang waktu/produk tervalidasi di sisi server.
  */
+// Produk citra JMA. 'ash' adalah RGB Ash resmi (split-window) yang memang
+// dirancang untuk membedakan abu vulkanik dari awan air/es - inilah lapisan
+// yang benar-benar "menangkap" semburan abu. Sebelumnya kunci 'ash' keliru
+// menunjuk uap air B08, sehingga abu tidak pernah terlihat.
 const HIMAWARI_PRODUCTS = {
   ir: { path: 'B13/TBB', label: 'Inframerah B13 (siang & malam)' },
   vis: { path: 'B03/ALBD', label: 'Warna alami B03 (siang saja)' },
-  ash: { path: 'B08/TBB', label: 'Uap air B08' }
+  ash: { path: 'ASH/ETC', label: 'Deteksi abu vulkanik (RGB Ash)' },
+  dust: { path: 'SND/ETC', label: 'Debu & aerosol (RGB Dust)' },
+  wv: { path: 'B08/TBB', label: 'Uap air B08' }
 };
 
 async function himawariLatest() {
