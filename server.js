@@ -1038,7 +1038,7 @@ const HIMAWARI_PRODUCTS = {
 };
 
 async function himawariLatest() {
-  return cached('hima:times', 5 * 60 * 1000, async () => {
+  return cached('hima:times', 60 * 1000, async () => {
     const r = await fetchWithTimeout('https://www.jma.go.jp/bosai/himawari/data/satimg/targetTimes_fd.json', {}, 15000);
     if (!r.ok) throw new Error('hima_times_' + r.status);
     const j = await r.json();
@@ -1059,7 +1059,7 @@ app.get('/api/himawari/meta', async (_req, res) => {
     res.json({
       time: iso,
       products: Object.keys(HIMAWARI_PRODUCTS).map(k => ({ id: k, label: HIMAWARI_PRODUCTS[k].label })),
-      maxZoom: 6,
+      maxZoom: 5,
       source: 'Himawari-9 / Japan Meteorological Agency (JMA)'
     });
   } catch {
@@ -1070,7 +1070,8 @@ app.get('/api/himawari/meta', async (_req, res) => {
 app.get('/api/himawari/:product/:z/:x/:y.jpg', async (req, res) => {
   const prod = HIMAWARI_PRODUCTS[req.params.product];
   const z = Number(req.params.z), x = Number(req.params.x), y = Number(req.params.y);
-  if (!prod || !Number.isInteger(z) || z < 2 || z > 6) return res.status(404).end();
+  // JMA menyediakan z=2..5 saja untuk citra full-disk.
+  if (!prod || !Number.isInteger(z) || z < 2 || z > 5) return res.status(404).end();
   const n = 2 ** z;
   if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= n || y >= n) return res.status(404).end();
   try {
@@ -1080,7 +1081,9 @@ app.get('/api/himawari/:product/:z/:x/:y.jpg', async (req, res) => {
     if (!r.ok) return res.status(204).end();      // petak kosong: jangan tampilkan error di peta
     const buf = Buffer.from(await r.arrayBuffer());
     res.set('Content-Type', 'image/jpeg');
-    res.set('Cache-Control', 'public, max-age=300');
+    // Petak diberi penanda waktu oleh klien (?t=), jadi isinya tidak pernah
+    // berubah untuk URL yang sama dan aman di-cache lama.
+    res.set('Cache-Control', 'public, max-age=600');
     res.send(buf);
   } catch {
     res.status(204).end();

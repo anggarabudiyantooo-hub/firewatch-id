@@ -393,9 +393,14 @@
   function setHimawari(product) {
     if (state.himaLayer) { map.removeLayer(state.himaLayer); state.himaLayer = null; }
     state.himaProduct = product;
+    // Saat citra satelit menyala, angin diredupkan agar awan tetap terbaca.
+    syncWindOpacity();
     if (!product) { renderHimaInfo(); return; }
+    // JMA hanya menerbitkan petak hingga z=5; meminta z=6 membalas 404
+    // sehingga citra hilang total begitu peta diperbesar. Dengan maxNativeZoom
+    // 5, Leaflet meregangkan petak z=5 untuk zoom lebih dalam.
     state.himaLayer = L.tileLayer('/api/himawari/' + product + '/{z}/{x}/{y}.jpg', {
-      pane: 'himaPane', maxNativeZoom: 6, maxZoom: 12,
+      pane: 'himaPane', maxNativeZoom: 5, maxZoom: 12,
       opacity: product === 'vis' ? 0.85 : 0.62,
       attribution: 'Citra: Himawari-9 / JMA'
     }).addTo(map);
@@ -418,10 +423,46 @@
     box.appendChild(el('span', 'hi-sat', 'Himawari-9'));
     box.appendChild(el('span', 'hi-mode', label));
     if (t) {
-      box.appendChild(el('span', 'hi-time', t.toLocaleTimeString('id-ID', {
-        hour: '2-digit', minute: '2-digit'
-      }) + ' WIB'));
+      // toLocaleTimeString memakai zona perangkat, sehingga label "WIB" bisa
+      // salah bagi pengguna di luar WIB. Offset dihitung manual dari UTC.
+      var wib = new Date(t.getTime() + 7 * 3600000);
+      box.appendChild(el('span', 'hi-time',
+        pad2(wib.getUTCHours()) + '.' + pad2(wib.getUTCMinutes()) + ' WIB'));
+      // JMA menerbitkan pemindaian penuh tiap 10 menit; tampilkan umurnya
+      // supaya jelas ini citra terbaru, bukan gambar statis.
+      var mins = Math.max(0, Math.round((Date.now() - t.getTime()) / 60000));
+      box.appendChild(el('span', 'hi-age', mins < 1 ? 'baru saja' : mins + ' mnt lalu'));
     }
+  }
+
+  /**
+   * Ambil ulang citra Himawari bila JMA sudah menerbitkan slot baru.
+   * Petak lama diganti hanya ketika waktunya benar-benar berubah, supaya
+   * peta tidak berkedip setiap kali pengecekan dilakukan.
+   */
+  function syncWindOpacity() {
+    var o = state.himaProduct ? '0.55' : '1';
+    if (state.particles) state.particles.opts.baseOpacity = o;
+    var c = document.querySelector('.wind-particle-canvas');
+    if (c) c.style.opacity = o;
+  }
+
+  function refreshHimawari() {
+    if (!state.himaProduct || !state.himaLayer) return;
+    fetch('/api/himawari/meta')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (m) {
+        if (!m || !m.time) return;
+        if (state.hima && state.hima.time === m.time) { renderHimaInfo(); return; }
+        state.hima = m;
+        // Paksa unduh ulang petak dengan penanda waktu pada URL.
+        if (state.himaLayer) {
+          state.himaLayer.setUrl('/api/himawari/' + state.himaProduct +
+            '/{z}/{x}/{y}.jpg?t=' + encodeURIComponent(m.time), false);
+        }
+        renderHimaInfo();
+      })
+      .catch(function () { /* biarkan citra lama tetap tampil */ });
   }
 
   function airAdvice(aqi) {
@@ -503,7 +544,7 @@
     if (!state.wind) return;
 
     // Aliran angin bergaya Windy (animasi garis arus). Mode panah dihapus.
-    if (!state.particles) state.particles = new WindParticles(map, {});
+    if (!state.particles) state.particles = new WindParticles(map, { fade: 0.16, density: 1900 });
     state.particles.setField(state.wind);
     if (state.windOn) state.particles.start();
 
@@ -1269,4 +1310,7 @@
   setInterval(function () { loadOverview(); loadAttribution(); }, 10 * 60 * 1000);
   // Berita disegarkan tiap 5 menit agar panel penanganan selalu terkini.
   setInterval(loadNews, 5 * 60 * 1000);
+  // Citra Himawari terbit tiap 10 menit; periksa tiap menit agar slot baru
+  // langsung tampil tanpa perlu memuat ulang halaman.
+  setInterval(refreshHimawari, 60 * 1000);
 })();

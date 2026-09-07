@@ -635,3 +635,6 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
 /* Pemisah & nilai pada legenda gunung api */
 .cs-sep{height:1px;background:var(--term-grid);margin:6px 0}
 .cs-val{margin-left:auto;font-weight:600;color:var(--fg)}
+
+/* Umur citra satelit */
+.hi-age{color:var(--muted);font-size:10px;letter-spacing:.03em}

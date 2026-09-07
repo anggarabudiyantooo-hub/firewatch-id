@@ -62,7 +62,7 @@
   WindParticles.prototype._show = function () {
     if (!this.canvas) return;
     this._resetPanePosition();
-    this.canvas.style.opacity = '1';
+    this.canvas.style.opacity = this.opts.baseOpacity || '1';
     this._seed();
   };
 
@@ -146,11 +146,39 @@
   WindParticles.prototype._seed = function () {
     if (!this.w || !this.h) return;
     // kepadatan disesuaikan luas layar agar konsisten di ponsel & desktop
-    var n = Math.round(Math.min(3200, Math.max(500, (this.w * this.h) / 950)));
+    var dens = this.opts.density || 1900;
+    var n = Math.round(Math.min(2000, Math.max(350, (this.w * this.h) / dens)));
     var arr = new Array(n);
     for (var i = 0; i < n; i++) arr[i] = this._randomParticle();
     this.particles = arr;
     if (this.ctx) this.ctx.clearRect(0, 0, this.w, this.h);
+  };
+
+  // Panjang langkah maksimum per frame (piksel). Menjaga jejak tetap menyambung.
+  var MAX_STEP_PX = 4;
+
+  /**
+   * Berapa piksel layar yang ditempuh angin 1 m/s dalam satu frame.
+   * Dihitung dari skala peta nyata sehingga arus terlihat konsisten:
+   * saat diperbesar, wilayah yang terlihat lebih kecil, jadi kecepatan
+   * piksel dinaikkan seperlunya saja — tidak digandakan tiap tingkat zoom.
+   */
+  WindParticles.prototype._updateScale = function () {
+    var map = this.map;
+    var c = map.getCenter();
+    // Jarak meter yang diwakili 1 piksel pada lintang tengah layar.
+    var mPerPx = 40075016.686 * Math.cos(c.lat * Math.PI / 180) /
+      (256 * Math.pow(2, map.getZoom()));
+
+    // Kecepatan piksel sepenuhnya fisik akan membuat partikel diam saat
+    // menjauh dan melesat saat mendekat. Sebagai gantinya kecepatan
+    // dinyatakan dalam piksel per detik dan hanya diredam ringan oleh skala
+    // peta, sehingga arus terlihat mengalir wajar di semua tingkat zoom.
+    var refMPerPx = 2400;                       // acuan ~zoom 6 di khatulistiwa
+    var damp = Math.pow(refMPerPx / mPerPx, 0.15);
+    var pxPerSec = (this.opts.gain || 9) * damp;  // piksel/detik untuk 1 m/s
+
+    this._pxPerMs = pxPerSec / 30;              // ~30 fps
   };
 
   WindParticles.prototype._speedColor = function (s) {
@@ -167,16 +195,16 @@
 
     // jejak memudar: bukan clear penuh, supaya terbentuk garis arus
     ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillStyle = 'rgba(0,0,0,0.09)';
+    ctx.fillStyle = 'rgba(0,0,0,' + (this.opts.fade || 0.16) + ')';
     ctx.fillRect(0, 0, this.w, this.h);
     ctx.globalCompositeOperation = 'source-over';
 
-    ctx.lineWidth = 1.25;
+    ctx.lineWidth = this.opts.lineWidth || 1.1;
     ctx.lineCap = 'round';
 
     var map = this.map;
-    var scale = this.opts.scale || 0.9;
     var ps = this.particles;
+    this._updateScale();
 
     for (var i = 0; i < ps.length; i++) {
       var p = ps[i];
@@ -187,11 +215,22 @@
       if (!uv) { this._randomParticle(p); continue; }
 
       var spd = Math.sqrt(uv[0] * uv[0] + uv[1] * uv[1]);
-      // konversi m/s -> piksel: dinormalkan terhadap zoom agar terasa wajar
-      var z = map.getZoom();
-      var k = scale * Math.pow(2, z - 5) * 0.55;
-      var nx = p.x + uv[0] * k;
-      var ny = p.y - uv[1] * k;   // layar: y ke bawah
+      // Konversi m/s -> piksel/frame memakai skala peta yang sebenarnya
+      // (piksel per derajat pada lintang ini), lalu dibatasi agar panjang
+      // langkah tetap wajar di layar. Memakai 2^zoom membuat partikel
+      // melompat ratusan piksel per frame saat diperbesar sehingga
+      // gerakannya tampak acak, bukan mengalir.
+      var k = this._pxPerMs;
+      var dx = uv[0] * k;
+      var dy = -uv[1] * k;        // layar: y ke bawah
+      // Batasi langkah maksimum: jejak harus tersambung, bukan meloncat.
+      var stepLen = Math.sqrt(dx * dx + dy * dy);
+      if (stepLen > MAX_STEP_PX) {
+        dx = (dx / stepLen) * MAX_STEP_PX;
+        dy = (dy / stepLen) * MAX_STEP_PX;
+      }
+      var nx = p.x + dx;
+      var ny = p.y + dy;
 
       if (nx < -20 || nx > this.w + 20 || ny < -20 || ny > this.h + 20) {
         this._randomParticle(p);
