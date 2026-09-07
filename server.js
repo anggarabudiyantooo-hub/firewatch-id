@@ -699,14 +699,25 @@ async function buildOverview() {
     try {
       const va = await scheduler.get('volcano');
       ashImpacted = ashImpactedRegions(va.active || []);
+
+      // Data gunung (termasuk geometri sebaran) disegarkan tiap 30 menit,
+      // sedangkan laporan letusan tiap 10 menit. Hitung jumlah gunung yang
+      // meletus dari tugas letusan secara langsung supaya angka di kepala
+      // halaman tidak tertinggal satu siklus di belakang panel kejadian.
+      let er = null;
+      try { er = await scheduler.get('eruption'); } catch { er = null; }
+
       volcanoSummary = {
         // "dipantau" = berstatus Waspada ke atas; "meletus" = ada laporan
         // pos pengamatan dalam 24 jam. Keduanya sengaja dipisah agar gunung
         // berstatus tinggi yang sedang tenang tidak terhitung sebagai erupsi.
         monitored: va.monitoredCount || va.activeCount || 0,
-        erupting: va.eruptingCount || 0,
-        eruptionReports: va.eruptions ? va.eruptions.total : null,
-        eruptingNames: (va.active || []).filter(v => v.eruption).map(v => v.name),
+        erupting: er ? er.volcanoes.length : (va.eruptingCount || 0),
+        // null berarti BELUM DIKETAHUI, bukan nol. Klien wajib membedakannya.
+        eruptionReports: er ? er.total : (va.eruptions ? va.eruptions.total : null),
+        eruptingNames: er
+          ? er.volcanoes.map(v => v.name)
+          : (va.active || []).filter(v => v.eruption).map(v => v.name),
         counts: va.official ? va.official.counts : null,
         stale: !!(va.official && va.official.stale)
       };

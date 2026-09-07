@@ -1190,8 +1190,11 @@
     var list = (state.data && state.data.ashImpacted) || [];
 
     if (v) {
+      var known = v.eruptionReports !== null && v.eruptionReports !== undefined;
       var head = el('p', 'pane-note',
-        v.erupting + ' gunung dilaporkan meletus pos pengamatan dalam 24 jam, '
+        (known
+          ? v.erupting + ' gunung dilaporkan meletus pos pengamatan dalam 24 jam, '
+          : 'Laporan letusan pos pengamatan belum termuat; ')
         + v.monitored + ' dipantau (status minimal Waspada).'
         + (v.counts ? ' Status resmi PVMBG: ' + v.counts.Awas + ' Awas, '
           + v.counts.Siaga + ' Siaga, ' + v.counts.Waspada + ' Waspada.' : '')
@@ -1408,11 +1411,25 @@
         $('sErupt').classList.remove('skel');
         $('sVolLvl').classList.remove('skel');
         if (vs) {
-          $('sErupt').textContent = nf.format(vs.erupting || 0);
-          var names = (vs.eruptingNames || []).slice(0, 3).join(', ');
-          $('sEruptSub').textContent = vs.erupting
-            ? names + (vs.eruptingNames.length > 3 ? ' +' + (vs.eruptingNames.length - 3) : '')
-            : 'tidak ada laporan letusan 24 jam';
+          // eruptionReports === null berarti laporan pos pengamatan belum
+          // sempat ditarik (instance baru hidup / MAGMA sedang lambat).
+          // Itu BUKAN sama dengan "tidak ada letusan", jadi jangan pernah
+          // menampilkannya sebagai angka nol yang meyakinkan.
+          if (vs.eruptionReports === null || vs.eruptionReports === undefined) {
+            $('sErupt').textContent = '—';
+            $('sEruptSub').textContent = 'menunggu laporan pos pengamatan…';
+            // Coba lagi sebentar lagi; penyegaran latar biasanya sudah selesai.
+            if (!state.eruptRetry) {
+              state.eruptRetry = true;
+              setTimeout(loadOverview, 20000);
+            }
+          } else {
+            $('sErupt').textContent = nf.format(vs.erupting || 0);
+            var names = (vs.eruptingNames || []).slice(0, 3).join(', ');
+            $('sEruptSub').textContent = vs.erupting
+              ? names + (vs.eruptingNames.length > 3 ? ' +' + (vs.eruptingNames.length - 3) : '')
+              : 'tidak ada laporan letusan 24 jam';
+          }
           var c = vs.counts || {};
           var sa = (c.Siaga || 0) + (c.Awas || 0);
           $('sVolLvl').textContent = nf.format(sa);
