@@ -658,3 +658,27 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
 .hz-bul-t{font-size:12px;color:var(--fg);text-decoration:none;display:block;line-height:1.4}
 .hz-bul-t:hover{color:var(--term-amber);text-decoration:underline}
 .hz-bul-s{font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.5}
+
+/* ---------- korban menurut media ---------- */
+.cas-box{margin-top:14px;border:1px solid rgba(167,139,250,.3);padding:12px 13px;
+  background:rgba(167,139,250,.045)}
+.hz-warn{border-left-color:#a78bfa;color:#c4b5fd}
+.cas-grid{display:grid;gap:8px;margin-top:10px;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.cas-item{border:1px solid var(--term-grid);padding:9px 10px}
+.cas-n{font-size:19px;font-weight:700;color:#c4b5fd;line-height:1.15}
+.cas-l{font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-top:2px}
+.cas-q{font-size:11px;color:var(--fg);margin-top:6px;line-height:1.45;opacity:.85}
+.cas-src{display:inline-block;margin-top:6px;font-size:10.5px;color:var(--term-amber);
+  text-decoration:none;letter-spacing:.02em}
+.cas-src:hover{text-decoration:underline}
+
+/* ---------- status pembaruan data ---------- */
+.st-grid{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(185px,1fr))}
+.st-card{border:1px solid var(--term-grid);padding:9px 10px}
+.st-card.st-bad{border-color:rgba(239,68,68,.45)}
+.st-top{display:flex;align-items:center;gap:7px}
+.st-dot{width:7px;height:7px;border-radius:50%;flex:none}
+.st-name{font-size:11.5px;color:var(--fg);line-height:1.35}
+.st-age{font-size:14px;color:var(--term-amber);font-weight:600;margin-top:5px}
+.st-every{font-size:9.5px;color:var(--muted);letter-spacing:.03em;margin-top:2px}

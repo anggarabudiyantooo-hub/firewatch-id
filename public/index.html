@@ -234,11 +234,20 @@
       <span class="panel-sub" id="hazardMeta"></span>
     </header>
     <div id="hazardBody" class="hazard-body"></div>
+    <div id="casualtyBox" class="cas-box" hidden></div>
+  </section>
+
+  <section class="panel wide" id="statusPanel" hidden>
+    <header class="panel-head">
+      <h2><span class="pnum">07</span> Status pembaruan data</h2>
+      <span class="panel-sub" id="statusMeta"></span>
+    </header>
+    <div id="statusBody" class="st-grid"></div>
   </section>
 
   <section class="panel wide" id="so2Panel" hidden>
     <header class="panel-head">
-      <h2><span class="pnum">07</span> Gas SO<sub>2</sub> gunung api</h2>
+      <h2><span class="pnum">08</span> Gas SO<sub>2</sub> gunung api</h2>
       <span class="hd-note">model CAMS · diperbarui tiap 30 menit</span>
     </header>
     <div class="so2-intro">
@@ -252,7 +261,7 @@
   </section>
 
   <section class="panel wide">
-    <header class="panel-head"><h2><span class="pnum">08</span> Memahami data ini</h2></header>
+    <header class="panel-head"><h2><span class="pnum">09</span> Memahami data ini</h2></header>
     <div class="srcgrid">
       <div class="srccard">
         <h3>Apa itu titik api (hotspot)?</h3>
@@ -302,7 +311,7 @@
   </section>
 
   <section class="panel wide">
-    <header class="panel-head"><h2><span class="pnum">09</span> Sumber data &amp; batasan</h2></header>
+    <header class="panel-head"><h2><span class="pnum">10</span> Sumber data &amp; batasan</h2></header>
     <div class="srcgrid">
       <div class="srccard">
         <h3>Titik api</h3>
@@ -324,6 +333,10 @@
         <h3>Gempa, tsunami &amp; pengungsi</h3>
         <p>Gempa bumi dari <b>BMKG</b> (autogempa, gempa terkini, gempa dirasakan) diperbarui tiap 2 menit. Status potensi tsunami mengikuti pernyataan resmi BMKG. Sebagai pembanding lembaga asing, buletin <b>NOAA Pacific/National Tsunami Warning Center (AS)</b> ditarik dan disaring hanya untuk kejadian yang menyangkut Indonesia dan kawasan sekitarnya — buletin Pasifik lain sengaja tidak ditampilkan agar tidak menimbulkan kepanikan keliru.</p>
         <p>Jumlah pengungsi berasal dari layanan GIS resmi <b>BNPB</b>, memuat pengungsi di posko terpusat maupun mandiri per desa. Angka mengikuti laporan BPBD daerah dan dapat berubah. Data ini terbatas pada kejadian yang layanannya diterbitkan BNPB; tidak semua bencana memilikinya.</p>
+
+        <h3>Korban dari berita &amp; penjadwalan</h3>
+        <p>Selain angka resmi BNPB, dasbor menampilkan angka korban yang diekstrak otomatis dari judul berita. Angka ini <b>bukan data resmi</b>: diambil dengan pencocokan pola teks, bisa keliru, tertinggal, atau salah konteks. Karena itu setiap angka selalu disertai kutipan kalimat aslinya dan tautan ke penerbitnya agar dapat diverifikasi. Bila angka resmi dan angka media berbeda, yang resmi harus didahulukan.</p>
+        <p>Seluruh sumber disegarkan oleh satu penjadwal terpusat dengan interval berbeda mengikuti irama penerbitan masing-masing: gempa 2 menit, berita dan titik api 10 menit, pengungsi dan gunung api 30 menit, status PVMBG 3 jam. Panel <b>Status pembaruan data</b> menampilkan kapan tiap sumber terakhir berhasil diperbarui, sehingga data usang tidak pernah tersamar sebagai data terkini.</p>
 
         <h3>Berita</h3>
         <p>Google Berita RSS ditarik otomatis untuk enam topik terpisah — kejadian, kebijakan pusat (rapat terbatas/instruksi presiden), operasi penanganan (BNPB, BPBD, Manggala Agni, water bombing), tanggap darurat daerah, penegakan hukum, dan dampak kesehatan — lalu digabung dan disaring duplikatnya. Cadangan GDELT Project. Tautan mengarah ke penerbit asli; FireWatch ID tidak menyunting isinya.</p>

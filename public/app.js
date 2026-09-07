@@ -77,7 +77,8 @@
     // Harus cocok dengan <option selected> pada #himaSel (nonaktif),
     // jika tidak, state dan tampilan kontrol saling bertentangan.
     hima: null, himaProduct: '', himaLayer: null,
-    hazard: null, hazardAt: null, quakeOn: false, shelterOn: false
+    hazard: null, hazardAt: null, quakeOn: false, shelterOn: false,
+    casualties: null, status: null
   };
 
   /* ---------- util DOM ---------- */
@@ -588,6 +589,82 @@
         body.appendChild(sb);
       });
     }
+  }
+
+  /**
+   * Angka korban dari berita. Dipisah visual dari data resmi BNPB dan
+   * setiap angka menautkan artikel sumbernya agar bisa diverifikasi.
+   */
+  function renderCasualties() {
+    var box = $('casualtyBox');
+    if (!box) return;
+    clear(box);
+    var c = state.casualties;
+    if (!c || !c.items || !c.items.length) { box.hidden = true; return; }
+    box.hidden = false;
+
+    var hd = el('div', 'hz-head');
+    hd.appendChild(el('span', 'hz-title', 'Korban menurut laporan media'));
+    var b = el('span', 'hz-badge', 'BELUM RESMI');
+    b.style.background = '#a78bfa';
+    hd.appendChild(b);
+    box.appendChild(hd);
+
+    box.appendChild(el('div', 'hz-note hz-warn', c.caution));
+
+    var grid = el('div', 'cas-grid');
+    c.items.forEach(function (i) {
+      var card = el('div', 'cas-item');
+      card.appendChild(el('div', 'cas-n', nf.format(i.value)));
+      card.appendChild(el('div', 'cas-l', i.label));
+      card.appendChild(el('div', 'cas-q', '“' + i.quote + '”'));
+      var a = el('a', 'cas-src', (i.domain || 'sumber') + ' →');
+      if (i.url) { a.href = i.url; a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+      a.title = i.title || '';
+      card.appendChild(a);
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
+  }
+
+  function loadCasualties() {
+    return fetch('/api/casualties')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (d) { state.casualties = d; renderCasualties(); } })
+      .catch(function () { /* panel disembunyikan bila gagal */ });
+  }
+
+  /** Panel transparansi: kapan tiap sumber terakhir berhasil diperbarui. */
+  function renderStatus() {
+    var panel = $('statusPanel');
+    var body = $('statusBody');
+    var meta = $('statusMeta');
+    if (!panel || !body) return;
+    var s = state.status;
+    if (!s || !s.tasks) { panel.hidden = true; return; }
+    panel.hidden = false;
+    clear(body);
+    if (meta) meta.textContent = s.healthy + '/' + s.total + ' sumber sehat · ' + s.mode;
+
+    s.tasks.forEach(function (t) {
+      var c = el('div', 'st-card' + (t.healthy ? '' : ' st-bad'));
+      var top = el('div', 'st-top');
+      var dot = el('i', 'st-dot');
+      dot.style.background = t.healthy ? '#22c55e' : '#ef4444';
+      top.appendChild(dot);
+      top.appendChild(el('span', 'st-name', t.label));
+      c.appendChild(top);
+      c.appendChild(el('div', 'st-age', t.ageLabel));
+      c.appendChild(el('div', 'st-every', 'diperbarui ' + t.everyLabel));
+      body.appendChild(c);
+    });
+  }
+
+  function loadStatus() {
+    return fetch('/api/status')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (d) { state.status = d; renderStatus(); } })
+      .catch(function () { /* diamkan */ });
   }
 
   function loadHazard() {
@@ -1552,6 +1629,10 @@
   // Gempa & tsunami harus sesegar mungkin: perbarui tiap 2 menit.
   loadHazard();
   setInterval(loadHazard, 2 * 60 * 1000);
+  loadCasualties();
+  setInterval(loadCasualties, 10 * 60 * 1000);
+  loadStatus();
+  setInterval(loadStatus, 60 * 1000);
   // Citra Himawari terbit tiap 10 menit; periksa tiap menit agar slot baru
   // langsung tampil tanpa perlu memuat ulang halaman.
   setInterval(refreshHimawari, 60 * 1000);

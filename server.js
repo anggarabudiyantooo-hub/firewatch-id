@@ -36,6 +36,8 @@ const { openHotspots } = require('./lib/firms-open');
 const { volcanicAsh } = require('./lib/volcano');
 const { fetchStatus: fetchPvmbgStatus } = require('./lib/pvmbg');
 const { fetchQuakes, fetchTsunamiBulletins, fetchShelters } = require('./lib/hazard');
+const { summarize: summarizeCasualties } = require('./lib/casualty');
+const { Scheduler } = require('./lib/scheduler');
 const { answer: ragAnswer } = require('./lib/rag');
 
 // batas kotak provinsi (kasar) untuk peringkat provinsi
@@ -177,8 +179,9 @@ async function firmsHotspots() {
 }
 
 
-async function getHotspots() {
-  return cached('hotspots', 10 * 60 * 1000, async () => {
+/** Pengambilan mentah titik api; penjadwalannya diurus Scheduler. */
+async function getHotspotsRaw() {
+  {
     // 1) Bila pengguna memasang MAP_KEY, pakai endpoint area FIRMS
     //    (rentang hari dapat diatur dan pembaruannya paling cepat).
     if (FIRMS_MAP_KEY) {
@@ -202,7 +205,12 @@ async function getHotspots() {
       days: 1,
       hotspots: r.hotspots
     };
-  });
+  }
+}
+
+/** Titik api lewat penjadwal (satu sumber kebenaran). */
+async function getHotspots() {
+  return scheduler.get('hotspots');
 }
 
 // ---------- klaster + sebaran asap ----------
@@ -648,18 +656,10 @@ async function gdeltNews() {
   if (!arts.length) throw new Error('empty');
   return { ok: true, source: 'GDELT Project (agregator berita terbuka)', articles: arts };
 }
+/** Berita lewat penjadwal; sumber cadangan GDELT ditangani di tugasnya. */
 async function getNews() {
-  return cached('news', 20 * 60 * 1000, async () => {
-    for (const fn of [googleNews, gdeltNews]) {
-      try { return await fn(); } catch (e) { console.error('[news]', fn.name, e.message); }
-    }
-    return {
-      ok: false,
-      source: 'Umpan berita tidak tersedia',
-      message: 'Umpan berita sedang tidak dapat diakses. Coba muat ulang beberapa saat lagi.',
-      articles: []
-    };
-  });
+  const v = await scheduler.get('news');
+  return v || { ok: false, source: 'tidak tersedia', topics: [], articles: [] };
 }
 
 // ---------- API ----------
@@ -695,8 +695,7 @@ async function buildOverview() {
     let ashImpacted = [];
     let volcanoSummary = null;
     try {
-      const va = await cached('volcano-ash', 30 * 60 * 1000,
-        () => volcanicAsh(fetchWithTimeout, pvmbgStatus));
+      const va = await scheduler.get('volcano');
       ashImpacted = ashImpactedRegions(va.active || []);
       volcanoSummary = {
         monitored: va.activeCount || 0,
@@ -1060,17 +1059,19 @@ app.get('/api/ask', async (req, res) => {
       buildOverview().catch(() => ({})),
       buildAttribution().catch(() => ({})),
       getNews().catch(() => ({ articles: [] })),
-      cached('volcano-ash', 30 * 60 * 1000, () => volcanicAsh(fetchWithTimeout, pvmbgStatus)).catch(() => ({})),
-      cached('hz:quake', 2 * 60 * 1000, () => fetchQuakes(fetchWithTimeout)).catch(() => null),
-      cached('hz:shelter', 30 * 60 * 1000, () => fetchShelters(fetchWithTimeout)).catch(() => null)
+      scheduler.get('volcano').catch(() => ({})),
+      scheduler.get('quake').catch(() => null),
+      scheduler.get('shelter').catch(() => null)
     ]);
     const hazard = { quakes, shelters };
+    const casualties = summarizeCasualties((news && news.articles) || []);
     const ctx = {
       overview,
       attribution,
       news: (news && news.articles) || [],
       volcano,
       hazard,
+      casualties,
       air: { worst: overview && overview.worstAir }
     };
     res.set('Cache-Control', 'no-store');
@@ -1080,14 +1081,111 @@ app.get('/api/ask', async (req, res) => {
   }
 });
 
+/* ---------- orkestrasi penyegaran data ---------- */
+/**
+ * Satu tempat yang menentukan seberapa sering tiap sumber diperbarui.
+ * Interval dipilih mengikuti irama penerbitan sumbernya: tidak ada gunanya
+ * menarik GFS tiap menit karena NOAA hanya menerbitkannya 6 jam sekali.
+ */
+const scheduler = new Scheduler();
+
+scheduler
+  .register('quake', {
+    label: 'Gempa bumi (BMKG)',
+    everyMs: 2 * 60 * 1000,
+    critical: true,
+    run: () => fetchQuakes(fetchWithTimeout)
+  })
+  .register('tsunami', {
+    label: 'Buletin tsunami (NOAA PTWC)',
+    everyMs: 10 * 60 * 1000,
+    critical: true,
+    run: () => fetchTsunamiBulletins(fetchWithTimeout)
+  })
+  .register('news', {
+    label: 'Berita (Google Berita)',
+    everyMs: 10 * 60 * 1000,
+    run: () => googleNews().catch(() => gdeltNews())
+  })
+  .register('hotspots', {
+    label: 'Titik api (NASA FIRMS)',
+    everyMs: 10 * 60 * 1000,
+    critical: true,
+    run: () => getHotspotsRaw()
+  })
+  .register('shelter', {
+    label: 'Pengungsi (BNPB)',
+    everyMs: 30 * 60 * 1000,
+    run: () => fetchShelters(fetchWithTimeout)
+  })
+  .register('volcano', {
+    label: 'Gunung api & sebaran abu',
+    everyMs: 30 * 60 * 1000,
+    critical: true,
+    run: () => volcanicAsh(fetchWithTimeout, pvmbgStatus)
+  })
+  .register('pvmbg', {
+    label: 'Status resmi PVMBG (MAGMA)',
+    everyMs: 3 * 60 * 60 * 1000,
+    run: () => fetchPvmbgStatus(fetchWithTimeout)
+  });
+
+/**
+ * Penyegaran terjadwal.
+ *
+ * Vercel Hobby membatasi cron bawaan ke sekali sehari, jadi jadwal
+ * sesungguhnya dijalankan penjadwal luar (GitHub Actions) yang memanggil
+ * endpoint ini. Dilindungi CRON_SECRET bila variabel itu dipasang.
+ */
+app.get('/api/cron', async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  if (secret) {
+    const hdr = String(req.get('authorization') || '');
+    const key = String(req.query.key || '');
+    if (hdr !== 'Bearer ' + secret && key !== secret) {
+      return res.status(401).json({ error: 'Tidak diizinkan.' });
+    }
+  }
+  try {
+    const r = await scheduler.tick({ force: req.query.force === '1' });
+    res.set('Cache-Control', 'no-store');
+    res.json({ ok: true, ...r });
+  } catch {
+    res.status(500).json({ error: 'Penyegaran gagal.' });
+  }
+});
+
+/**
+ * Angka korban yang dilaporkan MEDIA (bukan BNPB).
+ * Dipisahkan dari /api/hazard supaya asal-usul angka tidak tercampur:
+ * hazard = data resmi, casualties = kutipan berita yang wajib diverifikasi.
+ */
+app.get('/api/casualties', async (_req, res) => {
+  try {
+    const news = await getNews();
+    const arts = (news && news.articles) || [];
+    const out = summarizeCasualties(arts);
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json({ updatedAt: new Date().toISOString(), ...out });
+  } catch {
+    res.status(502).json({ error: 'Ringkasan korban tidak tersedia.' });
+  }
+});
+
+/** Status tiap sumber data — dipakai panel "Status data" di antarmuka. */
+app.get('/api/status', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json(scheduler.status());
+});
+
 /* ---------- gempa, tsunami & pengungsi ---------- */
 // Gempa diperbarui sangat sering, jadi cache-nya pendek (2 menit).
 app.get('/api/hazard', async (_req, res) => {
   try {
     const [quakes, tsunami, shelters] = await Promise.all([
-      cached('hz:quake', 2 * 60 * 1000, () => fetchQuakes(fetchWithTimeout)).catch(() => null),
-      cached('hz:tsunami', 10 * 60 * 1000, () => fetchTsunamiBulletins(fetchWithTimeout)).catch(() => null),
-      cached('hz:shelter', 30 * 60 * 1000, () => fetchShelters(fetchWithTimeout)).catch(() => null)
+      scheduler.get('quake').catch(() => null),
+      scheduler.get('tsunami').catch(() => null),
+      scheduler.get('shelter').catch(() => null)
     ]);
     if (!quakes && !tsunami && !shelters) {
       return res.status(502).json({ error: 'Data kebencanaan tidak tersedia.' });
@@ -1111,11 +1209,11 @@ let ashLast = null;
  * dibayar sesekali, bukan tiap kali data gunung dibangun ulang.
  */
 function pvmbgStatus() {
-  return cached('pvmbg:status', 3 * 60 * 60 * 1000, () => fetchPvmbgStatus(fetchWithTimeout));
+  return scheduler.get('pvmbg');
 }
 app.get('/api/volcano-ash', async (_req, res) => {
   try {
-    const d = await cached('volcano-ash', 30 * 60 * 1000, () => volcanicAsh(fetchWithTimeout, pvmbgStatus));
+    const d = await scheduler.get('volcano');
     if (d && d.activeCount) ashLast = d;
     res.set('Cache-Control', 'public, max-age=900');
     res.json(d);
@@ -1142,7 +1240,7 @@ function so2Band(v) {
 app.get('/api/volcano-so2', async (_req, res) => {
   try {
     const out = await cached('volcano-so2', 30 * 60 * 1000, async () => {
-      const d = await cached('volcano-ash', 30 * 60 * 1000, () => volcanicAsh(fetchWithTimeout));
+      const d = await scheduler.get('volcano');
       // Open-Meteo menghitung tiap koordinat sebagai satu permintaan, dan
       // kuota hariannya terbatas. Batasi ke gunung paling berisiko saja
       // (status resmi Siaga/Awas, atau dilaporkan erupsi oleh GVP).
@@ -1321,6 +1419,10 @@ app.use((err, _req, res, _next) => { console.error('[err]', err && err.message);
 // Di Vercel modul ini dipakai sebagai serverless function (lihat api/index.js),
 // sehingga server hanya boleh listen saat dijalankan langsung: `node server.js`.
 if (require.main === module) {
+  // Hanya pada server berkelanjutan timer internal dapat diandalkan.
+  // Di serverless proses mati di antara permintaan, sehingga penjadwalan
+  // diserahkan ke /api/cron yang dipanggil penjadwal luar.
+  scheduler.start();
   app.listen(PORT, '0.0.0.0', () =>
     console.log(`FireWatch ID berjalan di :${PORT} (FIRMS: ${FIRMS_MAP_KEY ? 'MAP_KEY' : 'arsip terbuka'})`));
 }

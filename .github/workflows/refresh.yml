@@ -1,0 +1,65 @@
+name: Segarkan data FireWatch
+
+# Vercel Hobby membatasi cron bawaannya ke sekali sehari, sedangkan data
+# gempa dan titik api perlu jauh lebih sering. GitHub Actions dipakai sebagai
+# penjadwal luar: ia hanya memanggil satu endpoint HTTP, jadi seluruh logika
+# tetap berada di aplikasi.
+on:
+  schedule:
+    # Tiap 10 menit. GitHub menjalankan cron dengan toleransi beberapa menit
+    # saat antrean sedang padat; itu memadai karena tiap tugas punya
+    # intervalnya sendiri dan hanya disegarkan bila sudah jatuh tempo.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:        # memungkinkan pemicu manual dari tab Actions
+
+# Cegah dua putaran berjalan bersamaan bila satu putaran melambat.
+concurrency:
+  group: refresh-firewatch
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Panggil endpoint penyegaran
+        env:
+          BASE_URL: ${{ vars.BASE_URL || 'https://firewatch-id.vercel.app' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          # Header Authorization hanya dikirim bila rahasianya dipasang,
+          # sehingga alur ini tetap bekerja tanpa konfigurasi tambahan.
+          AUTH=()
+          if [ -n "${CRON_SECRET:-}" ]; then
+            AUTH=(-H "Authorization: Bearer ${CRON_SECRET}")
+          fi
+
+          echo "Menyegarkan ${BASE_URL}/api/cron"
+          code=$(curl -sS -o /tmp/out.json -w '%{http_code}' \
+                   --max-time 120 --retry 2 --retry-delay 15 \
+                   "${AUTH[@]}" "${BASE_URL}/api/cron")
+
+          echo "HTTP ${code}"
+          cat /tmp/out.json
+          echo
+
+          if [ "$code" != "200" ]; then
+            echo "::error::Penyegaran gagal dengan HTTP ${code}"
+            exit 1
+          fi
+
+      - name: Ringkas status sumber data
+        env:
+          BASE_URL: ${{ vars.BASE_URL || 'https://firewatch-id.vercel.app' }}
+        run: |
+          set -euo pipefail
+          curl -sS --max-time 60 "${BASE_URL}/api/status" -o /tmp/status.json
+          node -e "
+            const d = require('/tmp/status.json');
+            console.log(d.healthy + '/' + d.total + ' sumber sehat - ' + d.mode);
+            for (const t of d.tasks) {
+              console.log('  ' + (t.healthy ? 'OK   ' : 'GAGAL') + ' ' + t.label.padEnd(34) + t.ageLabel);
+            }
+          "
