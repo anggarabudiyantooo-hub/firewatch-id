@@ -655,12 +655,49 @@ async function googleNews() {
     }))
   );
   // Gabung lalu buang duplikat: satu artikel bisa cocok di beberapa topik.
+  //
+  // Menyaring dengan URL saja tidak cukup. Berita kawat (AP, Reuters)
+  // diterbitkan ulang puluhan media dengan judul identik tetapi tautan
+  // berbeda, sehingga satu peristiwa memenuhi layar. Teknik yang dipakai
+  // di repo ACE diterapkan di sini: judul dinormalkan lalu dibandingkan
+  // lewat tumpang-tindih token (Jaccard). Ambang 0,80 dipilih karena
+  // menangkap "Flights to and from Indonesia's capital resume..." yang
+  // sama persis dari enam penerbit, tanpa menggabungkan dua peristiwa
+  // berbeda yang kebetulan memakai kata serupa.
+  //
+  // Artikel pertama yang lolos dipertahankan; karena tiap topik diambil
+  // berurutan, yang bertahan adalah versi dari topik paling spesifik.
   const seen = new Set();
+  const recentTokens = [];
   const all = [];
+
+  const normTitle = (t) => String(t || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\u00c0-\u024f\u4e00-\u9fff\u3040-\u30ff ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
   for (const arr of batches) {
     for (const a of arr) {
       const key = a.url.split('?')[0];
       if (seen.has(key)) continue;
+
+      const tokens = new Set(normTitle(a.title).split(' ').filter(Boolean));
+      if (tokens.size) {
+        let dup = false;
+        for (const prev of recentTokens) {
+          let inter = 0;
+          for (const t of tokens) if (prev.has(t)) inter++;
+          const union = tokens.size + prev.size - inter;
+          if (union && inter / union >= 0.80) { dup = true; break; }
+        }
+        if (dup) continue;
+        recentTokens.push(tokens);
+        // Jendela pembanding dibatasi agar biaya tetap linear pada
+        // jumlah artikel, bukan kuadratik penuh.
+        if (recentTokens.length > 300) recentTokens.shift();
+      }
+
       seen.add(key);
       all.push(a);
     }
