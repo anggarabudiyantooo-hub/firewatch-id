@@ -38,6 +38,7 @@ const { volcanicAsh } = require('./lib/volcano');
 const { fetchStatus: fetchPvmbgStatus } = require('./lib/pvmbg');
 const { fetchEruptions } = require('./lib/eruption');
 const { fetchQuakes, fetchTsunamiBulletins, fetchShelters } = require('./lib/hazard');
+const { isRelevant, scoreArticle, classify } = require('./lib/relevance');
 const { summarize: summarizeCasualties } = require('./lib/casualty');
 const { Scheduler } = require('./lib/scheduler');
 const { answer: ragAnswer } = require('./lib/rag');
@@ -635,13 +636,25 @@ async function googleNewsTopic(topic) {
     if (!domain) { try { domain = new URL(link).hostname.replace(/^www\./, ''); } catch { domain = ''; } }
     let title = pick('title');
     if (domain && title.endsWith(' - ' + domain)) title = title.slice(0, -(domain.length + 3));
+    const pub = pick('pubDate');
+    const cleanTitle = title.slice(0, 300);
+
+    // Gerbang relevansi (pola dari news scanner ACE, kosakata bencana).
+    // Edisi negara tetangga paling banyak menyumbang derau: kueri
+    // menyebut "Indonesia", jadi berita politik dan olahraga ikut
+    // terjaring. Judul tanpa satu pun kata kunci kebencanaan dibuang
+    // di sini, sebelum sempat memakan jatah topik.
+    if (!isRelevant(cleanTitle)) continue;
+
     out.push({
-      title: title.slice(0, 300), url: link, domain: domain.slice(0, 80),
-      seendate: toSeendate(pick('pubDate')),
-      pubDate: pick('pubDate'),
+      title: cleanTitle, url: link, domain: domain.slice(0, 80),
+      seendate: toSeendate(pub),
+      pubDate: pub,
       topic: topic.id, topicLabel: topic.label,
       foreign: !!topic.foreign,
-      country: topic.edition ? topic.edition.country : null
+      country: topic.edition ? topic.edition.country : null,
+      score: scoreArticle(cleanTitle, { publishedMs: Date.parse(pub) || null }),
+      category: classify(cleanTitle)
     });
   }
   return out;
@@ -715,14 +728,18 @@ async function googleNews() {
   const chosen = new Set();
   const picked = [];
 
+  // Jatah tiap topik diisi menurut skor relevansi, bukan semata urutan
+  // waktu. Dengan begitu erupsi yang menutup bandara mengalahkan berita
+  // seremonial yang kebetulan terbit semenit lebih baru. Kesegaran tetap
+  // ikut diperhitungkan karena sudah menjadi komponen skor.
   for (const t of NEWS_TOPICS) {
-    let n = 0;
-    for (const a of all) {
-      if (n >= QUOTA) break;
-      if (a.topic !== t.id || chosen.has(a.url)) continue;
+    const pool = all
+      .filter(a => a.topic === t.id && !chosen.has(a.url))
+      .sort((a, b) => (b.score - a.score)
+        || ((Date.parse(b.pubDate) || 0) - (Date.parse(a.pubDate) || 0)));
+    for (const a of pool.slice(0, QUOTA)) {
       chosen.add(a.url);
       picked.push(a);
-      n++;
     }
   }
   for (const a of all) {

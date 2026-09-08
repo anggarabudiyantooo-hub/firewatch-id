@@ -80,60 +80,108 @@
     </article>
   </section>
 
-  <section class="layout">
-    <div class="map-card">
-      <div class="map-toolbar" role="group" aria-label="Pengaturan lapisan peta">
-        <span class="tool-label">Lapisan</span>
-        <label class="chk"><input type="checkbox" id="lyFire" checked /><span>Titik api</span></label>
-        <label class="chk"><input type="checkbox" id="lyAir" /><span>Kualitas udara</span></label>
-        <label class="chk"><input type="checkbox" id="lyWind" checked /><span>Aliran angin</span></label>
-        <label class="chk"><input type="checkbox" id="lySmoke" checked /><span>Sebaran asap</span></label>
-        <label class="chk"><input type="checkbox" id="lyImpact" checked /><span>Daerah terdampak</span></label>
-        <label class="chk"><input type="checkbox" id="lyConc" /><span>Batas konsesi</span></label>
-        <label class="chk"><input type="checkbox" id="lyAsh" /><span>Abu vulkanik</span></label>
-        <label class="chk"><input type="checkbox" id="lyQuake" /><span>Gempa bumi</span></label>
-        <label class="chk"><input type="checkbox" id="lyShelter" /><span>Pengungsian</span></label>
-        <span class="spacer"></span>
-        <div class="tl" role="group" aria-label="Timeline sebaran asap">
-          <span class="tl-lb">Sebaran</span>
-          <button type="button" class="tl-b active" data-h="0">sekarang</button>
-          <button type="button" class="tl-b" data-h="6">+6j</button>
-          <button type="button" class="tl-b" data-h="12">+12j</button>
-          <button type="button" class="tl-b" data-h="18">+18j</button>
-        </div>
-        <label class="sel">Citra Himawari
-          <select id="himaSel">
-            <option value="" selected>nonaktif</option>
-            <option value="ir">inframerah (siang &amp; malam)</option>
-            <option value="vis">warna alami (siang)</option>
-            <option value="ash">deteksi abu vulkanik (RGB)</option>
-            <option value="dust">debu &amp; aerosol (RGB)</option>
-            <option value="wv">uap air</option>
-          </select>
-        </label>
-        <label class="sel">Warna titik
-          <select id="colorSel">
-            <option value="confidence" selected>tingkat keyakinan</option>
-            <option value="frp">daya radiasi (FRP)</option>
-          </select>
-        </label>
-        <label class="sel">Keyakinan
-          <select id="confSel">
-            <option value="0">semua tingkat</option>
-            <option value="50">nominal &amp; tinggi</option>
-            <option value="80">hanya tinggi</option>
-          </select>
-        </label>
-        <label class="sel">FRP minimum
-          <select id="frpSel">
-            <option value="0">semua</option>
-            <option value="5">≥ 5 MW</option>
-            <option value="10" selected>≥ 10 MW</option>
-            <option value="25">≥ 25 MW</option>
-            <option value="50">≥ 50 MW</option>
-          </select>
-        </label>
+  <!-- Baris kontrol: template menaruh tiap kelompok pengaturan dalam
+       kotak sendiri dengan kepala berwarna, berjajar di atas peta. -->
+  <section class="ctlrow" aria-label="Pengaturan peta">
+    <div class="ctlbox">
+      <div class="ctlbox-h ch-accent">LAYER PETA</div>
+      <div class="ctlbox-b ctl-wrap" role="group" aria-label="Pengaturan lapisan peta">
+        <label class="chk"><input type="checkbox" id="lyFire" checked /><span>TITIK API</span></label>
+        <label class="chk"><input type="checkbox" id="lyAir" /><span>KUALITAS UDARA</span></label>
+        <label class="chk"><input type="checkbox" id="lyWind" checked /><span>ALIRAN ANGIN</span></label>
+        <label class="chk"><input type="checkbox" id="lySmoke" checked /><span>SEBARAN ASAP</span></label>
+        <label class="chk"><input type="checkbox" id="lyImpact" checked /><span>WILAYAH TERDAMPAK</span></label>
+        <label class="chk"><input type="checkbox" id="lyConc" /><span>BATAS KONSESI</span></label>
+        <label class="chk"><input type="checkbox" id="lyAsh" /><span>ABU VULKANIK</span></label>
+        <label class="chk"><input type="checkbox" id="lyQuake" /><span>GEMPA</span></label>
+        <label class="chk"><input type="checkbox" id="lyShelter" /><span>PENGUNGSI</span></label>
       </div>
+    </div>
+
+    <div class="ctlbox">
+      <div class="ctlbox-h ch-info">LINIMASA ASAP</div>
+      <div class="ctlbox-b tl" role="group" aria-label="Timeline sebaran asap">
+        <button type="button" class="tl-b active" data-h="0">SEKARANG</button>
+        <button type="button" class="tl-b" data-h="6">+6J</button>
+        <button type="button" class="tl-b" data-h="12">+12J</button>
+        <button type="button" class="tl-b" data-h="18">+18J</button>
+      </div>
+    </div>
+
+    <div class="ctlbox">
+      <div class="ctlbox-h ch-warn">CITRA SATELIT</div>
+      <div class="ctlbox-b">
+        <label class="sr-only" for="himaSel">Citra Himawari</label>
+        <select id="himaSel">
+          <option value="" selected>NONAKTIF</option>
+          <option value="ir">INFRAMERAH</option>
+          <option value="vis">WARNA ALAMI</option>
+          <option value="ash">ABU VULKANIK (RGB)</option>
+          <option value="dust">DEBU &amp; AEROSOL</option>
+          <option value="wv">UAP AIR</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="ctlbox">
+      <div class="ctlbox-h ch-mute">PETA DASAR</div>
+      <div class="ctlbox-b basemap-switch" role="group" aria-label="Jenis peta dasar">
+        <button type="button" class="bm active" data-base="gelap">GELAP</button>
+        <button type="button" class="bm" data-base="citra">SATELIT</button>
+        <button type="button" class="bm" data-base="relief">RELIEF</button>
+      </div>
+    </div>
+
+    <div class="ctlbox ctlbox-grow">
+      <div class="ctlbox-h ch-red">KONFIGURASI HOTSPOT</div>
+      <div class="ctlbox-b ctl-cfg">
+        <div class="cfg-g">
+          <span class="cfg-l">WARNA TITIK API</span>
+          <label class="sr-only" for="colorSel">Warna titik</label>
+          <select id="colorSel">
+            <option value="confidence" selected>KEYAKINAN</option>
+            <option value="frp">DAYA RADIASI (FRP)</option>
+          </select>
+        </div>
+        <div class="cfg-g">
+          <span class="cfg-l">FILTER KEYAKINAN</span>
+          <label class="sr-only" for="confSel">Keyakinan</label>
+          <select id="confSel">
+            <option value="0">SEMUA</option>
+            <option value="50">NOMINAL &amp; TINGGI</option>
+            <option value="80">HANYA TINGGI</option>
+          </select>
+        </div>
+        <div class="cfg-g">
+          <span class="cfg-l">MIN FRP</span>
+          <label class="sr-only" for="frpSel">FRP minimum</label>
+          <select id="frpSel">
+            <option value="0">SEMUA</option>
+            <option value="5">&ge; 5 MW</option>
+            <option value="10" selected>&ge; 10 MW</option>
+            <option value="25">&ge; 25 MW</option>
+            <option value="50">&ge; 50 MW</option>
+          </select>
+        </div>
+        <div class="cfg-g">
+          <span class="cfg-l">LEGENDA</span>
+          <div class="cfg-lg">
+            <span><i class="dot" style="background:#ef4444"></i>TINGGI</span>
+            <span><i class="dot" style="background:#facc15"></i>SEDANG</span>
+            <span><i class="dot" style="background:#22c55e"></i>RENDAH</span>
+            <span><i class="sw sw-smoke"></i>ASAP</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Peta melebar penuh, seperti template. -->
+  <section class="map-card">
+    <div class="panel-head map-head">
+      <h2><span class="pnum">00</span> Peta interaktif &mdash; Indonesia</h2>
+      <span class="panel-sub">EPSG:4326 &middot; WGS84 &middot; 5&deg;N / 141&deg;E</span>
+    </div>
       <div class="map-wrap">
         <div id="map" role="application" aria-label="Peta kejadian bencana Indonesia: gunung api, gempa, titik api, dan sebaran asap"></div>
         <span class="map-corner tr" aria-hidden="true">5.5&deg;N 141&deg;E</span>
@@ -162,9 +210,9 @@
         <span><i class="sw sw-conc"></i>batas konsesi</span>
         <span class="legend-tip">Klik titik mana pun di peta untuk memeriksa status lahannya.</span>
       </div>
-    </div>
+  </section>
 
-    <aside class="side">
+  <section class="pgrid pgrid-a">
       <section class="panel panel-events" id="eventsPanel">
         <header class="panel-head">
           <h2><span class="pnum">01</span> Kejadian aktif</h2>
@@ -188,7 +236,9 @@
         <div id="paneProv" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
         <div id="paneCluster" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
       </section>
+  </section>
 
+  <section class="pgrid pgrid-b">
       <section class="panel panel-ask">
         <header class="panel-head">
           <h2><span class="pnum">03</span> Kueri data</h2>
@@ -222,7 +272,6 @@
         </div>
         <div id="news" class="news"><p class="empty">Memuat berita…</p></div>
       </section>
-    </aside>
   </section>
 
   <section class="panel wide" id="attrSection">

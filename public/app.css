@@ -1045,3 +1045,100 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
   padding:1px 4px;line-height:1;
 }
 .fkey span{color:var(--tx-faint);font-size:9px;letter-spacing:.04em}
+
+/* ============================================================
+   TATA LETAK TEMPLATE
+   Template menyusun halaman secara bertumpuk: baris kotak kontrol,
+   lalu peta melebar penuh, lalu pasangan panel 1fr/2fr dan 1fr/1fr.
+   Sebelumnya halaman ini memakai peta di kiri dengan sidebar sempit
+   di kanan — itulah kenapa masih terasa tampilan lama meski warna
+   dan tipografinya sudah diganti.
+   ============================================================ */
+
+.layout{display:block}
+
+/* -- baris kotak kontrol -- */
+.ctlrow{
+  display:grid;
+  grid-template-columns:auto auto auto auto minmax(0,1fr);
+  gap:6px;align-items:start;margin-bottom:6px;
+}
+.ctlbox{background:var(--surface);border:1px solid var(--line);min-width:0}
+.ctlbox-h{
+  border-bottom:1px solid var(--line);background:var(--surface-2);
+  padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:.1em;
+}
+.ch-accent{color:var(--accent)}
+.ch-info{color:var(--info)}
+.ch-warn{color:var(--warn)}
+.ch-mute{color:var(--tx-dim)}
+.ch-red{color:var(--accent-red)}
+.ctlbox-b{padding:6px 8px;display:flex;flex-direction:column;gap:3px}
+.ctlbox-b.ctl-wrap{flex-direction:row;flex-wrap:wrap;gap:3px;max-width:330px}
+
+/* Kotak kendali memakai kotak-centang bergaya chip agar sepadat mockup,
+   tetapi tetap input asli sehingga keyboard dan pembaca layar bekerja. */
+.ctl-wrap .chk{
+  border:1px solid var(--line);padding:2px 7px;font-size:10px;
+  letter-spacing:.04em;color:var(--tx-dim);gap:5px;
+}
+.ctl-wrap .chk input{width:11px;height:11px}
+.ctl-wrap .chk:has(input:checked){
+  border-color:var(--accent);color:var(--accent);background:rgba(249,115,22,.13);
+}
+.ctlbox .tl{display:flex;flex-direction:column;gap:3px;padding:6px 8px}
+.ctlbox .tl-b{width:100%;text-align:center}
+.ctlbox .basemap-switch{
+  position:static;display:flex;flex-direction:column;gap:3px;
+  background:none;border:0;padding:6px 8px;
+}
+.ctlbox select{width:100%}
+
+.ctl-cfg{flex-direction:row;flex-wrap:wrap;gap:16px;padding:6px 10px}
+.cfg-g{display:flex;flex-direction:column;gap:4px;min-width:0}
+.cfg-l{color:var(--tx-faint);font-size:8px;letter-spacing:.1em}
+.cfg-lg{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cfg-lg span{display:inline-flex;align-items:center;gap:4px;font-size:9px;color:var(--tx-dim)}
+
+/* -- peta melebar penuh -- */
+.map-card{display:block;margin-bottom:6px}
+.map-head{padding:4px 10px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.map-head h2{font-size:10px}
+.map-wrap{height:440px}
+#map{height:100%}
+
+/* -- pasangan panel seperti template -- */
+.pgrid{display:grid;gap:6px;margin-bottom:6px;align-items:start}
+.pgrid-a{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.pgrid-b{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.pgrid > .panel{margin-top:0;min-width:0}
+.panel.wide{margin-top:0;margin-bottom:6px}
+
+@media(max-width:1100px){
+  .ctlrow{grid-template-columns:1fr}
+  .ctlbox-b.ctl-wrap{max-width:none}
+  .pgrid-a,.pgrid-b{grid-template-columns:1fr}
+}
+
+/* Panel berita dan kejadian diberi tinggi tetap dengan gulir sendiri
+   supaya kedua kolom tetap sejajar, seperti pada mockup. */
+.ev-body,.news{max-height:430px;overflow-y:auto}
+
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+}
+
+/* Peta dasar kini punya kotak kontrolnya sendiri di baris atas, jadi
+   tombol lama yang mengambang di atas peta dihapus agar tidak ada dua
+   kendali untuk hal yang sama. Yang di dalam .ctlbox tetap tampil. */
+.map-wrap > .basemap-switch{display:none}
+
+/* Dropdown mengikuti gaya terminal: sudut tajam, latar surface-2. */
+.ctlbox select{
+  font-family:var(--mono);font-size:10px;letter-spacing:.04em;
+  background:var(--surface-2);color:var(--tx);
+  border:1px solid var(--line-soft);border-radius:0;padding:3px 6px;
+}
+.ctlbox select:focus{outline:none;border-color:var(--accent)}
+.cfg-g select{min-width:130px}
