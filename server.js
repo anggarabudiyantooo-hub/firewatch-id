@@ -189,17 +189,27 @@ async function getHotspotsRaw() {
     if (FIRMS_MAP_KEY) {
       try {
         const rows = await firmsHotspots();
-        return {
-          mode: 'live',
-          source: `NASA FIRMS ${FIRMS_SOURCE} (MAP_KEY)`,
-          days: FIRMS_DAYS,
-          hotspots: rows
-        };
+        // Endpoint MAP_KEY hanya melayani SATU satelit per permintaan dan
+        // kerap membalas 200 dengan tabel kosong (slot NRT belum terbit, atau
+        // satelit yang dipilih memang tidak melintas). Balasan kosong bukan
+        // berarti Indonesia tidak punya titik api — arsip terbuka menggabung
+        // tiga satelit dan biasanya tetap berisi. Jangan pernah menyajikan
+        // nol palsu; jatuh ke arsip terbuka.
+        if (rows.length) {
+          return {
+            mode: 'live',
+            source: `NASA FIRMS ${FIRMS_SOURCE} (MAP_KEY)`,
+            days: FIRMS_DAYS,
+            hotspots: rows
+          };
+        }
+        console.error('[firms:key] balasan kosong, beralih ke arsip terbuka');
       } catch (e) {
         console.error('[firms:key]', e.message);
       }
     }
-    // 2) Tanpa kunci: arsip terbuka VIIRS 24 jam, tetap data satelit nyata.
+    // 2) Arsip terbuka VIIRS 24 jam, tiga satelit. Dipakai bila tidak ada
+    //    kunci, atau bila endpoint berkunci gagal/kosong.
     const r = await openHotspots(fetchWithTimeout, BBOX);
     return {
       mode: 'live',
