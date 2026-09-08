@@ -236,6 +236,9 @@ async function firmsHotspots() {
 /** Pengambilan mentah titik api; penjadwalannya diurus Scheduler. */
 async function getHotspotsRaw() {
   {
+    // Hasil MAP_KEY yang liputannya terlalu sempit, disimpan kalau-kalau
+    // arsip terbuka juga tidak dapat dihubungi.
+    let thinKeyResult = null;
     // 1) Bila pengguna memasang MAP_KEY, pakai endpoint area FIRMS
     //    (rentang hari dapat diatur dan pembaruannya paling cepat).
     if (FIRMS_MAP_KEY) {
@@ -260,7 +263,26 @@ async function getHotspotsRaw() {
           if (newestMs === null || ms > newestMs) newestMs = ms;
           return true;
         });
-        if (fresh.length) {
+        // Balasan tidak kosong belum tentu memadai.
+        //
+        // Endpoint MAP_KEY melayani SATU satelit, dan slot NRT-nya terbit
+        // bertahap: sesaat setelah sebuah lintasan diterbitkan, tabelnya
+        // hanya memuat lintasan itu saja. Pengamatan nyata di produksi
+        // menghasilkan 595 titik yang seluruhnya terekam dalam rentang
+        // 2 menit, sementara arsip terbuka pada saat yang sama memuat
+        // 6.714 titik tersebar di 24 jam penuh.
+        //
+        // Menyajikan yang 595 itu membuat peta tampak "berantakan": titik
+        // api hanya muncul pada satu jalur lintasan satelit dan seluruh
+        // wilayah lain tampak bersih, padahal sebenarnya hanya belum
+        // terpotret. Karena itu balasan dinilai dari LIPUTAN WAKTUNYA,
+        // bukan sekadar ada-tidaknya baris.
+        const spanHours = (oldestMs !== null && newestMs !== null)
+          ? (newestMs - oldestMs) / 3600000
+          : 0;
+        const MIN_SPAN_HOURS = FIRMS_WINDOW_HOURS / 2;
+
+        if (fresh.length && spanHours >= MIN_SPAN_HOURS) {
           return {
             mode: 'live',
             source: `NASA FIRMS ${FIRMS_SOURCE} (MAP_KEY)`,
@@ -274,26 +296,66 @@ async function getHotspotsRaw() {
             dataAgeHours: oldestMs ? +((Date.now() - oldestMs) / 3600000).toFixed(1) : null
           };
         }
-        console.error('[firms:key] balasan kosong, beralih ke arsip terbuka');
+
+        // Simpan sebagai cadangan terakhir: lebih baik menyajikan satu
+        // lintasan daripada tidak sama sekali bila arsip terbuka ikut gagal.
+        if (fresh.length) {
+          thinKeyResult = {
+            mode: 'live',
+            source: `NASA FIRMS ${FIRMS_SOURCE} (MAP_KEY, liputan sebagian)`,
+            days: FIRMS_DAYS,
+            hotspots: fresh,
+            windowHours: FIRMS_WINDOW_HOURS,
+            fetched: rows.length,
+            filteredOut: rows.length - fresh.length,
+            oldestAcq: new Date(oldestMs).toISOString(),
+            newestAcq: new Date(newestMs).toISOString(),
+            dataAgeHours: +((Date.now() - oldestMs) / 3600000).toFixed(1)
+          };
+          console.error('[firms:key] liputan hanya ' + spanHours.toFixed(1)
+            + ' jam (' + fresh.length + ' titik), beralih ke arsip terbuka');
+        } else {
+          console.error('[firms:key] balasan kosong, beralih ke arsip terbuka');
+        }
       } catch (e) {
         console.error('[firms:key]', e.message);
       }
     }
     // 2) Arsip terbuka VIIRS 24 jam, tiga satelit. Dipakai bila tidak ada
-    //    kunci, atau bila endpoint berkunci gagal/kosong.
-    const r = await openHotspots(fetchWithTimeout, BBOX);
-    return {
-      mode: 'live',
-      source: `NASA FIRMS VIIRS ${r.windowHours} jam — ${r.satellites.join(', ')} (arsip terbuka)`,
-      days: 1,
-      hotspots: r.hotspots,
-      windowHours: r.windowHours,
-      fetched: r.fetched,
-      filteredOut: r.filteredOut,
-      oldestAcq: r.oldestAcq,
-      newestAcq: r.newestAcq,
-      dataAgeHours: r.dataAgeHours
-    };
+    //    kunci, atau bila endpoint berkunci gagal/kosong/terlalu sempit.
+    try {
+      const r = await openHotspots(fetchWithTimeout, BBOX);
+
+      // Bila MAP_KEY sempat memberi hasil, pilih yang liputannya lebih
+      // luas. Arsip terbuka menggabung tiga satelit sehingga hampir
+      // selalu menang, tetapi perbandingannya dibuat eksplisit agar
+      // keputusannya tidak bergantung pada urutan kode.
+      if (thinKeyResult && thinKeyResult.hotspots.length > r.hotspots.length) {
+        return thinKeyResult;
+      }
+
+      return {
+        mode: 'live',
+        source: `NASA FIRMS VIIRS ${r.windowHours} jam — ${r.satellites.join(', ')} (arsip terbuka)`,
+        days: 1,
+        hotspots: r.hotspots,
+        windowHours: r.windowHours,
+        fetched: r.fetched,
+        filteredOut: r.filteredOut,
+        oldestAcq: r.oldestAcq,
+        newestAcq: r.newestAcq,
+        dataAgeHours: r.dataAgeHours
+      };
+    } catch (e) {
+      // Arsip terbuka juga tidak dapat dihubungi. Satu lintasan satelit
+      // masih lebih berguna daripada peta kosong, asalkan keterbatasan
+      // liputannya disebutkan pada sumber data.
+      if (thinKeyResult) {
+        console.error('[firms:open]', e.message, '— memakai hasil MAP_KEY sebagian');
+        return thinKeyResult;
+      }
+      throw e;
+    }
   }
 }
 
