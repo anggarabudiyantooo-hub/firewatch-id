@@ -196,20 +196,36 @@
     // berapa total, mengapa selisihnya ada, dan seberapa tua datanya.
     // Nol karena filter dan nol karena sumber kosong ditulis berbeda —
     // pada dasbor bencana keduanya berkonsekuensi sangat berbeda.
-    var total = state.data.hotspots.length;
+    // Angka pembanding harus TOTAL sebenarnya, bukan panjang array yang
+    // sudah dipotong server. Kalau memakai panjang array, "semua titik"
+    // akan terbaca 2.000 padahal satelit mendeteksi 7.172.
+    var hm = state.data.hotspotsMeta || null;
+    var total = hm ? hm.total : state.data.hotspots.length;
     var m = state.data.meta || {};
     // Keterangan dijaga ringkas supaya tinggi kartu tetap seragam;
     // rincian umur data lengkap tetap tersedia di popup tiap titik.
     var age = (m.dataAgeHours != null && m.windowHours != null)
       ? ' · ' + m.windowHours + 'j, tertua ' + Math.round(m.dataAgeHours) + 'j lalu'
       : '';
+
+    // Bila server memotong daftar, filter yang meminta titik di bawah
+    // ambang potong tidak dapat dilayani sepenuhnya. Itu harus dikatakan,
+    // bukan dibiarkan pengguna menyimpulkan sendiri dari angka yang
+    // kelihatan ganjil.
+    var capped = hm && hm.truncated && hm.minFrpIncluded !== null
+      && state.minFrp < hm.minFrpIncluded;
+    var capNote = capped
+      ? ' · daftar dipotong ke ' + nf.format(hm.returned) + ' titik terkuat (FRP \u2265 '
+        + hm.minFrpIncluded + ' MW)'
+      : '';
+
     var txt;
     if (!total) {
       txt = 'tidak ada data dari sumber';
     } else if (!hs.length) {
       txt = '0 dari ' + nf.format(total) + ' lolos filter' + age;
     } else if (hs.length < total) {
-      txt = nf.format(hs.length) + ' dari ' + nf.format(total) + ' tampil' + age;
+      txt = nf.format(hs.length) + ' dari ' + nf.format(total) + ' tampil' + age + capNote;
     } else {
       txt = nf.format(total) + ' titik' + age;
     }

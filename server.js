@@ -439,6 +439,17 @@ function plumePolygon(lat, lon, bearingTo, lengthKm, halfAngleDeg) {
 // Offset jam yang ditampilkan pada timeline sebaran.
 const PLUME_STEPS = [0, 6, 12, 18];
 
+/**
+ * Batas jumlah titik api yang dikirim ke klien.
+ *
+ * Dipilih 2.000 setelah mengukur data nyata: pada beban puncak 7.172
+ * titik, batas ini memotong pada FRP sekitar 5,8 MW dan menghasilkan
+ * payload ~320 KB. Filter terendah yang tersedia di antarmuka adalah
+ * 5 MW, sehingga hampir seluruh pilihan pengguna tetap terlayani utuh;
+ * pilihan "semua" diberi keterangan bahwa daftarnya dipotong.
+ */
+const HOTSPOT_CAP = 2000;
+
 async function windForecast(lat, lon) {
   // Prakiraan diambil dari siklus GFS yang sama (jam +6/+12/+18), sehingga
   // timeline konsisten dengan medan angin yang digambar di peta.
@@ -1000,6 +1011,25 @@ async function buildOverview() {
         };
       }
     } catch (e) { console.error('[overview:aq]', e.message); }
+    // Pemotongan payload titik api.
+    //
+    // Saat kemarau memuncak, jumlah titik melonjak dari ratusan menjadi
+    // ribuan; pada satu pengukuran, 7.172 titik menghasilkan 1,16 MB
+    // sementara antarmuka hanya menggambar 998 di antaranya. Sisanya
+    // tetap harus diurai peramban — beban nyata pada perangkat murah,
+    // justru perangkat yang banyak dipakai di daerah terdampak.
+    //
+    // Yang dipertahankan adalah titik ber-FRP tertinggi, karena itulah
+    // yang membentuk klaster, pluma asap, dan daftar daerah terdampak.
+    // `acqRaw` dibuang dari payload: nilainya hanya bentuk mentah dari
+    // `acq` yang sudah ISO 8601, berguna saat menelusuri di server
+    // tetapi tidak pernah dipakai klien.
+    const hotspotsSorted = hotspots.slice().sort((a, b) => b.frp - a.frp);
+    const hotspotsOut = hotspotsSorted.slice(0, HOTSPOT_CAP).map(h => ({
+      lat: h.lat, lon: h.lon, frp: h.frp, confidence: h.confidence,
+      acq: h.acq, satellite: h.satellite, daynight: h.daynight
+    }));
+
     return {
       meta: {
         mode, source, days, notice,
@@ -1026,7 +1056,19 @@ async function buildOverview() {
         peopleExposed: impacted.reduce((s, r) => s + r.population, 0),
         peopleExposedModerate: impacted.reduce((s, r) => s + (r.score >= 33 ? r.population : 0), 0)
       },
-      hotspots, clusters: clusters.slice(0, 40), plumes, impacted,
+      hotspots: hotspotsOut, clusters: clusters.slice(0, 40), plumes, impacted,
+      // Titik api dipotong ke yang paling kuat agar payload tidak
+      // membengkak saat musim kebakaran memuncak. Metadata di bawah
+      // membuat pemotongan itu terbaca, bukan tersembunyi: antarmuka
+      // tetap melaporkan TOTAL sebenarnya dan memberi tahu pengguna
+      // ketika filter yang dipilih meminta titik di bawah ambang potong.
+      hotspotsMeta: {
+        returned: hotspotsOut.length,
+        total: hotspots.length,
+        truncated: hotspots.length > HOTSPOT_CAP,
+        selection: 'top-FRP',
+        minFrpIncluded: hotspotsOut.length ? hotspotsOut[hotspotsOut.length - 1].frp : null
+      },
       // Array klaster sengaja dipotong agar payload tidak membengkak.
       // Jumlah sebenarnya tetap dilaporkan supaya stats.clusters tidak
       // bertentangan dengan panjang array yang dikirim.
@@ -1395,8 +1437,16 @@ app.get('/api/news', async (_req, res) => {
 
 /* ---------- pencarian & tanya-jawab berbasis data (RAG lokal) ---------- */
 app.get('/api/ask', async (req, res) => {
-  const q = String(req.query.q || '').trim().slice(0, 200);
-  if (!q) return res.status(400).json({ error: 'Pertanyaan tidak boleh kosong.' });
+  const raw = String(req.query.q || '').trim();
+  if (!raw) return res.status(400).json({ error: 'Pertanyaan tidak boleh kosong.' });
+  // Klien membatasi 200 karakter lewat atribut maxlength. Server menolak
+  // secara tegas alih-alih diam-diam memotong: memangkas tanpa memberi
+  // tahu membuat pengguna menerima jawaban atas pertanyaan yang bukan
+  // pertanyaannya, dan menyembunyikan penyalahgunaan dari log.
+  if (raw.length > 200) {
+    return res.status(400).json({ error: 'Pertanyaan maksimal 200 karakter.' });
+  }
+  const q = raw;
   try {
     const [overview, attribution, news, volcano, quakes, shelters] = await Promise.all([
       buildOverview().catch(() => ({})),
@@ -1843,6 +1893,15 @@ app.use((req, res) => {
   // probe .php atau .env memperoleh seluruh dokumen 30 KB; itu pemborosan
   // pita untuk pemindai dan perayap.
   if (/\.[a-z0-9]{2,5}$/i.test(req.path)) {
+    res.set('Cache-Control', 'public, max-age=300');
+    return res.status(404).type('text/plain').send('404 Tidak ditemukan.\n');
+  }
+  // Dokumen penuh hanya dikirim kepada peramban yang memang sedang
+  // menavigasi; aplikasi ini satu halaman, jadi rute tak dikenal perlu
+  // tetap memuatnya agar riwayat peramban berfungsi. Perayap, pemindai,
+  // dan pemanggil API memperoleh balasan ringkas.
+  const wantsHtml = String(req.get('accept') || '').indexOf('text/html') !== -1;
+  if (!wantsHtml) {
     res.set('Cache-Control', 'public, max-age=300');
     return res.status(404).type('text/plain').send('404 Tidak ditemukan.\n');
   }

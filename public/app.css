@@ -1665,3 +1665,21 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
    di tengah ruang kosong. */
 .ctlrow > .ctlbox{align-self:stretch}
 .ctlbox > .ctlbox-b{align-content:flex-start}
+
+/* ============================================================
+   SISA TEMUAN AKSESIBILITAS — AUDIT PUTARAN-3
+   ============================================================ */
+
+/* .ev-detail dan .cs-lab terukur 3,92:1 dan 3,95:1 terhadap latar
+   panelnya — di bawah ambang AA 4,5:1. Keduanya memuat keterangan
+   kejadian dan label legenda, justru teks yang menjelaskan arti
+   angka di sebelahnya. */
+.ev-detail{color:#cbd5e1;font-size:11px}
+.cs-lab{color:#cbd5e1}
+
+/* Empat target sentuh masih di bawah 24 px. Tinggi minimum diberikan
+   pada seluruh kendali kecil di dalam peta dan panel. */
+.tl-b,.bm,.tab,.ntopic,.chip,.fkey,
+.ctlbox select,.map-toolbar select,.sel select,
+.news-src,.pg-b{min-height:26px}
+.chip{padding:4px 10px}
