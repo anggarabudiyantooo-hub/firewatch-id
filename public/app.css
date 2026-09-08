@@ -1554,3 +1554,109 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
     padding:4px 10px;
   }
 }
+
+
+/* ============================================================
+   BARIS KONTROL — VERSI FINAL: BERTUMPUK, TIDAK TERPOTONG
+
+   Dua pendekatan sebelumnya sama-sama memotong isi: lima kotak
+   berjajar membuat LAYER PETA hanya kebagian seperempat lebar,
+   dan satu-fungsi-per-baris membuat KONFIGURASI HOTSPOT terpotong
+   di kanan. Keduanya menyembunyikan kendali di balik gulir.
+
+   Susunannya kini:
+     Baris 1 : LAYER PETA        — satu kartu selebar halaman
+     Baris 2 : LINIMASA ASAP · CITRA SATELIT · PETA DASAR
+               · KONFIGURASI HOTSPOT — dikelompokkan berdampingan
+
+   Isi kartu MEMBUNGKUS ke baris berikutnya, tidak digulir, sehingga
+   tidak ada kendali yang terpotong. Bentuk kartu dipertahankan.
+   ============================================================ */
+.ctlrow{
+  display:flex;
+  flex-direction:row;
+  flex-wrap:wrap;
+  gap:6px;
+  background:transparent;
+  border:0;
+  max-width:100%;
+  min-width:0;
+  align-items:stretch;
+}
+
+/* Kembalikan bentuk kartu pada tiap kotak. */
+.ctlrow > .ctlbox,
+.ctlrow > .ctlbox:nth-child(1),
+.ctlrow > .ctlbox:nth-child(2),
+.ctlrow > .ctlbox:nth-child(3),
+.ctlrow > .ctlbox:nth-child(4),
+.ctlrow > .ctlbox:nth-child(5){
+  flex-direction:column;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  min-width:0;
+  max-width:none;
+}
+
+/* Baris 1: LAYER PETA selebar halaman. */
+.ctlrow > .ctlbox:nth-child(1){flex:1 1 100%}
+
+/* Baris 2: tiga kotak kecil selebar isinya, konfigurasi menyerap sisa. */
+.ctlrow > .ctlbox:nth-child(2),
+.ctlrow > .ctlbox:nth-child(3),
+.ctlrow > .ctlbox:nth-child(4){flex:0 1 auto}
+.ctlrow > .ctlbox:nth-child(5){flex:1 1 380px}
+
+/* Kepala kartu kembali ke atas, bukan di samping. */
+.ctlbox > .ctlbox-h{
+  flex:0 0 auto;
+  display:block;
+  border:0;
+  border-bottom:1px solid var(--line);
+  background:var(--surface-2);
+  padding:4px 10px;
+  font-size:10px;
+  letter-spacing:.1em;
+  white-space:nowrap;
+}
+
+/* Isi MEMBUNGKUS, tidak digulir — inilah yang menghilangkan
+   pemotongan. Tinggi kartu menyesuaikan isinya. */
+.ctlbox > .ctlbox-b,
+.ctlbox > .ctlbox-b.ctl-wrap,
+.ctlbox > .ctlbox-b.tl,
+.ctlbox > .ctlbox-b.basemap-switch,
+.ctlbox > .ctlbox-b.ctl-cfg{
+  flex:1 1 auto;
+  min-width:0;
+  flex-direction:row;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:5px;
+  padding:6px 10px;
+  overflow:visible;
+}
+.ctlbox-b.ctl-wrap{flex-wrap:wrap !important;max-height:none !important}
+.ctl-cfg{flex-wrap:wrap !important;gap:10px 16px;overflow:visible}
+.ctl-cfg .cfg-g{flex:0 0 auto;flex-direction:row;align-items:center;gap:6px}
+.cfg-lg{flex-wrap:wrap}
+
+/* Chip lapisan kini punya lebar penuh; beri jarak yang nyaman. */
+.ctl-wrap .chk{flex:0 0 auto;padding:3px 9px;gap:6px}
+
+@media(max-width:768px){
+  /* Layar sempit: setiap kartu satu baris penuh. */
+  .ctlrow > .ctlbox,
+  .ctlrow > .ctlbox:nth-child(1),
+  .ctlrow > .ctlbox:nth-child(2),
+  .ctlrow > .ctlbox:nth-child(3),
+  .ctlrow > .ctlbox:nth-child(4),
+  .ctlrow > .ctlbox:nth-child(5){flex:1 1 100%}
+}
+
+/* Kartu pada baris kedua diregangkan setinggi kartu tertinggi supaya
+   tepi bawahnya sejajar; isinya diratakan ke atas agar tidak melayang
+   di tengah ruang kosong. */
+.ctlrow > .ctlbox{align-self:stretch}
+.ctlbox > .ctlbox-b{align-content:flex-start}
