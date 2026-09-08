@@ -1193,8 +1193,13 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
 .tl-b,.bm,.tab,.ntopic,.chip{min-height:26px}
 
 @media(max-width:768px){
-  /* Peta adalah inti aplikasi; jangan sampai terdesak kontrol. */
+  /* Peta adalah inti aplikasi; jangan sampai terdesak kontrol.
+     #map diberi tinggi eksplisit, BUKAN height:100%. Induk bertinggi
+     auto membuat persentase me-resolve ke indefinite dan CSS
+     menghitungnya nol — itulah yang membuat peta hilang total pada
+     721-768 px, celah antara blok ini dan penyelamat di max-width:720px. */
   .map-wrap{height:auto;min-height:60vh}
+  #map{height:60vh;min-height:340px}
   .chk{min-height:32px}
   .chk input[type="checkbox"]{width:20px;height:20px}
   .ctl-wrap{gap:6px}

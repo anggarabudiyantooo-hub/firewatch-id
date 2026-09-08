@@ -62,6 +62,18 @@
     .setView([-2.2, 117.5], 5);
   L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
+  // Leaflet menyimpan ukuran petanya saat inisialisasi dan tidak
+  // memperbaruinya sendiri. Bila tinggi wadah berubah karena media query
+  // — misalnya perangkat diputar dari potret ke lanskap — peta tetap
+  // memakai ukuran lama dan hanya memuat sebagian ubin. Pemberitahuan
+  // ini dijeda agar tidak dihitung ulang pada tiap piksel saat jendela
+  // diseret.
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { map.invalidateSize(); }, 200);
+  });
+
   var AGS = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
   var ATTR = 'Peta dasar &copy; Esri, Maxar, Earthstar Geographics, HERE, Garmin, &copy; OpenStreetMap contributors';
 
@@ -428,8 +440,8 @@
         showHint(d.activeCount
           ? (d.eruptingCount || 0) + ' gunung meletus (24 jam)'
             + (oc ? ' · ' + oc.Awas + ' Awas, ' + oc.Siaga + ' Siaga, ' + oc.Waspada + ' Waspada (PVMBG)' : '') + '.'
-          : 'Tidak ada gunung berstatus siaga maupun erupsi saat ini.');
-        setTimeout(function () { if (state.ashOn) showHint(null); }, 6000);
+          : 'Tidak ada gunung berstatus siaga maupun erupsi saat ini.', 6000);
+
       })
       .catch(function () { showHint('Gagal memuat data gunung api.'); })
       .then(function () { state.ashBusy = false; });
@@ -1072,8 +1084,8 @@
         renderAirLegend();
         showHint(d.count
           ? nf.format(d.count) + ' sel kualitas udara · model CAMS via Open-Meteo.'
-          : 'Tidak ada data kualitas udara pada area ini.');
-        setTimeout(function () { if (state.airOn) showHint(null); }, 5000);
+          : 'Tidak ada data kualitas udara pada area ini.', 5000);
+
       })
       .catch(function () { showHint('Gagal memuat data kualitas udara.'); })
       .then(function () { state.airBusy = false; });
@@ -1144,7 +1156,18 @@
       q += '&west=' + b.getWest().toFixed(2) + '&south=' + b.getSouth().toFixed(2) +
            '&east=' + b.getEast().toFixed(2) + '&north=' + b.getNorth().toFixed(2);
     }
-    if (state.windKey === q) { drawWind(); return Promise.resolve(); }
+    if (state.windKey === q) {
+      // Data yang sama masih tersimpan, jadi tidak perlu diambil ulang —
+      // tetapi pengguna baru saja menyalakan lapisan dan tetap berhak
+      // memperoleh konfirmasi bahwa ada sesuatu yang tergambar.
+      drawWind();
+      var n = state.wind && state.wind.count;
+      showHint(n
+        ? nf.format(n) + ' titik medan angin · ' + ((state.wind && state.wind.source) || 'NOAA GFS')
+          + '. Garis mengalir ke arah asap terbawa.'
+        : 'Tidak ada data angin pada area ini.', 5000);
+      return Promise.resolve();
+    }
     state.windBusy = true;
     showHint('Memuat arah angin…');
     return fetchT('/api/wind-field?' + q, { headers: { Accept: 'application/json' } })
@@ -1155,8 +1178,8 @@
         drawWind();
         showHint(d.count
           ? nf.format(d.count) + ' titik medan angin · ' + (d.source || 'NOAA GFS') + '. Garis mengalir ke arah asap terbawa.'
-          : 'Tidak ada data angin pada area ini.');
-        setTimeout(function () { if (state.windOn) showHint(null); }, 5000);
+          : 'Tidak ada data angin pada area ini.', 5000);
+
       })
       .catch(function () { showHint('Gagal memuat data arah angin.'); })
       .then(function () { state.windBusy = false; });
@@ -1165,11 +1188,30 @@
   /* ---------- batas konsesi ---------- */
   var CONC_COLOR = { sawit: '#ff9f1c', kayu: '#34d399', hph: '#7aa7ff', tambang: '#a78bfa', rspo: '#2dd4bf' };
 
-  function showHint(msg) {
+  /**
+   * Pesan singkat di atas peta.
+   *
+   * Timer penyembunyi milik pesan sebelumnya wajib dibatalkan. Tanpa itu,
+   * pesan lapisan yang baru dinyalakan bisa lenyap oleh hitungan mundur
+   * lapisan sebelumnya, atau lebih buruk: lapisan yang tidak menulis
+   * pesannya sendiri membiarkan teks lapisan lain tetap terbaca. Pengguna
+   * lalu menyalakan lapisan gempa dan membaca statistik gunung api.
+   */
+  var hintTimer = null;
+  function showHint(msg, autoHideMs) {
     var h = $('mapHint');
+    if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
     h.style.bottom = (state.airOn ? '150px' : '');
     if (!msg) { h.hidden = true; h.textContent = ''; return; }
-    h.hidden = false; h.textContent = msg;
+    h.hidden = false;
+    h.textContent = msg;
+    if (autoHideMs) {
+      hintTimer = setTimeout(function () {
+        hintTimer = null;
+        h.hidden = true;
+        h.textContent = '';
+      }, autoHideMs);
+    }
   }
 
   function loadConcessions() {
@@ -1682,9 +1724,64 @@
   }
 
   /* ---------- interaksi ---------- */
+
+  /**
+   * Keterangan singkat saat sebuah lapisan dinyalakan.
+   *
+   * Lapisan yang diam sama sekali menimbulkan keraguan: pengguna tidak
+   * dapat membedakan "lapisan menyala tetapi memang tidak ada data" dari
+   * "gagal dimuat". Pada dasbor bencana keduanya berkonsekuensi sangat
+   * berbeda, jadi setiap lapisan menyebut jumlah yang benar-benar
+   * digambar.
+   */
+  var LAYER_HINTS = {
+    lyFire: function () {
+      if (!state.data) return 'Titik api sedang dimuat…';
+      var total = state.data.hotspots.length;
+      var shown = state.data.hotspots.filter(function (h) {
+        return h.confidence >= state.minConf && h.frp >= state.minFrp;
+      }).length;
+      if (!total) return 'Tidak ada data titik api dari sumber.';
+      return nf.format(shown) + ' dari ' + nf.format(total)
+        + ' titik api ditampilkan (NASA FIRMS VIIRS, 24 jam).';
+    },
+    lySmoke: function () {
+      var n = state.data && state.data.plumes ? state.data.plumes.length : 0;
+      return n ? nf.format(n) + ' pluma asap dimodelkan dari arah angin dan intensitas api.'
+               : 'Tidak ada pluma asap pada data saat ini.';
+    },
+    lyImpact: function () {
+      var n = state.data && state.data.impacted ? state.data.impacted.length : 0;
+      return n ? nf.format(n) + ' kota/kabupaten berada di jalur sebaran asap.'
+               : 'Tidak ada daerah yang terdeteksi di jalur asap.';
+    },
+    lyQuake: function () {
+      var q = state.hazard && state.hazard.quakes;
+      if (!q || !q.counts) return 'Data gempa sedang dimuat…';
+      var m = q.latest && q.latest.magnitude !== null ? ' · terkini M ' + q.latest.magnitude : '';
+      return nf.format(q.counts.total) + ' gempa tercatat 24 jam terakhir' + m + ' (BMKG).';
+    },
+    lyShelter: function () {
+      var sh = state.hazard && state.hazard.shelters;
+      if (!sh) return 'Data pengungsi sedang dimuat…';
+      if (!sh.events || !sh.events.length) return 'Tidak ada pengungsian aktif yang dilaporkan BNPB.';
+      return nf.format(sh.totalPeople) + ' jiwa mengungsi di '
+        + nf.format(sh.events.length) + ' kejadian (BNPB).';
+    }
+  };
+
+  function layerHint(id) {
+    var fn = LAYER_HINTS[id];
+    if (!fn) return;
+    var txt = '';
+    try { txt = fn(); } catch (err) { txt = ''; }
+    if (txt) showHint(txt, 6000);
+  }
+
   function bindLayer(id, group) {
     $(id).addEventListener('change', function (e) {
-      if (e.target.checked) map.addLayer(group); else map.removeLayer(group);
+      if (e.target.checked) { map.addLayer(group); layerHint(id); }
+      else { map.removeLayer(group); showHint(null); }
     });
   }
   bindLayer('lyFire', gFire);
@@ -1713,16 +1810,22 @@
     state.quakeOn = e.target.checked;
     if (state.quakeOn) {
       map.addLayer(gQuake);
-      (state.hazard ? Promise.resolve() : loadHazard()).then(drawQuakes);
-    } else { map.removeLayer(gQuake); }
+      (state.hazard ? Promise.resolve() : loadHazard()).then(function () {
+        drawQuakes();
+        layerHint('lyQuake');
+      });
+    } else { map.removeLayer(gQuake); showHint(null); }
   });
 
   $('lyShelter').addEventListener('change', function (e) {
     state.shelterOn = e.target.checked;
     if (state.shelterOn) {
       map.addLayer(gShelter);
-      (state.hazard ? Promise.resolve() : loadHazard()).then(drawShelters);
-    } else { map.removeLayer(gShelter); }
+      (state.hazard ? Promise.resolve() : loadHazard()).then(function () {
+        drawShelters();
+        layerHint('lyShelter');
+      });
+    } else { map.removeLayer(gShelter); showHint(null); }
   });
 
   $('himaSel').addEventListener('change', function (e) {

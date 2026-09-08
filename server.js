@@ -104,16 +104,56 @@ app.use(helmet({
   referrerPolicy: { policy: 'no-referrer' }
 }));
 
-// rate limit ringan per IP
+/**
+ * Pembatasan laju per IP.
+ *
+ * Dua kelas dipisahkan karena biayanya jauh berbeda. Endpoint biasa
+ * dijawab dari cache memori, sedangkan endpoint "mahal" meneruskan
+ * panggilan ke pihak ketiga berkuota (NASA FIRMS, Open-Meteo, NOAA).
+ * Menghabiskan kuota itu membuat dasbor gelap bagi SEMUA orang, tepat
+ * ketika paling dibutuhkan — jadi kelas mahal diberi jatah lebih ketat.
+ *
+ * Ambangnya sengaja longgar: operator seluler Indonesia banyak memakai
+ * CGNAT, sehingga satu alamat IP bisa mewakili ribuan pengguna sah.
+ *
+ * Header RateLimit-* selalu dikirim agar klien dan pengaudit dapat
+ * melihat sisa jatah tanpa harus memicu penolakan lebih dulu.
+ */
+const RL_WINDOW_MS = 60000;
+const RL_NORMAL = 240;
+// Satu sesi pemakaian aktif — memuat halaman, menyalakan empat lapisan,
+// lalu memperbesar dan memperkecil peta berkali-kali — terukur hanya
+// menghasilkan 4 permintaan kelas mahal per menit. Ambang 90 memberi
+// ruang lebih dari dua puluh kali lipat, penting karena operator seluler
+// Indonesia banyak memakai CGNAT sehingga satu alamat IP dapat mewakili
+// banyak pengguna sah sekaligus. Yang ingin dicegah adalah skrip yang
+// mengirim ribuan permintaan, bukan manusia yang menggeser peta.
+const RL_EXPENSIVE = 90;
+const RL_EXPENSIVE_PATHS = /^\/(overview|wind-field|air-quality|concessions|place|whose-land|air-point|news)/;
+
 const hits = new Map();
 app.use('/api', (req, res, next) => {
   const ip = req.ip || 'x';
   const now = Date.now();
-  const rec = hits.get(ip) || { n: 0, t: now };
-  if (now - rec.t > 60000) { rec.n = 0; rec.t = now; }
-  rec.n++; hits.set(ip, rec);
+  const expensive = RL_EXPENSIVE_PATHS.test(req.path);
+  const limit = expensive ? RL_EXPENSIVE : RL_NORMAL;
+  const key = ip + (expensive ? '|e' : '|n');
+
+  const rec = hits.get(key) || { n: 0, t: now };
+  if (now - rec.t > RL_WINDOW_MS) { rec.n = 0; rec.t = now; }
+  rec.n++;
+  hits.set(key, rec);
   if (hits.size > 5000) hits.clear();
-  if (rec.n > 120) return res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi sebentar lagi.' });
+
+  const resetSec = Math.max(1, Math.ceil((rec.t + RL_WINDOW_MS - now) / 1000));
+  res.set('RateLimit-Limit', String(limit));
+  res.set('RateLimit-Remaining', String(Math.max(0, limit - rec.n)));
+  res.set('RateLimit-Reset', String(resetSec));
+
+  if (rec.n > limit) {
+    res.set('Retry-After', String(resetSec));
+    return res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi sebentar lagi.' });
+  }
   next();
 });
 
@@ -1020,8 +1060,36 @@ async function windField(stepDeg, box) {
 }
 
 
+/**
+ * Baca parameter `step` dari himpunan nilai yang diizinkan.
+ *
+ * Sebelumnya nilai apa pun diterima lalu diabaikan diam-diam. Itu bukan
+ * sekadar tidak rapi: tiap nilai unik menghasilkan kunci cache CDN yang
+ * berbeda, sehingga `?step=1.0001`, `?step=1.0002`, dan seterusnya
+ * masing-masing menjadi cache miss yang meneruskan panggilan ke pihak
+ * ketiga berkuota. Membatasi ke himpunan diskret menutup jalur
+ * amplifikasi itu sekaligus membuat penolakan menjadi jujur.
+ */
+function readStep(raw, allowed, fallback) {
+  if (raw === undefined || raw === '') return { value: fallback };
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return { error: 'Parameter step harus berupa angka.' };
+  if (!allowed.includes(n)) {
+    return { error: 'Parameter step harus salah satu dari: ' + allowed.join(', ') + '.' };
+  }
+  return { value: n };
+}
+
+const WIND_STEPS = [1, 1.5, 2, 3];
+// Nilai-nilai ini harus cocok dengan airStepFor() dan windStepFor() di
+// public/app.js. Menambah tingkat zoom baru di klien tanpa menambahkannya
+// di sini akan membuat lapisan gagal dengan 400.
+const AQ_STEPS = [0.25, 0.5, 1, 1.5];
+
 app.get('/api/wind-field', async (req, res) => {
-  const step = Number(req.query.step);
+  const sp = readStep(req.query.step, WIND_STEPS, 2);
+  if (sp.error) return res.status(400).json({ error: sp.error });
+  const step = sp.value;
   const w = Number(req.query.west), so = Number(req.query.south);
   const e = Number(req.query.east), n = Number(req.query.north);
   let box = null;
@@ -1029,12 +1097,20 @@ app.get('/api/wind-field', async (req, res) => {
     if (w >= e || so >= n || so < -90 || n > 90 || w < -180 || e > 180) {
       return res.status(400).json({ error: 'Area peta tidak valid.' });
     }
-    // Tidak lagi dijepit ke Indonesia: medan angin GFS mencakup seluruh dunia,
-    // hanya dibatasi lintang agar kutub tidak memenuhi hasil.
+    // Tidak dijepit ke Indonesia supaya angin tetap menyambung saat
+    // pengguna menggeser peta keluar, hanya dibatasi lintang agar kutub
+    // tidak memenuhi hasil.
     box = { west: w, south: Math.max(-85, so), east: e, north: Math.min(85, n) };
+  } else {
+    // Tanpa kotak pandang, sebelumnya seluruh grid global dikirim: 15.189
+    // titik, 800 KB, dan hanya 1,4% di antaranya berada di Indonesia.
+    // Muatan awal itu 68% dari seluruh payload aplikasi, di jaringan yang
+    // justru sedang buruk saat bencana. Default kini kawasan Indonesia
+    // beserta margin 10 derajat supaya partikel tidak terpotong di tepi.
+    box = { west: 84.5, south: -21.5, east: 151.5, north: 16.5 };
   }
   try {
-    const wf = await windField(Number.isFinite(step) ? step : 2, box);
+    const wf = await windField(step, box);
     res.set('Cache-Control', 'public, max-age=1800');
     res.json({
       updatedAt: new Date().toISOString(),
@@ -1107,7 +1183,9 @@ async function airQualityField(stepDeg, box) {
 }
 
 app.get('/api/air-quality', async (req, res) => {
-  const step = Number(req.query.step);
+  const sp = readStep(req.query.step, AQ_STEPS, 1.5);
+  if (sp.error) return res.status(400).json({ error: sp.error });
+  const step = sp.value;
   const w = Number(req.query.west), s = Number(req.query.south);
   const e = Number(req.query.east), n = Number(req.query.north);
   let box = null;
@@ -1127,7 +1205,7 @@ app.get('/api/air-quality', async (req, res) => {
     }
   }
   try {
-    const field = await airQualityField(Number.isFinite(step) ? step : 1.5, box);
+    const field = await airQualityField(step, box);
     res.set('Cache-Control', 'public, max-age=900');
     res.json({
       updatedAt: new Date().toISOString(),
@@ -1651,6 +1729,42 @@ app.get('/', (_req, res) => sendIndex(res));
 // index.html tidak boleh di-cache: berkas inilah yang menunjuk versi aset,
 // sehingga peramban wajib memeriksanya ulang setiap kunjungan. Aset lain
 // aman di-cache lama karena URL-nya sudah bertanda versi (?v=ASSET_VERSION).
+/**
+ * Situs kepentingan publik seharusnya dapat ditemukan mesin pencari.
+ * Endpoint API dikecualikan supaya perayap tidak menghabiskan kuota
+ * sumber pihak ketiga hanya untuk mengindeks JSON.
+ */
+app.get('/robots.txt', (req, res) => {
+  const host = (req.get('x-forwarded-host') || req.get('host') || 'firewatch-id.vercel.app');
+  const proto = (req.get('x-forwarded-proto') || 'https');
+  res.set('Cache-Control', 'public, max-age=86400');
+  res.type('text/plain').send(
+    'User-agent: *\n' +
+    'Allow: /\n' +
+    'Disallow: /api/\n' +
+    '\n' +
+    `Sitemap: ${proto}://${host}/sitemap.xml\n`
+  );
+});
+
+app.get('/sitemap.xml', (req, res) => {
+  const host = (req.get('x-forwarded-host') || req.get('host') || 'firewatch-id.vercel.app');
+  const proto = (req.get('x-forwarded-proto') || 'https');
+  const today = new Date().toISOString().slice(0, 10);
+  res.set('Cache-Control', 'public, max-age=86400');
+  res.type('application/xml').send(
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    '  <url>\n' +
+    `    <loc>${proto}://${host}/</loc>\n` +
+    `    <lastmod>${today}</lastmod>\n` +
+    '    <changefreq>hourly</changefreq>\n' +
+    '    <priority>1.0</priority>\n' +
+    '  </url>\n' +
+    '</urlset>\n'
+  );
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
   index: false,
   setHeaders(res, filePath) {
@@ -1663,6 +1777,13 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 app.use((req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Endpoint tidak ditemukan.' });
+  // Permintaan berkas (punya ekstensi) dijawab ringkas. Sebelumnya setiap
+  // probe .php atau .env memperoleh seluruh dokumen 30 KB; itu pemborosan
+  // pita untuk pemindai dan perayap.
+  if (/\.[a-z0-9]{2,5}$/i.test(req.path)) {
+    res.set('Cache-Control', 'public, max-age=300');
+    return res.status(404).type('text/plain').send('404 Tidak ditemukan.\n');
+  }
   sendIndex(res, 404);
 });
 // jangan bocorkan stack trace
