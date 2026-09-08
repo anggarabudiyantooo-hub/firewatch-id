@@ -136,6 +136,9 @@
       </div>
       <div class="map-wrap">
         <div id="map" role="application" aria-label="Peta kejadian bencana Indonesia: gunung api, gempa, titik api, dan sebaran asap"></div>
+        <span class="map-corner tr" aria-hidden="true">5.5&deg;N 141&deg;E</span>
+        <span class="map-corner bl" aria-hidden="true">11&deg;S 95&deg;E</span>
+        <span class="map-corner br" aria-hidden="true">11&deg;S 141&deg;E</span>
         <div id="confSummary" class="conf-summary" aria-live="polite"></div>
         <div id="airLegend" class="air-legend" hidden aria-live="polite"></div>
         <div id="ashLegend" class="ash-legend" hidden aria-live="polite"></div>
@@ -326,7 +329,7 @@
     </div>
   </section>
 
-  <section class="panel wide">
+  <section class="panel wide" id="sourcePanel">
     <header class="panel-head"><h2><span class="pnum">10</span> Sumber data &amp; batasan</h2></header>
     <div class="srcgrid">
       <div class="srccard">
@@ -353,14 +356,18 @@
       <div class="srccard">
         <h3>Gempa, tsunami &amp; pengungsi</h3>
         <p>Gempa bumi dari <b>BMKG</b> (autogempa, gempa terkini, gempa dirasakan) diperbarui tiap 2 menit. Status potensi tsunami mengikuti pernyataan resmi BMKG. Sebagai pembanding lembaga asing, buletin <b>NOAA Pacific/National Tsunami Warning Center (AS)</b> ditarik dan disaring hanya untuk kejadian yang menyangkut Indonesia dan kawasan sekitarnya — buletin Pasifik lain sengaja tidak ditampilkan agar tidak menimbulkan kepanikan keliru.</p>
-        <p>Jumlah pengungsi berasal dari layanan GIS resmi <b>BNPB</b>, memuat pengungsi di posko terpusat maupun mandiri per desa. Angka mengikuti laporan BPBD daerah dan dapat berubah. Data ini terbatas pada kejadian yang layanannya diterbitkan BNPB; tidak semua bencana memilikinya.</p>
+        <p>Jumlah pengungsi berasal dari layanan GIS resmi <b>BNPB</b>, memuat pengungsi di posko terpusat maupun mandiri per desa. Angka mengikuti laporan BPBD daerah dan dapat berubah. Katalog BNPB dipindai otomatis setiap siklus sehingga kejadian baru muncul sendiri tanpa perlu perubahan kode. Laporan yang lebih tua dari 10 hari dianggap sudah berakhir dan tidak lagi dihitung sebagai pengungsi aktif — BNPB tidak menghapus layanan saat warga pulang, jadi tanpa batas ini angka lama akan menempel selamanya. Data terbatas pada kejadian yang layanannya diterbitkan BNPB; tidak semua bencana memilikinya.</p>
 
+      </div>
+      <div class="srccard">
         <h3>Korban dari berita &amp; penjadwalan</h3>
         <p>Selain angka resmi BNPB, dasbor menampilkan angka korban yang diekstrak otomatis dari judul berita. Angka ini <b>bukan data resmi</b>: diambil dengan pencocokan pola teks, bisa keliru, tertinggal, atau salah konteks. Karena itu setiap angka selalu disertai kutipan kalimat aslinya dan tautan ke penerbitnya agar dapat diverifikasi. Bila angka resmi dan angka media berbeda, yang resmi harus didahulukan.</p>
         <p>Seluruh sumber disegarkan oleh satu penjadwal terpusat dengan interval berbeda mengikuti irama penerbitan masing-masing: gempa 2 menit, berita dan titik api 10 menit, pengungsi dan gunung api 30 menit, status PVMBG 3 jam. Panel <b>Status pembaruan data</b> menampilkan kapan tiap sumber terakhir berhasil diperbarui, sehingga data usang tidak pernah tersamar sebagai data terkini.</p>
 
+      </div>
+      <div class="srccard">
         <h3>Berita</h3>
-        <p>Google Berita RSS ditarik otomatis untuk enam topik terpisah — kejadian, kebijakan pusat (rapat terbatas/instruksi presiden), operasi penanganan (BNPB, BPBD, Manggala Agni, water bombing), tanggap darurat daerah, penegakan hukum, dan dampak kesehatan — lalu digabung dan disaring duplikatnya. Cadangan GDELT Project. Tautan mengarah ke penerbit asli; SIAGA ID tidak menyunting isinya.</p>
+        <p>Google Berita RSS ditarik otomatis untuk tiga belas topik terpisah: delapan topik dalam negeri (kejadian, kebijakan pusat, operasi penanganan, tanggap darurat daerah, penegakan hukum, dampak kesehatan, gempa &amp; tsunami, penerbangan &amp; bandara) dan lima edisi negara tetangga (Singapura, Malaysia, Australia, Jepang, Filipina) yang memakai edisi Google Berita setempat sehingga yang tampil media negara itu sendiri. Semua digabung dan disaring duplikatnya, lalu tiap artikel diberi usia terbit dan jam WIB. Cadangan GDELT Project. Tautan mengarah ke penerbit asli; SIAGA ID tidak menyunting isinya.</p>
       </div>
     </div>
     <p class="fineprint">Untuk keputusan darurat, rujuk BMKG, BNPB/BPBD, dan KLHK. <span id="srcline"></span></p>
@@ -379,7 +386,18 @@
       <div class="emg-box"><b>112</b><span>NOMOR DARURAT</span></div>
     </div>
     <div class="foot-col foot-right">
-      <div class="foot-lab">CAKUPAN</div>
+      <div class="foot-lab">FUNGSI CEPAT</div>
+      <nav class="fkeys" aria-label="Lompat ke bagian">
+        <a class="fkey" href="#map"><b>F1</b><span>PETA</span></a>
+        <a class="fkey" href="#eventsPanel"><b>F2</b><span>KEJADIAN</span></a>
+        <a class="fkey" href="#hazardPanel"><b>F3</b><span>GEMPA</span></a>
+        <a class="fkey" href="#so2Panel"><b>F4</b><span>GUNUNG API</span></a>
+        <a class="fkey" href="#news"><b>F5</b><span>BERITA</span></a>
+        <a class="fkey" href="#sourcePanel"><b>F6</b><span>SUMBER</span></a>
+        <a class="fkey" href="#askQ"><b>F7</b><span>KUERI</span></a>
+        <a class="fkey" href="#statusPanel"><b>F8</b><span>STATUS</span></a>
+      </nav>
+      <div class="foot-lab" style="margin-top:10px">CAKUPAN</div>
       <p class="foot-p">Seluruh Indonesia · 94,5&deg;–141,5&deg;BT / 11,5&deg;LS–6,5&deg;LU<br />EPSG:4326 · WGS84</p>
     </div>
   </div>

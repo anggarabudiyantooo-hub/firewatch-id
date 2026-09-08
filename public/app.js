@@ -524,13 +524,36 @@
       if (top) {
         $('sShelterSub').textContent = 'terbanyak ' + top.area + ' · ' + nf.format(top.people) + ' jiwa';
       } else if (!tot) {
-        $('sShelterSub').textContent = 'tidak ada pengungsian tercatat';
+        // Nol harus terbaca sebagai "memang tidak ada", bukan "gagal muat".
+        var ended0 = sh && sh.recentlyEnded && sh.recentlyEnded[0];
+        $('sShelterSub').textContent = ended0 && ended0.ageDays != null
+          ? 'nihil · terakhir ' + ended0.ageDays + ' hari lalu'
+          : 'tidak ada pengungsian aktif';
       }
     }
 
     if (meta) {
       meta.textContent = 'BMKG · NOAA PTWC · BNPB'
         + (state.hazardAt ? ' · ' + state.hazardAt : '');
+    }
+
+    // Kontrol lapisan pengungsian dimatikan saat tidak ada posko aktif —
+    // mencentangnya hanya akan memberi peta kosong tanpa penjelasan.
+    // Begitu BNPB melaporkan pengungsi lagi, kontrolnya hidup sendiri.
+    var shBox = $('lyShelter');
+    if (shBox) {
+      var hasShelter = !!(sh && sh.events && sh.events.length);
+      var wrap = shBox.closest('.chk');
+      shBox.disabled = !hasShelter;
+      if (wrap) {
+        wrap.classList.toggle('chk-off', !hasShelter);
+        wrap.title = hasShelter ? '' : 'Tidak ada pengungsian aktif saat ini';
+      }
+      if (!hasShelter && shBox.checked) {
+        shBox.checked = false;
+        state.shelterOn = false;
+        if (map.hasLayer(gShelter)) map.removeLayer(gShelter);
+      }
     }
 
     /* --- gempa terbaru --- */
@@ -619,6 +642,32 @@
           'Sumber: ' + sh.source + (ev.updatedAt ? ' · diperbarui ' + ev.updatedAt.slice(0, 10) : '')));
         body.appendChild(sb);
       });
+    } else if (sh) {
+      // Tidak ada pengungsian aktif. Blok ini tetap ditampilkan agar
+      // pembaca tahu datanya memang kosong — bukan gagal dimuat — dan
+      // kapan terakhir kali ada pengungsi.
+      var nb = el('div', 'hz-block');
+      var nh = el('div', 'hz-head');
+      nh.appendChild(el('span', 'hz-title', 'Pengungsi'));
+      var ok = el('span', 'hz-badge', 'NIHIL');
+      ok.style.background = '#22c55e';
+      nh.appendChild(ok);
+      nb.appendChild(nh);
+      nb.appendChild(el('div', 'hz-empty',
+        'Tidak ada pengungsian aktif yang dilaporkan BNPB dalam '
+        + (sh.maxAgeDays || 10) + ' hari terakhir.'));
+
+      var ended = sh.recentlyEnded || [];
+      if (ended.length) {
+        var last = ended[0];
+        nb.appendChild(el('div', 'hz-note',
+          'Terakhir tercatat: ' + last.label + ' · ' + nf.format(last.total)
+          + ' jiwa · ' + timeAgo(Date.parse(last.updatedAt))
+          + '. Angka itu sudah tidak menggambarkan keadaan sekarang.'));
+      }
+      nb.appendChild(el('div', 'hz-note', 'Sumber: ' + sh.source
+        + ' · panel ini menyala sendiri begitu ada laporan pengungsi baru.'));
+      body.appendChild(nb);
     }
   }
 

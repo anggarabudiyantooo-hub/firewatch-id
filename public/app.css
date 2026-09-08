@@ -958,3 +958,90 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
 .ticker-tag{background:var(--accent-red);color:#000;font-size:9px;letter-spacing:.14em}
 .tk{font-size:10px;letter-spacing:.04em}
 .tk-k{font-size:9px;letter-spacing:.1em}
+
+/* Keadaan kosong panel bencana: nol harus terbaca sebagai fakta,
+   bukan sebagai kegagalan memuat. */
+.hz-empty{font-size:12px;color:var(--tx-dim);padding:10px 0 2px;line-height:1.6}
+.chk-off{opacity:.4;cursor:not-allowed}
+.chk-off input{cursor:not-allowed}
+
+/* ============================================================
+   PENYELARASAN AKHIR DENGAN TEMPLATE
+   Rincian yang tersisa dari mockup: teks kapital, grid + scanline
+   pada peta, label koordinat sudut, tabel zebra, dan baris fungsi
+   cepat. Semua murni lapisan visual — tidak ada perilaku berubah.
+   ============================================================ */
+
+/* Kepala panel: mockup memakai kapital dengan spasi huruf lebar. */
+.panel-head h2{
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  font-size:10px;
+  font-weight:700;
+}
+.panel-head{background:var(--surface-2)}
+
+/* Kartu metrik: sub-teks memakai warna angka pada opasitas rendah,
+   bukan abu-abu netral. Inilah yang membuat bilah atas mockup
+   terlihat berwarna-warni alih-alih datar. */
+.stat .stat-label{
+  text-transform:uppercase;letter-spacing:.1em;font-size:8px;color:var(--tx-dim);
+}
+.stat strong{font-size:20px;line-height:1}
+.stat .stat-sub{
+  text-transform:uppercase;letter-spacing:.08em;font-size:8px;opacity:.62;
+}
+.stat:nth-child(1) .stat-sub{color:var(--accent-red)}
+.stat:nth-child(2) .stat-sub{color:var(--accent)}
+.stat:nth-child(3) .stat-sub{color:var(--warn)}
+.stat:nth-child(4) .stat-sub{color:var(--cyan)}
+.stat:nth-child(5) .stat-sub{color:var(--accent-red)}
+.stat:nth-child(6) .stat-sub{color:var(--accent)}
+.stat:nth-child(7) .stat-sub{color:var(--warn)}
+.stat:nth-child(8) .stat-sub{color:var(--accent-red)}
+
+/* Peta: grid 48px + scanline halus, persis mockup. Ditaruh di atas
+   ubin tetapi di bawah data, dan tidak menangkap klik sehingga peta
+   tetap dapat digeser dan diklik seperti biasa. */
+.map-wrap{position:relative}
+.map-wrap::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:400;
+  /* Mockup memakai grid pekat karena tidak punya peta sungguhan di
+     baliknya. Di sini ada data nyata, jadi kadarnya diturunkan jauh:
+     cukup untuk memberi kesan terminal, tidak sampai mengaburkan
+     titik api atau nama kota. Scanline dihilangkan sama sekali —
+     itulah yang tadi membuat peta tampak berkabut. */
+  background-image:
+    linear-gradient(rgba(120,140,165,.07) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(120,140,165,.07) 1px,transparent 1px);
+  background-size:48px 48px,48px 48px;
+}
+/* Label koordinat di empat sudut peta. */
+.map-wrap::before{
+  content:"5.5°N 95°E";position:absolute;top:6px;left:10px;z-index:401;
+  color:var(--line-3);font-size:9px;letter-spacing:.06em;pointer-events:none;
+}
+.map-corner{
+  position:absolute;z-index:401;color:var(--line-3);font-size:9px;
+  letter-spacing:.06em;pointer-events:none;
+}
+.map-corner.tr{top:6px;right:10px}
+.map-corner.bl{bottom:22px;left:10px}
+.map-corner.br{bottom:22px;right:10px}
+
+/* Tabel sumber data: baris berselang-seling seperti mockup. */
+.srctable tbody tr:nth-child(even),
+.panel table tbody tr:nth-child(even){background:var(--surface-2)}
+.panel table thead th{
+  text-transform:uppercase;letter-spacing:.12em;font-size:8px;
+  color:var(--tx-dim);font-weight:700;
+}
+
+/* Baris fungsi cepat F1–F8 pada footer. */
+.fkeys{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin-top:4px}
+.fkey{display:flex;align-items:center;gap:3px}
+.fkey b{
+  background:var(--accent);color:#000;font-size:9px;font-weight:700;
+  padding:1px 4px;line-height:1;
+}
+.fkey span{color:var(--tx-faint);font-size:9px;letter-spacing:.04em}
