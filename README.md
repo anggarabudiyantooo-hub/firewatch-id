@@ -159,9 +159,9 @@ docs/                  PRD, arsitektur, ERD, desain, audit nilai tetap, peta jal
 
 ## Status kesiapan
 
-Audit black-box menyeluruh (2026-09-08) memberi skor **59/100** sebelum perbaikan,
-dengan dua temuan Critical dan sembilan High. Bug Critical dan sebagian besar High
-sudah ditangani; sisanya terkonsentrasi pada performa dan pengerasan operasional.
+Dua putaran audit black-box menyeluruh telah dilakukan. Putaran-1 memberi skor
+**59/100**; putaran-2 **78/100** setelah perbaikan, dengan satu regresi Critical
+yang kini juga sudah ditutup. Payload turun dari 4,66 MB menjadi **407 KB**.
 
 Rincian lengkap beserta urutan pengerjaan ada di [`docs/ROADMAP.md`](docs/ROADMAP.md).
 

@@ -63,6 +63,9 @@ kesimpulan yang dibaca pengguna, jadi tiap perubahan perlu pertimbangan sadar.
 | Ambang keparahan gempa | `lib/hazard.js` | Mengikuti kaidah umum BMKG | Bukan rumus resmi BMKG |
 | Ambang paparan 66 / 33 | `server.js` | Berat / Sedang / Ringan | **Bukan ISPU** — sudah dinyatakan di antarmuka |
 | `budgetMs: 45000` | `server.js` (`/api/cron`) | Batas Vercel 60 detik dikurangi margin | Terikat platform; harus diubah bila pindah |
+| `RL_NORMAL = 240`, `RL_EXPENSIVE = 90` | `server.js` | Diukur: satu sesi aktif hanya 4 permintaan kelas mahal per menit | Terlalu ketat memblokir pengguna sah di balik CGNAT; terlalu longgar membiarkan kuota hulu terkuras |
+| `WIND_STEPS`, `AQ_STEPS` | `server.js` | Menutup amplifikasi kunci cache | **Wajib cocok** dengan `windStepFor()` dan `airStepFor()` di `public/app.js`; menambah tingkat zoom di klien tanpa memperbarui daftar ini membuat lapisan gagal 400 |
+| bbox default wind-field `84,5–151,5 / −21,5–16,5` | `server.js` | Indonesia + margin 10° | Margin terlalu kecil memotong partikel di tepi saat pengguna menggeser keluar |
 
 ## 4. Daftar dan kosakata — ⚠️ perlu pemeliharaan
 

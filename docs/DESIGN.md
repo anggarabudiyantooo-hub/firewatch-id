@@ -178,6 +178,12 @@ dan peninjauan `role="application"` pada peta.
 
 Nol geser samping pada 320, 375, 768, 1024, 1280, 1600, dan 1920 px.
 
+**Tinggi peta diuji dengan sapuan langkah 10 px**, bukan titik henti
+terpilih. Sebuah regresi pernah membuat peta runtuh ke tinggi nol pada
+rentang 721–768 px — celah antara dua angka breakpoint yang berbeda di
+berkas yang sama. Pengujian pada titik standar hampir melewatkannya
+karena rentang itu tetap lolos pemeriksaan geser samping.
+
 Satu pelajaran mahal: `.sr-only` dengan `position:absolute` tanpa induk
 ber-*containing block* diposisikan relatif terhadap halaman. Label selebar 1 px dapat
 memperlebar dokumen 219 px. Kelompok kendali kini menjadi containing block.

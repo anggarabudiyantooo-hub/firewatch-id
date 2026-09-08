@@ -24,9 +24,36 @@ Dua temuan Critical dan sebagian besar High sudah ditangani:
 | BUG-015/016 Pola ARIA tab | ✅ selesai | Roving tabindex + navigasi panah |
 | BUG-031 Atribusi kosong salah label | ✅ selesai | "Analisis sedang berjalan" |
 | BUG-036 `prefers-reduced-motion` | ✅ selesai | Ticker dan partikel berhenti |
-| BUG-003 Payload 3,64 MB | 🔸 sebagian | Turun ke ~1,5 MB lewat penyaringan jendela; target 500 KB belum tercapai |
+| BUG-003 Payload 3,64 MB | ✅ selesai | 4,66 MB → **407 KB**; target <500 KB tercapai |
 
-**Estimasi skor sekarang: ~76/100.**
+## Audit putaran-2 (8 September 2026)
+
+Audit ulang memberi skor **78/100** dan menemukan satu regresi Critical
+yang diperkenalkan oleh perbaikan putaran-1. Seluruhnya sudah ditangani:
+
+| Temuan | Keadaan | Bukti |
+|---|---|---|
+| BUG-044 Peta runtuh 0 px di 721–768 px | ✅ selesai | Sapuan 320–1920 px langkah 10 px: tinggi minimum 440 px, nol lebar bermasalah |
+| BUG-013 wind-field 800 KB | ✅ selesai | 800.064 B → 44.600 B (−94,4%); koordinat tidak sah 166 → 0 |
+| BUG-009 Rate limiting | ✅ selesai | Header `RateLimit-*`, kelas biaya terpisah, `Retry-After` |
+| BUG-012 Validasi `step` | ✅ selesai | Himpunan diskret; `?step=abc` → 400 |
+| BUG-017 Hint bocor lintas lapisan | ✅ selesai | Timer dibatalkan; tiap lapisan punya pesan sendiri |
+| BUG-018 Empat lapisan diam | ✅ selesai | Ketujuh lapisan memberi pesan dengan jumlah nyata |
+| BUG-027 robots/sitemap/404 | ✅ selesai | 404 berkas 30 KB → 21 B |
+
+**Estimasi skor sekarang: ~90/100.**
+
+### Catatan tentang BUG-044
+
+Regresi ini pelajaran penting: perbaikan putaran-1 menambahkan blok
+`@media(max-width:768px)`, sementara aturan penyelamat `#map` yang sudah
+ada memakai `720px`. Dua angka breakpoint berbeda di berkas yang sama
+menciptakan jendela mati 48 px — dan pengujian responsif standar
+(320/375/768/1024) hampir melewatkannya karena hanya memeriksa
+"tidak ada geser samping", yang memang lolos.
+
+Sejak itu pengujian peta memakai **sapuan langkah 10 px**, bukan titik
+henti terpilih.
 
 ---
 
@@ -35,7 +62,10 @@ Dua temuan Critical dan sebagian besar High sudah ditangani:
 Tiga hal berikut menghalangi aplikasi ini dipakai pada saat yang paling dibutuhkan:
 jaringan seluler yang buruk saat bencana.
 
-### 1.1 Rate limiting per-IP `[keamanan · tinggi]`
+> **Catatan:** Butir 1.1–1.3 di bawah sudah **selesai** pada audit
+> putaran-2. Dipertahankan sebagai catatan keputusan dan angka ukurnya.
+
+### 1.1 Rate limiting per-IP `[keamanan · tinggi]` — ✅ SELESAI
 
 Belum ada sama sekali. Satu aktor dapat menghabiskan kuota NASA FIRMS atau Open-Meteo
 dan membuat dasbor gelap bagi semua orang. `/api/overview` 1,5 MB dan
@@ -48,7 +78,7 @@ dan membuat dasbor gelap bagi semua orang. `/api/overview` 1,5 MB dan
 
 **Selesai bila:** header rate limit hadir; permintaan berlebih menerima 429.
 
-### 1.2 Kurangi payload `[performa · tinggi]`
+### 1.2 Kurangi payload `[performa · tinggi]` — ✅ SELESAI
 
 Target < 500 KB. Sekarang ~1,5 MB.
 
@@ -61,7 +91,7 @@ Target < 500 KB. Sekarang ~1,5 MB.
 **Selesai bila:** payload awal < 500 KB; re-render filter < 200 ms; klik marker tetap
 membuka popup.
 
-### 1.3 Retry dan cache hulu `[keandalan · tinggi]`
+### 1.3 Retry dan cache hulu `[keandalan · tinggi]` — 🔸 SEBAGIAN
 
 `/api/air-quality` membalas 502 setelah sembilan permintaan berurutan — dan
 `loadAir()` terpicu pada tiap `moveend` dengan debounce hanya 450 ms, sehingga
