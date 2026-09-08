@@ -1458,3 +1458,99 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
   .ctlrow > .ctlbox:nth-child(1){flex:5 1 0;min-width:260px}
   .ctlrow > .ctlbox:nth-child(5){flex:4 1 0;min-width:260px}
 }
+
+
+/* ============================================================
+   BARIS KONTROL: SATU FUNGSI PER BARIS
+   Sebelumnya lima kotak berjajar menyamping, sehingga LAYER PETA
+   — kendali yang paling sering dipakai — hanya kebagian seperempat
+   lebar dan tujuh dari sembilan chipnya tersembunyi di balik gulir.
+   Kini tiap fungsi menempati satu baris penuh: nama fungsi di kiri
+   sebagai label, isinya mengalir mendatar memakai seluruh sisa
+   lebar. Yang tetap tidak muat digulir menyamping, bukan
+   menambah tinggi.
+   ============================================================ */
+.ctlrow{
+  display:flex;
+  flex-direction:column;
+  flex-wrap:nowrap;
+  gap:0;
+  background:var(--surface);
+  border:1px solid var(--line);
+  max-width:100%;
+  min-width:0;
+}
+
+/* Tiap kotak menjadi satu baris: label | isi */
+.ctlrow > .ctlbox,
+.ctlrow > .ctlbox:nth-child(1),
+.ctlrow > .ctlbox:nth-child(2),
+.ctlrow > .ctlbox:nth-child(3),
+.ctlrow > .ctlbox:nth-child(4),
+.ctlrow > .ctlbox:nth-child(5){
+  flex:0 0 auto;
+  flex-direction:row;
+  align-items:stretch;
+  min-width:0;
+  max-width:none;
+  border:0;
+  border-bottom:1px solid var(--line);
+  background:transparent;
+}
+.ctlrow > .ctlbox:last-child{border-bottom:0}
+
+/* Label fungsi: lebar tetap supaya seluruh isi baris sejajar rapi. */
+.ctlbox > .ctlbox-h{
+  flex:0 0 132px;
+  display:flex;
+  align-items:center;
+  border:0;
+  border-right:1px solid var(--line);
+  background:var(--surface-2);
+  padding:0 10px;
+  font-size:10px;
+  letter-spacing:.09em;
+  white-space:nowrap;
+}
+
+/* Isi baris memakai seluruh sisa lebar. */
+.ctlbox > .ctlbox-b,
+.ctlbox > .ctlbox-b.ctl-wrap,
+.ctlbox > .ctlbox-b.tl,
+.ctlbox > .ctlbox-b.basemap-switch,
+.ctlbox > .ctlbox-b.ctl-cfg{
+  flex:1 1 auto;
+  min-width:0;
+  flex-direction:row;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:5px;
+  padding:5px 10px;
+  overflow-x:auto;
+  overflow-y:hidden;
+}
+
+/* Sembilan chip lapisan kini punya lebar penuh, jadi boleh
+   merenggang sedikit agar lebih mudah disentuh. */
+.ctl-wrap .chk{padding:3px 9px;gap:6px}
+
+/* Konfigurasi hotspot: kelompok berjajar di satu baris. */
+.ctl-cfg{gap:14px}
+.ctl-cfg .cfg-g{flex:0 0 auto;flex-direction:row;align-items:center;gap:6px}
+
+@media(max-width:768px){
+  /* Layar sempit: label pindah ke atas isinya agar tidak memakan
+     lebih dari sepertiga lebar. */
+  .ctlrow > .ctlbox,
+  .ctlrow > .ctlbox:nth-child(1),
+  .ctlrow > .ctlbox:nth-child(2),
+  .ctlrow > .ctlbox:nth-child(3),
+  .ctlrow > .ctlbox:nth-child(4),
+  .ctlrow > .ctlbox:nth-child(5){flex-direction:column}
+  .ctlbox > .ctlbox-h{
+    flex:0 0 auto;
+    border-right:0;
+    border-bottom:1px solid var(--line);
+    padding:4px 10px;
+  }
+}
