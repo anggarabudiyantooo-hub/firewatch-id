@@ -186,18 +186,20 @@
     // pada dasbor bencana keduanya berkonsekuensi sangat berbeda.
     var total = state.data.hotspots.length;
     var m = state.data.meta || {};
+    // Keterangan dijaga ringkas supaya tinggi kartu tetap seragam;
+    // rincian umur data lengkap tetap tersedia di popup tiap titik.
     var age = (m.dataAgeHours != null && m.windowHours != null)
-      ? ' · ' + m.windowHours + ' jam terakhir, tertua ' + m.dataAgeHours + ' jam lalu'
+      ? ' · ' + m.windowHours + 'j, tertua ' + Math.round(m.dataAgeHours) + 'j lalu'
       : '';
     var txt;
     if (!total) {
-      txt = 'tidak ada data titik api dari sumber';
+      txt = 'tidak ada data dari sumber';
     } else if (!hs.length) {
-      txt = '0 dari ' + nf.format(total) + ' lolos filter — longgarkan FRP minimum' + age;
+      txt = '0 dari ' + nf.format(total) + ' lolos filter' + age;
     } else if (hs.length < total) {
-      txt = nf.format(hs.length) + ' dari ' + nf.format(total) + ' tampil pada filter ini' + age;
+      txt = nf.format(hs.length) + ' dari ' + nf.format(total) + ' tampil' + age;
     } else {
-      txt = nf.format(total) + ' titik ditampilkan' + age;
+      txt = nf.format(total) + ' titik' + age;
     }
     $('sHotSub').textContent = txt;
     renderConfSummary(hs);
@@ -1646,7 +1648,7 @@
         $('sConc').classList.remove('skel');
         $('sConc').textContent = nf.format(d.insideConcession);
         $('sConcSub').textContent = d.sampled && d.population
-          ? 'dari ' + nf.format(d.analyzed) + ' sampel FRP tertinggi (' + nf.format(d.population) + ' total)'
+          ? 'dari ' + nf.format(d.analyzed) + ' sampel FRP teratas'
           : 'dari ' + nf.format(d.analyzed) + ' titik api dianalisis';
         renderAttribution();
       })

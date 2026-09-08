@@ -1268,3 +1268,11 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
 .empty{color:#94a3b8;font-size:12px}
 .srccard p{color:#94a3b8;font-size:12px}
 .foot-btm{color:#94a3b8;font-size:11px}
+
+/* Tinggi kartu statistik disamakan supaya baris tidak bergelombang
+   ketika salah satu keterangan lebih panjang. */
+.stats .stat{align-content:start}
+.stat .stat-sub{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;line-height:1.35;
+}
