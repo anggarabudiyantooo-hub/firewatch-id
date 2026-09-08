@@ -4,6 +4,57 @@
   'use strict';
 
   var $ = function (id) { return document.getElementById(id); };
+
+  /**
+   * fetch dengan batas waktu.
+   *
+   * Tanpa ini, permintaan yang menggantung (khas cold start serverless)
+   * tidak pernah resolve maupun reject, sehingga .catch() dan .then()
+   * penutup tidak pernah berjalan: kartu tetap memperlihatkan kerangka
+   * "—" selamanya, pesan galat tidak muncul, dan tombol REFRESH terkunci.
+   * Kegagalan yang tak terlihat lebih berbahaya daripada kegagalan yang
+   * jelas — pembaca menyimpulkan "tidak ada bencana" padahal artinya
+   * "kami tidak tahu".
+   */
+  function fetchT(url, opts, ms) {
+    ms = ms || 12000;
+    var ctl = new AbortController();
+    var timer = setTimeout(function () { ctl.abort(); }, ms);
+    opts = opts || {};
+    opts.signal = ctl.signal;
+    return fetch(url, opts).then(
+      function (r) { clearTimeout(timer); return r; },
+      function (e) { clearTimeout(timer); throw e; }
+    );
+  }
+
+  /**
+   * Waktu akuisisi satelit dalam bentuk terbaca plus umur relatif.
+   * Nilai mentah FIRMS ("2026-09-06 0533") memaksa pembaca menghitung
+   * sendiri bahwa titik itu sudah berumur dua hari.
+   */
+  function fmtAcq(iso) {
+    if (!iso) return 'tidak tersedia';
+    var ms = Date.parse(iso);
+    if (!isFinite(ms)) return String(iso);
+    var d = new Date(ms);
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    var utc = d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate())
+      + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ' UTC';
+    var rel = timeAgo(ms);
+    return rel ? utc + ' (' + rel + ')' : utc;
+  }
+
+  /** Tandai kartu statistik sebagai gagal, bukan sekadar berhenti memuat. */
+  function markFailed(ids) {
+    ids.forEach(function (id) {
+      var n = $(id);
+      if (!n) return;
+      // Kerangka dilepas supaya kegagalan terbaca berbeda dari "sedang memuat".
+      n.classList.remove('skel');
+      if (n.textContent === '' || n.textContent === '—') n.textContent = 'gagal';
+    });
+  }
   var nf = new Intl.NumberFormat('id-ID');
 
   /* ---------- peta ---------- */
@@ -129,7 +180,26 @@
       }).addTo(gFire);
       mk.bindPopup(function () { return hotspotPopup(h, mk); });
     });
-    $('sHotSub').textContent = nf.format(hs.length) + ' tampil pada filter ini';
+    // Sublabel harus menjawab tiga hal sekaligus: berapa yang tampil dari
+    // berapa total, mengapa selisihnya ada, dan seberapa tua datanya.
+    // Nol karena filter dan nol karena sumber kosong ditulis berbeda —
+    // pada dasbor bencana keduanya berkonsekuensi sangat berbeda.
+    var total = state.data.hotspots.length;
+    var m = state.data.meta || {};
+    var age = (m.dataAgeHours != null && m.windowHours != null)
+      ? ' · ' + m.windowHours + ' jam terakhir, tertua ' + m.dataAgeHours + ' jam lalu'
+      : '';
+    var txt;
+    if (!total) {
+      txt = 'tidak ada data titik api dari sumber';
+    } else if (!hs.length) {
+      txt = '0 dari ' + nf.format(total) + ' lolos filter — longgarkan FRP minimum' + age;
+    } else if (hs.length < total) {
+      txt = nf.format(hs.length) + ' dari ' + nf.format(total) + ' tampil pada filter ini' + age;
+    } else {
+      txt = nf.format(total) + ' titik ditampilkan' + age;
+    }
+    $('sHotSub').textContent = txt;
     renderConfSummary(hs);
   }
 
@@ -142,7 +212,7 @@
     [
       'Daya radiasi (FRP): ' + h.frp + ' MW',
       'Tingkat keyakinan: ' + h.confidence + '%',
-      'Waktu (UTC): ' + (h.acq || 'tidak tersedia'),
+      'Waktu: ' + fmtAcq(h.acq),
       'Satelit: ' + h.satellite + (h.daynight === 'N' ? ' · malam' : h.daynight === 'D' ? ' · siang' : ''),
       'Koordinat: ' + h.lat.toFixed(4) + ', ' + h.lon.toFixed(4)
     ].forEach(function (t) { box.appendChild(el('div', 'pp-r', t)); });
@@ -154,7 +224,7 @@
     }
 
     box.appendChild(el('div', 'pp-r pp-load', 'Memuat wilayah administratif…'));
-    fetch('/api/place?lat=' + h.lat.toFixed(5) + '&lon=' + h.lon.toFixed(5), { headers: { Accept: 'application/json' } })
+    fetchT('/api/place?lat=' + h.lat.toFixed(5) + '&lon=' + h.lon.toFixed(5), { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('x')); })
       .then(function (p) {
         var parts = [p.desa, p.kecamatan, p.kabupaten, p.provinsi].filter(Boolean);
@@ -346,7 +416,7 @@
   function loadAsh() {
     if (!state.ashOn || state.ashBusy) return Promise.resolve();
     state.ashBusy = true;
-    return fetch('/api/volcano-ash')
+    return fetchT('/api/volcano-ash')
       .then(function (r) { if (!r.ok) throw new Error('ash'); return r.json(); })
       .then(function (d) {
         state.ash = d;
@@ -414,7 +484,7 @@
       opacity: (product === 'vis' || product === 'ash' || product === 'dust') ? 0.85 : 0.62,
       attribution: 'Citra: Himawari-9 / JMA'
     }).addTo(map);
-    fetch('/api/himawari/meta')
+    fetchT('/api/himawari/meta')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (m) { if (m) { state.hima = m; renderHimaInfo(); } })
       .catch(function () { /* diamkan: peta tetap berfungsi tanpa label waktu */ });
@@ -460,7 +530,7 @@
 
   function refreshHimawari() {
     if (!state.himaProduct || !state.himaLayer) return;
-    fetch('/api/himawari/meta')
+    fetchT('/api/himawari/meta')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (m) {
         if (!m || !m.time) return;
@@ -826,7 +896,7 @@
   }
 
   function loadEruptions() {
-    return fetch('/api/eruptions')
+    return fetchT('/api/eruptions')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) { if (d) { state.eruptions = d; renderEvents(); } })
       .catch(function () { /* panel kejadian tetap tampil dari sumber lain */ });
@@ -869,7 +939,7 @@
   }
 
   function loadCasualties() {
-    return fetch('/api/casualties')
+    return fetchT('/api/casualties')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) { if (d) { state.casualties = d; renderCasualties(); } })
       .catch(function () { /* panel disembunyikan bila gagal */ });
@@ -902,14 +972,14 @@
   }
 
   function loadStatus() {
-    return fetch('/api/status')
+    return fetchT('/api/status')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) { if (d) { state.status = d; renderStatus(); } })
       .catch(function () { /* diamkan */ });
   }
 
   function loadHazard() {
-    return fetch('/api/hazard')
+    return fetchT('/api/hazard')
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('hz')); })
       .then(function (d) {
         state.hazard = d;
@@ -991,7 +1061,7 @@
     if (state.airKey === q) { drawAir(); return Promise.resolve(); }
     state.airBusy = true;
     showHint('Memuat data kualitas udara…');
-    return fetch('/api/air-quality?' + q, { headers: { Accept: 'application/json' } })
+    return fetchT('/api/air-quality?' + q, { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('x')); })
       .then(function (d) {
         state.air = d;
@@ -1075,7 +1145,7 @@
     if (state.windKey === q) { drawWind(); return Promise.resolve(); }
     state.windBusy = true;
     showHint('Memuat arah angin…');
-    return fetch('/api/wind-field?' + q, { headers: { Accept: 'application/json' } })
+    return fetchT('/api/wind-field?' + q, { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('x')); })
       .then(function (d) {
         state.wind = d;
@@ -1110,7 +1180,7 @@
     var b = map.getBounds();
     var q = 'west=' + b.getWest().toFixed(3) + '&south=' + b.getSouth().toFixed(3) +
             '&east=' + b.getEast().toFixed(3) + '&north=' + b.getNorth().toFixed(3);
-    fetch('/api/concessions?' + q, { headers: { Accept: 'application/json' } })
+    fetchT('/api/concessions?' + q, { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('x')); })
       .then(function (fc) {
         gConc.clearLayers();
@@ -1156,7 +1226,7 @@
       .setLatLng(ev.latlng)
       .setContent(popupNode('Memeriksa status lahan…', ['Koordinat ' + lat.toFixed(4) + ', ' + lon.toFixed(4)]))
       .openOn(map);
-    fetch('/api/whose-land?lat=' + lat.toFixed(5) + '&lon=' + lon.toFixed(5), { headers: { Accept: 'application/json' } })
+    fetchT('/api/whose-land?lat=' + lat.toFixed(5) + '&lon=' + lon.toFixed(5), { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('x')); })
       .then(function (d) {
         var box = document.createElement('div');
@@ -1185,7 +1255,7 @@
         box.appendChild(airLine);
         pop.setContent(box);
 
-        fetch('/api/air-point?lat=' + lat.toFixed(4) + '&lon=' + lon.toFixed(4), { headers: { Accept: 'application/json' } })
+        fetchT('/api/air-point?lat=' + lat.toFixed(4) + '&lon=' + lon.toFixed(4), { headers: { Accept: 'application/json' } })
           .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('x')); })
           .then(function (d2) {
             airLine.className = 'pp-r';
@@ -1300,6 +1370,14 @@
     var pane = $('paneCluster'); clear(pane);
     var list = state.data ? state.data.clusters : [];
     if (!list.length) { pane.appendChild(el('p', 'empty', 'Tidak ada klaster titik api terdeteksi.')); return; }
+    // Daftar ini dipotong demi ukuran payload; katakan berapa yang
+    // sebenarnya terdeteksi supaya angka di kartu tidak tampak bertentangan.
+    var cm = state.data ? state.data.clustersMeta : null;
+    if (cm && cm.truncated) {
+      pane.appendChild(el('p', 'pane-note',
+        'Menampilkan ' + nf.format(cm.returned) + ' klaster terbesar dari '
+        + nf.format(cm.total) + ' terdeteksi.'));
+    }
     var max = list[0].frp || 1;
     list.forEach(function (c, i) {
       var lvl = c.frp >= 400 ? 'Berat' : c.frp >= 120 ? 'Sedang' : 'Ringan';
@@ -1317,13 +1395,26 @@
     clear(unitPane); clear(groupPane);
     if (!d) { unitPane.appendChild(el('p', 'empty', 'Analisis atribusi tidak tersedia.')); return; }
 
-    $('attrMeta').textContent = nf.format(d.analyzed) + ' titik api dianalisis · ' +
-      nf.format(d.insideConcession) + ' di dalam batas konsesi · ' +
-      nf.format(d.outsideConcession) + ' di luar';
+    // Angka sampel dan populasi harus berdampingan. Menyandingkan
+    // "88 di dalam konsesi" dengan "30.060 titik api" tanpa keterangan
+    // membuat pembaca menghitung 0,3% padahal rasio sebenarnya 40%.
+    var pct = d.analyzed ? Math.round((d.insideConcession / d.analyzed) * 100) : 0;
+    var attrTxt = nf.format(d.insideConcession) + ' dari ' + nf.format(d.analyzed)
+      + ' titik sampel (' + pct + '%) di dalam batas konsesi · '
+      + nf.format(d.outsideConcession) + ' di luar';
+    if (d.sampled && d.population) {
+      attrTxt += ' · sampel ' + nf.format(d.analyzed) + ' titik ber-FRP tertinggi dari '
+        + nf.format(d.population) + ' titik';
+    }
+    $('attrMeta').textContent = attrTxt;
     if (d.meta && d.meta.disclaimer) $('attrDisclaimer').textContent = d.meta.disclaimer;
 
     if (!d.units.length) {
-      unitPane.appendChild(el('p', 'empty', 'Tidak ada titik api yang jatuh di dalam batas konsesi terdata.'));
+      // Nol unit bisa berarti dua hal yang sangat berbeda. Menyatakan
+      // "tidak ada" padahal analisisnya belum jalan adalah klaim keliru.
+      unitPane.appendChild(el('p', 'empty', d.analyzed
+        ? 'Tidak ada titik api yang jatuh di dalam batas konsesi terdata.'
+        : 'Analisis atribusi sedang berjalan…'));
     } else {
       var grid = el('div', 'unit-list');
       d.units.forEach(function (u) {
@@ -1456,8 +1547,16 @@
   }
 
   function loadOverview() {
-    $('refreshBtn').disabled = true;
-    return fetch('/api/overview', { headers: { Accept: 'application/json' } })
+    var btn = $('refreshBtn');
+    btn.disabled = true;
+    // Pelepasan tombol tidak boleh bergantung pada rantai promise: bila
+    // permintaan tidak pernah selesai, satu-satunya jalan pemulihan
+    // pengguna akan hilang. Pengaman ini berjalan terlepas dari hasilnya.
+    var release = setTimeout(function () { btn.disabled = false; }, 12000);
+    // Overview adalah payload terbesar, tetapi tenggatnya tetap harus di
+    // bawah 15 detik: itu batas wajar sebelum pengguna menyimpulkan
+    // sendiri bahwa "tidak ada apa-apa" dari kartu yang kosong.
+    return fetchT('/api/overview', { headers: { Accept: 'application/json' } }, 12000)
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('x')); })
       .then(function (d) {
         state.data = d;
@@ -1474,6 +1573,8 @@
         ['sHot', 'sImp'].forEach(function (id) { $(id).classList.remove('skel'); });
         $('sHot').textContent = nf.format(d.stats.hotspots);
         $('sImp').textContent = nf.format(d.stats.impactedRegions);
+        // Sublabel titik api ditulis oleh drawFires() supaya angka yang
+        // tampil selalu cocok dengan yang benar-benar digambar di peta.
         $('sHotSub').textContent = nf.format(d.stats.highConfidence) + ' keyakinan tinggi · '
           + nf.format(d.stats.totalFrp) + ' MW';
 
@@ -1524,19 +1625,29 @@
         drawFires(); drawSmoke(); drawImpact();
         renderImpactList(); renderAshList(); renderProvList(); renderClusterList();
       })
-      .catch(function () { setNotice('Gagal memuat data pemantauan. Periksa koneksi lalu tekan "Muat ulang".'); })
-      .then(function () { $('refreshBtn').disabled = false; });
+      .catch(function () {
+        setNotice('Gagal memuat data pemantauan. Periksa koneksi lalu tekan "Muat ulang".');
+        // Kartu yang bergantung pada overview ditandai gagal supaya tidak
+        // tertukar dengan "sedang memuat" atau, lebih buruk, dibaca sebagai
+        // "tidak ada kejadian".
+        markFailed(['sHot', 'sImp', 'sConc', 'sAir', 'sErupt', 'sVolLvl']);
+        var badge = $('modeBadge');
+        if (badge) { badge.textContent = 'gagal memuat'; badge.className = 'badge badge-bad'; }
+      })
+      .then(function () { clearTimeout(release); btn.disabled = false; });
   }
 
   function loadAttribution() {
-    return fetch('/api/attribution', { headers: { Accept: 'application/json' } })
+    return fetchT('/api/attribution', { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('x')); })
       .then(function (d) {
         state.attr = d;
         buildTicker();
         $('sConc').classList.remove('skel');
         $('sConc').textContent = nf.format(d.insideConcession);
-        $('sConcSub').textContent = 'dari ' + nf.format(d.analyzed) + ' titik api dianalisis';
+        $('sConcSub').textContent = d.sampled && d.population
+          ? 'dari ' + nf.format(d.analyzed) + ' sampel FRP tertinggi (' + nf.format(d.population) + ' total)'
+          : 'dari ' + nf.format(d.analyzed) + ' titik api dianalisis';
         renderAttribution();
       })
       .catch(function () {
@@ -1547,7 +1658,7 @@
   }
 
   function loadNews() {
-    return fetch('/api/news', { headers: { Accept: 'application/json' } })
+    return fetchT('/api/news', { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         state.news = Array.isArray(d.articles) ? d.articles : [];
@@ -1795,7 +1906,7 @@
     clear(box);
     box.appendChild(el('p', 'ask-busy', 'MENCARI…'));
     $('askMeta').textContent = 'menjalankan';
-    fetch('/api/ask?q=' + encodeURIComponent(q))
+    fetchT('/api/ask?q=' + encodeURIComponent(q))
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('ask')); })
       .then(function (d) {
         renderAsk(d);
@@ -1808,22 +1919,55 @@
       });
   }
 
+  /**
+   * Grup tab sesuai pola ARIA.
+   *
+   * Selain klik, pola ini mewajibkan roving tabindex dan navigasi panah:
+   * hanya tab aktif yang masuk urutan Tab, sisanya dijangkau dengan
+   * panah kiri/kanan. Tanpa itu pengguna keyboard harus menekan Tab
+   * melewati setiap tab satu per satu untuk mencapai isi panel.
+   */
   function tabGroup(buttons) {
-    buttons.forEach(function (b) {
-      $(b.tab).addEventListener('click', function () {
-        buttons.forEach(function (o) {
-          var active = o.tab === b.tab;
-          $(o.tab).classList.toggle('active', active);
-          $(o.tab).setAttribute('aria-selected', String(active));
-          $(o.pane).hidden = !active;
-        });
+    function select(idx, focus) {
+      buttons.forEach(function (o, i) {
+        var active = i === idx;
+        var btn = $(o.tab);
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', String(active));
+        btn.tabIndex = active ? 0 : -1;
+        $(o.pane).hidden = !active;
+        // Panel menyebut tab pengendalinya agar pembaca layar tahu
+        // isi ini milik tab yang mana.
+        $(o.pane).setAttribute('aria-labelledby', o.tab);
+      });
+      if (focus) $(buttons[idx].tab).focus();
+    }
+
+    buttons.forEach(function (b, i) {
+      var btn = $(b.tab);
+      btn.tabIndex = btn.getAttribute('aria-selected') === 'true' ? 0 : -1;
+      $(b.pane).setAttribute('aria-labelledby', b.tab);
+      btn.addEventListener('click', function () { select(i, false); });
+      btn.addEventListener('keydown', function (e) {
+        var n = buttons.length;
+        var to = null;
+        if (e.key === 'ArrowRight') to = (i + 1) % n;
+        else if (e.key === 'ArrowLeft') to = (i - 1 + n) % n;
+        else if (e.key === 'Home') to = 0;
+        else if (e.key === 'End') to = n - 1;
+        if (to === null) return;
+        e.preventDefault();
+        select(to, true);
       });
     });
   }
+  // Urutan daftar ini menentukan arah panah kiri/kanan, jadi harus sama
+  // dengan urutan tombol di layar. Sebelumnya Abu dan Provinsi tertukar,
+  // sehingga panah kanan melompati satu tab.
   tabGroup([
     { tab: 'tabImpact', pane: 'paneImpact' },
-    { tab: 'tabAsh', pane: 'paneAsh' },
     { tab: 'tabProv', pane: 'paneProv' },
+    { tab: 'tabAsh', pane: 'paneAsh' },
     { tab: 'tabCluster', pane: 'paneCluster' }
   ]);
   tabGroup([
@@ -1860,7 +2004,7 @@
 
   // Panel SO2: hanya muncul bila ada gunung yang sedang erupsi.
   function loadSo2() {
-    fetch('/api/volcano-so2', { headers: { Accept: 'application/json' } })
+    fetchT('/api/volcano-so2', { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         if (!d || !d.volcanoes || !d.volcanoes.length) return;

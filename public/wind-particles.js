@@ -252,6 +252,19 @@
   WindParticles.prototype.start = function () {
     if (this.running) return;
     this._ensureCanvas();
+
+    // Pengguna yang menyalakan "kurangi gerak" pada sistemnya sering
+    // melakukannya karena animasi memicu mual atau pusing. Panah angin
+    // tetap digambar sekali sebagai gambar diam supaya informasinya
+    // tidak hilang, tetapi tidak dianimasikan.
+    var reduce = global.matchMedia
+      && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+      this.running = false;
+      this._step();
+      return;
+    }
+
     this.running = true;
     var self = this;
     var last = 0;

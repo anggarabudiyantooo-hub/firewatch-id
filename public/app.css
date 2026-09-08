@@ -1142,3 +1142,129 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
 }
 .ctlbox select:focus{outline:none;border-color:var(--accent)}
 .cfg-g select{min-width:130px}
+
+/* Catatan di dalam panel: menjelaskan pemotongan atau keadaan data.
+   Kontras dinaikkan karena isinya justru keterangan yang menentukan
+   cara membaca angka di atasnya. */
+.pane-note{
+  font-size:12px;color:var(--tx-dim);
+  border-left:2px solid var(--line-3);
+  padding:4px 0 4px 8px;margin-bottom:8px;line-height:1.5;
+}
+
+/* ============================================================
+   KETERBACAAN — hasil audit aksesibilitas
+   Teks yang membawa keterangan penting sebelumnya berkontras
+   1,71:1 pada ukuran 8-10 px: praktis tidak terbaca. Justru di
+   sanalah keterangan sampel, umur data, dan arti warna peta
+   ditulis. Luminansi dinaikkan tanpa mengubah palet dasarnya.
+   ============================================================ */
+
+/* rgb(148,163,184) ~ 7:1 terhadap latar #131920 */
+.panel-sub,
+.legend,
+.legend span,
+.fineprint,
+.hz-note,
+.pane-note,
+.stat-label{
+  color:#94a3b8;
+}
+.panel-sub,.legend,.legend span{font-size:12px}
+.fineprint{font-size:12px}
+.stat-label{font-size:11px;letter-spacing:.08em}
+.stat-sub{font-size:11px;opacity:.85}
+.cfg-l{color:#94a3b8;font-size:10px}
+.foot-lab{color:#94a3b8;font-size:10px}
+.foot-p,.foot-refs span,.fkey span{color:#94a3b8;font-size:12px}
+.map-corner{color:#64748b;font-size:10px}
+.ctlbox-h{font-size:11px}
+.ctl-wrap .chk{font-size:11px}
+.tl-b,.bm{font-size:11px}
+.ntopic{font-size:11px}
+.news-m,.news-age,.news-clock{font-size:11px}
+
+/* Target sentuh minimal 24x24 px (WCAG 2.5.8). Kotak-centang
+   diperbesar dan seluruh label dijadikan area klik. */
+.chk{min-height:24px;padding:2px 4px}
+.chk input[type="checkbox"]{width:18px;height:18px}
+.ctl-wrap .chk{min-height:26px;padding:3px 8px}
+.ctl-wrap .chk input{width:16px;height:16px}
+.tl-b,.bm,.tab,.ntopic,.chip{min-height:26px}
+
+@media(max-width:768px){
+  /* Peta adalah inti aplikasi; jangan sampai terdesak kontrol. */
+  .map-wrap{height:auto;min-height:60vh}
+  .chk{min-height:32px}
+  .chk input[type="checkbox"]{width:20px;height:20px}
+  .ctl-wrap{gap:6px}
+}
+
+/* Hormati preferensi pengguna yang sensitif terhadap gerak. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+  }
+  .ticker-track{animation:none !important;transform:none !important}
+}
+
+/* Selektor di atas memakai .stat .stat-label (dua kelas) sehingga
+   mengalahkan aturan satu kelas. Ditulis ulang dengan spesifisitas
+   setara agar ukuran dan kontras yang benar yang berlaku. */
+.stat .stat-label{
+  font-size:11px;color:#94a3b8;letter-spacing:.08em;
+}
+.stat .stat-sub{
+  font-size:11px;opacity:1;
+}
+/* Sub-teks berwarna per kategori tetap dipertahankan, tetapi memakai
+   nada yang lolos ambang kontras terhadap latar kartu. */
+.stats .stat:nth-child(1) .stat-sub,.stat:nth-child(1) .stat-sub,
+.stats .stat:nth-child(5) .stat-sub,.stat:nth-child(5) .stat-sub,
+.stats .stat:nth-child(8) .stat-sub,.stat:nth-child(8) .stat-sub{color:#f87171}
+.stats .stat:nth-child(2) .stat-sub,.stat:nth-child(2) .stat-sub,
+.stats .stat:nth-child(6) .stat-sub,.stat:nth-child(6) .stat-sub{color:#fb923c}
+.stats .stat:nth-child(3) .stat-sub,.stat:nth-child(3) .stat-sub,
+.stats .stat:nth-child(7) .stat-sub,.stat:nth-child(7) .stat-sub{color:#facc15}
+.stats .stat:nth-child(4) .stat-sub,.stat:nth-child(4) .stat-sub{color:#22d3ee}
+
+/* Catatan panel: latar sendiri lebih terang daripada panel, jadi
+   warnanya perlu dinaikkan lagi supaya tetap lolos 4,5:1. */
+.pane-note{color:#cbd5e1;background:transparent}
+
+/* Label konfigurasi hotspot. */
+.ctl-cfg .cfg-l{color:#94a3b8;font-size:11px}
+
+/* Kotak-centang: 15px terlalu kecil untuk disentuh dengan andal. */
+.chk input[type="checkbox"],
+.ctl-wrap .chk input[type="checkbox"]{width:24px;height:24px;flex:none}
+.map-toolbar .chk input{width:24px;height:24px}
+
+/* Sisa temuan kontras. Diperiksa ulang terhadap latar sebenarnya,
+   bukan terhadap latar halaman. */
+.news-m{color:#94a3b8}
+.hz-note{color:#94a3b8}
+.foot-lab{font-size:11px}
+.ntopic i{opacity:1;color:#94a3b8;font-size:11px}
+.ntopic.active i{color:#3b1d06;opacity:1}
+
+/* Dropdown dan tautan fungsi cepat perlu tinggi sentuh yang layak. */
+.ctlbox select,.map-toolbar select,.sel select{min-height:26px;padding:4px 6px}
+.fkey{min-height:24px;align-items:center}
+
+/* Sisa perbaikan kontras, diukur dengan latar efektif (lapisan
+   semi-transparan dikomposit lebih dulu). --tx-dim #64748b hanya
+   mencapai 3,92:1 di atas panel, jadi seluruh teks kontrol dan
+   keadaan kosong dinaikkan ke #94a3b8 atau lebih terang. */
+.tl-b,.bm,.tab,.ntopic{color:#94a3b8;font-size:11px}
+.tab{font-size:11px}
+.tl-b.active,.bm.active{color:#93c5fd;border-color:#3b82f6}
+.tab.active{color:#fdba74}
+.ntopic.active{color:#e9d5ff;border-color:#a855f7}
+.ntopic.active i{color:#e9d5ff;opacity:.85}
+.ctlbox-h.ch-mute{color:#94a3b8}
+.empty{color:#94a3b8;font-size:12px}
+.srccard p{color:#94a3b8;font-size:12px}
+.foot-btm{color:#94a3b8;font-size:11px}

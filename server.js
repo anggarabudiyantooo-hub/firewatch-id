@@ -33,7 +33,7 @@ const BBOX = { west: 94.5, south: -11.5, east: 141.5, north: 6.5 }; // Indonesia
 const REGIONS = require('./data/regions.json');
 const { attributeHotspots } = require('./lib/concession');
 const { fetchWindField, sampleAt, gridPoints } = require('./lib/wind-gfs');
-const { openHotspots } = require('./lib/firms-open');
+const { openHotspots, toIsoUtc, WINDOW_HOURS: FIRMS_WINDOW_HOURS } = require('./lib/firms-open');
 const { volcanicAsh } = require('./lib/volcano');
 const { fetchStatus: fetchPvmbgStatus } = require('./lib/pvmbg');
 const { fetchEruptions } = require('./lib/eruption');
@@ -82,7 +82,11 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'none'"],
       baseUri: ["'self'"],
-      frameAncestors: ["'self'", '*'],
+      // Wildcard '*' membuat 'self' tidak bermakna: situs mana pun dapat
+      // membingkai dasbor ini di bawah header palsu dan menutupinya dengan
+      // tingkat bahaya karangan. Pada perangkat kebencanaan, kredibilitas
+      // visual justru asetnya, jadi penyematan dibatasi ke origin sendiri.
+      frameAncestors: ["'self'"],
       formAction: ["'self'"],
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
@@ -92,7 +96,9 @@ app.use(helmet({
       objectSrc: ["'none'"]
     }
   },
-  frameguard: false, // izinkan embed preview; pembatasan tetap lewat CSP frame-ancestors
+  // X-Frame-Options sebagai cadangan bagi peramban lama yang belum
+  // mendukung frame-ancestors.
+  frameguard: { action: 'sameorigin' },
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   referrerPolicy: { policy: 'no-referrer' }
@@ -160,11 +166,16 @@ function parseFirmsCsv(csv) {
     const rawConf = iConf >= 0 ? String(c[iConf]).trim() : '';
     let conf = Number(rawConf);
     if (!Number.isFinite(conf)) conf = rawConf === 'h' ? 90 : rawConf === 'n' ? 60 : 30;
+    // Waktu dinormalkan ke ISO 8601 supaya dapat dibandingkan dan diurutkan;
+    // bentuk mentah FIRMS ("2026-09-06 0533") tidak dapat di-parse Date.
+    const acqIso = toIsoUtc(iDate >= 0 ? c[iDate] : '', iTime >= 0 ? c[iTime] : '');
+    if (!acqIso) continue;
     out.push({
       lat, lon,
       frp: Math.max(0, Number(iFrp >= 0 ? c[iFrp] : 0) || 0),
       confidence: Math.max(0, Math.min(100, conf)),
-      acq: `${iDate >= 0 ? c[iDate] : ''} ${iTime >= 0 ? String(c[iTime]).padStart(4, '0') : ''}`.trim(),
+      acq: acqIso,
+      acqRaw: `${iDate >= 0 ? c[iDate] : ''} ${iTime >= 0 ? String(c[iTime]).padStart(4, '0') : ''}`.trim(),
       satellite: iSat >= 0 ? String(c[iSat]).trim() : 'n/a',
       daynight: iDn >= 0 ? String(c[iDn]).trim() : ''
     });
@@ -196,12 +207,31 @@ async function getHotspotsRaw() {
         // berarti Indonesia tidak punya titik api — arsip terbuka menggabung
         // tiga satelit dan biasanya tetap berisi. Jangan pernah menyajikan
         // nol palsu; jatuh ke arsip terbuka.
-        if (rows.length) {
+        // Jendela disaring di sini juga: endpoint berkunci pun mengembalikan
+        // titik di luar 24 jam bila FIRMS_DAYS > 1, dan seluruh antarmuka
+        // menjanjikan 24 jam.
+        const cutoff = Date.now() - FIRMS_WINDOW_HOURS * 3600 * 1000;
+        let oldestMs = null;
+        let newestMs = null;
+        const fresh = rows.filter(h => {
+          const ms = Date.parse(h.acq);
+          if (!Number.isFinite(ms) || ms < cutoff) return false;
+          if (oldestMs === null || ms < oldestMs) oldestMs = ms;
+          if (newestMs === null || ms > newestMs) newestMs = ms;
+          return true;
+        });
+        if (fresh.length) {
           return {
             mode: 'live',
             source: `NASA FIRMS ${FIRMS_SOURCE} (MAP_KEY)`,
             days: FIRMS_DAYS,
-            hotspots: rows
+            hotspots: fresh,
+            windowHours: FIRMS_WINDOW_HOURS,
+            fetched: rows.length,
+            filteredOut: rows.length - fresh.length,
+            oldestAcq: oldestMs ? new Date(oldestMs).toISOString() : null,
+            newestAcq: newestMs ? new Date(newestMs).toISOString() : null,
+            dataAgeHours: oldestMs ? +((Date.now() - oldestMs) / 3600000).toFixed(1) : null
           };
         }
         console.error('[firms:key] balasan kosong, beralih ke arsip terbuka');
@@ -214,9 +244,15 @@ async function getHotspotsRaw() {
     const r = await openHotspots(fetchWithTimeout, BBOX);
     return {
       mode: 'live',
-      source: `NASA FIRMS VIIRS 24 jam — ${r.satellites.join(', ')} (arsip terbuka)`,
+      source: `NASA FIRMS VIIRS ${r.windowHours} jam — ${r.satellites.join(', ')} (arsip terbuka)`,
       days: 1,
-      hotspots: r.hotspots
+      hotspots: r.hotspots,
+      windowHours: r.windowHours,
+      fetched: r.fetched,
+      filteredOut: r.filteredOut,
+      oldestAcq: r.oldestAcq,
+      newestAcq: r.newestAcq,
+      dataAgeHours: r.dataAgeHours
     };
   }
 }
@@ -791,7 +827,8 @@ app.get('/api/health', (_req, res) => res.json({ ok: true, time: new Date().toIS
 // Dibungkus jadi fungsi agar bisa dipakai ulang oleh mesin pencarian (/api/ask).
 async function buildOverview() {
   {
-    const { mode, source, days, hotspots, notice } = await getHotspots();
+    const hs = await getHotspots();
+    const { mode, source, days, hotspots, notice } = hs;
     const clusters = clusterHotspots(hotspots);
     const plumes = await buildPlumes(clusters);
     const impacted = impactedRegions(plumes);
@@ -865,6 +902,14 @@ async function buildOverview() {
       meta: {
         mode, source, days, notice,
         updatedAt: new Date().toISOString(),
+        // Kesegaran dilaporkan apa adanya. Antarmuka membaca nilai ini
+        // alih-alih menuliskan "24 jam" secara tetap, supaya klaim di layar
+        // tidak pernah melampaui data yang benar-benar dimiliki.
+        windowHours: hs.windowHours != null ? hs.windowHours : null,
+        oldestAcq: hs.oldestAcq || null,
+        newestAcq: hs.newestAcq || null,
+        dataAgeHours: hs.dataAgeHours != null ? hs.dataAgeHours : null,
+        filteredOut: hs.filteredOut != null ? hs.filteredOut : null,
         bbox: BBOX,
         attribution: ['NASA FIRMS', 'Open-Meteo', 'GDELT Project', 'Global Forest Watch', 'Esri']
       },
@@ -880,6 +925,14 @@ async function buildOverview() {
         peopleExposedModerate: impacted.reduce((s, r) => s + (r.score >= 33 ? r.population : 0), 0)
       },
       hotspots, clusters: clusters.slice(0, 40), plumes, impacted,
+      // Array klaster sengaja dipotong agar payload tidak membengkak.
+      // Jumlah sebenarnya tetap dilaporkan supaya stats.clusters tidak
+      // bertentangan dengan panjang array yang dikirim.
+      clustersMeta: {
+        returned: Math.min(40, clusters.length),
+        total: clusters.length,
+        truncated: clusters.length > 40
+      },
       ashImpacted, volcano: volcanoSummary,
       provinceScores: byProvince, provinceRanking, worstAir
     };
