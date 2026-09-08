@@ -1,151 +1,172 @@
-# FireWatch ID
+# SIAGA ID — Terminal Bencana
 
-Web pemantauan kebakaran hutan & lahan (karhutla) Indonesia: peta titik api, perkiraan sebaran
-asap, daerah terdampak, **atribusi tanggung jawab lahan**, dan dashboard berita penanganan.
+Pemantauan bencana Indonesia dari sumber resmi dan terbuka: letusan gunung api dan
+sebaran abu, gempa dan tsunami, pengungsi, serta titik api dan asap karhutla.
+
+**Produksi:** <https://firewatch-id.vercel.app>
+
+> Aplikasi ini alat bantu publik dan edukasi, **bukan pengganti sumber resmi**.
+> Untuk keputusan darurat, rujuk BMKG, BNPB/BPBD, PVMBG, dan KLHK.
+
+---
+
+## Daftar isi
+
+| Dokumen | Isi |
+|---|---|
+| `README.md` (berkas ini) | Cara menjalankan, ringkasan fitur, variabel lingkungan |
+| [`docs/PRD.md`](docs/PRD.md) | Product Requirements: masalah, pengguna, lingkup, kriteria keberhasilan |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Arsitektur sistem, alur data, penjadwal, keputusan teknis |
+| [`docs/ERD.md`](docs/ERD.md) | Model data, entitas, relasi, skema respons API |
+| [`docs/DESIGN.md`](docs/DESIGN.md) | Sistem desain: palet, tipografi, tata letak, komponen, aksesibilitas |
+| [`docs/HARDCODED.md`](docs/HARDCODED.md) | **Audit nilai tetap:** apa yang dikeraskan di kode, mengapa, dan mana yang harus dipindah |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Peta jalan menuju siap rilis produksi |
+
+---
 
 ## Jalankan lokal
 
 ```bash
 npm install
 npm start            # http://localhost:3000
+npm run check        # pemeriksaan bundel sebelum commit
 ```
+
+Tanpa satu pun variabel lingkungan, aplikasi tetap berjalan penuh: seluruh sumber
+data yang dipakai bersifat terbuka dan tidak menuntut kunci API.
 
 ## Deploy ke Vercel
 
-Repo ini sudah siap deploy tanpa konfigurasi tambahan:
+1. Buka <https://vercel.com/new>, impor repositori ini.
+2. Framework Preset **Other**; Build dan Output Command dibiarkan kosong.
+3. Deploy.
 
-1. Buka <https://vercel.com/new> dan impor repositori ini.
-2. Framework Preset: **Other**. Biarkan Build & Output Command kosong.
-3. Klik **Deploy**.
+`vercel.json` mengarahkan seluruh permintaan ke `api/index.js`, yang memuat aplikasi
+Express dari `server.js`.
 
-`vercel.json` mengarahkan semua permintaan ke `api/index.js`, yang memuat aplikasi
-Express dari `server.js`. Environment variable **tidak wajib** — tanpa kunci apa pun
-aplikasi tetap berjalan (titik api memakai data contoh, sisanya data nyata).
+### Penjadwal wajib
 
-Untuk mengaktifkan titik api satelit sungguhan, tambahkan `FIRMS_MAP_KEY` di
-**Settings → Environment Variables** lalu redeploy.
+Vercel Hobby membatasi cron bawaan menjadi sekali sehari, sedangkan data
+kebencanaan perlu disegarkan tiap beberapa menit. Karena itu penyegaran dijalankan
+penjadwal luar (GitHub Actions) yang memanggil:
 
-> Catatan serverless: cache di memori tidak persisten antar-invocation, sehingga
-> permintaan pertama setelah idle lebih lambat (cold start). Untuk cache yang tetap
-> hidup, platform berbasis proses seperti Render/Railway/Fly.io juga bisa memakai
-> repo ini apa adanya lewat `npm start`.
+```
+GET /api/cron
+GET /api/cron?force=1        # abaikan interval, segarkan semua
+```
 
-## Data satelit langsung (opsional)
+Lindungi dengan `CRON_SECRET` bila endpoint ini dipublikasikan. Rinciannya di
+`PANDUAN-DEPLOY-VERCEL.md`.
 
-1. Ambil MAP_KEY gratis: https://firms.modaps.eosdis.nasa.gov/api/map_key/
-2. `cp .env.example .env` lalu isi `FIRMS_MAP_KEY=...`
-3. Restart server. Badge di kanan atas berubah dari "Mode demo" -> "Data langsung".
+---
 
-Tanpa key, hanya titik api yang memakai data contoh. Angin, batas konsesi, dan berita tetap nyata.
+## Variabel lingkungan
 
-## Fitur
+Seluruhnya **opsional**.
 
-| Fitur | Keterangan |
-|---|---|
-| Peta titik api | Marker berskala FRP, filter tingkat keyakinan, popup detail satelit |
-| Sebaran asap | Poligon kerucut per klaster; arah & jangkauan dari angin permukaan real-time |
-| Daerah terdampak | Skor paparan Ringan/Sedang/Berat untuk 34 kota, klik untuk zoom |
-| Peringkat provinsi | Provinsi diurutkan berdasarkan jumlah titik api dan total FRP |
-| Batas konsesi | Layer poligon sawit, HTI, HPH, tambang, RSPO (aktifkan di toolbar, zoom 6+) |
-| Atribusi tanggung jawab | Titik api dicocokkan ke unit lahan; agregasi per perusahaan dan per grup korporasi |
-| Cek lahan | Klik titik mana pun di peta untuk melihat status/pemegang izin lahan tersebut |
-| Berita penanganan | Umpan Google Berita (cadangan GDELT), dapat dicari |
-| Peta dasar | Tiga pilihan: Gelap, Citra satelit, Relief (Esri, bebas kunci) |
-| Arah angin | Medan panah angin permukaan 10 m; kerapatan menyesuaikan zoom, warna per kecepatan |
-| Angin gaya Windy | Animasi partikel garis arus di canvas (interpolasi bilinear medan angin), bisa ditukar ke mode panah |
-| Kueri data (RAG lokal) | Pencarian BM25 atas seluruh data langsung + berita; jawaban disusun dari angka nyata beserta sumbernya |
-| Terminal UI | Tata letak padat bergaya terminal keuangan: ticker berjalan, jam WIB/UTC, panel bernomor |
-| Abu vulkanik | Gunung api Indonesia yang sedang erupsi + perkiraan sebaran abu pada tiga lapisan ketinggian (~3/6/10 km) dari angin ketinggian |
-| Citra Himawari-9 | Overlay citra satelit Jepang (JMA) real-time: inframerah, warna alami, dan uap air |
-| Kualitas udara | Layer sel US AQI (model CAMS) dengan legenda 6 kelas, saran kesehatan, dan kartu "Udara terburuk"; nilai AQI juga muncul di popup peta |
-| Warna titik panas | Tingkat keyakinan (merah/kuning/hijau, skema SiPongi) atau daya radiasi FRP |
-| Ringkasan titik panas | Panel jumlah Tinggi/Sedang/Rendah + total, di sudut peta |
-| Wilayah administratif | Popup titik api menampilkan desa/kecamatan/kabupaten/provinsi |
+| Variabel | Default | Fungsi |
+|---|---|---|
+| `PORT` | `3000` | Porta server lokal |
+| `FIRMS_MAP_KEY` | *(kosong)* | Kunci NASA FIRMS. Bila ada, endpoint area dipakai lebih dulu; bila balasannya kosong, otomatis jatuh ke arsip terbuka |
+| `FIRMS_SOURCE` | `VIIRS_SNPP_NRT` | Satelit untuk jalur MAP_KEY. Pilihan: `VIIRS_SNPP_NRT`, `VIIRS_NOAA20_NRT`, `VIIRS_NOAA21_NRT`, `MODIS_NRT` |
+| `FIRMS_DAYS` | `1` | Rentang hari jalur MAP_KEY (1–10). Hasilnya tetap disaring ke jendela 24 jam |
+| `CRON_SECRET` | *(kosong)* | Bila diisi, `/api/cron` menuntut `Authorization: Bearer <secret>` atau `?key=<secret>` |
+| `DEBUG_KEY` | *(kosong)* | Membuka endpoint diagnostik |
 
-## Soal HGU dan kepemilikan lahan — penting
+Pendaftaran kunci FIRMS (gratis): <https://firms.modaps.eosdis.nasa.gov/api/map_key/>
 
-Peta **HGU resmi ATR/BPN bukan data publik** di Indonesia. Meski Komisi Informasi Publik (2016) dan
-Mahkamah Agung (2017) memutuskan dokumen HGU sawit bersifat terbuka, aksesnya tetap dibatasi
-lewat prosedur permohonan dan tidak tersedia sebagai layanan data terbuka.
+---
 
-Karena itu FireWatch ID memakai **kompilasi peta konsesi Global Forest Watch** yang dihimpun dari
-KLHK, ESDM, dan RSPO. Sebagian polanya memuat field `cont_type` bernilai `HGU`, `HGU in process`,
-`Ijin Lokasi`, atau `Pencadangan` — ditampilkan sebagai "Alas hak" di antarmuka.
+## Sumber data
 
-Batasan yang wajib dipahami:
+| Sumber | Dipakai untuk | Kunci API |
+|---|---|---|
+| **PVMBG / MAGMA ESDM** | Status gunung api, laporan letusan pos pengamatan | tidak |
+| **BMKG** | Gempa bumi, potensi tsunami | tidak |
+| **BNPB GIS** | Titik pengungsian, jumlah jiwa | tidak |
+| **NASA FIRMS** | Titik api VIIRS 3 satelit | opsional |
+| **NOAA GFS** | Medan angin untuk model sebaran asap | tidak |
+| **NOAA PTWC/NTWC** | Buletin tsunami kawasan | tidak |
+| **Open-Meteo / CAMS** | Kualitas udara, SO₂ gunung api | tidak |
+| **Global Forest Watch** | Batas konsesi sawit, HTI, tambang, RSPO | tidak |
+| **GeoNames** | 226 permukiman ≥50.000 jiwa | tidak |
+| **JMA Himawari** | Citra satelit (IR, warna alami, abu RGB, debu, uap air) | tidak |
+| **Google Berita RSS** | 13 topik berita, termasuk 5 edisi negara tetangga | tidak |
+| **Smithsonian GVP** | Katalog dan ringkasan aktivitas gunung api | tidak |
 
-- Ini **indikasi awal, bukan bukti hukum** dan bukan sertifikat resmi.
-- Titik api di dalam batas konsesi **tidak otomatis berarti perusahaan itu membakar** — api dapat
-  merambat dari luar area.
-- Kompilasi dapat tidak lengkap; tahun sumber beragam (2012–2025) dan batas dapat berubah.
-- Titik api di luar semua poligon bisa berada di lahan masyarakat, kawasan hutan negara, atau
-  konsesi yang belum terpetakan.
+---
 
-## Sumber terbuka
+## Fitur utama
 
-- **NASA FIRMS** (VIIRS/MODIS NRT) — titik api
-- **Open-Meteo** — angin, suhu, kelembapan untuk model sebaran asap dan medan panah angin
-- **Open-Meteo Air Quality (model CAMS ECMWF)** — US AQI, PM2,5, dan PM10 untuk layer kualitas udara
-- **Himawari-9 / Japan Meteorological Agency (JMA)** — citra satelit geostasioner Jepang (kanal B13 inframerah, B03 warna alami, B08 uap air), diproksikan lewat server
-- **Smithsonian Global Volcanism Program (GVP)** — daftar gunung api Holosen Indonesia (WFS) & Weekly Volcanic Activity Report (RSS)
-- **Open-Meteo angin ketinggian** — angin 700/500/250 hPa untuk memperkirakan arah sebaran abu
-- **Global Forest Watch** vector tiles — konsesi sawit, HTI, HPH, tambang, RSPO
-- **Google Berita RSS** (cadangan GDELT Project) — berita penanganan
-- **Esri** (Dark Gray Canvas, World Imagery, Shaded Relief) — peta dasar
-- **Nominatim / OpenStreetMap** — reverse geocoding wilayah administratif
+**Peta interaktif** dengan sembilan lapisan: titik api, kualitas udara, aliran angin,
+sebaran asap, wilayah terdampak, batas konsesi, abu vulkanik, gempa, dan pengungsi.
+Tiga peta dasar, lima produk citra Himawari, dan linimasa prakiraan asap +6/+12/+18 jam.
 
-## Arsitektur & keamanan
+**Sepuluh panel analisis:** kejadian aktif lintas jenis bencana, analisis wilayah,
+kueri data berbasis indeks lokal, berita penanganan, atribusi lahan, gempa dan
+pengungsi, status pembaruan sumber, SO₂ gunung api, penjelasan data, dan daftar
+sumber beserta batasannya.
 
-- Kunci API hanya dibaca di server; browser hanya memanggil `/api/*` milik sendiri.
-- Helmet + CSP ketat (`default-src 'none'`, tanpa inline script), rate limit 120 req/menit/IP.
-- Semua data eksternal dirender via `textContent`/`createElement` — tidak ada `innerHTML`.
-  Tautan berita dibatasi skema http/https + `rel="noopener noreferrer nofollow"`.
-- Error server dibalas pesan generik; stack trace hanya ke log.
-- Validasi ketat pada parameter koordinat dan bbox, dengan pembatasan luas area.
-- Cache in-memory: hotspot 10 mnt, cuaca 30 mnt, berita 20 mnt, atribusi 30 mnt, tile konsesi 6 jam,
-  reverse geocode 24 jam (menghormati kebijakan penggunaan Nominatim).
+### Prinsip yang dipegang
 
-### Endpoint
+Perangkat keselamatan publik harus jujur tentang batas pengetahuannya sendiri:
 
-| Endpoint | Fungsi |
-|---|---|
-| `GET /api/overview` | Titik api, klaster, pluma asap, daerah terdampak, peringkat provinsi |
-| `GET /api/attribution` | Agregasi titik api per unit lahan dan grup korporasi |
-| `GET /api/concessions?west=&south=&east=&north=` | Poligon konsesi (GeoJSON) untuk area peta |
-| `GET /api/whose-land?lat=&lon=` | Status/pemegang izin lahan pada satu koordinat |
-| `GET /api/wind-field?step=&west=&south=&east=&north=` | Grid panah arah & kecepatan angin |
-| `GET /api/air-quality?step=&west=&south=&east=&north=` | Grid US AQI/PM2,5/PM10 beserta legenda |
-| `GET /api/air-point?lat=&lon=` | Kualitas udara pada satu titik untuk popup peta |
-| `GET /api/ask?q=` | Tanya-jawab & pencarian atas data langsung (indeks BM25 lokal, tanpa LLM eksternal) |
-| `GET /api/volcano-ash` | Gunung api erupsi + poligon sebaran abu per lapisan ketinggian |
-| `GET /api/himawari/meta` | Waktu citra Himawari terbaru & daftar produk |
-| `GET /api/himawari/:product/:z/:x/:y.jpg` | Proksi tile citra Himawari-9 (produk: `ir`, `vis`, `ash`; z 2–6) |
-| `GET /api/place?lat=&lon=` | Wilayah administratif (desa/kecamatan/kabupaten/provinsi) |
-| `GET /api/news` | Umpan berita penanganan |
-| `GET /api/health` | Cek kesehatan layanan |
+- **Nol tidak sama dengan tidak tahu.** Bila sebuah sumber belum pernah berhasil
+  dimuat, antarmuka menampilkan `—`, bukan `0`.
+- **Status bukan kejadian.** Gunung berstatus Siaga tidak digambar berpluma abu;
+  sebaran abu hanya muncul bila pos pengamatan melaporkan letusan dalam 24 jam.
+- **Model bukan pengukuran.** Sebaran asap adalah model kerucut geometrik, bukan
+  HYSPLIT. Indeks paparan bukan ISPU. Kerucut abu bukan advisory VAAC.
+- **Sampel dinyatakan sebagai sampel.** Atribusi konsesi memeriksa 220 titik ber-FRP
+  tertinggi; ukuran sampel, populasi, dan metode pengambilannya ditampilkan
+  berdampingan karena memilih FRP tertinggi adalah bias sistematis.
+- **Umur data ditampilkan.** Berkas NASA bernama `_24h` nyatanya memuat titik hingga
+  50 jam, jadi penyaringan dilakukan sendiri dan umur titik tertua ditulis di layar.
+- **Kegagalan harus terlihat.** Setiap permintaan berbatas waktu; permintaan yang
+  menggantung memunculkan pesan dalam 12 detik, bukan kerangka kosong selamanya.
 
-## Batasan model asap
+---
 
-Sebaran asap adalah model kerucut sederhana (arah/kecepatan angin permukaan + FRP), bukan model
-dispersi atmosfer maupun pengukuran kualitas udara. Untuk keputusan darurat rujuk BMKG, BNPB/BPBD,
-dan KLHK.
+## Struktur proyek
 
-## Catatan sebaran abu vulkanik
+```
+server.js              aplikasi Express, seluruh endpoint, penjadwal
+api/index.js           pembungkus serverless Vercel
+lib/
+  firms-open.js        arsip terbuka NASA FIRMS + penyaringan jendela 24 jam
+  eruption.js          laporan letusan pos pengamatan MAGMA
+  pvmbg.js             status resmi PVMBG + cadangan snapshot
+  pvmbg-snapshot.js    salinan status 69 gunung (cadangan statis)
+  volcano.js           model sebaran abu vulkanik per lapisan ketinggian
+  hazard.js            gempa BMKG, tsunami NOAA, pengungsi BNPB
+  concession.js        titik-dalam-poligon terhadap konsesi GFW
+  wind-gfs.js          medan angin NOAA GFS
+  grib2.js             pembacaan berkas GRIB2
+  relevance.js         gerbang relevansi + skor + kategori berita
+  casualty.js          ekstraksi angka korban dari judul berita
+  rag.js               indeks pencarian lokal untuk /api/ask
+  scheduler.js         penjadwal terpusat dengan anggaran waktu
+data/regions.json      226 permukiman GeoNames
+public/
+  index.html           satu halaman
+  app.js               seluruh logika antarmuka
+  app.css              sistem desain
+  wind-particles.js    animasi partikel angin di kanvas
+docs/                  PRD, arsitektur, ERD, desain, audit nilai tetap, peta jalan
+```
 
-Poligon sebaran abu adalah **perkiraan indikatif** dari arah dan kecepatan angin pada
-ketinggian 700/500/250 hPa, bukan Volcanic Ash Advisory resmi. Wilayah Indonesia berada
-di bawah tanggung jawab **Darwin VAAC (Bureau of Meteorology, Australia)** — bukan Tokyo VAAC —
-sedangkan status dan tingkat aktivitas gunung api resmi diterbitkan oleh **PVMBG / MAGMA ESDM**.
-Untuk keperluan penerbangan dan mitigasi, gunakan sumber resmi tersebut.
+---
 
-## Mesin kueri (RAG lokal)
+## Status kesiapan
 
-`lib/rag.js` mengubah seluruh data langsung — ringkasan nasional, daerah terdampak,
-peringkat provinsi, klaster & pluma asap, unit konsesi, kualitas udara, gunung api,
-dan berita — menjadi dokumen teks, lalu mengindeksnya dengan **BM25** (plus pemangkas
-imbuhan bahasa Indonesia sederhana). Kueri pengguna dideteksi maksudnya lalu jawaban
-**dirakit dari angka nyata pada dokumen**, bukan dihasilkan model bahasa. Karena itu:
+Audit black-box menyeluruh (2026-09-08) memberi skor **59/100** sebelum perbaikan,
+dengan dua temuan Critical dan sembilan High. Bug Critical dan sebagian besar High
+sudah ditangani; sisanya terkonsentrasi pada performa dan pengerasan operasional.
 
-- tidak ada API key dan tidak ada biaya inferensi,
-- jawaban tidak bisa "berhalusinasi" angka,
-- setiap jawaban menyertakan daftar sumber yang dipakai.
+Rincian lengkap beserta urutan pengerjaan ada di [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+## Lisensi dan atribusi
+
+Data milik penerbitnya masing-masing dan tunduk pada ketentuan mereka. GeoNames
+berlisensi CC BY 4.0. Peta dasar © Esri, Maxar, Earthstar Geographics, HERE, Garmin,
+dan kontributor OpenStreetMap.
