@@ -78,7 +78,7 @@
     // jika tidak, state dan tampilan kontrol saling bertentangan.
     hima: null, himaProduct: '', himaLayer: null,
     hazard: null, hazardAt: null, quakeOn: false, shelterOn: false,
-    casualties: null, status: null, eruptions: null
+    casualties: null, status: null, eruptions: null, newsFetchedAt: null
   };
 
   /* ---------- util DOM ---------- */
@@ -630,6 +630,14 @@
    * ini ingin tahu "apa yang sedang terjadi", bukan harus memeriksa
    * empat panel terpisah satu per satu.
    * ============================================================ */
+
+  /** Jam terbit dalam WIB. Zona dihitung eksplisit, bukan zona perangkat. */
+  function fmtJamWib(ms) {
+    var d = new Date(ms + 7 * 3600000);
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + ' '
+      + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ' WIB';
+  }
 
   function timeAgo(iso) {
     var t = new Date(iso).getTime();
@@ -1333,7 +1341,8 @@
       return !q || a.title.toLowerCase().indexOf(q) >= 0 || a.domain.toLowerCase().indexOf(q) >= 0;
     });
     $('newsCount').textContent = state.news.length
-      ? nf.format(list.length) + ' artikel · ' + state.newsAt
+      ? nf.format(list.length) + ' artikel · diperbarui ' + state.newsAt
+        + (state.newsFetchedAt ? ' (' + timeAgo(state.newsFetchedAt) + ')' : '')
       : '';
     if (!list.length) {
       box.appendChild(el('p', 'empty', q ? 'Tidak ada berita yang cocok dengan pencarian.' : 'Belum ada berita yang dapat ditampilkan.'));
@@ -1346,12 +1355,26 @@
       link.appendChild(el('div', 'news-t', a.title || '(tanpa judul)'));
       var meta = el('div', 'news-m');
       if (a.domain) meta.appendChild(el('span', 'news-src', a.domain));
-      if (a.topicLabel && state.newsTopic === 'semua') {
+      // Berita dari media negara tetangga ditandai jelas supaya pembaca tahu
+      // itu sudut pandang luar, bukan laporan otoritas Indonesia.
+      if (a.foreign && a.country) {
+        meta.appendChild(el('span', 'news-tag news-foreign', a.country));
+      } else if (a.topicLabel && state.newsTopic === 'semua') {
         meta.appendChild(el('span', 'news-tag', a.topicLabel));
       }
-      var d = a.seendate && a.seendate.length >= 8
-        ? a.seendate.slice(6, 8) + '-' + a.seendate.slice(4, 6) + '-' + a.seendate.slice(0, 4) : '';
-      if (d) meta.appendChild(el('span', null, d));
+      // Waktu terbit ditampilkan lengkap dengan jam WIB dan usia relatif —
+      // pada pemantauan bencana, "2 jam lalu" jauh lebih berarti daripada
+      // sekadar tanggal.
+      var ts = a.pubDate ? Date.parse(a.pubDate) : NaN;
+      if (isFinite(ts)) {
+        var age = el('span', 'news-age', timeAgo(new Date(ts).toISOString()));
+        age.title = new Date(ts).toLocaleString('id-ID', {
+          day: '2-digit', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta'
+        }) + ' WIB';
+        meta.appendChild(age);
+        meta.appendChild(el('span', 'news-clock', fmtJamWib(ts)));
+      }
       link.appendChild(meta);
       box.appendChild(link);
     });
@@ -1480,7 +1503,12 @@
       .then(function (d) {
         state.news = Array.isArray(d.articles) ? d.articles : [];
         state.newsTopics = Array.isArray(d.topics) ? d.topics : [];
-        state.newsAt = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        // Tampilkan kapan DATA-nya ditarik dari sumber, bukan kapan browser
+        // memanggil API — keduanya bisa berbeda beberapa menit karena cache.
+        state.newsFetchedAt = d.fetchedAt || null;
+        state.newsAt = d.fetchedAt
+          ? fmtJamWib(Date.parse(d.fetchedAt))
+          : new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
         renderNewsTopics();
         renderNews();
         buildTicker();
@@ -1842,7 +1870,10 @@
   loadAttribution();
   setInterval(function () { loadOverview(); loadAttribution(); }, 10 * 60 * 1000);
   // Berita disegarkan tiap 5 menit agar panel penanganan selalu terkini.
-  setInterval(loadNews, 5 * 60 * 1000);
+  // Berita adalah panel yang paling terasa "mati" bila basi, jadi klien
+  // memeriksa tiap 3 menit. Sumbernya sendiri disegarkan penjadwal tiap
+  // 10 menit, sehingga ini hanya menarik hasil terbaru yang sudah ada.
+  setInterval(loadNews, 3 * 60 * 1000);
   // Gempa & tsunami harus sesegar mungkin: perbarui tiap 2 menit.
   loadHazard();
   setInterval(loadHazard, 2 * 60 * 1000);

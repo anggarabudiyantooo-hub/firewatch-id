@@ -518,12 +518,42 @@ function toSeendate(d) {
  * (rapat terbatas, instruksi presiden, BNPB) tidak tenggelam oleh berita
  * kejadian kebakaran yang jumlahnya jauh lebih banyak.
  */
+/**
+ * Kueri berita luar negeri dipisah per negara tetangga.
+ *
+ * Kenapa per negara, bukan satu kueri "internasional": media Singapura,
+ * Malaysia, Australia, dan Jepang meliput bencana Indonesia dari sudut yang
+ * berbeda dan lebih cepat untuk hal yang menyangkut mereka langsung —
+ * penutupan bandara, pembatalan penerbangan, kabut asap lintas batas,
+ * peringatan tsunami regional. Satu kueri global cenderung dikuasai satu-dua
+ * kantor berita besar saja.
+ *
+ * Tiap negara memakai edisi Google Berita setempat (hl/gl/ceid), sehingga
+ * yang muncul benar-benar media negara itu, bukan terjemahan.
+ */
+const NEIGHBOUR_EDITIONS = [
+  { id: 'sg', country: 'Singapura', hl: 'en-SG', gl: 'SG', ceid: 'SG:en' },
+  { id: 'my', country: 'Malaysia', hl: 'en-MY', gl: 'MY', ceid: 'MY:en' },
+  { id: 'au', country: 'Australia', hl: 'en-AU', gl: 'AU', ceid: 'AU:en' },
+  // Edisi bahasa Inggris untuk Jepang (JP:en) justru mengembalikan media
+  // Amerika, jadi dipakai edisi bahasa Jepang: hasilnya Reuters Japan, NHK,
+  // TBS, Yomiuri — yang memang meliput dampaknya bagi warga Jepang.
+  { id: 'jp', country: 'Jepang', hl: 'ja', gl: 'JP', ceid: 'JP:ja', lang: 'ja' },
+  { id: 'ph', country: 'Filipina', hl: 'en-PH', gl: 'PH', ceid: 'PH:en' }
+];
+
+// Istilah bencana dalam bahasa Inggris; dipakai untuk semua edisi tetangga.
+const NEIGHBOUR_QUERY =
+  '(Indonesia OR Indonesian OR Jakarta OR Bali OR Sumatra OR Java) '
+  + '(volcano OR eruption OR "volcanic ash" OR earthquake OR tsunami OR haze OR '
+  + 'wildfire OR "forest fire" OR evacuation OR "flight cancelled" OR "airport closed")';
+
+// Kueri bahasa Jepang; istilah bencana ditulis dalam bahasa setempat agar
+// yang terjaring memang liputan media Jepang, bukan kantor berita berbahasa Inggris.
+const NEIGHBOUR_QUERY_JA =
+  'インドネシア (噴火 OR 火山灰 OR 地震 OR 津波 OR 山火事 OR 煙害 OR 避難)';
+
 const NEWS_TOPICS = [
-  {
-    id: 'internasional', label: 'Peringatan luar negeri',
-    q: '(BOM OR "Bureau of Meteorology" OR Australia OR Japan OR JMA OR Singapore OR NEA OR ASEAN '
-      + 'OR "Darwin VAAC" OR PTWC) (Indonesia) (haze OR smoke OR "volcanic ash" OR tsunami OR earthquake OR wildfire)'
-  },
   {
     id: 'kebencanaan', label: 'Gempa & tsunami',
     q: '(gempa OR tsunami OR "peringatan dini" OR BMKG OR erupsi OR "gunung api") Indonesia'
@@ -535,17 +565,18 @@ const NEWS_TOPICS = [
   {
     id: 'pusat', label: 'Kebijakan pusat',
     q: '("rapat terbatas" OR ratas OR "instruksi presiden" OR "Presiden Prabowo" OR "Kepala Negara") '
-      + '(karhutla OR "kebakaran hutan" OR "kabut asap" OR bencana)'
+      + '(karhutla OR "kebakaran hutan" OR "kabut asap" OR bencana OR erupsi OR gempa)'
   },
   {
     id: 'penanganan', label: 'Operasi penanganan',
     q: '(BNPB OR BPBD OR Manggala Agni OR "water bombing" OR "modifikasi cuaca" OR "hujan buatan" '
-      + 'OR "satgas karhutla" OR TNI OR Polri) (karhutla OR "kebakaran hutan" OR "kebakaran lahan")'
+      + 'OR "satgas karhutla" OR TNI OR Polri OR Basarnas) '
+      + '(karhutla OR "kebakaran hutan" OR erupsi OR gempa OR pengungsi)'
   },
   {
     id: 'daerah', label: 'Tanggap darurat daerah',
     q: '("status siaga darurat" OR "tanggap darurat" OR "darurat asap" OR gubernur OR bupati) '
-      + '(karhutla OR "kebakaran hutan" OR "kabut asap")'
+      + '(karhutla OR "kebakaran hutan" OR "kabut asap" OR erupsi OR gempa)'
   },
   {
     id: 'penegakan', label: 'Penegakan hukum',
@@ -555,12 +586,29 @@ const NEWS_TOPICS = [
   {
     id: 'kesehatan', label: 'Dampak kesehatan & pendidikan',
     q: '(ISPA OR "kualitas udara" OR ISPU OR "sekolah diliburkan" OR "libur sekolah" OR posko kesehatan) '
-      + '(kabut asap OR karhutla)'
-  }
+      + '(kabut asap OR karhutla OR "abu vulkanik")'
+  },
+  {
+    id: 'penerbangan', label: 'Penerbangan & bandara',
+    q: '("bandara ditutup" OR "penerbangan dibatalkan" OR NOTAM OR "abu vulkanik" OR AirNav) '
+      + '(bandara OR penerbangan OR maskapai)'
+  },
+  // Satu topik per negara tetangga, memakai edisi Google Berita setempat.
+  ...NEIGHBOUR_EDITIONS.map(e => ({
+    id: 'luar-' + e.id,
+    label: e.country,
+    q: e.lang === 'ja' ? NEIGHBOUR_QUERY_JA : NEIGHBOUR_QUERY,
+    edition: e,
+    foreign: true
+  }))
 ];
 
 async function googleNewsTopic(topic) {
-  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(topic.q)}&hl=id&gl=ID&ceid=ID:id`;
+  // Topik luar negeri memakai edisi Google Berita negara bersangkutan agar
+  // yang muncul memang media setempat, bukan hasil terjemahan.
+  const ed = topic.edition || { hl: 'id', gl: 'ID', ceid: 'ID:id' };
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(topic.q)}`
+    + `&hl=${ed.hl}&gl=${ed.gl}&ceid=${ed.ceid}`;
   const r = await fetchWithTimeout(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SiagaID/1.0)' } }, 15000);
   if (!r.ok) throw new Error('gnews_' + r.status);
   const xml = await r.text();
@@ -581,7 +629,9 @@ async function googleNewsTopic(topic) {
       title: title.slice(0, 300), url: link, domain: domain.slice(0, 80),
       seendate: toSeendate(pick('pubDate')),
       pubDate: pick('pubDate'),
-      topic: topic.id, topicLabel: topic.label
+      topic: topic.id, topicLabel: topic.label,
+      foreign: !!topic.foreign,
+      country: topic.edition ? topic.edition.country : null
     });
   }
   return out;
@@ -611,8 +661,10 @@ async function googleNews() {
   // Memotong daftar gabungan begitu saja membuat topik bervolume rendah
   // (mis. peringatan luar negeri) hilang sepenuhnya. Karena itu tiap topik
   // dijamin mendapat jatah minimum lebih dulu, sisanya diisi yang terbaru.
-  const LIMIT = 160;
-  const QUOTA = 14;
+  // 13 topik (8 dalam negeri + 5 negara tetangga) x jatah 12 = 156,
+  // sisanya diisi artikel terbaru lintas topik.
+  const LIMIT = 200;
+  const QUOTA = 12;
   const chosen = new Set();
   const picked = [];
 
@@ -638,8 +690,13 @@ async function googleNews() {
   for (const t of NEWS_TOPICS) counts[t.id] = picked.filter(a => a.topic === t.id).length;
   return {
     ok: true,
-    source: 'Google Berita (agregator media Indonesia & internasional)',
-    topics: NEWS_TOPICS.map(t => ({ id: t.id, label: t.label, count: counts[t.id] })),
+    source: 'Google Berita — edisi Indonesia + edisi negara tetangga',
+    fetchedAt: new Date().toISOString(),
+    topics: NEWS_TOPICS.map(t => ({
+      id: t.id, label: t.label, count: counts[t.id],
+      foreign: !!t.foreign,
+      country: t.edition ? t.edition.country : null
+    })),
     articles: picked
   };
 }
@@ -1073,7 +1130,9 @@ app.get('/api/whose-land', async (req, res) => {
 });
 
 app.get('/api/news', async (_req, res) => {
-  try { res.set('Cache-Control', 'public, max-age=300'); res.json(await getNews()); }
+  // Penjadwal menyegarkan berita tiap 10 menit; cache CDN 60 detik sudah
+  // cukup meredam lonjakan tanpa membuat artikel baru tertahan lama.
+  try { res.set('Cache-Control', 'public, max-age=60'); res.json(await getNews()); }
   catch { res.status(502).json({ ok: false, articles: [], message: 'Umpan berita gagal dimuat.' }); }
 });
 
