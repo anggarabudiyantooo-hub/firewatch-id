@@ -57,6 +57,7 @@ kesimpulan yang dibaca pengguna, jadi tiap perubahan perlu pertimbangan sadar.
 | `SHELTER_MAX_AGE_DAYS = 10` | `lib/hazard.js:198` | BNPB tidak menghapus layanan saat warga pulang | Angka lawas akan menempel selamanya tanpa ambang ini. Nilai 10 hari adalah perkiraan, belum divalidasi dengan BNPB |
 | `limit = 220` | `lib/concession.js:120` | Batas waktu fungsi 60 detik | Sampel ber-FRP tertinggi adalah **bias sistematis** — wajib dinyatakan di antarmuka |
 | `clusters.slice(0, 40)` | `server.js` | Ukuran payload | Dilaporkan lewat `clustersMeta` |
+| `HOTSPOT_CAP = 2000` | `server.js` | Diukur pada beban puncak 7.172 titik: memotong di FRP 5,8 MW sementara filter terendah antarmuka 5 MW | Menaikkan filter minimum di antarmuka ke bawah 5 MW akan membuat sebagian pilihan tidak terlayani penuh; `hotspotsMeta.minFrpIncluded` memberi tahu antarmuka kapan hal itu terjadi |
 | `points.slice(0, 500)` | `lib/hazard.js` | Ukuran payload | Belum ada metadata pemotongan — **celah kecil** |
 | Jaccard `0.80` | `server.js` (dedup berita) | Menangkap kawat AP yang diterbitkan ulang | Terlalu rendah menggabungkan peristiwa berbeda; terlalu tinggi meloloskan duplikat |
 | `QUOTA = 12`, `LIMIT = 200` | `server.js` | Jatah artikel per topik | |

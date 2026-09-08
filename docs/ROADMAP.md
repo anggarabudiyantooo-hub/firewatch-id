@@ -41,7 +41,39 @@ yang diperkenalkan oleh perbaikan putaran-1. Seluruhnya sudah ditangani:
 | BUG-018 Empat lapisan diam | ✅ selesai | Ketujuh lapisan memberi pesan dengan jumlah nyata |
 | BUG-027 robots/sitemap/404 | ✅ selesai | 404 berkas 30 KB → 21 B |
 
-**Estimasi skor sekarang: ~90/100.**
+**Skor audit putaran-2: 78/100.**
+
+## Audit putaran-3 (8 September 2026)
+
+Audit ulang menyatakan aplikasi **layak rilis** dengan skor **89/100**.
+Regresi Critical putaran-2 tertutup, tidak ada Critical maupun High baru.
+Dari 44 temuan kumulatif: 35 FIXED, 3 PARTIAL, 3 OPEN (semua Low), 3 ditarik.
+
+Sisa temuan Low sudah ditangani pada putaran ini:
+
+| Temuan | Keadaan | Bukti |
+|---|---|---|
+| BUG-045 Payload 7.172 titik, 91% tak dirender | ✅ selesai | 1.160.642 B → 327.585 B (−72%); over-the-wire 101 KB → 52,7 KB |
+| A11Y-02 Kontras `.ev-detail` `.cs-lab` | ✅ selesai | 3,92:1 → 12,55:1 · 3,95:1 → 12,66:1 |
+| A11Y-03 `role="application"` | ✅ selesai | `role="region"` + `aria-describedby` |
+| A11Y-07 Empat target < 24 px | ✅ selesai | Terukur nol pelanggaran |
+| BUG-038 `/api/ask` 3.000 karakter | ✅ selesai | Ditolak 400, bukan dipotong diam-diam |
+| Sub-temuan 404 berat | ✅ selesai | 30 KB → 21 B untuk non-peramban |
+
+**Estimasi skor sekarang: ~95/100.**
+
+### Pelajaran dari BUG-045
+
+Perbaikan payload putaran-2 diuji ketika data sedang sepi — 595 titik,
+sehingga batas array tidak pernah terpakai. Begitu kemarau memuncak ke
+7.172 titik, batas itu ternyata memang tidak pernah ada.
+
+Sejak itu perbaikan performa diuji pada **beban puncak**, bukan pada
+kondisi saat pengujian kebetulan berlangsung.
+
+Bagian paling mudah salah bukan pemotongannya, melainkan angka
+pembanding di antarmuka: memakai panjang array yang sudah dipotong
+membuat "semua titik" terbaca 2.000 padahal satelit mendeteksi 7.172.
 
 ### Catatan tentang BUG-044
 

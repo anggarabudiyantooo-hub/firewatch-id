@@ -159,9 +159,12 @@ docs/                  PRD, arsitektur, ERD, desain, audit nilai tetap, peta jal
 
 ## Status kesiapan
 
-Dua putaran audit black-box menyeluruh telah dilakukan. Putaran-1 memberi skor
-**59/100**; putaran-2 **78/100** setelah perbaikan, dengan satu regresi Critical
-yang kini juga sudah ditutup. Payload turun dari 4,66 MB menjadi **407 KB**.
+Tiga putaran audit black-box menyeluruh telah dilakukan: **59 → 78 → 89/100**.
+Putaran-3 menyatakan aplikasi **layak rilis** — tidak ada temuan Critical maupun
+High yang tersisa. Sisa temuan Low pada putaran itu juga sudah ditangani.
+
+Payload `/api/overview` turun dari 3,64 MB menjadi **328 KB** (52,7 KB
+over-the-wire dengan Brotli), dan TTFB dari 3,05 detik menjadi 67 ms.
 
 Rincian lengkap beserta urutan pengerjaan ada di [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
