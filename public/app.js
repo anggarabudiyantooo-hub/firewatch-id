@@ -609,6 +609,15 @@
       if (q && q.latest && q.latest.magnitude !== null) {
         $('sQuakeSub').textContent = 'terkini M ' + q.latest.magnitude
           + ' · ' + String(q.latest.area || '').slice(0, 34);
+      } else if (qc && !qc.total) {
+        // Nol gempa dalam 24 jam adalah kabar baik, bukan kegagalan memuat.
+        // Kapan terakhir kali terjadi tetap disebutkan supaya pembaca tahu
+        // datanya memang hidup.
+        var la = q && q.latestAny;
+        $('sQuakeSub').textContent = (la && q.latestAnyAgeHours != null)
+          ? 'nihil 24 jam · terakhir M ' + la.magnitude + ', '
+            + Math.round(q.latestAnyAgeHours) + ' jam lalu'
+          : 'tidak ada gempa tercatat 24 jam terakhir';
       } else if (qc) {
         $('sQuakeSub').textContent = qc.kuat + ' gempa M ≥ 5';
       }
