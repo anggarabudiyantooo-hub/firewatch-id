@@ -571,6 +571,25 @@ function compassId(deg) {
  * penerbangan rendah) daripada abu di ~10 km yang umumnya melintas di atas.
  * Bobot lapisan mencerminkan hal itu.
  */
+/**
+ * Uji titik di dalam poligon (ray casting).
+ *
+ * Poligon abu berukuran puluhan kilometer, jauh di bawah skala yang
+ * membuat kelengkungan bumi berpengaruh, sehingga koordinat dapat
+ * diperlakukan sebagai bidang datar.
+ */
+function pointInPolygon(lat, lon, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const yi = ring[i][0], xi = ring[i][1];
+    const yj = ring[j][0], xj = ring[j][1];
+    const crosses = (yi > lat) !== (yj > lat)
+      && lon < ((xj - xi) * (lat - yi)) / ((yj - yi) || 1e-12) + xi;
+    if (crosses) inside = !inside;
+  }
+  return inside;
+}
+
 function ashImpactedRegions(volcanoes) {
   const LAYER_WEIGHT = { 3: 1, 6: 0.55, 10: 0.3 };
   const out = [];
@@ -585,17 +604,28 @@ function ashImpactedRegions(volcanoes) {
     for (const v of (volcanoes || [])) {
       for (const p of (v.plumes || [])) {
         const reach = p.reachKm;
-        if (!reach) continue;
+        if (!reach || !p.polygon || p.polygon.length < 4) continue;
         const dist = haversine(reg.lat, reg.lon, v.lat, v.lon);
-        if (dist > reach) continue;
+        // Saringan murah lebih dulu supaya uji poligon hanya dijalankan
+        // untuk kandidat yang masuk akal.
+        if (dist > reach * 1.2) continue;
+
+        // Diuji terhadap POLIGON yang benar-benar digambar, bukan terhadap
+        // kerucut. Sejak bentuknya menjadi area bersisi lurus berujung
+        // tumpul, uji sudut tidak lagi mewakili gambar: ada permukiman di
+        // dalam poligon yang ditolak uji sudut, dan sebaliknya. Daftar
+        // wilayah terdampak harus persis sama dengan apa yang terlihat.
+        if (!pointInPolygon(reg.lat, reg.lon, p.polygon)) continue;
+
         const br = bearingBetween(v.lat, v.lon, reg.lat, reg.lon);
         const half = p.halfAngleDeg || 20;
         const off = angDiff(br, p.to);
-        if (off > half) continue;
 
         const w = LAYER_WEIGHT[p.altKm] || 0.3;
         const distFactor = Math.max(0, 1 - dist / reach);
-        const angFactor = Math.max(0, 1 - off / half);
+        // Paparan meluruh dari sumbu ke tepi; di luar sudut nominal tetap
+        // dihitung tetapi bobotnya kecil.
+        const angFactor = Math.max(0.15, 1 - off / Math.max(half, 1));
         const s = 100 * w * distFactor * angFactor;
         if (s <= 0.5) continue;
 
