@@ -1683,3 +1683,23 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
 .ctlbox select,.map-toolbar select,.sel select,
 .news-src,.pg-b{min-height:26px}
 .chip{padding:4px 10px}
+
+/* Label kota terdampak abu vulkanik.
+   Ditulis permanen di peta supaya pertanyaan "daerah mana yang kena"
+   terjawab tanpa perlu mengeklik satu per satu. */
+.ash-city-tip{
+  background:rgba(8,11,15,.88);
+  border:1px solid var(--line-3);
+  color:#e2e8f0;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.04em;
+  padding:1px 6px;
+  border-radius:0;
+  box-shadow:none;
+  white-space:nowrap;
+}
+.ash-city-tip::before{display:none}
+.ash-city-berat{border-color:#ef4444;color:#fca5a5}
+.ash-city-sedang{border-color:#f97316;color:#fdba74}
+.ash-city-ringan{border-color:#eab308;color:#fde047}

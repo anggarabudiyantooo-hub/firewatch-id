@@ -31,6 +31,37 @@ const BBOX = { west: 94.5, south: -11.5, east: 141.5, north: 6.5 }; // Indonesia
 // Pakai require() (bukan fs.readFileSync) supaya bundler serverless seperti Vercel
 // melacak berkas ini secara statis dan ikut menyertakannya ke dalam deployment.
 const REGIONS = require('./data/regions.json');
+
+/**
+ * Permukiman di sekitar gunung api, dipakai khusus untuk memetakan
+ * wilayah di bawah kerucut abu.
+ *
+ * REGIONS hanya memuat 226 kota berpenduduk >=50.000 jiwa. Kepadatan itu
+ * memadai untuk asap karhutla yang menyebar ratusan kilometer, tetapi
+ * terlalu jarang untuk abu vulkanik yang jangkauannya puluhan kilometer:
+ * Gunung Ibu dan Ili Lewotolok tidak punya satu pun kota terdaftar dalam
+ * radius sebarannya, sehingga dasbor melaporkan "tidak ada wilayah
+ * terdampak" padahal ada desa tepat di bawah kolom abu.
+ */
+const SETTLEMENT_KIND_LABEL = {
+  PPLC: 'Ibu kota negara', PPLA: 'Ibu kota provinsi', PPLA2: 'Ibu kota kabupaten',
+  PPLA3: 'Pusat kecamatan', PPLA4: 'Desa/kelurahan', PPL: 'Permukiman', PPLX: 'Permukiman'
+};
+
+const SETTLEMENTS = (() => {
+  const raw = require('./data/settlements.js');
+  const out = [];
+  for (let i = 0; i < raw.n.length; i++) {
+    out.push({
+      name: raw.n[i],
+      lat: raw.la[i] / 1000,
+      lon: raw.lo[i] / 1000,
+      kind: raw.kinds[raw.k[i]] || 'PPL',
+      pop: raw.p[String(i)] || 0
+    });
+  }
+  return out;
+})();
 const { attributeHotspots } = require('./lib/concession');
 const { fetchWindField, sampleAt, gridPoints } = require('./lib/wind-gfs');
 const { openHotspots, toIsoUtc, WINDOW_HOURS: FIRMS_WINDOW_HOURS } = require('./lib/firms-open');
@@ -544,7 +575,10 @@ function ashImpactedRegions(volcanoes) {
   const LAYER_WEIGHT = { 3: 1, 6: 0.55, 10: 0.3 };
   const out = [];
 
-  for (const reg of REGIONS) {
+  // Dipindai terhadap permukiman rapat, bukan 226 kota besar. Abu vulkanik
+  // jatuh dalam radius puluhan kilometer, dan pada radius itu yang ada
+  // umumnya desa dan pusat kecamatan — bukan kota berpenduduk ratusan ribu.
+  for (const reg of SETTLEMENTS) {
     let score = 0;
     const hits = [];
 
@@ -584,7 +618,8 @@ function ashImpactedRegions(volcanoes) {
 
     out.push({
       name: reg.name,
-      prov: reg.prov,
+      prov: SETTLEMENT_KIND_LABEL[reg.kind] || 'Permukiman',
+      kind: reg.kind,
       lat: reg.lat,
       lon: reg.lon,
       population: reg.pop,
@@ -598,8 +633,19 @@ function ashImpactedRegions(volcanoes) {
     });
   }
 
-  out.sort((a, b) => b.score - a.score);
-  return out.slice(0, 20);
+  // Diurutkan menurut tingkat paparan; yang terdekat dan paling terpapar
+  // muncul lebih dulu. Batas 120 dipilih supaya peta tetap terbaca —
+  // menggambar ribuan penanda justru menyembunyikan yang penting.
+  out.sort((a, b) => b.score - a.score || a.nearestKm - b.nearestKm);
+  const ASH_IMPACT_CAP = 120;
+  return {
+    list: out.slice(0, ASH_IMPACT_CAP),
+    meta: {
+      returned: Math.min(ASH_IMPACT_CAP, out.length),
+      total: out.length,
+      truncated: out.length > ASH_IMPACT_CAP
+    }
+  };
 }
 
 function impactedRegions(plumes) {
@@ -965,7 +1011,7 @@ async function buildOverview() {
 
     // Kota di jalur abu vulkanik. Opsional: kegagalan data gunung tidak
     // boleh menggugurkan seluruh ringkasan karhutla.
-    let ashImpacted = [];
+    let ashImpacted = { list: [], meta: null };
     let volcanoSummary = null;
     try {
       const va = await scheduler.get('volcano');
@@ -1077,7 +1123,9 @@ async function buildOverview() {
         total: clusters.length,
         truncated: clusters.length > 40
       },
-      ashImpacted, volcano: volcanoSummary,
+      ashImpacted: ashImpacted.list || ashImpacted,
+      ashImpactedMeta: ashImpacted.meta || null,
+      volcano: volcanoSummary,
       provinceScores: byProvince, provinceRanking, worstAir
     };
   }

@@ -405,6 +405,12 @@
     return L.divIcon({ className: 'volcano-mark', html: svg, iconSize: [26, 26], iconAnchor: [13, 20] });
   }
 
+  /** Selisih dua sudut kompas dalam derajat, 0-180. */
+  function angGap(a, b) {
+    var d = Math.abs(((a % 360) + 360) % 360 - ((b % 360) + 360) % 360);
+    return d > 180 ? 360 - d : d;
+  }
+
   function drawAsh() {
     gAsh.clearLayers();
     if (!state.ash || !state.ash.active.length) return;
@@ -417,8 +423,21 @@
           color: p.color, weight: 1, opacity: 0.5,
           fillColor: p.color, fillOpacity: 0.13, dashArray: '5,4'
         }).bindPopup(popupNode('Sebaran abu ' + v.name + ' — ' + p.levelLabel, [
-          'Arah sebaran: ' + compass(p.to) + ' (' + p.to + '°)',
-          'Kecepatan angin: ' + p.speed + ' m/s pada ~' + p.altKm + ' km',
+          'Arah sebaran: ' + compass(p.to) + ' (' + p.to + '\u00b0)',
+          // Arah kerucut bisa berasal dari dua sumber yang berbeda, dan
+          // perbedaannya penting: laporan visual petugas pos pantau
+          // mengalahkan model angin. Tanpa keterangan ini, pembaca yang
+          // membandingkan arah abu dengan arah angin akan mengira ada
+          // kekeliruan padahal justru pengamatan lapangan yang dipakai.
+          p.observedDirection
+            ? 'Sumber arah: laporan visual petugas pos pengamatan'
+            : 'Sumber arah: model angin ketinggian (NOAA GFS)',
+          'Angin di ~' + p.altKm + ' km: ' + p.speed + ' m/s, dari '
+            + compass(p.from) + ' (' + p.from + '\u00b0)',
+          p.observedDirection && angGap(p.from + 180, p.to) > 45
+            ? 'Catatan: arah kolom teramati berbeda dari arah angin model. '
+              + 'Angka yang ditampilkan mengikuti pengamatan lapangan.'
+            : null,
           'Perkiraan jangkauan: ' + nf.format(p.reachKm) + ' km'
         ], { warn: 'Perkiraan indikatif dari angin ketinggian, bukan advisory resmi VAAC.' }))
           .addTo(gAsh);
@@ -440,6 +459,59 @@
             : 'Sebaran abu tidak dimodelkan (belum berstatus Siaga dan tidak dilaporkan erupsi)'
         ], { warn: (o ? o.meaning : null) || (v.activity && v.activity.summary) || null }))
         .addTo(gAsh);
+    });
+
+    drawAshImpacted();
+  }
+
+  /**
+   * Kota yang berada di dalam kerucut abu, digambar langsung di peta.
+   *
+   * Kerucut saja hanya menjawab "ke arah mana"; yang ingin diketahui
+   * pembaca adalah "daerah mana yang kena". Nama kota dan perkiraan
+   * waktu tiba ditulis di peta supaya pertanyaan itu terjawab tanpa
+   * perlu membuka panel terpisah dan mencocokkan sendiri.
+   */
+  function drawAshImpacted() {
+    var list = (state.data && state.data.ashImpacted) || [];
+    if (!list.length) return;
+
+    list.forEach(function (r) {
+      var col = r.score >= 66 ? '#ef4444' : r.score >= 33 ? '#f97316' : '#eab308';
+      var eta = r.etaH === null ? 'waktu tiba tidak diperkirakan'
+        : r.etaH < 1 ? 'abu diperkirakan tiba <1 jam'
+          : r.etaH < 24 ? 'abu diperkirakan tiba ~' + Math.round(r.etaH) + ' jam lagi'
+            : 'abu diperkirakan tiba >1 hari';
+
+      // Lingkaran penanda: ukurannya mengikuti tingkat paparan, bukan
+      // jumlah penduduk, supaya yang menonjol adalah yang paling terdampak.
+      L.circleMarker([r.lat, r.lon], {
+        pane: 'volcanoPane',
+        radius: r.score >= 66 ? 11 : r.score >= 33 ? 9 : 7,
+        color: col, weight: 2, fillColor: col, fillOpacity: 0.28
+      }).bindPopup(popupNode(r.name + ' \u00b7 ' + r.prov, [
+        'Tingkat paparan: ' + r.level + ' (indeks ' + r.score + ' dari 100)',
+        'Sumber abu: Gunung ' + r.volcano + ' \u00b7 ' + nf.format(r.nearestKm) + ' km',
+        eta,
+        'Lapisan ketinggian: ' + r.layers.join(' / ') + ' km',
+        r.population ? 'Penduduk: ' + nf.format(r.population) + ' jiwa' : null,
+        r.officialLevel ? 'Status gunung: ' + r.officialLevel : null
+      ], { warn: 'Perkiraan model dari angin ketinggian, bukan pengukuran sebaran abu.' }))
+        .addTo(gAsh);
+
+      // Nama kota ditulis permanen agar terbaca tanpa harus diklik.
+      L.marker([r.lat, r.lon], {
+        pane: 'volcanoPane',
+        icon: L.divIcon({
+          className: 'ash-city-label',
+          html: '<span></span>',
+          iconSize: [0, 0]
+        })
+      }).addTo(gAsh)
+        .bindTooltip(r.name, {
+          permanent: true, direction: 'right', offset: [8, 0],
+          className: 'ash-city-tip ash-city-' + r.level.toLowerCase()
+        });
     });
   }
 
@@ -1404,11 +1476,16 @@
       return;
     }
 
+    var am = state.data && state.data.ashImpactedMeta;
     pane.appendChild(el('p', 'pane-note',
-      'Kota di bawah jalur abu menurut arah angin tiap lapisan ketinggian. '
+      'Permukiman di bawah jalur abu menurut arah angin tiap lapisan ketinggian. '
       + 'Abu rendah (~3 km) paling berdampak ke permukaan; abu ~10 km umumnya '
-      + 'melintas di atas dan lebih memengaruhi penerbangan. Model indikatif, '
-      + 'bukan advisory resmi Darwin VAAC.'));
+      + 'melintas di atas dan lebih memengaruhi penerbangan. '
+      + (am && am.truncated
+        ? 'Menampilkan ' + nf.format(am.returned) + ' paling terpapar dari '
+          + nf.format(am.total) + ' terdeteksi. '
+        : '')
+      + 'Model indikatif, bukan advisory resmi Darwin VAAC.'));
 
     list.forEach(function (r, i) {
       var eta = r.etaH === null ? 'waktu tiba tidak diperkirakan'
@@ -1692,6 +1769,10 @@
           $('sAirSub').textContent = 'data tidak tersedia';
         }
         drawFires(); drawSmoke(); drawImpact();
+        // Kota terdampak abu berasal dari overview, sedangkan kerucutnya
+        // dari endpoint gunung api. Keduanya tiba terpisah, jadi lapisan
+        // abu digambar ulang begitu daftar kotanya siap.
+        if (state.ashOn && state.ash) drawAsh();
         renderImpactList(); renderAshList(); renderProvList(); renderClusterList();
       })
       .catch(function () {
