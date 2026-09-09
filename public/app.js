@@ -140,6 +140,9 @@
     // Harus cocok dengan <option selected> pada #himaSel (nonaktif),
     // jika tidak, state dan tampilan kontrol saling bertentangan.
     hima: null, himaProduct: '', himaLayer: null,
+    // Sentinel-2: ambang tutupan awan 30% memberi keseimbangan antara
+    // citra yang cukup jernih dan cukup sering tersedia di iklim tropis.
+    s2Product: null, s2Layer: null, s2Meta: null, s2MetaKey: null, s2Cloud: 30,
     hazard: null, hazardAt: null, quakeOn: false, shelterOn: false,
     casualties: null, status: null, eruptions: null, newsFetchedAt: null
   };
@@ -572,11 +575,38 @@
   }
 
   /* ---------- citra satelit Himawari-9 (JMA, Jepang) ---------- */
+  /**
+   * Pemilih citra satelit menampung dua sumber yang sangat berbeda sifatnya.
+   *
+   * Himawari-9 menyegar tiap 10 menit tetapi resolusinya ~2 km — bagus
+   * untuk melihat awan dan pergerakan abu, tidak untuk melihat kawah.
+   * Sentinel-2 beresolusi 10 m sehingga bekas aliran lava terlihat, tetapi
+   * satelitnya hanya melintas tiap 5 hari dan sering tertutup awan.
+   *
+   * Keduanya sengaja diberi awalan berbeda supaya tidak pernah tertukar,
+   * dan lapisan Sentinel selalu menampilkan tanggal perekamannya.
+   */
   function setHimawari(product) {
     if (state.himaLayer) { map.removeLayer(state.himaLayer); state.himaLayer = null; }
+    if (state.s2Layer) {
+      map.removeLayer(state.s2Layer);
+      state.s2Layer = null;
+      map.off('moveend', refreshSentinelMeta);
+      map.off('zoomend', renderHimaInfo);
+    }
     state.himaProduct = product;
+    state.s2Product = null;
+    state.s2MetaKey = null;
     // Saat citra satelit menyala, angin diredupkan agar awan tetap terbaca.
     syncWindOpacity();
+
+    if (product && product.indexOf('s2:') === 0) {
+      state.himaProduct = null;
+      setSentinel(product.slice(3));
+      renderHimaInfo();
+      return;
+    }
+
     if (!product) { renderHimaInfo(); return; }
     // JMA hanya menerbitkan petak hingga z=5; meminta z=6 membalas 404
     // sehingga citra hilang total begitu peta diperbesar. Dengan maxNativeZoom
@@ -593,10 +623,110 @@
     renderHimaInfo();
   }
 
+  var BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+  /** Tanggal perekaman dalam WIB. Zona dihitung eksplisit, bukan zona perangkat. */
+  function fmtTanggal(d) {
+    var w = new Date(d.getTime() + 7 * 3600000);
+    return w.getUTCDate() + ' ' + BULAN[w.getUTCMonth()] + ' ' + w.getUTCFullYear();
+  }
+
+  /**
+   * Aktifkan lapisan Sentinel-2.
+   *
+   * Petak hanya diminta mulai zoom 8. Pada zoom lebih jauh satu petak
+   * mencakup ribuan kilometer sehingga tidak menambah informasi apa pun
+   * dibanding Himawari, sementara tiap permintaan tetap memakan kuota
+   * Copernicus. Leaflet menangani ini lewat minZoom pada lapisan.
+   */
+  function setSentinel(product) {
+    state.s2Product = product;
+    state.s2Meta = null;
+
+    state.s2Layer = L.tileLayer(
+      '/api/sentinel/' + product + '/{z}/{x}/{y}.jpg?cloud=' + (state.s2Cloud || 30), {
+        pane: 'himaPane',
+        minZoom: 8,
+        maxNativeZoom: 16,
+        maxZoom: 18,
+        opacity: 1,
+        attribution: 'Citra: Sentinel-2 L2A &middot; Copernicus'
+      }).addTo(map);
+
+    refreshSentinelMeta();
+    renderHimaInfo();
+
+    // Tanggal perekaman berbeda antar wilayah, jadi diperbarui setiap kali
+    // pengguna berpindah tempat. Panel juga digambar ulang agar keterangan
+    // "perbesar peta" hilang begitu zoom mencukupi.
+    map.on('moveend', refreshSentinelMeta);
+    map.on('zoomend', renderHimaInfo);
+  }
+
+  function refreshSentinelMeta() {
+    if (!state.s2Product) return;
+    var c = map.getCenter();
+    var key = c.lat.toFixed(1) + ',' + c.lng.toFixed(1) + ':' + (state.s2Cloud || 30);
+    if (state.s2MetaKey === key) return;
+    state.s2MetaKey = key;
+
+    fetchT('/api/sentinel/meta?lat=' + c.lat.toFixed(4)
+      + '&lon=' + c.lng.toFixed(4) + '&cloud=' + (state.s2Cloud || 30))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (m) {
+        if (!m || !state.s2Product) return;
+        state.s2Meta = m;
+        renderHimaInfo();
+        if (m.available === false) {
+          showHint('Citra Sentinel-2 belum aktif: kredensial Copernicus belum dipasang '
+            + 'di server. Daftar gratis di dataspace.copernicus.eu.', 9000);
+        }
+      })
+      .catch(function () { /* peta tetap berfungsi tanpa label tanggal */ });
+  }
+
   function renderHimaInfo() {
     var box = $('himaInfo');
     if (!box) return;
     clear(box);
+
+    // Sentinel-2: yang penting ditampilkan adalah TANGGAL perekaman dan
+    // tutupan awannya. Tanpa itu pengguna mudah mengira sedang melihat
+    // keadaan sekarang, padahal citranya bisa berumur berminggu-minggu.
+    if (state.s2Product) {
+      box.hidden = false;
+      var P = { natural: 'Warna alami', swir: 'Inframerah SWIR', vegetation: 'Vegetasi' };
+      box.appendChild(el('span', 'hi-sat', 'Sentinel-2'));
+      box.appendChild(el('span', 'hi-mode', P[state.s2Product] || state.s2Product));
+
+      var m = state.s2Meta;
+      if (m && m.available === false) {
+        box.appendChild(el('span', 'hi-age', 'belum dikonfigurasi'));
+      } else if (m && m.displayed) {
+        var d = new Date(m.displayed.at);
+        box.appendChild(el('span', 'hi-time', fmtTanggal(d)));
+        var hrs = m.displayedAgeHours;
+        box.appendChild(el('span', 'hi-age',
+          hrs != null && hrs < 48
+            ? Math.round(hrs) + ' jam lalu'
+            : Math.round((hrs || 0) / 24) + ' hari lalu'));
+        if (m.displayed.cloud !== null && m.displayed.cloud !== undefined) {
+          box.appendChild(el('span', 'hi-age', 'awan ' + m.displayed.cloud + '%'));
+        }
+      } else if (m) {
+        box.appendChild(el('span', 'hi-age',
+          'tidak ada citra bebas awan ' + (m.windowDays || 60) + ' hari terakhir'));
+      } else {
+        box.appendChild(el('span', 'hi-age', 'memuat…'));
+      }
+
+      if (map.getZoom() < 8) {
+        box.appendChild(el('span', 'hi-age', 'perbesar peta (zoom 8+)'));
+      }
+      return;
+    }
+
     if (!state.himaProduct || !state.himaLayer) { box.hidden = true; return; }
     box.hidden = false;
     var t = state.hima && state.hima.time ? new Date(state.hima.time) : null;

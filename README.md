@@ -70,10 +70,23 @@ Seluruhnya **opsional**.
 | `FIRMS_MAP_KEY` | *(kosong)* | Kunci NASA FIRMS. Bila ada, endpoint area dipakai lebih dulu; bila balasannya kosong, otomatis jatuh ke arsip terbuka |
 | `FIRMS_SOURCE` | `VIIRS_SNPP_NRT` | Satelit untuk jalur MAP_KEY. Pilihan: `VIIRS_SNPP_NRT`, `VIIRS_NOAA20_NRT`, `VIIRS_NOAA21_NRT`, `MODIS_NRT` |
 | `FIRMS_DAYS` | `1` | Rentang hari jalur MAP_KEY (1–10). Hasilnya tetap disaring ke jendela 24 jam |
+| `CDSE_CLIENT_ID` | *(kosong)* | Client ID OAuth Copernicus. Bila kosong, lapisan Sentinel-2 menampilkan keterangan "belum dikonfigurasi" dan seluruh fitur lain tetap berjalan |
+| `CDSE_CLIENT_SECRET` | *(kosong)* | Client secret OAuth Copernicus |
 | `CRON_SECRET` | *(kosong)* | Bila diisi, `/api/cron` menuntut `Authorization: Bearer <secret>` atau `?key=<secret>` |
 | `DEBUG_KEY` | *(kosong)* | Membuka endpoint diagnostik |
 
 Pendaftaran kunci FIRMS (gratis): <https://firms.modaps.eosdis.nasa.gov/api/map_key/>
+
+### Mengaktifkan citra Sentinel-2
+
+1. Daftar gratis di <https://dataspace.copernicus.eu/>.
+2. Buka **Dashboard → User Settings → OAuth clients → Create**.
+3. Salin **Client ID** dan **Client Secret** (secret hanya tampil sekali).
+4. Pasang keduanya sebagai `CDSE_CLIENT_ID` dan `CDSE_CLIENT_SECRET` di
+   **Vercel → Settings → Environment Variables**, lalu terapkan ulang.
+
+Ada kuota bulanan pada akun gratis. Petak di-cache enam jam di server dan
+hanya diminta mulai zoom 8, sehingga pemakaian kuota tetap rendah.
 
 ---
 
@@ -91,6 +104,7 @@ Pendaftaran kunci FIRMS (gratis): <https://firms.modaps.eosdis.nasa.gov/api/map_
 | **Global Forest Watch** | Batas konsesi sawit, HTI, tambang, RSPO | tidak |
 | **GeoNames** | 226 permukiman ≥50.000 jiwa | tidak |
 | **JMA Himawari** | Citra satelit (IR, warna alami, abu RGB, debu, uap air) | tidak |
+| **Copernicus Sentinel-2 L2A** | Citra 10 m untuk memeriksa rupa gunung dari dekat | ya, gratis |
 | **Google Berita RSS** | 13 topik berita, termasuk 5 edisi negara tetangga | tidak |
 | **Smithsonian GVP** | Katalog dan ringkasan aktivitas gunung api | tidak |
 
@@ -100,7 +114,14 @@ Pendaftaran kunci FIRMS (gratis): <https://firms.modaps.eosdis.nasa.gov/api/map_
 
 **Peta interaktif** dengan sembilan lapisan: titik api, kualitas udara, aliran angin,
 sebaran asap, wilayah terdampak, batas konsesi, abu vulkanik, gempa, dan pengungsi.
-Tiga peta dasar, lima produk citra Himawari, dan linimasa prakiraan asap +6/+12/+18 jam.
+Tiga peta dasar, delapan produk citra satelit, dan linimasa prakiraan asap +6/+12/+18 jam.
+
+**Dua sumber citra dengan sifat berbeda.** Himawari-9 menyegar tiap 10 menit pada
+resolusi ~2 km — untuk mengikuti pergerakan awan dan abu. Sentinel-2 beresolusi 10 m
+sehingga bekas aliran lava dan endapan abu di lereng terlihat, tetapi satelitnya hanya
+melintas tiap 5 hari dan Indonesia sering tertutup awan. Sentinel-2 **bukan citra
+langsung**, dan tanggal perekaman tiap petak selalu ditampilkan agar tidak
+disalahartikan sebagai keadaan sekarang.
 
 **Sepuluh panel analisis:** kejadian aktif lintas jenis bencana, analisis wilayah,
 kueri data berbasis indeks lokal, berita penanganan, atribusi lahan, gempa dan

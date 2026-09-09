@@ -111,14 +111,21 @@
     <div class="ctlbox">
       <div class="ctlbox-h ch-warn">CITRA SATELIT</div>
       <div class="ctlbox-b">
-        <label class="sr-only" for="himaSel">Citra Himawari</label>
+        <label class="sr-only" for="himaSel">Citra satelit</label>
         <select id="himaSel">
           <option value="" selected>NONAKTIF</option>
-          <option value="ir">INFRAMERAH</option>
-          <option value="vis">WARNA ALAMI</option>
-          <option value="ash">ABU VULKANIK (RGB)</option>
-          <option value="dust">DEBU &amp; AEROSOL</option>
-          <option value="wv">UAP AIR</option>
+          <optgroup label="Himawari-9 &mdash; tiap 10 menit, ~2 km">
+            <option value="ir">INFRAMERAH</option>
+            <option value="vis">WARNA ALAMI</option>
+            <option value="ash">ABU VULKANIK (RGB)</option>
+            <option value="dust">DEBU &amp; AEROSOL</option>
+            <option value="wv">UAP AIR</option>
+          </optgroup>
+          <optgroup label="Sentinel-2 &mdash; tiap 5 hari, 10 m">
+            <option value="s2:natural">DETAIL: WARNA ALAMI</option>
+            <option value="s2:swir">DETAIL: INFRAMERAH SWIR</option>
+            <option value="s2:vegetation">DETAIL: VEGETASI</option>
+          </optgroup>
         </select>
       </div>
     </div>

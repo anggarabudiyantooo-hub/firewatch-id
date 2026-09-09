@@ -70,6 +70,7 @@ const { fetchStatus: fetchPvmbgStatus } = require('./lib/pvmbg');
 const { fetchEruptions } = require('./lib/eruption');
 const { fetchQuakes, fetchTsunamiBulletins, fetchShelters } = require('./lib/hazard');
 const { isRelevant, scoreArticle, classify } = require('./lib/relevance');
+const sentinel = require('./lib/sentinel');
 const { summarize: summarizeCasualties } = require('./lib/casualty');
 const { Scheduler } = require('./lib/scheduler');
 const { answer: ragAnswer } = require('./lib/rag');
@@ -1871,6 +1872,109 @@ app.get('/api/himawari/:product/:z/:x/:y.jpg', async (req, res) => {
     res.set('Cache-Control', 'public, max-age=600');
     res.send(buf);
   } catch {
+    res.status(204).end();
+  }
+});
+
+/* ---------- Sentinel-2 L2A (Copernicus) ---------- */
+
+/**
+ * Citra resolusi 10 m untuk memeriksa rupa gunung dari dekat.
+ *
+ * Berbeda dari Himawari yang menyegar tiap 10 menit, Sentinel-2 melintas
+ * tiap 5 hari dan sering tertutup awan. Endpoint meta di bawah melaporkan
+ * tanggal perekaman apa adanya supaya pengguna tahu citra yang dilihatnya
+ * berasal dari kapan — citra tiga minggu lalu yang disajikan tanpa
+ * keterangan lebih menyesatkan daripada tidak ada citra sama sekali.
+ */
+const SENTINEL_MAX_CLOUD = [10, 20, 30, 50, 80];
+
+app.get('/api/sentinel/meta', async (req, res) => {
+  if (!sentinel.isConfigured()) {
+    res.set('Cache-Control', 'public, max-age=300');
+    return res.json({
+      available: false,
+      reason: 'Kredensial Copernicus belum dipasang di server.',
+      register: 'https://dataspace.copernicus.eu/',
+      products: sentinel.productList()
+    });
+  }
+
+  const lat = Number(req.query.lat);
+  const lon = Number(req.query.lon);
+  const cloud = SENTINEL_MAX_CLOUD.includes(Number(req.query.cloud))
+    ? Number(req.query.cloud) : 30;
+
+  const base = {
+    available: true,
+    products: sentinel.productList(),
+    cloudOptions: SENTINEL_MAX_CLOUD,
+    maxZoom: 16,
+    windowDays: sentinel.LOOKBACK_DAYS,
+    source: 'Sentinel-2 L2A · Copernicus Data Space Ecosystem',
+    licence: 'Mengandung data Copernicus Sentinel yang dimodifikasi',
+    note: 'Satelit melintas tiap 5 hari dan sering tertutup awan. '
+      + 'Ini BUKAN citra langsung; gunakan Himawari untuk pemantauan menit-per-menit.'
+  };
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)
+    || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+    res.set('Cache-Control', 'public, max-age=600');
+    return res.json(base);
+  }
+
+  try {
+    const info = await cached(`s2:meta:${lat.toFixed(2)},${lon.toFixed(2)}:${cloud}`,
+      30 * 60 * 1000,
+      () => sentinel.sceneInfo(fetchWithTimeout, { lat, lon, maxCloud: cloud }));
+    res.set('Cache-Control', 'public, max-age=1800');
+    res.json({ ...base, ...info });
+  } catch (e) {
+    console.error('[sentinel:meta]', e.message);
+    res.set('Cache-Control', 'no-store');
+    res.status(502).json({ ...base, error: 'Metadata citra sedang tidak tersedia.' });
+  }
+});
+
+app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
+  // Validasi dijalankan lebih dulu, sebelum pemeriksaan kredensial.
+  // Kalau urutannya dibalik, permintaan cacat ikut dijawab 204 sehingga
+  // kekeliruan pada klien tidak pernah terlihat saat pengembangan.
+  const prod = req.params.product;
+  if (!sentinel.PRODUCTS[prod]) return res.status(404).end();
+
+  const z = Number(req.params.z), x = Number(req.params.x), y = Number(req.params.y);
+  // Di bawah zoom 8 satu petak mencakup ribuan kilometer; memintanya dari
+  // Process API memboroskan kuota tanpa menambah informasi karena Himawari
+  // sudah melayani tampilan seluas itu. Batas atas 16 mengikuti resolusi
+  // asli 10 m — memperbesar lebih jauh hanya memperbesar piksel.
+  if (!Number.isInteger(z) || z < 8 || z > 16) return res.status(404).end();
+  const n = 2 ** z;
+  if (!Number.isInteger(x) || !Number.isInteger(y)
+    || x < 0 || y < 0 || x >= n || y >= n) return res.status(404).end();
+
+  const cloud = SENTINEL_MAX_CLOUD.includes(Number(req.query.cloud))
+    ? Number(req.query.cloud) : 30;
+
+  // Belum dikonfigurasi: 204 supaya peta dasar tetap terlihat, bukan
+  // kotak error bertebaran di seluruh layar.
+  if (!sentinel.isConfigured()) return res.status(204).end();
+
+  try {
+    const key = `s2:${prod}:${z}/${x}/${y}:${cloud}`;
+    // Citra Sentinel untuk satu petak praktis tidak berubah selama
+    // berhari-hari, jadi di-cache lama untuk menghemat kuota.
+    const buf = await cached(key, 6 * 60 * 60 * 1000,
+      () => sentinel.fetchTile(fetchWithTimeout, { product: prod, z, x, y, maxCloud: cloud }));
+
+    // Tidak ada adegan bebas awan di petak ini — biarkan peta dasar terlihat.
+    if (!buf) { res.set('Cache-Control', 'public, max-age=3600'); return res.status(204).end(); }
+
+    res.set('Content-Type', 'image/jpeg');
+    res.set('Cache-Control', 'public, max-age=21600');
+    res.send(buf);
+  } catch (e) {
+    console.error('[sentinel:tile]', e.message);
     res.status(204).end();
   }
 });
