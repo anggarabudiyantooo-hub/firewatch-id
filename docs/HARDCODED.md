@@ -63,6 +63,9 @@ kesimpulan yang dibaca pengguna, jadi tiap perubahan perlu pertimbangan sadar.
 | Ambang hujan < 1 mm | `lib/drought.js` | Hujan di bawah itu menguap sebelum meresap | Batas lazim, tetapi tetap sebuah pilihan |
 | Satu titik per provinsi | `server.js` `PROVINCE_SITES` | Menjaga arsip curah hujan cukup satu permintaan | Provinsi luas beriklim beragam hanya terwakili satu titik |
 | `LOOKBACK_DAYS = 60` | `lib/sentinel.js` | Jendela pencarian citra Sentinel-2. Terlalu pendek membuat sebagian besar wilayah kosong karena awan; terlalu panjang menyajikan citra usang | Iklim tropis membuat citra bebas awan jarang; nilai ini kompromi yang belum divalidasi lintas musim |
+| Ambang MNDWI 0,3 dan 0,0 | `lib/sentinel.js` | Memisahkan air jelas, air dangkal, dan daratan | Ambang tetap; air sangat keruh atau berlumpur dapat terlewat |
+| Ambang radar VV 0,02 dan 0,05 | `lib/sentinel.js` | Hamburan balik rendah menandai permukaan air | Bayangan lereng curam juga berhamburan rendah dan dapat salah terbaca sebagai air |
+| TTL petak radar 2 jam vs optik 6 jam | `server.js` | Genangan berubah dalam hitungan hari; adegan optik terpilih praktis tetap | |
 | `zoom 8–16` Sentinel | `server.js` | Di bawah 8 satu petak mencakup ribuan km dan memboroskan kuota tanpa menambah informasi; di atas 16 hanya memperbesar piksel karena resolusi asli 10 m | |
 | `HOTSPOT_CAP = 2000` | `server.js` | Diukur pada beban puncak 7.172 titik: memotong di FRP 5,8 MW sementara filter terendah antarmuka 5 MW | Menaikkan filter minimum di antarmuka ke bawah 5 MW akan membuat sebagian pilihan tidak terlayani penuh; `hotspotsMeta.minFrpIncluded` memberi tahu antarmuka kapan hal itu terjadi |
 | `points.slice(0, 500)` | `lib/hazard.js` | Ukuran payload | Belum ada metadata pemotongan — **celah kecil** |

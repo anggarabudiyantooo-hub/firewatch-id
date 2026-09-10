@@ -2067,7 +2067,10 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
   // Kalau urutannya dibalik, permintaan cacat ikut dijawab 204 sehingga
   // kekeliruan pada klien tidak pernah terlihat saat pengembangan.
   const prod = req.params.product;
-  if (!sentinel.PRODUCTS[prod]) return res.status(404).end();
+  // Produk radar dan optik sama-sama sah; keduanya menjadi allowlist.
+  if (!sentinel.PRODUCTS[prod] && !sentinel.RADAR_PRODUCTS[prod]) {
+    return res.status(404).end();
+  }
 
   const z = Number(req.params.z), x = Number(req.params.x), y = Number(req.params.y);
   // Di bawah zoom 8 satu petak mencakup ribuan kilometer; memintanya dari
@@ -2087,10 +2090,13 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
   if (!sentinel.isConfigured()) return res.status(204).end();
 
   try {
-    const key = `s2:${prod}:${z}/${x}/${y}:${cloud}`;
-    // Citra Sentinel untuk satu petak praktis tidak berubah selama
-    // berhari-hari, jadi di-cache lama untuk menghemat kuota.
-    const buf = await cached(key, 6 * 60 * 60 * 1000,
+    const radar = sentinel.isRadarProduct(prod);
+    const key = `s2:${prod}:${z}/${x}/${y}:${radar ? 'sar' : cloud}`;
+    // Petak radar di-cache lebih singkat: genangan berubah dalam hitungan
+    // hari, dan justru kebaruan itulah gunanya. Petak optik praktis tidak
+    // berubah selama berhari-hari karena memilih adegan paling cerah.
+    const ttl = (radar ? 2 : 6) * 60 * 60 * 1000;
+    const buf = await cached(key, ttl,
       () => sentinel.fetchTile(fetchWithTimeout, { product: prod, z, x, y, maxCloud: cloud }));
 
     // Tidak ada adegan bebas awan di petak ini — biarkan peta dasar terlihat.

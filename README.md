@@ -104,7 +104,8 @@ hanya diminta mulai zoom 8, sehingga pemakaian kuota tetap rendah.
 | **Global Forest Watch** | Batas konsesi sawit, HTI, tambang, RSPO | tidak |
 | **GeoNames** | 226 permukiman ≥50.000 jiwa | tidak |
 | **JMA Himawari** | Citra satelit (IR, warna alami, abu RGB, debu, uap air) | tidak |
-| **Copernicus Sentinel-2 L2A** | Citra 10 m untuk memeriksa rupa gunung dari dekat | ya, gratis |
+| **Copernicus Sentinel-2 L2A** | Citra 10 m: rupa gunung, kelembapan tanaman, genangan air | ya, gratis |
+| **Copernicus Sentinel-1 GRD** | Radar menembus awan untuk memetakan genangan banjir | ya, gratis |
 | **Google Berita RSS** | 13 topik berita, termasuk 5 edisi negara tetangga | tidak |
 | **Smithsonian GVP** | Katalog dan ringkasan aktivitas gunung api | tidak |
 | **NOAA CPC** | Indeks ONI — status El Niño / La Niña | tidak |
@@ -117,6 +118,17 @@ hanya diminta mulai zoom 8, sehingga pemakaian kuota tetap rendah.
 **Peta interaktif** dengan sembilan lapisan: titik api, kualitas udara, aliran angin,
 sebaran asap, wilayah terdampak, batas konsesi, abu vulkanik, gempa, dan pengungsi.
 Tiga peta dasar, delapan produk citra satelit, dan linimasa prakiraan asap +6/+12/+18 jam.
+
+**Enam produk citra untuk keperluan berbeda.** Selain warna alami dan
+inframerah, tersedia kelembapan tanaman (NDMI) untuk melihat tekanan
+kekeringan sebelum daun menguning, genangan air (MNDWI) yang tidak salah
+menandai atap logam sebagai air, dan **radar Sentinel-1** yang menembus awan
+— satu-satunya cara memotret banjir saat kejadian, karena banjir justru
+terjadi ketika langit tertutup mendung.
+
+Tab **Kekeringan** pada panel Analisis Wilayah memberi jalan pintas: klik
+sebuah provinsi, peta langsung berpindah ke sana dengan lapisan citra yang
+sesuai sudah menyala.
 
 **Dua sumber citra dengan sifat berbeda.** Himawari-9 menyegar tiap 10 menit pada
 resolusi ~2 km — untuk mengikuti pergerakan awan dan abu. Sentinel-2 beresolusi 10 m

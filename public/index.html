@@ -130,6 +130,11 @@
             <option value="s2:natural">DETAIL: WARNA ALAMI</option>
             <option value="s2:swir">DETAIL: INFRAMERAH SWIR</option>
             <option value="s2:vegetation">DETAIL: VEGETASI</option>
+            <option value="s2:moisture">KEKERINGAN: KELEMBAPAN TANAMAN</option>
+            <option value="s2:water">BANJIR: GENANGAN AIR</option>
+          </optgroup>
+          <optgroup label="Sentinel-1 radar &mdash; menembus awan">
+            <option value="s2:flood">BANJIR: RADAR SAAT KEJADIAN</option>
           </optgroup>
         </select>
       </div>
@@ -243,11 +248,13 @@
           <button class="tab" id="tabProv" role="tab" aria-selected="false" aria-controls="paneProv" type="button">Provinsi</button>
           <button class="tab" id="tabAsh" role="tab" aria-selected="false" aria-controls="paneAsh" type="button">Abu vulkanik</button>
           <button class="tab" id="tabCluster" role="tab" aria-selected="false" aria-controls="paneCluster" type="button">Klaster</button>
+          <button class="tab" id="tabDry" role="tab" aria-selected="false" aria-controls="paneDry" type="button">Kekeringan</button>
         </div>
         <div id="paneImpact" role="tabpanel" class="pane" tabindex="0"><p class="empty">Memuat…</p></div>
         <div id="paneAsh" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
         <div id="paneProv" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
         <div id="paneCluster" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
+        <div id="paneDry" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat&hellip;</p></div>
       </section>
   </section>
 

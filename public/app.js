@@ -724,8 +724,13 @@
     // keadaan sekarang, padahal citranya bisa berumur berminggu-minggu.
     if (state.s2Product) {
       box.hidden = false;
-      var P = { natural: 'Warna alami', swir: 'Inframerah SWIR', vegetation: 'Vegetasi' };
-      box.appendChild(el('span', 'hi-sat', 'Sentinel-2'));
+      var P = {
+        natural: 'Warna alami', swir: 'Inframerah SWIR', vegetation: 'Vegetasi',
+        moisture: 'Kelembapan tanaman', water: 'Genangan air',
+        flood: 'Genangan radar'
+      };
+      var radar = state.s2Product === 'flood';
+      box.appendChild(el('span', 'hi-sat', radar ? 'Sentinel-1 SAR' : 'Sentinel-2'));
       box.appendChild(el('span', 'hi-mode', P[state.s2Product] || state.s2Product));
 
       var m = state.s2Meta;
@@ -739,9 +744,12 @@
           hrs != null && hrs < 48
             ? Math.round(hrs) + ' jam lalu'
             : Math.round((hrs || 0) / 24) + ' hari lalu'));
-        if (m.displayed.cloud !== null && m.displayed.cloud !== undefined) {
+        // Radar menembus awan, jadi persentase tutupan awan tidak relevan
+        // dan menampilkannya justru menyesatkan.
+        if (!radar && m.displayed.cloud !== null && m.displayed.cloud !== undefined) {
           box.appendChild(el('span', 'hi-age', 'awan ' + m.displayed.cloud + '%'));
         }
+        if (radar) box.appendChild(el('span', 'hi-age', 'tembus awan'));
       } else if (m && m.metaError) {
         box.appendChild(el('span', 'hi-age', 'tanggal perekaman tidak tersedia'));
       } else if (m) {
@@ -1408,6 +1416,7 @@
         state.drought = d;
         renderEvents();
         renderDroughtCard();
+        renderDryList();
       })
       .catch(function () { /* panel lain tetap berjalan */ });
   }
@@ -1860,6 +1869,69 @@
         nf.format(p.hotspots) + ' titik api · FRP ' + nf.format(p.frp) + ' MW',
         null, null, (p.hotspots / max) * 100, null));
     });
+  }
+
+  /**
+   * Daftar kekeringan per provinsi, dengan jalan pintas ke citranya.
+   *
+   * Angka hari tanpa hujan menjawab "seberapa kering", tetapi tidak
+   * menjawab "seperti apa keadaannya di lapangan". Tombol di tiap baris
+   * memindahkan peta ke provinsi itu sekaligus menyalakan lapisan citra
+   * yang sesuai, sehingga jaraknya satu klik — bukan mencari sendiri
+   * koordinatnya lalu memilih produk yang tepat.
+   */
+  function renderDryList() {
+    var pane = $('paneDry'); clear(pane);
+    var d = state.drought;
+    if (!d) { pane.appendChild(el('p', 'empty', 'Memuat data kekeringan…')); return; }
+
+    if (d.enso) {
+      var e = d.enso;
+      pane.appendChild(el('p', 'pane-note',
+        'Status iklim: ' + e.phase + ' (ONI ' + e.oni.toFixed(1) + ', ' + e.season + ' '
+        + e.year + (e.trend ? ', ' + e.trend : '') + '). '
+        + 'El Niño meningkatkan peluang kemarau panjang tetapi tidak menentukannya — '
+        + 'status tiap provinsi di bawah dihitung dari curah hujan yang benar-benar '
+        + 'terukur, bukan dari indeks ini.'));
+    }
+
+    var list = d.provinces || [];
+    if (!list.length) { pane.appendChild(el('p', 'empty', 'Data curah hujan tidak tersedia.')); return; }
+
+    pane.appendChild(el('p', 'pane-note',
+      'Hari tanpa hujan beruntun sampai ' + (d.lastDate || '-')
+      + ' · jendela ' + (d.windowDays || 90) + ' hari · sumber Open-Meteo (ERA5). '
+      + 'Tombol "citra" memindahkan peta ke provinsi itu dan menyalakan '
+      + 'lapisan kelembapan tanaman.'));
+
+    var max = list[0].dryDays || 1;
+    list.slice(0, 20).forEach(function (p, i) {
+      // makeRow menghasilkan elemen <button>; menyisipkan tombol lain di
+      // dalamnya tidak sah dalam HTML dan perilakunya tidak dapat
+      // diandalkan. Barisnya sendiri yang dijadikan pemicu.
+      var row = makeRow(i + 1, p.province,
+        p.dryDays + ' hari tanpa hujan · hujan 30 hari ' + p.rain30mm + ' mm · ' + p.label,
+        'citra', 'row-act', (p.dryDays / max) * 100,
+        function () { lihatCitra(p.lat, p.lon, 'moisture'); });
+      row.title = 'Lihat citra satelit ' + p.province;
+      pane.appendChild(row);
+    });
+  }
+
+  /**
+   * Pindahkan peta ke satu titik dan nyalakan lapisan citra tertentu.
+   *
+   * Zoom 11 dipilih karena di bawah itu resolusi 10 m Sentinel-2 tidak
+   * terasa bedanya, sementara lebih dalam membuat cakupan terlalu sempit
+   * untuk menilai keadaan satu wilayah.
+   */
+  function lihatCitra(lat, lon, produk) {
+    map.setView([lat, lon], 11);
+    var sel = $('himaSel');
+    if (sel) { sel.value = 's2:' + produk; }
+    setHimawari('s2:' + produk);
+    showHint('Memuat citra Sentinel-2 — satelit melintas tiap 5 hari, '
+      + 'jadi ini bukan citra hari ini. Tanggal perekaman tampil di panel citra.', 8000);
   }
 
   function renderClusterList() {
@@ -2529,7 +2601,8 @@
     { tab: 'tabImpact', pane: 'paneImpact' },
     { tab: 'tabProv', pane: 'paneProv' },
     { tab: 'tabAsh', pane: 'paneAsh' },
-    { tab: 'tabCluster', pane: 'paneCluster' }
+    { tab: 'tabCluster', pane: 'paneCluster' },
+    { tab: 'tabDry', pane: 'paneDry' }
   ]);
   tabGroup([
     { tab: 'tabUnit', pane: 'paneUnit' },
