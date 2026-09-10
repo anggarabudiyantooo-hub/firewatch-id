@@ -1889,6 +1889,40 @@ app.get('/api/himawari/:product/:z/:x/:y.jpg', async (req, res) => {
  */
 const SENTINEL_MAX_CLOUD = [10, 20, 30, 50, 80];
 
+/**
+ * Diagnostik Sentinel — hanya terbuka bila DEBUG_KEY dipasang dan cocok.
+ *
+ * Pesan galat hulu sengaja tidak dikirim ke klien biasa: isinya dapat
+ * memuat potongan permintaan beserta petunjuk konfigurasi internal.
+ * Namun tanpa cara melihatnya sama sekali, kekeliruan seperti salah
+ * jalur API hanya tampak sebagai 502 tanpa sebab. Endpoint ini menjadi
+ * jalan tengahnya.
+ */
+app.get('/api/sentinel/diag', async (req, res) => {
+  const key = (process.env.DEBUG_KEY || '').trim();
+  if (!key || String(req.query.key || '') !== key) return res.status(404).end();
+
+  const out = { configured: sentinel.isConfigured() };
+  try {
+    await sentinel.getToken(fetchWithTimeout);
+    out.token = 'ok';
+  } catch (e) {
+    out.token = 'gagal: ' + e.message;
+    res.set('Cache-Control', 'no-store');
+    return res.json(out);
+  }
+  try {
+    const info = await sentinel.sceneInfo(fetchWithTimeout, { lat: -8.108, lon: 112.922 });
+    out.catalog = 'ok';
+    out.scenes = (info.scenes || []).length;
+    out.displayed = info.displayed || null;
+  } catch (e) {
+    out.catalog = 'gagal: ' + e.message;
+  }
+  res.set('Cache-Control', 'no-store');
+  res.json(out);
+});
+
 app.get('/api/sentinel/meta', async (req, res) => {
   if (!sentinel.isConfigured()) {
     res.set('Cache-Control', 'public, max-age=300');
