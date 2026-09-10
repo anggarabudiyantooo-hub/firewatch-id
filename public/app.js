@@ -92,8 +92,12 @@
       L.tileLayer(AGS + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12 })
     ])
   };
-  var activeBase = 'gelap';
-  BASEMAPS.gelap.addTo(map);
+  // Peta dasar citra satelit dipakai sejak awal: bentang alam, punggungan
+  // gunung, dan tutupan lahan langsung terbaca, sehingga posisi titik api
+  // maupun sebaran abu punya konteks geografis tanpa perlu diatur dulu.
+  var activeBase = 'citra';
+  BASEMAPS.citra.addTo(map);
+  document.body.classList.add('basemap-citra');
 
   function setBasemap(name) {
     if (!BASEMAPS[name] || name === activeBase) return;
@@ -123,24 +127,34 @@
 
   var gAir = L.layerGroup();
   var gAsh = L.layerGroup();
-  var gWind = L.layerGroup().addTo(map);   // aktif sejak awal (checkbox tercentang)
-  var gSmoke = L.layerGroup().addTo(map);
+  // Lapisan data mulai dalam keadaan mati.
+  //
+  // Sebelumnya empat lapisan menyala otomatis, sehingga peta langsung
+  // penuh ribuan titik dan kerucut asap sebelum pengguna sempat melihat
+  // bentang alamnya. Memulai dari peta bersih membuat orang memilih
+  // sendiri apa yang ingin dilihat, dan membuat setiap lapisan yang
+  // dinyalakan terbaca jelas karena tidak bertumpuk dengan yang lain.
+  var gWind = L.layerGroup();
+  var gSmoke = L.layerGroup();
   var gConc = L.layerGroup();
-  var gFire = L.layerGroup().addTo(map);
-  var gImpact = L.layerGroup().addTo(map);
+  var gFire = L.layerGroup();
+  var gImpact = L.layerGroup();
   var gQuake = L.layerGroup();
   var gShelter = L.layerGroup();
 
   var state = {
     data: null, attr: null, news: [], newsTopics: [], newsTopic: 'semua', minConf: 0, minFrp: 10,
     concOn: false, concBusy: false, colorBy: 'confidence',
-    wind: null, windKey: null, windOn: true, windBusy: false, particles: null, plumeHour: 0,
+    // windOn harus cocok dengan keadaan awal kotak-centang di index.html.
+    // Bila keduanya tidak sinkron, loadWind() berjalan untuk lapisan yang
+    // kotaknya kosong dan menghabiskan kuota tanpa ada yang tergambar.
+    wind: null, windKey: null, windOn: false, windBusy: false, particles: null, plumeHour: 0,
     air: null, airKey: null, airOn: false, airBusy: false,
     ash: null, ashOn: false, ashBusy: false, newsAt: '',
     // Harus cocok dengan <option selected> pada #himaSel (nonaktif),
     // jika tidak, state dan tampilan kontrol saling bertentangan.
     hima: null, himaProduct: '', himaLayer: null,
-    himaPlaying: false, himaTimer: null, himaFrame: null,
+    himaPlaying: false, himaTimer: null, himaFrame: null, himaFrameLayers: null,
     // Sentinel-2: ambang tutupan awan 30% memberi keseimbangan antara
     // citra yang cukup jernih dan cukup sering tersedia di iklim tropis.
     s2Product: null, s2Layer: null, s2Meta: null, s2MetaKey: null, s2Cloud: 30,
@@ -591,6 +605,7 @@
     if (state.himaTimer) { clearInterval(state.himaTimer); state.himaTimer = null; }
     state.himaPlaying = false;
     state.himaFrame = null;
+    clearHimaFrames();
     if (state.himaLayer) { map.removeLayer(state.himaLayer); state.himaLayer = null; }
     if (state.s2Layer) {
       map.removeLayer(state.s2Layer);
@@ -617,7 +632,7 @@
     // 5, Leaflet meregangkan petak z=5 untuk zoom lebih dalam.
     state.himaLayer = L.tileLayer('/api/himawari/' + product + '/{z}/{x}/{y}.jpg', {
       pane: 'himaPane', maxNativeZoom: 5, maxZoom: 12,
-      opacity: (product === 'vis' || product === 'ash' || product === 'dust') ? 0.85 : 0.62,
+      opacity: himaOpacity(product),
       attribution: 'Citra: Himawari-9 / JMA'
     }).addTo(map);
     fetchT('/api/himawari/meta')
@@ -764,11 +779,11 @@
 
     var frames = state.hima && state.hima.frames;
     if (frames && frames.length > 1) {
-      var btn = el('button', 'hi-play', state.himaPlaying ? '\u25a0 Hentikan' : '\u25b6 Putar 2 jam');
+      var btn = el('button', 'hi-play', state.himaPlaying ? '\u25a0 Hentikan' : '\u25b6 Putar 1 jam');
       btn.type = 'button';
       btn.title = state.himaPlaying
         ? 'Hentikan animasi dan kembali ke citra terbaru'
-        : 'Putar ' + frames.length + ' citra terakhir untuk melihat gerak awan';
+        : 'Putar enam citra terakhir untuk melihat gerak awan';
       btn.addEventListener('click', function (ev) {
         ev.stopPropagation();
         toggleHimaPlay();
@@ -817,37 +832,105 @@
    * memutarnya berurutan membuat arah dan kecepatan gerak awan terlihat —
    * dan itulah yang sebenarnya ingin diketahui saat memantau sebaran abu.
    */
+  function himaUrl(t) {
+    return '/api/himawari/' + state.himaProduct
+      + '/{z}/{x}/{y}.jpg?t=' + encodeURIComponent(t);
+  }
+
+  /** Bersihkan seluruh lapisan bingkai animasi. */
+  function clearHimaFrames() {
+    if (state.himaFrameLayers) {
+      state.himaFrameLayers.forEach(function (l) {
+        if (map.hasLayer(l)) map.removeLayer(l);
+      });
+    }
+    state.himaFrameLayers = null;
+  }
+
   function stopHimaPlay() {
     if (state.himaTimer) { clearInterval(state.himaTimer); state.himaTimer = null; }
     state.himaPlaying = false;
     state.himaFrame = null;
-    if (state.himaLayer && state.hima && state.hima.time) {
-      state.himaLayer.setUrl('/api/himawari/' + state.himaProduct +
-        '/{z}/{x}/{y}.jpg?t=' + encodeURIComponent(state.hima.time), false);
-    }
+    clearHimaFrames();
+    // Lapisan utama disembunyikan selama animasi; kembalikan opasitasnya.
+    if (state.himaLayer) state.himaLayer.setOpacity(himaOpacity(state.himaProduct));
     renderHimaInfo();
   }
 
+  function himaOpacity(product) {
+    return (product === 'vis' || product === 'ash' || product === 'dust') ? 0.85 : 0.62;
+  }
+
+  /**
+   * Putar animasi tanpa kedip.
+   *
+   * Pendekatan sebelumnya memakai setUrl() pada satu lapisan. Leaflet
+   * membuang seluruh petak lama sebelum petak baru selesai diunduh,
+   * sehingga peta dasar tersingkap sesaat pada setiap pergantian —
+   * inilah yang membuat animasi tampak patah-patah dan sulit dibaca.
+   *
+   * Sekarang tiap bingkai mendapat lapisannya sendiri yang dimuat lebih
+   * dulu dalam keadaan tembus pandang. Pergantian hanya menukar opasitas
+   * antar lapisan yang petaknya sudah ada di peramban, jadi tidak pernah
+   * ada saat di mana tidak ada citra yang tergambar.
+   */
   function toggleHimaPlay() {
     if (state.himaPlaying) { stopHimaPlay(); return; }
     var f = state.hima && state.hima.frames;
     if (!f || f.length < 2 || !state.himaLayer) return;
 
     state.himaPlaying = true;
+    renderHimaInfo();
+
+    var op = himaOpacity(state.himaProduct);
+
+    // Enam bingkai, bukan dua belas. Setiap bingkai menuntut 18-30 petak,
+    // sehingga memuat semuanya serentak mengirim ratusan permintaan dalam
+    // sekejap — cukup untuk memicu pembatasan laju dan justru membuat
+    // animasi tersendat. Enam slot mencakup satu jam terakhir, rentang
+    // yang sudah memperlihatkan arah gerak awan dengan jelas.
+    var pick = f.slice(-6);
+
+    var layers = pick.map(function (t) {
+      return L.tileLayer(himaUrl(t), {
+        pane: 'himaPane', maxNativeZoom: 5, maxZoom: 12,
+        opacity: 0, className: 'hima-frame',
+        // Batasi unduhan serentak agar jaringan tidak tersumbat oleh
+        // bingkai belakang sementara bingkai pertama belum tampil.
+        keepBuffer: 0
+      }).addTo(map);
+    });
+    state.himaFrameLayers = layers;
+    f = pick;
+
+    // Sembunyikan lapisan utama; bingkai animasi yang mengambil alih.
+    state.himaLayer.setOpacity(0);
+
     var i = 0;
     var step = function () {
-      if (!state.himaPlaying || !state.himaLayer) return;
+      if (!state.himaPlaying) return;
+      layers.forEach(function (l, k) { l.setOpacity(k === i ? op : 0); });
       state.himaFrame = f[i];
-      state.himaLayer.setUrl('/api/himawari/' + state.himaProduct +
-        '/{z}/{x}/{y}.jpg?t=' + encodeURIComponent(f[i]), false);
       renderHimaInfo();
-      i = (i + 1) % f.length;
+      i = (i + 1) % layers.length;
     };
-    step();
-    // 900 ms per bingkai: cukup lambat untuk mengikuti, cukup cepat
-    // untuk memperlihatkan gerak dalam sekali putaran.
-    state.himaTimer = setInterval(step, 900);
-    renderHimaInfo();
+
+    // Beri jeda agar bingkai-bingkai awal sempat terunduh sebelum
+    // pemutaran dimulai; tanpa ini putaran pertama tetap tersendat.
+    var ready = 0;
+    var begin = function () {
+      if (!state.himaPlaying || state.himaTimer) return;
+      step();
+      state.himaTimer = setInterval(step, 900);
+    };
+    layers.forEach(function (l) {
+      l.once('load', function () {
+        ready++;
+        if (ready >= Math.min(3, layers.length)) begin();
+      });
+    });
+    // Jaring pengaman bila peristiwa load tidak pernah datang.
+    setTimeout(begin, 4000);
   }
 
   /* ---------- gempa, tsunami & pengungsi ---------- */
@@ -2471,7 +2554,8 @@
   setInterval(tickClock, 1000);
   updateLegend();
   loadOverview();
-  loadWind();
+  // loadWind() tidak dipanggil di sini: lapisan angin mulai mati, dan
+  // pengambilannya akan berjalan sendiri begitu pengguna menyalakannya.
   loadNews();
   loadAttribution();
   setInterval(function () { loadOverview(); loadAttribution(); }, 10 * 60 * 1000);

@@ -153,6 +153,19 @@ app.use(helmet({
  */
 const RL_WINDOW_MS = 60000;
 const RL_NORMAL = 240;
+/**
+ * Proksi petak citra dikecualikan dari hitungan biasa.
+ *
+ * Satu tampilan peta saja sudah menuntut 18-30 petak, dan animasi
+ * Himawari memuat beberapa slot sekaligus sehingga ratusan petak wajar
+ * diminta dalam hitungan detik. Menghitungnya dengan ambang yang sama
+ * seperti endpoint data membuat pemakaian normal ditolak 429.
+ *
+ * Biayanya pun berbeda: petak dilayani dari cache dan tidak memanggil
+ * pihak ketiga berkuota untuk tiap permintaan.
+ */
+const RL_TILE_PATHS = /^\/(himawari|sentinel)\//;
+const RL_TILE = 1200;
 // Satu sesi pemakaian aktif — memuat halaman, menyalakan empat lapisan,
 // lalu memperbesar dan memperkecil peta berkali-kali — terukur hanya
 // menghasilkan 4 permintaan kelas mahal per menit. Ambang 90 memberi
@@ -167,9 +180,10 @@ const hits = new Map();
 app.use('/api', (req, res, next) => {
   const ip = req.ip || 'x';
   const now = Date.now();
-  const expensive = RL_EXPENSIVE_PATHS.test(req.path);
-  const limit = expensive ? RL_EXPENSIVE : RL_NORMAL;
-  const key = ip + (expensive ? '|e' : '|n');
+  const isTile = RL_TILE_PATHS.test(req.path);
+  const expensive = !isTile && RL_EXPENSIVE_PATHS.test(req.path);
+  const limit = isTile ? RL_TILE : (expensive ? RL_EXPENSIVE : RL_NORMAL);
+  const key = ip + (isTile ? '|t' : expensive ? '|e' : '|n');
 
   const rec = hits.get(key) || { n: 0, t: now };
   if (now - rec.t > RL_WINDOW_MS) { rec.n = 0; rec.t = now; }
