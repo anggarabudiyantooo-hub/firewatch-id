@@ -107,6 +107,8 @@ hanya diminta mulai zoom 8, sehingga pemakaian kuota tetap rendah.
 | **Copernicus Sentinel-2 L2A** | Citra 10 m untuk memeriksa rupa gunung dari dekat | ya, gratis |
 | **Google Berita RSS** | 13 topik berita, termasuk 5 edisi negara tetangga | tidak |
 | **Smithsonian GVP** | Katalog dan ringkasan aktivitas gunung api | tidak |
+| **NOAA CPC** | Indeks ONI — status El Niño / La Niña | tidak |
+| **Open-Meteo Archive** | Curah hujan harian per provinsi (ERA5) | tidak |
 
 ---
 
@@ -132,6 +134,9 @@ sumber beserta batasannya.
 
 Perangkat keselamatan publik harus jujur tentang batas pengetahuannya sendiri:
 
+- **Korelasi bukan sebab.** El Niño meningkatkan peluang kemarau panjang,
+  tetapi status kekeringan tiap provinsi dihitung dari curah hujan yang
+  benar-benar terukur — bukan diturunkan dari indeks ONI.
 - **Nol tidak sama dengan tidak tahu.** Bila sebuah sumber belum pernah berhasil
   dimuat, antarmuka menampilkan `—`, bukan `0`.
 - **Status bukan kejadian.** Gunung berstatus Siaga tidak digambar berpluma abu;

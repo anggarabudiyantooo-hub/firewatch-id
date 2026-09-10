@@ -793,10 +793,21 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
 
 /* --- metrik --- */
 .stats{
-  grid-template-columns:repeat(8,1fr);
+  /* Sembilan kartu: delapan metrik asli ditambah kekeringan. */
+  grid-template-columns:repeat(9,1fr);
   gap:0;background:var(--line);border-bottom:1px solid var(--line);
 }
-@media(max-width:1400px){.stats{grid-template-columns:repeat(4,1fr)}}
+/* Pembagi dipilih yang habis membagi sembilan, supaya tidak ada sel
+   kosong menganga di ujung baris. */
+@media(max-width:1700px){.stats{grid-template-columns:repeat(3,1fr)}}
+/* Di bawah 900 px dipakai dua kolom meski menyisakan satu sel di baris
+   terakhir: tiga kolom pada lebar segitu membuat angka metrik terlalu
+   sempit untuk dibaca, dan keterbacaan lebih penting daripada kerapian
+   grid. Sel terakhir dibiarkan melebar mengisi sisa. */
+@media(max-width:900px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stats .stat:last-child{grid-column:span 2}
+}
 @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
 .stat{
   background:var(--surface-2);padding:7px 12px;
@@ -1713,3 +1724,14 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
   padding:2px 8px;margin-left:8px;cursor:pointer;min-height:22px;
 }
 .hi-play:hover{background:rgba(59,130,246,.28)}
+
+
+/* Kartu kekeringan mengikuti pola warna kartu lain: sub-teks mewarisi
+   nada angkanya supaya bilah metrik tetap terbaca sebagai satu kesatuan. */
+.stat:nth-child(9) .stat-sub,
+.stats .stat:nth-child(9) .stat-sub{color:#fbbf24}
+
+/* Kejadian kekeringan. Nada kuning-kecokelatan membedakannya dari
+   karhutla yang oranye, meski keduanya sering muncul bersamaan. */
+.ev-drought { border-left-color: #fbbf24; }
+.ev-drought .ev-kind { color: #fbbf24; }

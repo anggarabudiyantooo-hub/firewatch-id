@@ -59,6 +59,7 @@ dinormalkan. Tidak ada modul yang menyentuh Express.
 | `concession.js` | GFW vector tiles | Titik-dalam-poligon, sampel 220 titik ber-FRP tertinggi |
 | `wind-gfs.js` + `grib2.js` | NOAA GFS | Pembacaan GRIB2 sendiri |
 | `relevance.js` | turunan | Gerbang relevansi, skor 0–10, kategori berita |
+| `drought.js` | NOAA CPC + Open-Meteo | ONI dan curah hujan dipisah tegas; kegagalan salah satu tidak menjatuhkan keduanya |
 | `sentinel.js` | Copernicus CDSE | OAuth2 client_credentials; evalscript disimpan di server sebagai allowlist |
 | `casualty.js` | turunan | Ekstraksi angka korban dari judul; ditandai tidak resmi |
 | `rag.js` | turunan | Indeks pencarian lokal untuk `/api/ask` |
@@ -79,6 +80,7 @@ menit.
 | `shelter` | 30 menit | | BNPB GIS |
 | `volcano` | 30 menit | ✓ | turunan PVMBG + letusan |
 | `pvmbg` | 3 jam | | MAGMA tingkat aktivitas |
+| `drought` | 6 jam | | NOAA ONI + Open-Meteo Archive |
 
 Interval mengikuti irama penerbitan sumbernya: menarik GFS tiap menit sia-sia karena
 NOAA hanya menerbitkannya enam jam sekali.
@@ -118,6 +120,7 @@ memakai `no-store` agar keadaan "belum tahu" tidak ikut ter-cache.
 | `/api/cron` | no-store | Pemicu penyegaran |
 | `/api/himawari/meta` | — | Metadata citra |
 | `/api/himawari/:p/:z/:x/:y.jpg` | — | Proksi ubin, dengan allowlist |
+| `/api/drought` | 1800 dtk | ONI + kekeringan 38 provinsi |
 | `/api/sentinel/meta` | 1800 dtk | Tanggal perekaman & tutupan awan |
 | `/api/sentinel/:p/:z/:x/:y.jpg` | 21600 dtk | Proksi ubin Sentinel-2, allowlist produk, zoom 8–16 |
 | `/` | no-store | Halaman, menyuntik hash aset |

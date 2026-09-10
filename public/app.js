@@ -153,6 +153,7 @@
     ash: null, ashOn: false, ashBusy: false, newsAt: '',
     // Harus cocok dengan <option selected> pada #himaSel (nonaktif),
     // jika tidak, state dan tampilan kontrol saling bertentangan.
+    drought: null,
     hima: null, himaProduct: '', himaLayer: null,
     himaPlaying: false, himaTimer: null, himaFrame: null, himaFrameLayers: null,
     // Sentinel-2: ambang tutupan awan 30% memberi keseimbangan antara
@@ -1232,6 +1233,25 @@
       });
     }
 
+    // -- kekeringan --
+    var dr = state.drought;
+    if (dr && dr.provinces && dr.provinces.length) {
+      // Hanya provinsi berstatus kekeringan sedang ke atas yang diangkat.
+      // Musim kemarau biasa bukan kejadian yang perlu diwartakan.
+      var kering = dr.provinces.filter(function (p) { return p.level >= 2; });
+      if (kering.length) {
+        var top = kering[0];
+        ev.push({
+          kind: 'Kekeringan', tone: 'drought',
+          severity: 35 + Math.min(30, top.dryDays / 2),
+          title: nf.format(kering.length) + ' provinsi dilanda kekeringan',
+          detail: 'terparah ' + top.province + ' · ' + top.dryDays + ' hari tanpa hujan'
+            + (dr.enso && dr.enso.kind === 'elnino' ? ' · ' + dr.enso.phase : ''),
+          at: dr.lastDate ? dr.lastDate + 'T00:00:00Z' : null
+        });
+      }
+    }
+
     // -- karhutla: hanya diangkat bila memang menonjol --
     var ov = state.data;
     if (ov && ov.stats && ov.stats.hotspots > 0) {
@@ -1372,6 +1392,51 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) { if (d) { state.status = d; renderStatus(); } })
       .catch(function () { /* diamkan */ });
+  }
+
+  /**
+   * Kekeringan & status El Nino.
+   *
+   * Disegarkan jarang karena kekeringan berkembang dalam hitungan minggu
+   * dan arsip curah hujannya sendiri tertinggal sehari.
+   */
+  function loadDrought() {
+    return fetchT('/api/drought')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || d.error) return;
+        state.drought = d;
+        renderEvents();
+        renderDroughtCard();
+      })
+      .catch(function () { /* panel lain tetap berjalan */ });
+  }
+
+  function renderDroughtCard() {
+    var d = state.drought;
+    var val = $('sDrought');
+    var sub = $('sDroughtSub');
+    if (!val || !sub) return;
+    val.classList.remove('skel');
+
+    if (!d) { val.textContent = '—'; return; }
+
+    val.textContent = nf.format(d.affectedCount || 0);
+
+    // Status ENSO ditulis sebagai konteks, bukan sebagai sebab. El Nino
+    // meningkatkan peluang kemarau panjang tetapi tidak menentukannya,
+    // dan angka provinsi di sebelahnya dihitung dari hujan yang benar-
+    // benar terukur.
+    var parts = [];
+    if (d.worst && d.worst.dryDays > 0) {
+      parts.push('terkering ' + d.worst.province + ' ' + d.worst.dryDays + ' hari');
+    }
+    if (d.enso && d.enso.kind !== 'netral') {
+      parts.push(d.enso.phase + ' (ONI ' + d.enso.oni.toFixed(1) + ')');
+    } else if (d.enso) {
+      parts.push('ENSO netral');
+    }
+    sub.textContent = parts.length ? parts.join(' · ') : 'tidak ada provinsi kering';
   }
 
   function loadHazard() {
@@ -2558,7 +2623,9 @@
   // pengambilannya akan berjalan sendiri begitu pengguna menyalakannya.
   loadNews();
   loadAttribution();
+  loadDrought();
   setInterval(function () { loadOverview(); loadAttribution(); }, 10 * 60 * 1000);
+  setInterval(loadDrought, 60 * 60 * 1000);
   // Berita disegarkan tiap 5 menit agar panel penanganan selalu terkini.
   // Berita adalah panel yang paling terasa "mati" bila basi, jadi klien
   // memeriksa tiap 3 menit. Sumbernya sendiri disegarkan penjadwal tiap

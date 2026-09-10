@@ -59,6 +59,9 @@ kesimpulan yang dibaca pengguna, jadi tiap perubahan perlu pertimbangan sadar.
 | `SHELTER_MAX_AGE_DAYS = 10` | `lib/hazard.js:198` | BNPB tidak menghapus layanan saat warga pulang | Angka lawas akan menempel selamanya tanpa ambang ini. Nilai 10 hari adalah perkiraan, belum divalidasi dengan BNPB |
 | `limit = 220` | `lib/concession.js:120` | Batas waktu fungsi 60 detik | Sampel ber-FRP tertinggi adalah **bias sistematis** — wajib dinyatakan di antarmuka |
 | `clusters.slice(0, 40)` | `server.js` | Ukuran payload | Dilaporkan lewat `clustersMeta` |
+| `HTH_BANDS` (11/21/31/61 hari) | `lib/drought.js` | Ambang hari tanpa hujan mengikuti istilah buletin kekeringan BMKG | Angka ambangnya perkiraan yang diselaraskan dengan istilah BMKG, belum divalidasi bersama BMKG |
+| Ambang hujan < 1 mm | `lib/drought.js` | Hujan di bawah itu menguap sebelum meresap | Batas lazim, tetapi tetap sebuah pilihan |
+| Satu titik per provinsi | `server.js` `PROVINCE_SITES` | Menjaga arsip curah hujan cukup satu permintaan | Provinsi luas beriklim beragam hanya terwakili satu titik |
 | `LOOKBACK_DAYS = 60` | `lib/sentinel.js` | Jendela pencarian citra Sentinel-2. Terlalu pendek membuat sebagian besar wilayah kosong karena awan; terlalu panjang menyajikan citra usang | Iklim tropis membuat citra bebas awan jarang; nilai ini kompromi yang belum divalidasi lintas musim |
 | `zoom 8–16` Sentinel | `server.js` | Di bawah 8 satu petak mencakup ribuan km dan memboroskan kuota tanpa menambah informasi; di atas 16 hanya memperbesar piksel karena resolusi asli 10 m | |
 | `HOTSPOT_CAP = 2000` | `server.js` | Diukur pada beban puncak 7.172 titik: memotong di FRP 5,8 MW sementara filter terendah antarmuka 5 MW | Menaikkan filter minimum di antarmuka ke bawah 5 MW akan membuat sebagian pilihan tidak terlayani penuh; `hotspotsMeta.minFrpIncluded` memberi tahu antarmuka kapan hal itu terjadi |

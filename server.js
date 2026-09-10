@@ -48,6 +48,24 @@ const SETTLEMENT_KIND_LABEL = {
   PPLA3: 'Pusat kecamatan', PPLA4: 'Desa/kelurahan', PPL: 'Permukiman', PPLX: 'Permukiman'
 };
 
+/**
+ * Satu titik wakil per provinsi: kota berpenduduk terbanyak.
+ *
+ * Kekeringan diukur dari curah hujan yang benar-benar terekam, dan
+ * mengambil satu titik per provinsi menjaga permintaan arsip tetap satu
+ * panggilan. Kota terbesar dipilih karena di sanalah dampak kekeringan
+ * paling banyak dirasakan orang; konsekuensinya provinsi berwilayah luas
+ * dengan iklim beragam hanya terwakili satu titik, dan itu keterbatasan
+ * yang perlu diingat saat membaca angkanya.
+ */
+const PROVINCE_SITES = (() => {
+  const by = {};
+  for (const r of REGIONS) {
+    if (!by[r.prov] || r.pop > by[r.prov].pop) by[r.prov] = r;
+  }
+  return Object.values(by);
+})();
+
 const SETTLEMENTS = (() => {
   const raw = require('./data/settlements.js');
   const out = [];
@@ -71,6 +89,7 @@ const { fetchEruptions } = require('./lib/eruption');
 const { fetchQuakes, fetchTsunamiBulletins, fetchShelters } = require('./lib/hazard');
 const { isRelevant, scoreArticle, classify } = require('./lib/relevance');
 const sentinel = require('./lib/sentinel');
+const { fetchDrought } = require('./lib/drought');
 const { summarize: summarizeCasualties } = require('./lib/casualty');
 const { Scheduler } = require('./lib/scheduler');
 const { answer: ragAnswer } = require('./lib/rag');
@@ -1623,6 +1642,14 @@ scheduler
     everyMs: 10 * 60 * 1000,
     critical: true,
     run: () => fetchEruptions(fetchWithTimeout)
+  })
+  .register('drought', {
+    // Kekeringan berkembang dalam hitungan minggu, dan arsip curah hujan
+    // sendiri tertinggal sehari. Menariknya lebih sering hanya membebani
+    // sumber tanpa menghasilkan angka yang berbeda.
+    label: 'Kekeringan & El Nino',
+    everyMs: 6 * 60 * 60 * 1000,
+    run: () => fetchDrought(fetchWithTimeout, PROVINCE_SITES)
   });
 
 /**
@@ -1755,6 +1782,18 @@ function so2Band(v) {
   if (v < 350) return { label: 'tinggi', color: '#fb923c', note: 'Bisa memicu iritasi mata dan saluran napas.' };
   return { label: 'sangat tinggi', color: '#ef4444', note: 'Hindari aktivitas luar ruang di sekitar kawah.' };
 }
+
+app.get('/api/drought', async (_req, res) => {
+  try {
+    const d = await scheduler.get('drought');
+    res.set('Cache-Control', 'public, max-age=1800, stale-while-revalidate=3600');
+    res.json(d);
+  } catch (e) {
+    console.error('[drought]', e.message);
+    res.set('Cache-Control', 'no-store');
+    res.status(502).json({ error: 'Data kekeringan sedang tidak tersedia.' });
+  }
+});
 
 app.get('/api/volcano-so2', async (_req, res) => {
   try {
