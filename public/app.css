@@ -1746,3 +1746,16 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
   padding:3px 9px;white-space:nowrap;
 }
 .row:hover .pill.row-act{background:rgba(6,182,212,.3);color:#a5f3fc}
+
+/* Peringatan pada panel citra: dibedakan tegas dari keterangan biasa,
+   karena isinya menjelaskan mengapa layar belum berubah — bukan
+   informasi tambahan yang boleh terlewat. */
+.hi-warn{
+  background:rgba(234,179,8,.18);
+  border:1px solid #eab308;
+  color:#fde047;
+  padding:1px 7px;
+  font-size:11px;
+  letter-spacing:.03em;
+  white-space:nowrap;
+}

@@ -2073,11 +2073,13 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
   }
 
   const z = Number(req.params.z), x = Number(req.params.x), y = Number(req.params.y);
-  // Di bawah zoom 8 satu petak mencakup ribuan kilometer; memintanya dari
-  // Process API memboroskan kuota tanpa menambah informasi karena Himawari
-  // sudah melayani tampilan seluas itu. Batas atas 16 mengikuti resolusi
-  // asli 10 m — memperbesar lebih jauh hanya memperbesar piksel.
-  if (!Number.isInteger(z) || z < 8 || z > 16) return res.status(404).end();
+  // Batas bawah 7: pada zoom itu satu petak masih mencakup ~310 km,
+  // cukup untuk melihat satu provinsi sekaligus, dan pengukuran
+  // menunjukkan waktu ambilnya tetap di bawah dua detik. Lebih jauh dari
+  // itu Himawari sudah melayani tampilan seluas apa pun tanpa memakan
+  // kuota Copernicus. Batas atas 16 mengikuti resolusi asli 10 m —
+  // memperbesar lebih jauh hanya memperbesar piksel.
+  if (!Number.isInteger(z) || z < 7 || z > 16) return res.status(404).end();
   const n = 2 ** z;
   if (!Number.isInteger(x) || !Number.isInteger(y)
     || x < 0 || y < 0 || x >= n || y >= n) return res.status(404).end();

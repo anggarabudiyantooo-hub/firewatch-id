@@ -612,7 +612,7 @@
       map.removeLayer(state.s2Layer);
       state.s2Layer = null;
       map.off('moveend', refreshSentinelMeta);
-      map.off('zoomend', renderHimaInfo);
+      map.off('zoomend', onSentinelZoom);
     }
     state.himaProduct = product;
     state.s2Product = null;
@@ -667,7 +667,7 @@
     state.s2Layer = L.tileLayer(
       '/api/sentinel/' + product + '/{z}/{x}/{y}.jpg?cloud=' + (state.s2Cloud || 30), {
         pane: 'himaPane',
-        minZoom: 8,
+        minZoom: 7,
         maxNativeZoom: 16,
         maxZoom: 18,
         opacity: 1,
@@ -677,11 +677,42 @@
     refreshSentinelMeta();
     renderHimaInfo();
 
+    // Peringatan zoom harus MENONJOL, bukan tersembunyi di bilah kecil
+    // pojok peta.
+    //
+    // Petak Sentinel sengaja tidak diminta di bawah zoom 8: satu petak
+    // mencakup ribuan kilometer sehingga tidak menambah informasi apa pun
+    // dibanding Himawari, sementara tiap permintaan tetap memakan kuota
+    // Copernicus. Tetapi dari sisi pengguna, memilih produk lalu melihat
+    // peta yang sama sekali tidak berubah tampak seperti fitur yang rusak.
+    if (map.getZoom() < 7) {
+      showHint('Citra Sentinel-2 beresolusi 10 m dan baru dimuat mulai zoom 7. '
+        + 'Perbesar peta, atau buka tab Kekeringan lalu pilih sebuah provinsi '
+        + 'untuk langsung melompat ke sana.', 12000);
+    }
+
     // Tanggal perekaman berbeda antar wilayah, jadi diperbarui setiap kali
     // pengguna berpindah tempat. Panel juga digambar ulang agar keterangan
     // "perbesar peta" hilang begitu zoom mencukupi.
     map.on('moveend', refreshSentinelMeta);
-    map.on('zoomend', renderHimaInfo);
+    map.on('zoomend', onSentinelZoom);
+  }
+
+  /**
+   * Perbarui panel saat zoom berubah, dan beri tahu begitu ambang
+   * terlampaui supaya pengguna tahu citranya sedang datang.
+   */
+  var s2ZoomWarned = false;
+  function onSentinelZoom() {
+    if (!state.s2Product) return;
+    var z = map.getZoom();
+    if (z >= 7 && s2ZoomWarned) {
+      s2ZoomWarned = false;
+      showHint('Memuat citra Sentinel-2…', 4000);
+    } else if (z < 7) {
+      s2ZoomWarned = true;
+    }
+    renderHimaInfo();
   }
 
   function refreshSentinelMeta() {
@@ -759,8 +790,10 @@
         box.appendChild(el('span', 'hi-age', 'memuat…'));
       }
 
-      if (map.getZoom() < 8) {
-        box.appendChild(el('span', 'hi-age', 'perbesar peta (zoom 8+)'));
+      if (map.getZoom() < 7) {
+        // Ditandai berbeda dari keterangan biasa: ini bukan informasi
+        // tambahan melainkan alasan mengapa layar belum berubah.
+        box.appendChild(el('span', 'hi-warn', '\u26a0 perbesar peta ke zoom 7+ agar citra muncul'));
       }
       return;
     }
