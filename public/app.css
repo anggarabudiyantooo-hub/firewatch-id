@@ -1703,3 +1703,13 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
 .ash-city-berat{border-color:#ef4444;color:#fca5a5}
 .ash-city-sedang{border-color:#f97316;color:#fdba74}
 .ash-city-ringan{border-color:#eab308;color:#fde047}
+
+/* Tombol pemutar animasi citra Himawari. Awan yang diam pada satu citra
+   mudah disangka beku; memutar riwayat slot memperlihatkan geraknya. */
+.hi-play{
+  font-family:var(--mono);font-size:10px;letter-spacing:.06em;
+  background:rgba(59,130,246,.16);color:#93c5fd;
+  border:1px solid #3b82f6;border-radius:0;
+  padding:2px 8px;margin-left:8px;cursor:pointer;min-height:22px;
+}
+.hi-play:hover{background:rgba(59,130,246,.28)}

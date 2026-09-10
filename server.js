@@ -1824,7 +1824,12 @@ const HIMAWARI_PRODUCTS = {
 };
 
 async function himawariLatest() {
-  return cached('hima:times', 60 * 1000, async () => {
+  // JMA menerbitkan slot baru tiap 10 menit. Cache 60 detik sebelumnya
+  // menumpuk dengan cache CDN 120 detik dan interval klien 60 detik,
+  // sehingga citra bisa tertinggal sampai empat menit dari slot terbaru —
+  // cukup lama untuk membuat awan tampak diam. Daftar waktunya sendiri
+  // hanya beberapa kilobita, jadi murah diambil lebih sering.
+  return cached('hima:times', 25 * 1000, async () => {
     const r = await fetchWithTimeout('https://www.jma.go.jp/bosai/himawari/data/satimg/targetTimes_fd.json', {}, 15000);
     if (!r.ok) throw new Error('hima_times_' + r.status);
     const j = await r.json();
@@ -1832,7 +1837,18 @@ async function himawariLatest() {
     if (!last || !/^\d{14}$/.test(String(last.basetime)) || !/^\d{14}$/.test(String(last.validtime))) {
       throw new Error('hima_times_bad');
     }
-    return { basetime: String(last.basetime), validtime: String(last.validtime) };
+    // Beberapa slot terakhir ikut dikembalikan supaya antarmuka dapat
+    // memutar animasi. Satu citra diam tidak memperlihatkan pergerakan
+    // awan sama sekali — yang membuat orang mengira citranya beku.
+    const recent = j.slice(-12)
+      .filter(x => /^\d{14}$/.test(String(x.basetime)) && /^\d{14}$/.test(String(x.validtime)))
+      .map(x => ({ basetime: String(x.basetime), validtime: String(x.validtime) }));
+
+    return {
+      basetime: String(last.basetime),
+      validtime: String(last.validtime),
+      recent
+    };
   });
 }
 
@@ -1841,9 +1857,18 @@ app.get('/api/himawari/meta', async (_req, res) => {
     const t = await himawariLatest();
     const y = t.validtime;
     const iso = `${y.slice(0, 4)}-${y.slice(4, 6)}-${y.slice(6, 8)}T${y.slice(8, 10)}:${y.slice(10, 12)}:00Z`;
-    res.set('Cache-Control', 'public, max-age=120');
+    // Balasan ini menentukan slot mana yang diminta klien, jadi harus
+    // menyusul JMA secepat mungkin. stale-while-revalidate membuat CDN
+    // tetap menjawab seketika sambil menyegarkan di belakang layar.
+    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
     res.json({
       time: iso,
+      // Daftar slot untuk animasi: tiap entri dapat diminta sebagai petak
+      // tersendiri lewat parameter ?t=
+      frames: (t.recent || []).map(x => {
+        const v = x.validtime;
+        return `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}T${v.slice(8, 10)}:${v.slice(10, 12)}:00Z`;
+      }),
       products: Object.keys(HIMAWARI_PRODUCTS).map(k => ({ id: k, label: HIMAWARI_PRODUCTS[k].label })),
       maxZoom: 5,
       source: 'Himawari-9 / Japan Meteorological Agency (JMA)'
@@ -1862,7 +1887,21 @@ app.get('/api/himawari/:product/:z/:x/:y.jpg', async (req, res) => {
   if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= n || y >= n) return res.status(404).end();
   try {
     const t = await himawariLatest();
-    const url = `https://www.jma.go.jp/bosai/himawari/data/satimg/${t.basetime}/fd/${t.validtime}/${prod.path}/${z}/${x}/${y}.jpg`;
+
+    // Klien dapat meminta slot tertentu lewat ?t=<ISO> untuk memutar
+    // animasi. Nilainya divalidasi terhadap daftar slot yang benar-benar
+    // diterbitkan JMA, bukan dipercaya begitu saja — tanpa itu parameter
+    // ini menjadi jalan menyusun URL sembarang ke server JMA.
+    let basetime = t.basetime;
+    let validtime = t.validtime;
+    const want = String(req.query.t || '').trim();
+    if (want) {
+      const compact = want.replace(/[-:TZ]/g, '').slice(0, 12) + '00';
+      const hit = (t.recent || []).find(f => f.validtime === compact);
+      if (hit) { basetime = hit.basetime; validtime = hit.validtime; }
+    }
+
+    const url = `https://www.jma.go.jp/bosai/himawari/data/satimg/${basetime}/fd/${validtime}/${prod.path}/${z}/${x}/${y}.jpg`;
     const r = await fetchWithTimeout(url, {}, 15000);
     if (!r.ok) return res.status(204).end();      // petak kosong: jangan tampilkan error di peta
     const buf = Buffer.from(await r.arrayBuffer());

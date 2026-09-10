@@ -140,6 +140,7 @@
     // Harus cocok dengan <option selected> pada #himaSel (nonaktif),
     // jika tidak, state dan tampilan kontrol saling bertentangan.
     hima: null, himaProduct: '', himaLayer: null,
+    himaPlaying: false, himaTimer: null, himaFrame: null,
     // Sentinel-2: ambang tutupan awan 30% memberi keseimbangan antara
     // citra yang cukup jernih dan cukup sering tersedia di iklim tropis.
     s2Product: null, s2Layer: null, s2Meta: null, s2MetaKey: null, s2Cloud: 30,
@@ -587,6 +588,9 @@
    * dan lapisan Sentinel selalu menampilkan tanggal perekamannya.
    */
   function setHimawari(product) {
+    if (state.himaTimer) { clearInterval(state.himaTimer); state.himaTimer = null; }
+    state.himaPlaying = false;
+    state.himaFrame = null;
     if (state.himaLayer) { map.removeLayer(state.himaLayer); state.himaLayer = null; }
     if (state.s2Layer) {
       map.removeLayer(state.s2Layer);
@@ -745,16 +749,31 @@
     var label = LBL[state.himaProduct] || state.himaProduct;
     box.appendChild(el('span', 'hi-sat', 'Himawari-9'));
     box.appendChild(el('span', 'hi-mode', label));
-    if (t) {
+    // Saat animasi berjalan, yang ditampilkan adalah waktu bingkai yang
+    // sedang diputar — bukan waktu slot terbaru.
+    var shown = state.himaFrame ? new Date(state.himaFrame) : t;
+    if (shown) {
       // toLocaleTimeString memakai zona perangkat, sehingga label "WIB" bisa
       // salah bagi pengguna di luar WIB. Offset dihitung manual dari UTC.
-      var wib = new Date(t.getTime() + 7 * 3600000);
+      var wib = new Date(shown.getTime() + 7 * 3600000);
       box.appendChild(el('span', 'hi-time',
         pad2(wib.getUTCHours()) + '.' + pad2(wib.getUTCMinutes()) + ' WIB'));
-      // JMA menerbitkan pemindaian penuh tiap 10 menit; tampilkan umurnya
-      // supaya jelas ini citra terbaru, bukan gambar statis.
-      var mins = Math.max(0, Math.round((Date.now() - t.getTime()) / 60000));
+      var mins = Math.max(0, Math.round((Date.now() - shown.getTime()) / 60000));
       box.appendChild(el('span', 'hi-age', mins < 1 ? 'baru saja' : mins + ' mnt lalu'));
+    }
+
+    var frames = state.hima && state.hima.frames;
+    if (frames && frames.length > 1) {
+      var btn = el('button', 'hi-play', state.himaPlaying ? '\u25a0 Hentikan' : '\u25b6 Putar 2 jam');
+      btn.type = 'button';
+      btn.title = state.himaPlaying
+        ? 'Hentikan animasi dan kembali ke citra terbaru'
+        : 'Putar ' + frames.length + ' citra terakhir untuk melihat gerak awan';
+      btn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        toggleHimaPlay();
+      });
+      box.appendChild(btn);
     }
   }
 
@@ -778,14 +797,57 @@
         if (!m || !m.time) return;
         if (state.hima && state.hima.time === m.time) { renderHimaInfo(); return; }
         state.hima = m;
-        // Paksa unduh ulang petak dengan penanda waktu pada URL.
-        if (state.himaLayer) {
+        // Saat sedang memutar animasi, jangan lompat ke slot terbaru di
+        // tengah pemutaran — daftar slotnya saja yang diperbarui.
+        if (!state.himaPlaying && state.himaLayer) {
+          state.himaFrame = null;
           state.himaLayer.setUrl('/api/himawari/' + state.himaProduct +
             '/{z}/{x}/{y}.jpg?t=' + encodeURIComponent(m.time), false);
         }
         renderHimaInfo();
       })
       .catch(function () { /* biarkan citra lama tetap tampil */ });
+  }
+
+  /**
+   * Putar dua jam terakhir citra Himawari sebagai animasi.
+   *
+   * Satu citra diam tidak memperlihatkan apa pun tentang pergerakan awan,
+   * sehingga mudah disangka beku. JMA menyimpan riwayat slot per 10 menit;
+   * memutarnya berurutan membuat arah dan kecepatan gerak awan terlihat —
+   * dan itulah yang sebenarnya ingin diketahui saat memantau sebaran abu.
+   */
+  function stopHimaPlay() {
+    if (state.himaTimer) { clearInterval(state.himaTimer); state.himaTimer = null; }
+    state.himaPlaying = false;
+    state.himaFrame = null;
+    if (state.himaLayer && state.hima && state.hima.time) {
+      state.himaLayer.setUrl('/api/himawari/' + state.himaProduct +
+        '/{z}/{x}/{y}.jpg?t=' + encodeURIComponent(state.hima.time), false);
+    }
+    renderHimaInfo();
+  }
+
+  function toggleHimaPlay() {
+    if (state.himaPlaying) { stopHimaPlay(); return; }
+    var f = state.hima && state.hima.frames;
+    if (!f || f.length < 2 || !state.himaLayer) return;
+
+    state.himaPlaying = true;
+    var i = 0;
+    var step = function () {
+      if (!state.himaPlaying || !state.himaLayer) return;
+      state.himaFrame = f[i];
+      state.himaLayer.setUrl('/api/himawari/' + state.himaProduct +
+        '/{z}/{x}/{y}.jpg?t=' + encodeURIComponent(f[i]), false);
+      renderHimaInfo();
+      i = (i + 1) % f.length;
+    };
+    step();
+    // 900 ms per bingkai: cukup lambat untuk mengikuti, cukup cepat
+    // untuk memperlihatkan gerak dalam sekali putaran.
+    state.himaTimer = setInterval(step, 900);
+    renderHimaInfo();
   }
 
   /* ---------- gempa, tsunami & pengungsi ---------- */
