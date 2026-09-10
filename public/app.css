@@ -1759,3 +1759,19 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
   letter-spacing:.03em;
   white-space:nowrap;
 }
+
+/* Badge ketinggian angin.
+   Menjawab pertanyaan "angin di ketinggian berapa yang sedang saya lihat"
+   — tanpa itu, perbedaan arah dengan abu terbaca sebagai kesalahan. */
+.wind-badge{
+  position:absolute;left:10px;top:10px;z-index:640;
+  display:flex;align-items:center;gap:6px;
+  background:rgba(8,11,15,.9);border:1px solid var(--line-3);
+  padding:3px 9px;font-family:var(--mono);font-size:11px;
+}
+.wb-lab{color:#94a3b8;letter-spacing:.1em;font-weight:700}
+.wb-h{color:#7dd3fc}
+.wb-auto{color:#67e8f9;border:1px solid #06b6d4;padding:0 5px;font-size:10px}
+.wb-src{color:#94a3b8}
+.wb-mode{color:#fbbf24;border:1px solid #eab308;padding:0 5px;font-size:10px}
+.sel-wind select{min-width:180px}

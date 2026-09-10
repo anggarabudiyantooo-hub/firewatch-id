@@ -94,6 +94,18 @@
         <label class="chk"><input type="checkbox" id="lyFire" /><span>TITIK API</span></label>
         <label class="chk"><input type="checkbox" id="lyAir" /><span>KUALITAS UDARA</span></label>
         <label class="chk"><input type="checkbox" id="lyWind" /><span>ALIRAN ANGIN</span></label>
+        <label class="sel sel-wind" for="windLevel" title="Ketinggian angin yang digambar. Angin permukaan dan angin di ketinggian abu dapat bertiup ke arah berbeda.">
+          <span class="sr-only">Ketinggian angin</span>
+          <select id="windLevel">
+            <option value="auto" selected>ANGIN: AUTO (IKUT ABU)</option>
+            <option value="10m">ANGIN: PERMUKAAN 10 M</option>
+            <option value="850">ANGIN: 850 hPa ~1,5 KM</option>
+            <option value="700">ANGIN: 700 hPa ~3 KM</option>
+            <option value="600">ANGIN: 600 hPa ~4,2 KM</option>
+            <option value="500">ANGIN: 500 hPa ~5,6 KM</option>
+            <option value="300">ANGIN: 300 hPa ~9,2 KM</option>
+          </select>
+        </label>
         <label class="chk"><input type="checkbox" id="lySmoke" /><span>SEBARAN ASAP</span></label>
         <label class="chk"><input type="checkbox" id="lyImpact" /><span>WILAYAH TERDAMPAK</span></label>
         <label class="chk"><input type="checkbox" id="lyConc" /><span>BATAS KONSESI</span></label>
@@ -215,6 +227,7 @@
           <button type="button" class="bm" data-base="relief">Relief</button>
         </div>
         <div id="mapHint" class="map-hint" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+        <div id="windBadge" class="wind-badge" role="status" aria-live="polite" hidden></div>
       </div>
       <div class="legend">
         <span id="legendPoints">

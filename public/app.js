@@ -148,6 +148,10 @@
     // windOn harus cocok dengan keadaan awal kotak-centang di index.html.
     // Bila keduanya tidak sinkron, loadWind() berjalan untuk lapisan yang
     // kotaknya kosong dan menghabiskan kuota tanpa ada yang tergambar.
+    // windLevel 'auto' berarti mengikuti ketinggian abu yang sedang aktif.
+    // Default itu dipilih supaya perbandingan angin-abu selalu berada pada
+    // lapisan atmosfer yang sama, bukan permukaan lawan ketinggian.
+    windLevel: 'auto', windLevelUsed: '10m', windMeta: null,
     wind: null, windKey: null, windOn: false, windBusy: false, particles: null, plumeHour: 0,
     air: null, airKey: null, airOn: false, airBusy: false,
     ash: null, ashOn: false, ashBusy: false, newsAt: '',
@@ -437,12 +441,32 @@
     state.ash.active.forEach(function (v) {
       // Pluma tertinggi digambar lebih dulu agar lapisan rendah tampak di atasnya.
       v.plumes.slice().sort(function (a, b) { return b.altKm - a.altKm; }).forEach(function (p) {
+        // Gaya garis membedakan asal data tanpa perlu membuka popup:
+        // observasi lapangan digambar utuh, model putus-putus.
         L.polygon(p.polygon, {
           pane: 'ashPane',
-          color: p.color, weight: 1, opacity: 0.5,
-          fillColor: p.color, fillOpacity: 0.13, dashArray: '5,4'
+          color: p.color,
+          weight: p.dataMode === 'observed' ? 1.8 : 1,
+          opacity: p.dataMode === 'observed' ? 0.85 : 0.45,
+          fillColor: p.color,
+          fillOpacity: p.dataMode === 'observed' ? 0.16 : 0.1,
+          dashArray: p.dataMode === 'observed' ? null : '5,4'
         }).bindPopup(popupNode('Sebaran abu ' + v.name + ' — ' + p.levelLabel, [
+          (p.dataMode === 'observed' ? 'STATUS: OBSERVASI LAPANGAN' : 'STATUS: MODEL ATMOSFER'),
           'Arah sebaran: ' + compass(p.to) + ' (' + p.to + '\u00b0)',
+          v.ash && v.ash.summitElevM ? 'Tinggi puncak: ' + nf.format(v.ash.summitElevM) + ' m AMSL' : null,
+          v.ash && v.ash.columnAboveSummitM
+            ? 'Tinggi kolom: ' + nf.format(v.ash.columnAboveSummitM) + ' m di atas puncak' : null,
+          v.ash && v.ash.ashTopM
+            ? 'Puncak abu: ' + nf.format(v.ash.ashTopM) + ' m AMSL (' + v.ash.heightBasis + ')'
+            : 'Puncak abu: tidak dapat dihitung (' + ((v.ash && v.ash.heightBasis) || 'tinggi tidak teramati') + ')',
+          'Angin dipakai: ' + p.windLevelHpa + ' hPa @ ' + nf.format(p.windHeightM) + ' m'
+            + (p.windInterpolated ? ' (interpolasi ' + (p.windLevels || []).join('/') + ' hPa)' : ''),
+          p.shearDeg !== null && p.shearDeg !== undefined && p.shearDeg > 30
+            ? 'Catatan: arah teramati berbeda ' + p.shearDeg + '\u00b0 dari arah model '
+              + '(' + compass(p.modelToDeg) + '). Geser angin vertikal atau '
+              + 'pengamatan pada bagian kolom yang lebih rendah.'
+            : null,
           // Arah kerucut bisa berasal dari dua sumber yang berbeda, dan
           // perbedaannya penting: laporan visual petugas pos pantau
           // mengalahkan model angin. Tanpa keterangan ini, pembaca yang
@@ -1632,12 +1656,74 @@
     return z >= 8 ? 1 : z >= 6 ? 1.5 : z >= 4 ? 2 : 3;
   }
 
+  /**
+   * Aras angin yang benar-benar dipakai.
+   *
+   * Pada mode AUTO, ketinggian mengikuti abu yang sedang digambar. Ini
+   * menyelesaikan sumber kebingungan utama: sebelumnya layer angin selalu
+   * menggambarkan permukaan 10 m, sementara abu dimodelkan pada 3-10 km.
+   * Perbedaan arah di antara keduanya benar secara meteorologi, tetapi
+   * tidak ada cara bagi pengguna untuk mengetahuinya.
+   */
+  /**
+   * Badge ketinggian angin di atas peta.
+   *
+   * Tanpa ini, pengguna tidak punya cara mengetahui bahwa panah angin
+   * menggambarkan lapisan atmosfer yang berbeda dari abu — dan menyimpulkan
+   * aplikasinya keliru padahal keduanya benar.
+   */
+  function renderWindBadge() {
+    var box = $('windBadge');
+    if (!box) return;
+    clear(box);
+    var m = state.windMeta;
+    if (!state.windOn || !m) { box.hidden = true; return; }
+    box.hidden = false;
+
+    box.appendChild(el('span', 'wb-lab', 'ANGIN'));
+    box.appendChild(el('span', 'wb-h', m.levelLabel || 'permukaan'));
+    if (state.windLevel === 'auto') {
+      box.appendChild(el('span', 'wb-auto', 'AUTO \u2014 ikut abu'));
+    }
+    box.appendChild(el('span', 'wb-src', m.hPa ? 'Open-Meteo' : 'NOAA GFS'));
+    box.appendChild(el('span', 'wb-mode', 'MODEL'));
+  }
+
+  function resolveWindLevel() {
+    if (state.windLevel !== 'auto') return state.windLevel;
+
+    // Cari pluma abu tertinggi yang sedang aktif.
+    var tinggiM = null;
+    var ash = state.ash && state.ash.active;
+    if (state.ashOn && ash) {
+      for (var i = 0; i < ash.length; i++) {
+        var pl = ash[i].plumes || [];
+        for (var k = 0; k < pl.length; k++) {
+          var h = pl[k].windHeightM || (pl[k].altKm ? pl[k].altKm * 1000 : null);
+          if (h && (tinggiM === null || h > tinggiM)) tinggiM = h;
+        }
+      }
+    }
+    // Tanpa abu aktif, permukaan adalah pilihan yang wajar: itulah angin
+    // yang membawa asap karhutla, lapisan lain yang paling sering dilihat.
+    if (tinggiM === null) return '10m';
+
+    var pilih = [[1000, '10m'], [2200, '850'], [3600, '700'],
+      [4900, '600'], [7400, '500'], [99999, '300']];
+    for (var j = 0; j < pilih.length; j++) {
+      if (tinggiM <= pilih[j][0]) return pilih[j][1];
+    }
+    return '300';
+  }
+
   function loadWind() {
     if (!state.windOn || state.windBusy) return Promise.resolve();
     var z = map.getZoom();
     var step = windStepFor(z);
     var b = map.getBounds();
-    var q = 'step=' + step;
+    var lvl = resolveWindLevel();
+    state.windLevelUsed = lvl;
+    var q = 'step=' + step + '&level=' + lvl;
     // Medan angin GFS mencakup seluruh dunia. Saat diperbesar kita minta
     // hanya area yang terlihat agar kerapatannya naik tanpa memperbesar hasil;
     // saat menjauh, ambil global supaya angin tidak terpotong di tepi peta.
@@ -1663,8 +1749,10 @@
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('x')); })
       .then(function (d) {
         state.wind = d;
+        state.windMeta = d;
         state.windKey = q;
         drawWind();
+        renderWindBadge();
         showHint(d.count
           ? nf.format(d.count) + ' titik medan angin · ' + (d.source || 'NOAA GFS') + '. Garis mengalir ke arah asap terbawa.'
           : 'Tidak ada data angin pada area ini.', 5000);
@@ -2400,7 +2488,23 @@
       map.removeLayer(gWind);
       if (state.particles) state.particles.stop();
       showHint(null);
+      renderWindBadge();
     }
+  });
+
+  $('windLevel').addEventListener('change', function (e) {
+    state.windLevel = e.target.value;
+    // Kunci cache dikosongkan supaya aras baru benar-benar diambil,
+    // bukan dijawab dari hasil aras sebelumnya.
+    state.windKey = null;
+    if (!state.windOn) {
+      // Menyalakan sendiri lebih membantu daripada mengubah pilihan pada
+      // lapisan yang sedang mati tanpa efek apa pun.
+      $('lyWind').checked = true;
+      state.windOn = true;
+      map.addLayer(gWind);
+    }
+    loadWind();
   });
 
   function toggleConc(on) {

@@ -1302,6 +1302,92 @@ const WIND_STEPS = [1, 1.5, 2, 3];
 // di sini akan membuat lapisan gagal dengan 400.
 const AQ_STEPS = [0.25, 0.5, 1, 1.5];
 
+/**
+ * Aras angin yang dapat dipilih pengguna pada layer aliran angin.
+ *
+ * Menyediakan hanya angin 10 m adalah sebab utama keluhan bahwa arah
+ * angin dan sebaran abu "tidak konsisten": abu dimodelkan pada 3-10 km,
+ * sedangkan panah angin menggambarkan permukaan. Keduanya memang boleh
+ * berbeda — itu geser angin vertikal — tetapi pengguna tidak punya cara
+ * mengetahuinya karena layernya tidak menyebut ketinggian sama sekali.
+ */
+const WIND_ALOFT_LEVELS = {
+  '10m': { label: 'Permukaan 10 m', heightM: 10, hPa: null },
+  '850': { label: '850 hPa (~1,5 km)', heightM: 1500, hPa: 850 },
+  '700': { label: '700 hPa (~3 km)', heightM: 3000, hPa: 700 },
+  '600': { label: '600 hPa (~4,2 km)', heightM: 4200, hPa: 600 },
+  '500': { label: '500 hPa (~5,6 km)', heightM: 5600, hPa: 500 },
+  '300': { label: '300 hPa (~9,2 km)', heightM: 9200, hPa: 300 }
+};
+
+/**
+ * Medan angin pada aras tekanan tertentu.
+ *
+ * GFS byte-range yang dipakai untuk angin 10 m hanya menyediakan satu
+ * aras; untuk angin atas dipakai Open-Meteo yang melayani banyak titik
+ * dalam satu permintaan. Kerapatan grid sengaja lebih longgar karena
+ * angin atas berubah jauh lebih halus secara spasial daripada angin
+ * permukaan yang dipengaruhi topografi.
+ */
+async function aloftWindField(level, box) {
+  const lv = WIND_ALOFT_LEVELS[level];
+  if (!lv || !lv.hPa) throw new Error('level_tidak_dikenal');
+
+  const b = box || { west: 94.5, south: -11.5, east: 141.5, north: 6.5 };
+  const step = 2;
+  const lats = [];
+  const lons = [];
+  for (let la = Math.ceil(b.south / step) * step; la <= b.north; la += step) {
+    for (let lo = Math.ceil(b.west / step) * step; lo <= b.east; lo += step) {
+      lats.push(la.toFixed(2));
+      lons.push(lo.toFixed(2));
+      // Open-Meteo membatasi jumlah koordinat per permintaan.
+      if (lats.length >= 320) break;
+    }
+    if (lats.length >= 320) break;
+  }
+  if (!lats.length) return { points: [], level, count: 0 };
+
+  const url = 'https://api.open-meteo.com/v1/forecast'
+    + `?latitude=${lats.join(',')}&longitude=${lons.join(',')}`
+    + `&current=wind_speed_${lv.hPa}hPa,wind_direction_${lv.hPa}hPa`
+    + '&wind_speed_unit=ms';
+
+  const r = await fetchWithTimeout(url, {}, 30000);
+  if (!r.ok) throw new Error('aloft_' + r.status);
+  const j = await r.json();
+  const list = Array.isArray(j) ? j : [j];
+
+  const points = [];
+  let modelTime = null;
+  for (const loc of list) {
+    const c = loc && loc.current;
+    if (!c) continue;
+    const sp = Number(c[`wind_speed_${lv.hPa}hPa`]);
+    const fr = Number(c[`wind_direction_${lv.hPa}hPa`]);
+    if (!Number.isFinite(sp) || !Number.isFinite(fr)) continue;
+    if (!modelTime && c.time) modelTime = c.time;
+    points.push({
+      lat: +Number(loc.latitude).toFixed(2),
+      lon: +Number(loc.longitude).toFixed(2),
+      speed: +sp.toFixed(1),
+      from: Math.round(fr),
+      to: Math.round((fr + 180) % 360)
+    });
+  }
+
+  return {
+    points,
+    count: points.length,
+    level,
+    levelLabel: lv.label,
+    heightM: lv.heightM,
+    hPa: lv.hPa,
+    modelTime,
+    source: `Open-Meteo (GFS/ECMWF) — angin ${lv.hPa} hPa`
+  };
+}
+
 app.get('/api/wind-field', async (req, res) => {
   const sp = readStep(req.query.step, WIND_STEPS, 2);
   if (sp.error) return res.status(400).json({ error: sp.error });
@@ -1325,11 +1411,39 @@ app.get('/api/wind-field', async (req, res) => {
     // beserta margin 10 derajat supaya partikel tidak terpotong di tepi.
     box = { west: 84.5, south: -21.5, east: 151.5, north: 16.5 };
   }
+  // Aras angin. Nilai di luar daftar ditolak, bukan diabaikan diam-diam:
+  // memilih aras yang salah menghasilkan arah yang salah pula, dan itu
+  // tidak boleh terjadi tanpa pemberitahuan.
+  const level = String(req.query.level || '10m');
+  if (!WIND_ALOFT_LEVELS[level]) {
+    return res.status(400).json({
+      error: 'Aras angin harus salah satu dari: ' + Object.keys(WIND_ALOFT_LEVELS).join(', ') + '.'
+    });
+  }
+
   try {
+    if (level !== '10m') {
+      const af = await cached(
+        `wind:aloft:${level}:${box.west.toFixed(0)},${box.south.toFixed(0)},${box.east.toFixed(0)},${box.north.toFixed(0)}`,
+        30 * 60 * 1000,
+        () => aloftWindField(level, box));
+      res.set('Cache-Control', 'public, max-age=1800, stale-while-revalidate=3600');
+      return res.json({
+        updatedAt: new Date().toISOString(),
+        dataMode: 'model',
+        ...af
+      });
+    }
+
     const wf = await windField(step, box);
     res.set('Cache-Control', 'public, max-age=1800');
     res.json({
       updatedAt: new Date().toISOString(),
+      level: '10m',
+      levelLabel: WIND_ALOFT_LEVELS['10m'].label,
+      heightM: 10,
+      hPa: null,
+      dataMode: 'model',
       source: `NOAA GFS 1° (siklus ${wf.run}) — angin permukaan 10 m`,
       ...wf
     });
@@ -1337,6 +1451,16 @@ app.get('/api/wind-field', async (req, res) => {
     console.error('[wind-field]', e.message);
     res.status(502).json({ error: 'Data angin gagal dimuat.' });
   }
+});
+
+/** Daftar aras angin untuk pemilih di antarmuka. */
+app.get('/api/wind-levels', (_req, res) => {
+  res.set('Cache-Control', 'public, max-age=86400');
+  res.json({
+    levels: Object.keys(WIND_ALOFT_LEVELS).map(k => ({
+      id: k, ...WIND_ALOFT_LEVELS[k]
+    }))
+  });
 });
 
 // ---------- kualitas udara (AQI) ----------
