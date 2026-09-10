@@ -673,17 +673,25 @@
 
     fetchT('/api/sentinel/meta?lat=' + c.lat.toFixed(4)
       + '&lon=' + c.lng.toFixed(4) + '&cloud=' + (state.s2Cloud || 30))
-      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (r) { return r.json().catch(function () { return null; }); })
       .then(function (m) {
-        if (!m || !state.s2Product) return;
-        state.s2Meta = m;
+        if (!state.s2Product) return;
+        // Kegagalan metadata TIDAK boleh membuat panel tertahan di
+        // "memuat..." selamanya. Citranya sendiri tetap tergambar; yang
+        // hilang hanya keterangan tanggal, dan itu harus dikatakan.
+        state.s2Meta = m || { available: true, metaError: true };
+        if (m && m.error) state.s2Meta.metaError = true;
         renderHimaInfo();
-        if (m.available === false) {
+        if (m && m.available === false) {
           showHint('Citra Sentinel-2 belum aktif: kredensial Copernicus belum dipasang '
             + 'di server. Daftar gratis di dataspace.copernicus.eu.', 9000);
         }
       })
-      .catch(function () { /* peta tetap berfungsi tanpa label tanggal */ });
+      .catch(function () {
+        if (!state.s2Product) return;
+        state.s2Meta = { available: true, metaError: true };
+        renderHimaInfo();
+      });
   }
 
   function renderHimaInfo() {
@@ -714,6 +722,8 @@
         if (m.displayed.cloud !== null && m.displayed.cloud !== undefined) {
           box.appendChild(el('span', 'hi-age', 'awan ' + m.displayed.cloud + '%'));
         }
+      } else if (m && m.metaError) {
+        box.appendChild(el('span', 'hi-age', 'tanggal perekaman tidak tersedia'));
       } else if (m) {
         box.appendChild(el('span', 'hi-age',
           'tidak ada citra bebas awan ' + (m.windowDays || 60) + ' hari terakhir'));
