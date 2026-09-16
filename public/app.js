@@ -53,6 +53,14 @@
       // Kerangka dilepas supaya kegagalan terbaca berbeda dari "sedang memuat".
       n.classList.remove('skel');
       if (n.textContent === '' || n.textContent === '—') n.textContent = 'gagal';
+
+      // Sub-teks ikut dibereskan. Tanpa ini kartu dapat berbunyi
+      // "gagal" di atas "memuat…" — dua keadaan yang bertentangan
+      // dalam satu kartu, dan pembaca tidak tahu mana yang berlaku.
+      var sub = $(id + 'Sub');
+      if (sub && /memuat/i.test(sub.textContent)) {
+        sub.textContent = 'sumber tidak dapat dihubungi';
+      }
     });
   }
   var nf = new Intl.NumberFormat('id-ID');
