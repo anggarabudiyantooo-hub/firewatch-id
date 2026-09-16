@@ -2203,7 +2203,7 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
   // itu Himawari sudah melayani tampilan seluas apa pun tanpa memakan
   // kuota Copernicus. Batas atas 16 mengikuti resolusi asli 10 m —
   // memperbesar lebih jauh hanya memperbesar piksel.
-  if (!Number.isInteger(z) || z < 7 || z > 16) return res.status(404).end();
+  if (!Number.isInteger(z) || z < 7 || z > 17) return res.status(404).end();
   const n = 2 ** z;
   if (!Number.isInteger(x) || !Number.isInteger(y)
     || x < 0 || y < 0 || x >= n || y >= n) return res.status(404).end();

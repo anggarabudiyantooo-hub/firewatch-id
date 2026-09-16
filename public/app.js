@@ -692,7 +692,10 @@
       '/api/sentinel/' + product + '/{z}/{x}/{y}.jpg?cloud=' + (state.s2Cloud || 30), {
         pane: 'himaPane',
         minZoom: 7,
-        maxNativeZoom: 16,
+        // Resolusi asli 10 m tercapai penuh sekitar z14. Petak di atas itu
+        // tetap dilayani sampai z17 supaya pengguna bisa memeriksa kawah
+        // dari dekat; di atas z17 yang bertambah hanya ukuran piksel.
+        maxNativeZoom: 17,
         maxZoom: 18,
         opacity: 1,
         attribution: 'Citra: Sentinel-2 L2A &middot; Copernicus'
