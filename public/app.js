@@ -2820,26 +2820,33 @@
     });
   })();
 
-  // Fase 3.1 Bloomberg compact — satu layar capture semua
+  // Fase 3.2 Bloomberg compact DEFAULT + overflow kebawah — user request: jadikan default tapi bisa overflow
   (function () {
     var btn = $('bloombergToggle');
     if (!btn) return;
     var key = 'siaga_bloomberg';
-    var isBloomberg = false;
-    try { isBloomberg = localStorage.getItem(key) === '1'; } catch (e) {}
+    var isBloomberg = true; // default compact — prinsip Bloomberg
+    try {
+      var stored = localStorage.getItem(key);
+      if (stored === null) isBloomberg = true; // default true jika belum pernah set
+      else isBloomberg = stored === '1';
+    } catch (e) {}
     function applyBloomberg(on) {
       isBloomberg = !!on;
       document.body.classList.toggle('bloomberg', isBloomberg);
       btn.classList.toggle('active', isBloomberg);
       btn.textContent = isBloomberg ? '☷ NORMAL' : 'BLM COMPACT';
-      btn.title = isBloomberg ? 'Keluar mode Bloomberg compact (B)' : 'Mode Bloomberg compact — satu layar capture semua (B)';
+      btn.title = isBloomberg ? 'Keluar mode Bloomberg compact (B) — mode compact default dengan overflow' : 'Mode Bloomberg compact — density tinggi, hemat ruang (B)';
       try { localStorage.setItem(key, isBloomberg ? '1' : '0'); } catch (e) {}
       setTimeout(function () { if (window.map && map.invalidateSize) map.invalidateSize(); }, 250);
-      showHint(isBloomberg
-        ? 'Mode Bloomberg compact aktif — density tinggi, semua panel dalam satu layar, scroll internal. Tekan B untuk toggle.'
-        : 'Mode normal — layout modern lega.', 3500);
+      if (isBloomberg) {
+        showHint('Mode Bloomberg compact DEFAULT aktif — density tinggi, compact, boleh scroll kebawah. Tekan B untuk toggle normal.', 3500);
+      } else {
+        showHint('Mode normal — layout modern lega.', 3000);
+      }
     }
-    if (isBloomberg) applyBloomberg(true);
+    // Terapkan langsung — default compact
+    applyBloomberg(isBloomberg);
     btn.addEventListener('click', function () { applyBloomberg(!isBloomberg); });
     // Shortcut B untuk toggle Bloomberg
     document.addEventListener('keydown', function (e) {

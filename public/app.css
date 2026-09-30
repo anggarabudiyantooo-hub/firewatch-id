@@ -2421,10 +2421,10 @@ body.bloomberg{
   font-size:11px;
   line-height:1.35;
   background:#000;
-  overflow:hidden;
-  height:100vh;
-  display:flex;
-  flex-direction:column;
+  overflow:auto;
+  height:auto;
+  min-height:100vh;
+  display:block;
 }
 body.bloomberg .topbar{
   padding:6px 12px;
@@ -2455,16 +2455,17 @@ body.bloomberg .ticker{
 body.bloomberg .ticker-tag{ padding:1px 5px;font-size:8px;border-radius:3px; }
 
 body.bloomberg main{
-  flex:1;
+  flex:none;
   display:grid;
-  grid-template-rows:auto auto 1fr;
+  grid-template-rows:auto auto auto;
   grid-template-columns:1fr;
-  gap:4px;
-  padding:4px;
-  max-width:none;
-  overflow:hidden;
-  height:calc(100vh - 38px - 22px);
-  max-height:calc(100vh - 38px - 22px);
+  gap:6px;
+  padding:6px;
+  max-width:1680px;
+  margin:0 auto;
+  overflow:visible;
+  height:auto;
+  max-height:none;
 }
 
 body.bloomberg .stats{
@@ -2570,11 +2571,11 @@ body.bloomberg .pgrid-b{
 body.bloomberg #main-bloomberg-grid{
   display:grid;
   grid-template-columns:1.6fr 1fr;
-  grid-template-rows:1fr;
-  gap:4px;
+  grid-template-rows:auto;
+  gap:6px;
   min-height:0;
-  overflow:hidden;
-  flex:1;
+  overflow:visible;
+  flex:none;
 }
 body.bloomberg #main-bloomberg-grid .map-card{
   grid-column:1;
@@ -2586,7 +2587,7 @@ body.bloomberg #main-bloomberg-grid .side-stack{
   grid-template-rows:auto 1fr 1fr;
   gap:4px;
   min-height:0;
-  overflow:hidden;
+  overflow:visible;
 }
 body.bloomberg .panel{
   border-radius:4px;
@@ -2669,16 +2670,18 @@ body.bloomberg .btn-fullscreen{
   body.bloomberg .map-card{ min-height:50vh; }
 }
 
-/* Bloomberg: sembunyikan panel edukasi & sumber untuk hemat ruang — bisa dibuka via scroll internal jika perlu */
+/* Bloomberg DEFAULT: compact tapi boleh overflow kebawah — user request jadikan default */
 body.bloomberg .panel-edu,
 body.bloomberg #sourcePanel{
-  display:none;
+  display:block;
+  opacity:0.9;
 }
 body.bloomberg .panel.wide{
-  max-height:22vh;
-  overflow:hidden;
+  max-height:none;
+  overflow:visible;
 }
-body.bloomberg #attrSection{ max-height:28vh; }
+body.bloomberg #attrSection{ max-height:none; }
 body.bloomberg #hazardPanel,
 body.bloomberg #statusPanel,
-body.bloomberg #so2Panel{ max-height:20vh; }
+body.bloomberg #so2Panel{ max-height:none; }
+body.bloomberg .foot{ display:block; opacity:0.8; }
