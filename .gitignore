@@ -21,3 +21,13 @@ npm-debug.log*
 *.swp
 .idea/
 .vscode/
+
+# PRIVATE HANDOVER - hanya pemilik, jangan push
+docs/HANDOVER_PRIVATE.md
+docs/HANDOVER_*.private.md
+PRIVATE*.md
+.private-handover/
+HANDOVER_PRIVATE.md
+AGENT_HANDOVER_PRIVATE.md
+.github_token
+PRIVATE_DOCS/
