@@ -26,7 +26,11 @@ const FIRMS_MAP_KEY = (process.env.FIRMS_MAP_KEY || '').trim();
 const ALLOWED_SOURCES = ['VIIRS_SNPP_NRT', 'VIIRS_NOAA20_NRT', 'VIIRS_NOAA21_NRT', 'MODIS_NRT'];
 const FIRMS_SOURCE = ALLOWED_SOURCES.includes(process.env.FIRMS_SOURCE) ? process.env.FIRMS_SOURCE : 'VIIRS_SNPP_NRT';
 const FIRMS_DAYS = Math.min(10, Math.max(1, Number(process.env.FIRMS_DAYS || 1)));
-const BBOX = { west: 94.5, south: -11.5, east: 141.5, north: 6.5 }; // Indonesia
+
+// Fase 2.1: konfigurasi terpusat
+const CONFIG = require('./lib/config');
+const BBOX = CONFIG.BBOX; // Indonesia — dari config terpusat
+const BBOX_CORNERS = CONFIG.bboxCorners(BBOX);
 
 // Pakai require() (bukan fs.readFileSync) supaya bundler serverless seperti Vercel
 // melacak berkas ini secara statis dan ikut menyertakannya ke dalam deployment.
@@ -171,7 +175,8 @@ app.use(helmet({
  * melihat sisa jatah tanpa harus memicu penolakan lebih dulu.
  */
 const RL_WINDOW_MS = 60000;
-const RL_NORMAL = 240;
+// Fase 2.1: rate limit dari config terpusat
+const RL_NORMAL = CONFIG.RATE_LIMIT.normal;
 /**
  * Proksi petak citra dikecualikan dari hitungan biasa.
  *
@@ -192,7 +197,7 @@ const RL_TILE = 1200;
 // Indonesia banyak memakai CGNAT sehingga satu alamat IP dapat mewakili
 // banyak pengguna sah sekaligus. Yang ingin dicegah adalah skrip yang
 // mengirim ribuan permintaan, bukan manusia yang menggeser peta.
-const RL_EXPENSIVE = 90;
+const RL_EXPENSIVE = CONFIG.RATE_LIMIT.expensive;
 const RL_EXPENSIVE_PATHS = /^\/(overview|wind-field|air-quality|concessions|place|whose-land|air-point|news)/;
 
 const hits = new Map();
@@ -586,7 +591,7 @@ const PLUME_STEPS = [0, 6, 12, 18];
  * 5 MW, sehingga hampir seluruh pilihan pengguna tetap terlayani utuh;
  * pilihan "semua" diberi keterangan bahwa daftarnya dipotong.
  */
-const HOTSPOT_CAP = 2000;
+const HOTSPOT_CAP = CONFIG.THRESHOLDS.hotspotCap;
 
 async function windForecast(lat, lon) {
   // Prakiraan diambil dari siklus GFS yang sama (jam +6/+12/+18), sehingga
@@ -1239,7 +1244,7 @@ async function buildOverview() {
         peopleExposed: impacted.reduce((s, r) => s + r.population, 0),
         peopleExposedModerate: impacted.reduce((s, r) => s + (r.score >= 33 ? r.population : 0), 0)
       },
-      hotspots: hotspotsOut, clusters: clusters.slice(0, 40), plumes, impacted,
+      hotspots: hotspotsOut, clusters: clusters.slice(0, CONFIG.THRESHOLDS.clustersMax), plumes, impacted,
       // Titik api dipotong ke yang paling kuat agar payload tidak
       // membengkak saat musim kebakaran memuncak. Metadata di bawah
       // membuat pemotongan itu terbaca, bukan tersembunyi: antarmuka
@@ -1276,7 +1281,7 @@ app.get('/api/overview', async (_req, res) => {
     // seperti itu tidak boleh mengendap di cache CDN selama dua menit dan
     // menampilkan angka yang salah kepada pengguna berikutnya.
     const incomplete = !d.volcano || d.volcano.eruptionReports === null;
-    res.set('Cache-Control', incomplete ? 'no-store' : 'public, max-age=120');
+    res.set('Cache-Control', incomplete ? 'no-store' : `public, max-age=${CONFIG.CACHE_TTL.overview}`);
     res.json(d);
   } catch (e) {
     console.error('[overview]', e.message);
@@ -1308,7 +1313,7 @@ async function buildAttribution() {
 
 app.get('/api/attribution', async (_req, res) => {
   try {
-    res.set('Cache-Control', 'public, max-age=600');
+    res.set('Cache-Control', `public, max-age=${CONFIG.CACHE_TTL.attribution}`);
     res.json(await buildAttribution());
   } catch (e) {
     console.error('[attribution]', e.message);
@@ -1772,7 +1777,7 @@ app.get('/api/whose-land', async (req, res) => {
 app.get('/api/news', async (_req, res) => {
   // Penjadwal menyegarkan berita tiap 10 menit; cache CDN 60 detik sudah
   // cukup meredam lonjakan tanpa membuat artikel baru tertahan lama.
-  try { res.set('Cache-Control', 'public, max-age=60'); res.json(await getNews()); }
+  try { res.set('Cache-Control', `public, max-age=${CONFIG.CACHE_TTL.news}`); res.json(await getNews()); }
   catch { res.status(502).json({ ok: false, articles: [], message: 'Umpan berita gagal dimuat.' }); }
 });
 
@@ -1823,62 +1828,63 @@ app.get('/api/ask', async (req, res) => {
  */
 const scheduler = new Scheduler();
 
+// Fase 2.1: interval penjadwal dari config terpusat (bisa override via env)
 scheduler
   .register('quake', {
     label: 'Gempa bumi (BMKG)',
-    everyMs: 2 * 60 * 1000,
+    everyMs: CONFIG.SCHEDULER_INTERVALS.quake,
     critical: true,
-    run: () => fetchQuakes(fetchWithTimeout)
+    run: () => fetchQuakes(fetchWithRetry)
   })
   .register('tsunami', {
     label: 'Buletin tsunami (NOAA PTWC)',
-    everyMs: 10 * 60 * 1000,
+    everyMs: CONFIG.SCHEDULER_INTERVALS.tsunami,
     critical: true,
-    run: () => fetchTsunamiBulletins(fetchWithTimeout)
+    run: () => fetchTsunamiBulletins(fetchWithRetry)
   })
   .register('news', {
     label: 'Berita (Google Berita)',
-    everyMs: 10 * 60 * 1000,
+    everyMs: CONFIG.SCHEDULER_INTERVALS.news,
     run: () => googleNews().catch(() => gdeltNews())
   })
   .register('hotspots', {
     label: 'Titik api (NASA FIRMS)',
-    everyMs: 10 * 60 * 1000,
+    everyMs: CONFIG.SCHEDULER_INTERVALS.hotspots,
     critical: true,
     run: () => getHotspotsRaw()
   })
   .register('shelter', {
     label: 'Pengungsi (BNPB)',
-    everyMs: 30 * 60 * 1000,
-    run: () => fetchShelters(fetchWithTimeout)
+    everyMs: CONFIG.SCHEDULER_INTERVALS.shelter,
+    run: () => fetchShelters(fetchWithRetry)
   })
   .register('volcano', {
     label: 'Gunung api & sebaran abu',
-    everyMs: 30 * 60 * 1000,
+    everyMs: CONFIG.SCHEDULER_INTERVALS.volcano,
     critical: true,
-    run: () => volcanicAsh(fetchWithTimeout, pvmbgStatus, eruptionReports)
+    run: () => volcanicAsh(fetchWithRetry, pvmbgStatus, eruptionReports)
   })
   .register('pvmbg', {
     label: 'Status resmi PVMBG (MAGMA)',
-    everyMs: 3 * 60 * 60 * 1000,
-    run: () => fetchPvmbgStatus(fetchWithTimeout)
+    everyMs: CONFIG.SCHEDULER_INTERVALS.pvmbg,
+    run: () => fetchPvmbgStatus(fetchWithRetry)
   })
   .register('eruption', {
     // Laporan pos pengamatan adalah satu-satunya bukti resmi bahwa sebuah
     // gunung benar-benar meletus, dan menentukan apakah sebaran abu digambar.
     // Rentetan erupsi bisa dimulai kapan saja, jadi intervalnya rapat.
     label: 'Laporan letusan pos pengamatan',
-    everyMs: 10 * 60 * 1000,
+    everyMs: CONFIG.SCHEDULER_INTERVALS.eruption,
     critical: true,
-    run: () => fetchEruptions(fetchWithTimeout)
+    run: () => fetchEruptions(fetchWithRetry)
   })
   .register('drought', {
     // Kekeringan berkembang dalam hitungan minggu, dan arsip curah hujan
     // sendiri tertinggal sehari. Menariknya lebih sering hanya membebani
     // sumber tanpa menghasilkan angka yang berbeda.
     label: 'Kekeringan & El Nino',
-    everyMs: 6 * 60 * 60 * 1000,
-    run: () => fetchDrought(fetchWithTimeout, PROVINCE_SITES)
+    everyMs: CONFIG.SCHEDULER_INTERVALS.drought,
+    run: () => fetchDrought(fetchWithRetry, PROVINCE_SITES)
   });
 
 /**
@@ -1900,7 +1906,7 @@ app.get('/api/cron', async (req, res) => {
   try {
     // Batas fungsi Vercel 60 detik; sisakan ruang untuk menyusun balasan
     // agar cron tidak pernah dibunuh di tengah jalan dan terbaca "gagal".
-    const r = await scheduler.tick({ force: req.query.force === '1', budgetMs: 45000 });
+    const r = await scheduler.tick({ force: req.query.force === '1', budgetMs: CONFIG.TIMEOUTS.cronBudgetMs });
     res.set('Cache-Control', 'no-store');
     res.json({ ok: true, ...r });
   } catch {
@@ -1943,7 +1949,7 @@ app.get('/api/hazard', async (_req, res) => {
     if (!quakes && !tsunami && !shelters) {
       return res.status(502).json({ error: 'Data kebencanaan tidak tersedia.' });
     }
-    res.set('Cache-Control', 'public, max-age=60');
+    res.set('Cache-Control', `public, max-age=${CONFIG.CACHE_TTL.hazard}`);
     res.json({ updatedAt: new Date().toISOString(), quakes, tsunami, shelters });
   } catch {
     res.status(502).json({ error: 'Data kebencanaan tidak tersedia.' });
@@ -2369,9 +2375,20 @@ let indexCache = null;
 function renderIndex() {
   if (indexCache) return indexCache;
   const v = getAssetVersion();
-  const html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
+  // Fase 2.1: label sudut peta dari BBOX config, bukan hardcoded
+  const corners = BBOX_CORNERS; // { nw, ne, sw, se } dari lib/config.js
+  let html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
     .replace(/(href|src)="\/(app\.css|app\.js|wind-particles\.js)"/g,
-      (_m, attr, file) => `${attr}="/${file}?v=${v}"`);
+      (_m, attr, file) => `${attr}="${file}?v=${v}"`);
+  // Inject BBOX corners ke HTML (fallback jika JS belum load)
+  try {
+    html = html.replace(/<span class="map-corner tl"[^>]*>[^<]*<\/span>/, `<span class="map-corner tl" aria-hidden="true" data-corner="nw">${corners.nw}</span>`);
+    html = html.replace(/<span class="map-corner tr"[^>]*>[^<]*<\/span>/, `<span class="map-corner tr" aria-hidden="true" data-corner="ne">${corners.ne}</span>`);
+    html = html.replace(/<span class="map-corner bl"[^>]*>[^<]*<\/span>/, `<span class="map-corner bl" aria-hidden="true" data-corner="sw">${corners.sw}</span>`);
+    html = html.replace(/<span class="map-corner br"[^>]*>[^<]*<\/span>/, `<span class="map-corner br" aria-hidden="true" data-corner="se">${corners.se}</span>`);
+  } catch (e) {
+    console.warn('[renderIndex] gagal inject corners:', e.message);
+  }
   indexCache = html;
   return html;
 }

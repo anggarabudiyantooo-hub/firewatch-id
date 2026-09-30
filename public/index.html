@@ -215,12 +215,14 @@
         <span class="fs-txt">FULL</span>
       </button>
     </div>
-      <div class="map-wrap">
+      <div class="map-wrap" id="mapWrap">
         <div id="map" role="region" aria-label="Peta kejadian bencana Indonesia: gunung api, gempa, titik api, dan sebaran asap" aria-describedby="mapA11y"></div>
         <p id="mapA11y" class="sr-only">Peta ini dapat digeser dengan tombol panah dan diperbesar dengan tombol tambah dan kurang setelah difokuskan. Seluruh isinya juga tersedia dalam bentuk teks pada panel Kejadian aktif dan Analisis wilayah di bawah peta.</p>
-        <span class="map-corner tr" aria-hidden="true">5.5&deg;N 141&deg;E</span>
-        <span class="map-corner bl" aria-hidden="true">11&deg;S 95&deg;E</span>
-        <span class="map-corner br" aria-hidden="true">11&deg;S 141&deg;E</span>
+        <!-- Fase 2.1: label sudut peta diturunkan dari BBOX (config), bukan hardcoded -->
+        <span class="map-corner tl" aria-hidden="true" data-corner="nw">6.5&deg;N 94.5&deg;E</span>
+        <span class="map-corner tr" aria-hidden="true" data-corner="ne">6.5&deg;N 141.5&deg;E</span>
+        <span class="map-corner bl" aria-hidden="true" data-corner="sw">11.5&deg;S 94.5&deg;E</span>
+        <span class="map-corner br" aria-hidden="true" data-corner="se">11.5&deg;S 141.5&deg;E</span>
         <div id="confSummary" class="conf-summary" aria-live="polite"></div>
         <div id="airLegend" class="air-legend" hidden aria-live="polite"></div>
         <div id="ashLegend" class="ash-legend" hidden aria-live="polite"></div>

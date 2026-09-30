@@ -66,6 +66,43 @@
   var nf = new Intl.NumberFormat('id-ID');
 
   /* ---------- peta ---------- */
+  // Fase 2.1: BBOX dari config terpusat (harus sinkron dengan server lib/config.js)
+  var BBOX = { west: 94.5, south: -11.5, east: 141.5, north: 6.5 };
+  function fmtLat(lat) {
+    return (lat >= 0 ? lat + '°N' : Math.abs(lat) + '°S');
+  }
+  function fmtLon(lon) {
+    return (lon >= 0 ? lon + '°E' : Math.abs(lon) + '°W');
+  }
+  function setMapCorners(bbox) {
+    var corners = {
+      nw: fmtLat(bbox.north) + ' ' + fmtLon(bbox.west),
+      ne: fmtLat(bbox.north) + ' ' + fmtLon(bbox.east),
+      sw: fmtLat(bbox.south) + ' ' + fmtLon(bbox.west),
+      se: fmtLat(bbox.south) + ' ' + fmtLon(bbox.east)
+    };
+    // Update span[data-corner]
+    var mapWrap = document.getElementById('mapWrap');
+    if (mapWrap) {
+      var els = mapWrap.querySelectorAll('[data-corner]');
+      for (var i = 0; i < els.length; i++) {
+        var key = els[i].getAttribute('data-corner');
+        if (corners[key]) els[i].textContent = corners[key];
+      }
+    }
+    // Fallback: update legacy .map-corner.tr etc jika masih ada tanpa data-corner
+    var legacy = {
+      'tr': corners.ne,
+      'bl': corners.sw,
+      'br': corners.se
+    };
+    for (var cls in legacy) {
+      var el = document.querySelector('.map-corner.' + cls + ':not([data-corner])');
+      if (el) el.textContent = legacy[cls];
+    }
+  }
+  setMapCorners(BBOX);
+
   var map = L.map('map', { zoomControl: false, minZoom: 4, maxZoom: 12, worldCopyJump: false })
     .setView([-2.2, 117.5], 5);
   L.control.zoom({ position: 'bottomleft' }).addTo(map);

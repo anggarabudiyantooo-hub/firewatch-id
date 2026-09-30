@@ -1027,15 +1027,16 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
     linear-gradient(90deg,rgba(120,140,165,.07) 1px,transparent 1px);
   background-size:48px 48px,48px 48px;
 }
-/* Label koordinat di empat sudut peta. */
+/* Label koordinat di empat sudut peta — Fase 2.1: diturunkan dari BBOX config, bukan hardcoded.
+   ::before dikosongkan (grid ada di ::after), semua 4 sudut via span[data-corner] yang diisi JS. */
 .map-wrap::before{
-  content:"5.5°N 95°E";position:absolute;top:6px;left:10px;z-index:401;
-  color:var(--line-3);font-size:9px;letter-spacing:.06em;pointer-events:none;
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:399;
 }
 .map-corner{
   position:absolute;z-index:401;color:var(--line-3);font-size:9px;
   letter-spacing:.06em;pointer-events:none;
 }
+.map-corner.tl{top:6px;left:10px}
 .map-corner.tr{top:6px;right:10px}
 .map-corner.bl{bottom:22px;left:10px}
 .map-corner.br{bottom:22px;right:10px}
