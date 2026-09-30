@@ -1171,34 +1171,48 @@
     }
 
     /* --- gempa terbaru --- */
+    // Kepala kartu mengikuti struktur prototipe audit: magnitudo sebagai
+    // angka utama berkelas .t (15 px) dengan tingkat kegempaan di sampingnya,
+    // lalu baris .s dan .m. Sebelumnya di sini disuntikkan blok .hz-block /
+    // .hz-head / .hz-title / .hz-badge / .hz-main / .hz-sub / .hz-cards yang
+    // tidak punya satu pun aturan CSS: magnitudo hanya tampil sebagai lencana
+    // kecil, judul "Gempa terkini" muncul dua kali (markup + suntikan), dan
+    // tiga angka ringkasnya menumpuk vertikal alih-alih berjajar.
     if (q && q.latest) {
       var L = q.latest;
-      var box = el('div', 'hz-block');
-      var hd = el('div', 'hz-head');
-      hd.appendChild(el('span', 'hz-title', 'Gempa terkini'));
-      var badge = el('span', 'hz-badge', 'M ' + (L.magnitude !== null ? L.magnitude : '-'));
-      badge.style.background = L.color;
-      hd.appendChild(badge);
-      box.appendChild(hd);
-
-      box.appendChild(el('div', 'hz-main', L.area || '-'));
-      box.appendChild(el('div', 'hz-sub',
-        [L.dateLabel, L.depthKm !== null ? 'kedalaman ' + L.depthKm + ' km' : null,
-          L.severityLabel].filter(Boolean).join(' · ')));
-
-      if (L.potensi) {
-        var p = el('div', 'hz-note' + (L.tsunami ? ' hz-alert' : ''));
-        p.textContent = 'Status BMKG: ' + L.potensi;
-        box.appendChild(p);
+      var isi = $('hazardBody');
+      if (isi) {
+        clear(isi);
+        var gt = el('span', 't');
+        gt.style.cssText = 'font-size:15px;display:block;margin-top:4px';
+        gt.appendChild(document.createTextNode(
+          'M ' + (L.magnitude !== null && L.magnitude !== undefined ? L.magnitude : '—') + ' '));
+        if (L.severityLabel) {
+          var gsev = el('span', 't-tertiary', L.severityLabel);
+          gsev.style.cssText = 'font-weight:400;font-size:11px';
+          gt.appendChild(gsev);
+        }
+        isi.appendChild(gt);
+        isi.appendChild(el('span', 's',
+          [L.area, L.dateLabel,
+            L.depthKm !== null && L.depthKm !== undefined ? 'kedalaman ' + L.depthKm + ' km' : null]
+            .filter(Boolean).join(' · ')));
+        if (L.felt) isi.appendChild(el('span', 'm', 'Dirasakan: ' + L.felt));
+        if (L.potensi) {
+          var gnote = el('span', 'm');
+          var gb = el('b', L.tsunami ? 't-danger' : 't-nominal',
+            'Status BMKG: ' + L.potensi);
+          gnote.appendChild(gb);
+          isi.appendChild(gnote);
+        }
       }
-      if (L.felt) box.appendChild(el('div', 'hz-note', 'Dirasakan: ' + L.felt));
-
-      var grid = el('div', 'hz-cards');
-      grid.appendChild(hazardCard(nf.format(q.counts.total), 'gempa tercatat'));
-      grid.appendChild(hazardCard(nf.format(q.counts.kuat), 'magnitudo ≥ 5'));
-      grid.appendChild(hazardCard(nf.format(q.counts.tsunami), 'berpotensi tsunami'));
-      box.appendChild(grid);
-      body.appendChild(box);
+      // Angka ringkas mengisi .metric pada kartu "Tsunami & pengungsi" yang
+      // sudah ada di markup. Sebelumnya nilainya tertulis tetap di HTML
+      // (0 / 3 / 0) dan tidak pernah ikut berubah saat data bergerak.
+      var mkT = $('hzTsunami'), mkQ = $('hzQuake'), mkS = $('hzStrong');
+      if (mkT) mkT.textContent = nf.format(q.counts.tsunami);
+      if (mkQ) mkQ.textContent = nf.format(q.counts.total);
+      if (mkS) mkS.textContent = nf.format(q.counts.kuat);
     }
 
     /* --- tsunami / lembaga asing --- */
@@ -1248,8 +1262,7 @@
         if (ev.topAreas && ev.topAreas.length) {
           var max = ev.topAreas[0].people || 1;
           ev.topAreas.forEach(function (a, i) {
-            sb.appendChild(makeRow(i + 1, a.area, nf.format(a.people) + ' jiwa',
-              null, null, (a.people / max) * 100, null));
+            sb.appendChild(makeRow(i + 1, a.area, nf.format(a.people), 'jiwa'));
           });
         }
         sb.appendChild(el('div', 'hz-note',
@@ -1523,7 +1536,7 @@
     // Fase 2.2: alert kritis menonjol di atas
     if (s.criticalAlerts && s.criticalAlerts.length) {
       var alertBox = el('div', 'st-alert-box');
-      alertBox.style.cssText = 'background:rgba(239,68,68,0.15);border:1px solid #ef4444;border-radius:8px;padding:10px 12px;margin-bottom:12px;color:#fca5a5;font-size:0.85rem';
+      
       alertBox.appendChild(el('div', '', '⚠️ ' + s.criticalAlerts.length + ' tugas kritis gagal berturut:'));
       s.criticalAlerts.forEach(function (a) {
         alertBox.appendChild(el('div', '', '• ' + a.id + ': ' + a.message));
@@ -1534,7 +1547,7 @@
     // Fase 2.2: ringkasan kuota & log
     if (s.quota || s.summary) {
       var qBox = el('div', 'st-quota');
-      qBox.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;font-size:0.78rem;color:var(--muted)';
+      
       if (s.quota) {
         var qText = 'Kuota: 429=' + (s.quota['429']||0) + ' · 5xx=' + (s.quota['5xx']||0) + ' · total=' + (s.quota.total||0);
         if (s.quota.last429At) qText += ' · terakhir 429: ' + s.quota.last429At.slice(11,19);
@@ -1546,38 +1559,40 @@
       body.appendChild(qBox);
     }
 
+    // Baris per sumber mengikuti bentuk audit: .kv dengan label di kiri dan
+    // waktu di kanan (justify-content:space-between sudah ada di app.css).
+    // Sebelumnya tiap sumber dibungkus kartu .st-card berisi .st-top, .st-dot,
+    // .st-name, .st-age, .st-every — lima kelas tanpa satu pun aturan CSS —
+    // sehingga label dan waktunya menempel menjadi "Gempa bumi (BMKG)1 menit
+    // lalu" dan bintang penanda tugas kritis menggantung di ujung teks.
     s.tasks.forEach(function (t) {
-      var c = el('div', 'st-card' + (t.healthy ? '' : ' st-bad') + (t.alert ? ' st-alert' : ''));
-      if (t.alert) c.style.cssText = (c.style.cssText||'') + ';border-color:#ef4444;box-shadow:0 0 0 1px rgba(239,68,68,0.3)';
-      var top = el('div', 'st-top');
-      var dot = el('i', 'st-dot');
-      dot.style.background = t.healthy ? '#22c55e' : t.consecutiveFails >= 3 ? '#ef4444' : '#f59e0b';
-      top.appendChild(dot);
-      var nameSpan = el('span', 'st-name', t.label);
-      if (t.critical) { nameSpan.textContent += ' ★'; nameSpan.title = 'Kritis'; }
-      top.appendChild(nameSpan);
-      c.appendChild(top);
-      c.appendChild(el('div', 'st-age', t.ageLabel + (t.consecutiveFails ? ' · gagal ' + t.consecutiveFails + 'x' : '')));
-      c.appendChild(el('div', 'st-every', 'diperbarui ' + t.everyLabel + ' · run ' + t.runs + '/' + t.fails));
-      if (t.alert) {
-        var alertEl = el('div', 'st-task-alert');
-        alertEl.style.cssText = 'color:#fca5a5;font-size:0.75rem;margin-top:4px';
-        alertEl.textContent = t.alert;
-        c.appendChild(alertEl);
+      var row = el('div', 'kv');
+      // el(tag, cls, text) — argumen kedua adalah KELAS, bukan teks.
+      var lab = el('span', null, t.label);
+      if (t.critical) {
+        var star = el('b', 't-alert', ' ★');
+        star.title = 'Tugas kritis';
+        lab.appendChild(star);
       }
-      body.appendChild(c);
+      if (!t.healthy) lab.classList.add('st-bad');
+      row.appendChild(lab);
+      row.appendChild(el('b', null,
+        t.ageLabel + (t.consecutiveFails ? ' · gagal ' + t.consecutiveFails + '×' : '')));
+      row.title = 'Diperbarui ' + t.everyLabel + ' · run ' + t.runs + '/' + t.fails;
+      body.appendChild(row);
+      if (t.alert) body.appendChild(el('div', 'st-task-alert', t.alert));
     });
 
     // Fase 2.2: log terstruktur terbaru
     if (s.recentLogs && s.recentLogs.length) {
       var logBox = el('div', 'st-logs');
-      logBox.style.cssText = 'margin-top:12px;border-top:1px solid var(--border);padding-top:8px;max-height:160px;overflow:auto';
+      
       var logTitle = el('div', '', 'Log terbaru:');
-      logTitle.style.cssText = 'font-size:0.78rem;color:var(--muted);margin-bottom:4px';
+      
       logBox.appendChild(logTitle);
       s.recentLogs.slice(0,10).forEach(function (lg) {
         var l = el('div', 'st-log');
-        l.style.cssText = 'font-size:0.72rem;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:' + (lg.level==='critical'?'#fca5a5':lg.level==='warn'?'#fcd34d':lg.level==='error'?'#fb7185':'var(--muted)') + ';padding:2px 0';
+      l.className = 'st-log st-log-' + (lg.level || 'info');
         l.textContent = (lg.at?lg.at.slice(11,19):'') + ' [' + (lg.level||'info') + '] ' + (lg.task||'') + ' ' + (lg.message||'').slice(0,120);
         l.title = JSON.stringify(lg);
         logBox.appendChild(l);
@@ -2194,39 +2209,72 @@
   });
 
   /* ---------- daftar samping ---------- */
-  function makeRow(rank, title, sub, pillText, pillCls, barPct, onClick) {
-    var row = el('button', 'row'); row.type = 'button';
-    if (rank) row.appendChild(el('span', 'row-rank', rank));
-    var main = el('div', 'row-main');
-    main.appendChild(el('div', 'row-t', title));
-    main.appendChild(el('div', 'row-s', sub));
-    if (barPct !== null && barPct !== undefined) {
-      var bar = el('div', 'bar'); var fill = el('i');
-      fill.style.width = Math.max(2, Math.min(100, barPct)) + '%';
-      bar.appendChild(fill); main.appendChild(bar);
+  // Baris peringkat, mengikuti struktur prototipe audit apa adanya:
+  //   .listrow.rank  →  .no (01)  .nm (nama)  .val (angka)  .a-ago (satuan)
+  // Sebelumnya di sini dibuat .row, .row-rank, .row-main, .row-t, .row-s,
+  // .bar, dan .pill — tujuh kelas yang tidak punya satu pun aturan CSS di
+  // app.css maupun di prototipe, sehingga seluruh daftar yang memakainya
+  // tampil tanpa tata letak. Empat kolomnya sudah ada di audit
+  // (.rank{grid-template-columns:18px 1fr auto auto}).
+  function makeRow(rank, name, value, unit, onClick) {
+    var row = el(onClick ? 'button' : 'div', 'listrow rank');
+    if (onClick) row.type = 'button';
+    if (rank !== null && rank !== undefined) {
+      row.appendChild(el('span', 'no', rank < 10 ? '0' + rank : String(rank)));
     }
-    row.appendChild(main);
-    if (pillText) row.appendChild(el('span', 'pill ' + pillCls, pillText));
+    row.appendChild(el('span', 'nm', name));
+    row.appendChild(el('span', 'val', value));
+    row.appendChild(el('span', 'a-ago', unit || ''));
     if (onClick) row.addEventListener('click', onClick);
     return row;
+  }
+
+  // Kartu ringkas untuk sub-panel yang di audit memakai .grid4/.grid2:
+  //   .card  →  .t (judul + keterangan)  .s (baris kedua)  .m (baris ketiga)
+  function makeCard(title, extra, extraCls, sub, meta, onClick) {
+    var card = el(onClick ? 'button' : 'div', 'card');
+    if (onClick) card.type = 'button';
+    var t = el('span', 't');
+    t.appendChild(document.createTextNode(title));
+    if (extra) {
+      var ex = el('span', extraCls || 't-tertiary', extra);
+      ex.style.fontWeight = '400';
+      t.appendChild(document.createTextNode(' '));
+      t.appendChild(ex);
+    }
+    card.appendChild(t);
+    card.appendChild(el('span', 's', sub || ''));
+    card.appendChild(el('span', 'm', meta || ''));
+    if (onClick) card.addEventListener('click', onClick);
+    return card;
   }
 
   function renderImpactList() {
     var pane = $('paneImpact'); clear(pane);
     var list = state.data ? state.data.impacted : [];
     if (!list.length) { pane.appendChild(el('p', 'empty', 'Tidak ada daerah dengan perkiraan paparan asap saat ini.')); return; }
-    // Konteks singkat supaya angka indeks tidak disalahartikan sebagai ISPU resmi.
-    var note = el('p', 'pane-note',
+    // Kepala ringkas mengikuti pola audit (.micro dengan hitungan), lalu
+    // konteks supaya angka indeks tidak disalahartikan sebagai ISPU resmi.
+    var jml = list.length;
+    pane.appendChild(el('div', 'micro',
+      'Daerah terdampak asap · ' + nf.format(jml) + ' kota/kabupaten · '
+      + 'ETA dari arah angin'));
+    pane.appendChild(el('p', 'pane-note',
       'Perkiraan kota yang berada di jalur sebaran asap, dihitung dari arah angin ' +
       'dan intensitas api. Indeks 0-100 menandakan seberapa kuat paparan, ' +
-      'bukan angka ISPU resmi.');
-    pane.appendChild(note);
-    list.slice(0, 60).forEach(function (r, i) {
-      pane.appendChild(makeRow(i + 1, r.name + ' · ' + r.prov,
-        nf.format(r.nearestKm) + ' km · dari ' + r.fromDir + ' · ' + r.etaShort,
-        r.level, 'p-' + r.level, r.score,
+      'bukan angka ISPU resmi.'));
+    // Audit menampilkan sub-panel ini sebagai grid kartu empat kolom, bukan
+    // daftar peringkat: setiap kota berdiri sendiri dengan jarak, arah angin,
+    // dan perkiraan waktu tiba.
+    var grid = el('div', 'grid4');
+    list.slice(0, 60).forEach(function (r) {
+      grid.appendChild(makeCard(
+        r.name, '· ' + r.prov, 't-tertiary',
+        nf.format(r.nearestKm) + ' km · dari ' + r.fromDir,
+        r.etaShort + ' · intensitas ' + r.level,
         function () { map.setView([r.lat, r.lon], 8); }));
     });
+    pane.appendChild(grid);
   }
 
   function renderAshList() {
@@ -2264,28 +2312,30 @@
         : '')
       + 'Model indikatif, bukan advisory resmi Darwin VAAC.'));
 
-    list.forEach(function (r, i) {
+    // Audit memakai grid kartu dua kolom untuk kolom abu, dengan status
+    // gunung sebagai keterangan di samping namanya.
+    var gridAbu = el('div', 'grid2');
+    list.forEach(function (r) {
       var eta = r.etaH === null ? 'waktu tiba tidak diperkirakan'
         : r.etaH < 1 ? 'tiba <1 jam'
           : r.etaH < 24 ? 'tiba ~' + Math.round(r.etaH) + ' jam' : 'tiba >1 hari';
-      var sub = 'Gunung ' + r.volcano + ' · ' + nf.format(r.nearestKm) + ' km · '
-        + eta + ' · lapisan ' + r.layers.join('/') + ' km'
-        + (r.officialLevel ? ' · ' + r.officialLevel : '');
-      pane.appendChild(makeRow(i + 1, r.name + ' · ' + r.prov, sub,
-        r.level, 'p-' + r.level, r.score,
+      gridAbu.appendChild(makeCard(
+        r.name, r.officialLevel ? '· ' + r.officialLevel : '', 't-alert',
+        'Gunung ' + r.volcano + ' · ' + nf.format(r.nearestKm) + ' km · ' + eta,
+        'Lapisan ' + r.layers.join('/') + ' km · indeks paparan ' + r.score
+        + ' · ' + r.level,
         function () { map.setView([r.lat, r.lon], 8); }));
     });
+    pane.appendChild(gridAbu);
   }
 
   function renderProvList() {
     var pane = $('paneProv'); clear(pane);
     var list = (state.data && state.data.provinceRanking) || [];
     if (!list.length) { pane.appendChild(el('p', 'empty', 'Belum ada data peringkat provinsi.')); return; }
-    var max = list[0].hotspots || 1;
     list.forEach(function (p, i) {
       pane.appendChild(makeRow(i + 1, p.province,
-        nf.format(p.hotspots) + ' titik api · FRP ' + nf.format(p.frp) + ' MW',
-        null, null, (p.hotspots / max) * 100, null));
+        nf.format(p.hotspots), 'titik · FRP ' + nf.format(p.frp) + ' MW'));
     });
   }
 
@@ -2327,9 +2377,8 @@
       // makeRow menghasilkan elemen <button>; menyisipkan tombol lain di
       // dalamnya tidak sah dalam HTML dan perilakunya tidak dapat
       // diandalkan. Barisnya sendiri yang dijadikan pemicu.
-      var row = makeRow(i + 1, p.province,
-        p.dryDays + ' hari tanpa hujan · hujan 30 hari ' + p.rain30mm + ' mm · ' + p.label,
-        'citra', 'row-act', (p.dryDays / max) * 100,
+      var row = makeRow(i + 1, p.province, p.dryDays + ' hari',
+        'tanpa hujan · hujan 30 hari ' + p.rain30mm + ' mm · ' + p.label,
         function () { lihatCitra(p.lat, p.lon, 'moisture'); });
       row.title = 'Lihat citra satelit ' + p.province;
       pane.appendChild(row);
@@ -2364,12 +2413,11 @@
         'Menampilkan ' + nf.format(cm.returned) + ' klaster terbesar dari '
         + nf.format(cm.total) + ' terdeteksi.'));
     }
-    var max = list[0].frp || 1;
     list.forEach(function (c, i) {
       var lvl = c.frp >= 400 ? 'Berat' : c.frp >= 120 ? 'Sedang' : 'Ringan';
       pane.appendChild(makeRow(i + 1, c.count + ' titik api',
-        'FRP ' + nf.format(c.frp) + ' MW · ' + c.lat.toFixed(2) + ', ' + c.lon.toFixed(2),
-        lvl, 'p-' + lvl, (c.frp / max) * 100,
+        nf.format(c.frp) + ' MW',
+        lvl + ' · ' + c.lat.toFixed(2) + ', ' + c.lon.toFixed(2),
         function () { map.setView([c.lat, c.lon], 9); }));
     });
   }
@@ -2401,24 +2449,22 @@
         ? 'Tidak ada titik api yang jatuh di dalam batas konsesi terdata.'
         : 'Analisis atribusi sedang berjalan…'));
     } else {
-      // Fase 3.7 list hemat ruang — ganti card kotak jadi list compact
-      var grid = el('div', 'unit-list');
+      // Baris unit lahan mengikuti struktur prototipe audit:
+      //   .listrow.whois → [.nm + .h] [.chips > .chip] [.val] [.a-ago]
+      // Empat kolomnya (1fr 92px 80px 70px) sudah ada di app.css. Sebelumnya
+      // di sini dibangun .unit, .unit-row, .unit-top, .unit-left, .unit-name,
+      // .unit-group, .unit-right, .tag, .unit-count, .unit-detail — sepuluh
+      // kelas yang tidak punya satu pun aturan CSS, sehingga nama perusahaan,
+      // lencana, jumlah titik, dan rincian lisensi saling menumpuk.
       d.units.forEach(function (u) {
-        var row = el('button', 'unit unit-row'); row.type = 'button';
+        var row = el('button', 'listrow whois'); row.type = 'button';
         row.title = 'Klik untuk zoom ke ' + u.name + ' di peta';
-        var top = el('div', 'unit-top');
-        var left = el('div', 'unit-left');
-        left.appendChild(el('div', 'unit-name', u.name));
-        if (u.group) left.appendChild(el('div', 'unit-group', 'Grup ' + u.group));
-        var right = el('div', 'unit-right');
-        right.appendChild(el('span', 'tag t-' + u.badge, TAGS[u.badge] || u.kind));
-        right.appendChild(el('span', 'unit-count', nf.format(u.hotspotCount) + ' titik'));
-        top.appendChild(left);
-        top.appendChild(right);
-        row.appendChild(top);
 
-        var detail = el('div', 'unit-detail');
+        var who = el('span');
+        who.appendChild(el('span', 'nm', u.name));
+
         var bits = [];
+        if (u.group) bits.push('Grup ' + u.group);
         bits.push(nf.format(Math.round(u.totalFrp)) + ' MW FRP');
         if (u.areaHa) bits.push(nf.format(u.areaHa) + ' ha');
         if (u.tenure) bits.push(u.tenure);
@@ -2426,28 +2472,34 @@
         if (u.status) bits.push(u.status);
         if (u.mineral) bits.push(u.mineral);
         bits.push(u.source + (u.sourceYear ? ' ' + u.sourceYear : ''));
-        detail.textContent = bits.join(' · ');
-        row.appendChild(detail);
+        who.appendChild(el('span', 'h', bits.join(' · ')));
+        row.appendChild(who);
+
+        var chips = el('span', 'chips');
+        chips.appendChild(el('span', 'chip ' + (u.badge || ''),
+          TAGS[u.badge] || u.kind || ''));
+        row.appendChild(chips);
+
+        row.appendChild(el('span', 'val', nf.format(u.hotspotCount) + ' titik'));
+        row.appendChild(el('span', 'a-ago', 'Lihat di peta'));
 
         row.addEventListener('click', function () {
           map.setView([u.lat, u.lon], 10);
           if (!state.concOn) { $('lyConc').checked = true; toggleConc(true); }
           document.querySelector('.map-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
-        grid.appendChild(row);
+        unitPane.appendChild(row);
       });
-      unitPane.appendChild(grid);
     }
 
     if (!d.groups.length) {
       groupPane.appendChild(el('p', 'empty', 'Tidak ada grup korporasi teridentifikasi.'));
     } else {
-      var max = d.groups[0].hotspotCount || 1;
       d.groups.forEach(function (g, i) {
         groupPane.appendChild(makeRow(i + 1, g.group,
-          nf.format(g.hotspotCount) + ' titik api · FRP ' + nf.format(Math.round(g.totalFrp)) +
-          ' MW · ' + g.units + ' unit lahan · ' + g.kinds.join(', '),
-          null, null, (g.hotspotCount / max) * 100, null));
+          nf.format(g.hotspotCount),
+          'titik · FRP ' + nf.format(Math.round(g.totalFrp)) + ' MW · '
+          + g.units + ' unit lahan · ' + g.kinds.join(', ')));
       });
     }
   }
@@ -2470,31 +2522,39 @@
     }
     list.slice(0, 40).forEach(function (a) {
       if (!/^https?:\/\//i.test(a.url)) return;
-      var link = el('a', 'news-item');
+      // Tata letak baris mengikuti audit: satu .listrow.news dengan tiga
+      // kolom tetap (sumber 64px · judul · waktu), memakai .src, .hl, dan
+      // .meta yang aturannya sudah ada di app.css. Sebelumnya di sini
+      // dibangun taksonomi kelas sendiri (.news-item, .news-t, .news-m,
+      // .news-src, .news-age, .news-clock) yang tidak punya aturan CSS,
+      // sehingga sumber, judul, dan dua bentuk waktu saling menempel.
+      var link = el('a', 'listrow news');
       link.href = a.url; link.target = '_blank'; link.rel = 'noopener noreferrer nofollow';
-      link.appendChild(el('div', 'news-t', a.title || '(tanpa judul)'));
-      var meta = el('div', 'news-m');
-      if (a.domain) meta.appendChild(el('span', 'news-src', a.domain));
-      // Berita dari media negara tetangga ditandai jelas supaya pembaca tahu
-      // itu sudut pandang luar, bukan laporan otoritas Indonesia.
-      if (a.foreign && a.country) {
-        meta.appendChild(el('span', 'news-tag news-foreign', a.country));
-      } else if (a.topicLabel && state.newsTopic === 'semua') {
-        meta.appendChild(el('span', 'news-tag', a.topicLabel));
-      }
+      var src = el('span', 'src', a.domain || '');
+      if (a.domain) src.title = a.domain;
+      link.appendChild(src);
+      link.appendChild(el('span', 'hl', a.title || '(tanpa judul)'));
+
       // Waktu terbit ditampilkan lengkap dengan jam WIB dan usia relatif —
       // pada pemantauan bencana, "2 jam lalu" jauh lebih berarti daripada
-      // sekadar tanggal.
+      // sekadar tanggal. Berita dari media negara tetangga ditandai jelas
+      // supaya pembaca tahu itu sudut pandang luar, bukan laporan otoritas.
+      var meta = el('span', 'meta');
+      var bagian = [];
       var ts = a.pubDate ? Date.parse(a.pubDate) : NaN;
       if (isFinite(ts)) {
-        var age = el('span', 'news-age', timeAgo(new Date(ts).toISOString()));
-        age.title = new Date(ts).toLocaleString('id-ID', {
+        bagian.push(timeAgo(new Date(ts).toISOString()));
+        bagian.push(fmtJamWib(ts));
+        meta.title = new Date(ts).toLocaleString('id-ID', {
           day: '2-digit', month: 'short', year: 'numeric',
           hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta'
         }) + ' WIB';
-        meta.appendChild(age);
-        meta.appendChild(el('span', 'news-clock', fmtJamWib(ts)));
       }
+      // Hanya negara asal yang ikut di kolom waktu. Label kategori tidak
+      // diulang di sini karena chip di atas sudah menyatakan kategori yang
+      // sedang aktif — pada audit kolomnya cukup "usia · jam".
+      if (a.foreign && a.country) bagian.push(a.country);
+      meta.textContent = bagian.join(' · ');
       link.appendChild(meta);
       box.appendChild(link);
     });
@@ -2506,10 +2566,14 @@
     var opts = [{ id: 'semua', label: 'Semua', count: state.news.length }]
       .concat(state.newsTopics.filter(function (t) { return t.count > 0; }));
     opts.forEach(function (t) {
-      var b = el('button', 'ntopic' + (state.newsTopic === t.id ? ' active' : ''));
+      // Kelas mengikuti audit apa adanya: .chip / .chip.on, dengan jumlah
+      // sebagai bagian teks ("Semua 200") seperti pada prototipe. Sebelumnya
+      // di sini dipakai kelas .ntopic yang tidak punya aturan CSS sama
+      // sekali, dan angka jumlah ditempel sebagai <i> tanpa jarak sehingga
+      // terbaca "Semua200".
+      var b = el('button', 'chip' + (state.newsTopic === t.id ? ' on' : ''));
       b.type = 'button';
-      b.appendChild(document.createTextNode(t.label));
-      b.appendChild(el('i', null, String(t.count)));
+      b.appendChild(document.createTextNode(t.label + ' ' + String(t.count)));
       b.addEventListener('click', function () {
         state.newsTopic = t.id;
         renderNewsTopics();

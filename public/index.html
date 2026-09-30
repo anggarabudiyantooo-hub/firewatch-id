@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/vendor/leaflet.css" />
 <link rel="stylesheet" href="/app.css" />
 <link rel="stylesheet" href="/v3-fix.css" />
+<link rel="stylesheet" href="/v3-audit.css" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111a24'/%3E%3Cpath d='M16 5c3 5-1 6 1 9 1.4 2.1 4-1 4-1 1.6 2.4 2 4.4 2 6a7 7 0 11-14 0c0-4 3-7 4-9 1.2-2.4 2-4 3-5z' fill='%23ff6b35'/%3E%3C/svg%3E" />
 </head>
 <body class="bloomberg">
@@ -487,7 +488,7 @@
       <div class="dock-panel" id="d-bahaya" role="tabpanel" aria-labelledby="dt-bahaya" hidden>
         <div class="grid3">
           <div class="card"><span class="micro">Gempa terkini</span><div id="hazardBody" class="hazard-body"><p class="empty">Memuat…</p></div><div id="casualtyBox" class="cas-box" hidden></div></div>
-          <div class="card"><span class="micro">Tsunami &amp; pengungsi</span><div class="metric" style="margin-top:6px"><div><b>0</b><span>berpotensi tsunami</span></div><div><b>3</b><span>gempa tercatat</span></div><div><b>0</b><span>mag ≥ 5</span></div></div><span class="s"><b class="t-nominal">Peringatan tsunami: kawasan aman.</b> Tidak ada pengungsian aktif.</span><span class="panel-sub" id="hazardMeta"></span></div>
+          <div class="card"><span class="micro">Tsunami &amp; pengungsi</span><div class="metric" style="margin-top:6px"><div><b id="hzTsunami">—</b><span>berpotensi tsunami</span></div><div><b id="hzQuake">—</b><span>gempa tercatat</span></div><div><b id="hzStrong">—</b><span>mag ≥ 5</span></div></div><span class="s"><b class="t-nominal">Peringatan tsunami: kawasan aman.</b> Tidak ada pengungsian aktif.</span><span class="panel-sub" id="hazardMeta"></span></div>
           <div class="card"><span class="micro">Gas SO₂ · model CAMS · tiap 30 menit</span><div class="so2-intro" style="font-size:11px;color:var(--text-secondary)"><p>Acuan WHO: rata-rata 24 jam sebaiknya tidak melebihi <b>40 µg/m³</b>.</p></div><div class="so2grid" id="so2Grid"></div><p class="fineprint" style="font-size:10px;color:var(--text-tertiary)">Bukan pengukuran fluks kawah langsung oleh PVMBG.</p></div>
         </div>
         <p class="prose" style="font-size:10px;color:var(--text-tertiary);padding-top:9px">Sumber: BMKG · NOAA · PTWC · BNPB · CAMS via Open-Meteo. Gempa bumi diperbarui tiap 2 menit.</p>

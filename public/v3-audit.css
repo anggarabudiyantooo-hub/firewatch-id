@@ -1,0 +1,112 @@
+/* ══════════════════════════════════════════════════════════════════════
+   Pemulihan aturan audit yang hilang.
+
+   Berkas ini dihasilkan dari SIAGA-ID-prototipe-v3.html, bukan ditulis
+   ulang dengan tangan. Setiap aturan di bawah adalah deklarasi yang dipakai
+   prototipe audit tetapi TIDAK ADA di app.css. Deklarasi yang sudah
+   dideklarasikan repo sengaja tidak disalin, supaya tidak ada regresi pada
+   bagian yang sudah berjalan.
+
+   Cara menghasilkannya kembali: python3 work/port_audit.py
+   ══════════════════════════════════════════════════════════════════════ */
+
+.prose{font-family:var(--font-prose)}
+.micro{font:500 9px/1 var(--font-data);letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)}
+.demo .micro.right{margin-left:auto}
+.hr{height:1px;background:var(--hairline);margin:10px var(--card-pad)}
+.a-name{font:650 13px/1.2 var(--font-prose);color:var(--text-primary)}
+.a-sub{font:400 11px/1.35 var(--font-prose);color:var(--text-secondary);display:block}
+.a-ago{font:400 10px/1.7 var(--font-data);color:var(--text-tertiary);white-space:nowrap}
+.calm{margin:auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 8px;border:0!important}
+.calm .dot{width:8px;height:8px}
+.calm b{font:600 13px/1.45 var(--font-prose);color:var(--text-secondary)}
+.calm b span{display:block;font-weight:400;color:var(--text-tertiary);margin-top:2px}
+
+@media (max-width:768px){
+  .clocks,.stamp,.vsep,.label,.demo .micro.right{display:none}
+  .kpi{flex:0 0 148px;scroll-snap-align:start}
+  .kpi-num{font-size:24px}
+  .grid4,.grid3,.grid2{grid-template-columns:1fr}
+}
+
+/* Domain sumber kini lebih panjang daripada contoh di audit ("suarapemerintah"
+   tidak muat di kolom 64px dan menabrak kolom judul). Kolom tetap dipertahankan
+   sesuai audit, isinya dipotong dengan elipsis dan nama penuh tetap tersedia
+   lewat atribut title. */
+.news .src{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Di audit, .card dan .listrow adalah <div>, sehingga tidak terkena gaya
+   bawaan elemen. Di sini keduanya dibuat <button> agar dapat diklik
+   (memindahkan peta ke lokasi), dan <button> membawa perataan teks ke
+   tengah serta tipografi sistem — itulah yang membuat teks kartu dan baris
+   peringkat tampak terpusat. Dikembalikan ke perilaku audit. */
+button.card,button.listrow{
+  text-align:left;font:inherit;width:100%;
+  cursor:pointer;color:inherit;
+  /* background wajib disetel: <button> membawa background:buttonface bawaan
+     yang pada tema gelap menjadi abu-abu terang, sehingga .nm (teks terang)
+     hilang sama sekali di atasnya. */
+  background:transparent;
+  transition:background var(--dur-state),border-color var(--dur-state);
+}
+button.card:hover{background:var(--surface-2);border-color:var(--surface-3)}
+
+/* ── Blok bahaya yang disuntikkan app.js ────────────────────────────────
+   Kartu "Gempa terkini" kini memakai bentuk audit (.t/.s/.m), tetapi blok
+   peringatan tsunami kawasan dan rincian pengungsi tetap disuntikkan dengan
+   kelas .hz-* yang tidak pernah punya aturan CSS. Isinya informasi nyata,
+   jadi kelasnya diberi gaya — bukan dibuang. */
+.hz-block{border-top:1px solid var(--hairline);padding-top:8px;margin-top:8px}
+.hazard-body .hz-block:first-child{border-top:0;padding-top:2px;margin-top:0}
+.hz-head{display:flex;align-items:center;gap:8px;padding-bottom:4px}
+.hz-title{font:500 9px/1 var(--font-data);letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-tertiary)}
+.hz-badge{border-radius:var(--radius-micro);padding:2px 6px;font:700 9px/1.4 var(--font-data);
+  letter-spacing:.06em;text-transform:uppercase;color:#0A0A0C}
+.hz-main{font:600 12px/1.3 var(--font-prose);color:var(--text-primary)}
+.hz-sub{font:400 10.5px/1.45 var(--font-prose);color:var(--text-secondary);padding-bottom:3px}
+.hz-note{font:400 10px/1.5 var(--font-data);color:var(--text-tertiary)}
+.hz-note.hz-alert{color:var(--status-alert)}
+.hz-empty{font:400 11px/1.5 var(--font-prose);color:var(--text-tertiary)}
+.hz-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--card-gap);padding-top:6px}
+.hz-card{background:var(--surface-2);border:1px solid var(--hairline);
+  border-radius:var(--radius-micro);padding:6px 8px}
+.hz-card-t{font:700 15px/1 var(--font-data);color:var(--text-primary);font-variant-numeric:tabular-nums}
+.hz-card-s{font:400 9px/1.5 var(--font-data);letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-tertiary)}
+.hz-bul{padding:4px 0;border-top:1px solid var(--hairline)}
+.hz-bul:first-child{border-top:0}
+.hz-bul-t{font:600 11.5px/1.35 var(--font-prose);color:var(--text-primary);
+  text-decoration:none;display:block}
+.hz-bul-t:hover{color:var(--status-alert)}
+.hz-bul-s{font:400 10.5px/1.45 var(--font-prose);color:var(--text-secondary)}
+
+/* .metric dipakai di kartu "Tsunami & pengungsi" dan panel Sumber; di audit
+   angkanya berjajar mendatar. Dipastikan tetap mendatar dan tidak runtuh. */
+.metric{display:flex;gap:18px;flex-wrap:wrap}
+.metric div{display:flex;flex-direction:column;gap:2px}
+.metric b{font:700 15px/1 var(--font-data);color:var(--text-primary);font-variant-numeric:tabular-nums}
+.metric span{font:400 9px/1 var(--font-data);letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-tertiary)}
+
+/* ── Panel Sumber: sisa blok yang belum punya aturan ─────────────────────
+   Baris per sumber kini memakai .kv (sudah ada di app.css). Blok peringatan,
+   ringkasan kuota, dan log terbaru tetap ada karena memuat informasi nyata,
+   jadi kelasnya diberi gaya — bukan dibuang. */
+#statusBody{padding-top:2px}
+.kv.st-bad span{color:var(--status-alert)}
+.st-alert-box{background:rgba(255,69,58,.12);border:1px solid rgba(255,69,58,.42);
+  border-radius:var(--radius-field);padding:8px 10px;margin:8px 0;
+  font:400 11px/1.5 var(--font-prose);color:var(--text-primary)}
+.st-quota{display:flex;gap:12px;flex-wrap:wrap;padding:6px 0;
+  font:400 10px/1.5 var(--font-data);color:var(--text-tertiary)}
+.st-task-alert{font:400 10.5px/1.45 var(--font-prose);color:var(--status-alert);padding:2px 0 4px}
+.st-logs{margin-top:10px;border-top:1px solid var(--hairline);padding-top:8px;
+  max-height:160px;overflow:auto}
+.st-logs::before{content:"Log terbaru";display:block;font:500 9px/1 var(--font-data);
+  letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary);
+  padding-bottom:5px}
+.st-log{font:400 10px/1.6 var(--font-data);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;color:var(--text-tertiary);padding:1px 0}
+.st-log-critical,.st-log-error{color:var(--status-danger)}
+.st-log-warn{color:var(--status-caution)}
