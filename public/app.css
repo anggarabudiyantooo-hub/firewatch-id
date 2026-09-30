@@ -2964,3 +2964,120 @@ body .unit-name{ font-size:11px !important; }
 body .unit-group{ font-size:9px !important; }
 body .unit-detail{ font-size:9px !important; }
 body .unit-count{ font-size:9px !important; }
+
+/* === Fase 3.8 — Panel fleksibel free floating draggable + resize + font auto-scale + save === */
+.layout-bar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:10px 14px;
+  background:#1a1a1a;
+  border:1px solid #f97316;
+  border-radius:8px;
+  margin:8px 16px;
+  flex-wrap:wrap;
+}
+.layout-bar[hidden]{ display:none !important; }
+.layout-title{ font-size:11px; font-weight:700; letter-spacing:.06em; color:#f97316; }
+.layout-hint{ font-size:10px; color:#888; margin-left:8px; }
+.layout-bar-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+
+/* Edit mode — panels jadi draggable free floating */
+body.layout-edit #main{
+  position:relative;
+  min-height:120vh;
+}
+body.layout-edit .panel,
+body.layout-edit .map-card{
+  position:absolute !important;
+  z-index:10;
+  cursor:default;
+  box-shadow:0 8px 32px rgba(0,0,0,.5) !important;
+  border:1px dashed #f97316 !important;
+  resize:both;
+  overflow:auto;
+  container-type:inline-size;
+  container-name:panel;
+  min-width:200px;
+  min-height:120px;
+}
+body.layout-edit .panel-head{
+  cursor:move !important;
+  user-select:none;
+  touch-action:none;
+  background:rgba(249,115,22,.12) !important;
+  border-bottom:1px dashed rgba(249,115,22,.4) !important;
+}
+body.layout-edit .panel-head::before{
+  content:"⋮⋮";
+  margin-right:6px;
+  color:#f97316;
+  font-size:12px;
+}
+body.layout-edit .map-card{
+  min-width:300px;
+  min-height:300px;
+}
+body.layout-edit .map-wrap{
+  resize:both;
+  overflow:auto;
+}
+
+/* Resize handle visual */
+body.layout-edit .panel::after,
+body.layout-edit .map-card::after{
+  content:"◢";
+  position:absolute;
+  right:2px;
+  bottom:2px;
+  font-size:14px;
+  color:#f97316;
+  pointer-events:none;
+  opacity:.7;
+}
+
+/* Font auto-scale via container query */
+@container panel (max-width: 280px){
+  .panel-head h2{ font-size:9px !important; }
+  .panel-sub{ font-size:7px !important; }
+  .stat-label{ font-size:6px !important; }
+  .stat strong{ font-size:11px !important; }
+  .ev-body, .news, .pane, .unit-detail{ font-size:9px !important; }
+}
+@container panel (min-width: 281px) and (max-width: 380px){
+  .panel-head h2{ font-size:11px !important; }
+  .stat strong{ font-size:13px !important; }
+}
+@container panel (min-width: 500px){
+  .panel-head h2{ font-size:14px !important; }
+  .stat strong{ font-size:18px !important; }
+  .ev-body, .news{ font-size:13px !important; }
+}
+
+/* Free floating saved layout — when not in edit but has saved layout */
+body.layout-free #main{
+  position:relative;
+  min-height:140vh;
+}
+body.layout-free .panel,
+body.layout-free .map-card{
+  position:absolute !important;
+  container-type:inline-size;
+  box-shadow:0 4px 20px rgba(0,0,0,.4);
+}
+body.layout-free .map-card{ z-index:5; }
+
+/* Mobile free floating — stack but still draggable */
+@media (max-width:768px){
+  body.layout-edit #main{ min-height:200vh; }
+  body.layout-edit .panel,
+  body.layout-edit .map-card{
+    min-width:160px;
+    min-height:100px;
+    max-width:calc(100vw - 16px);
+  }
+  .layout-bar{ margin:6px 8px; padding:8px 10px; }
+  .layout-title{ font-size:10px; }
+  .layout-hint{ display:block; margin-left:0; margin-top:4px; }
+}

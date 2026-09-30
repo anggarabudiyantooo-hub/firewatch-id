@@ -25,6 +25,7 @@
     <span class="clock-box"><span class="clock-lab">WIB</span><span id="clockLocal" class="clock-val">--:--:--</span></span>
     <span class="clock-box"><span class="clock-lab">UTC</span><span id="clockUtc" class="clock-val">--:--:--</span></span>
     <span id="updated" class="stamp"></span>
+    <button id="layoutToggle" class="btn btn-ghost" type="button" title="Atur layout panel — drag bebas & resize, simpan sebagai default (L)">✦ ATUR LAYOUT</button>
     <button id="refreshBtn" class="btn btn-primary" type="button">REFRESH</button>
   </div>
 </header>
@@ -36,8 +37,21 @@
 
 <div id="notice" class="notice" hidden role="status"></div>
 
+<div id="layoutBar" class="layout-bar" hidden>
+  <div class="layout-bar-left">
+    <span class="layout-title">✦ MODE ATUR LAYOUT — drag header panel untuk geser, drag sudut kanan-bawah untuk resize, font auto-scale</span>
+    <span class="layout-hint">Desktop & mobile disimpan terpisah · Geser bebas seperti AI popup</span>
+  </div>
+  <div class="layout-bar-actions">
+    <button id="layoutSave" class="btn btn-primary" type="button" title="Simpan layout saat ini ke localStorage browser">💾 SIMPAN LOKAL</button>
+    <button id="layoutExport" class="btn btn-ghost" type="button" title="Export JSON untuk dipatenkan jadi default semua user">⎙ EXPORT JSON</button>
+    <button id="layoutReset" class="btn btn-ghost" type="button" title="Reset ke layout default">↺ RESET</button>
+    <button id="layoutClose" class="btn btn-ghost" type="button" title="Keluar mode atur (L)">✕ SELESAI</button>
+  </div>
+</div>
+
 <main id="main">
-  <section class="stats" aria-label="Ringkasan situasi bencana nasional">
+  <section class="stats" id="statsPanel" aria-label="Ringkasan situasi bencana nasional">
     <article class="stat stat-accent">
       <span class="stat-label">Gunung api meletus</span>
       <strong id="sErupt" class="skel">—</strong>
@@ -296,7 +310,7 @@
         <div id="eventsBody" class="ev-body"><p class="empty">Memeriksa kejadian…</p></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="analysisPanel">
         <header class="panel-head panel-head-tight">
           <h2><span class="pnum">02</span> Analisis wilayah</h2>
         </header>
@@ -383,7 +397,7 @@
   </div><!-- .side-stack -->
   </div><!-- #main-bloomberg-grid -->
 
-  <section class="panel wide panel-edu">
+  <section class="panel wide panel-edu" id="eduPanel">
     <header class="panel-head"><h2><span class="pnum">08</span> Memahami data ini</h2></header>
     <div class="pscroll"><div class="srcgrid">
       <div class="srccard">

@@ -2970,6 +2970,392 @@
     });
   })();
 
+  // Fase 3.8 Panel fleksibel free floating draggable + resize + font auto-scale + save default + mobile
+  (function () {
+    var toggleBtn = $('layoutToggle');
+    var bar = $('layoutBar');
+    var saveBtn = $('layoutSave');
+    var exportBtn = $('layoutExport');
+    var resetBtn = $('layoutReset');
+    var closeBtn = $('layoutClose');
+    if (!toggleBtn || !bar) return;
+
+    var PANEL_IDS = ['mapCard','statsPanel','ctlRow','eventsPanel','analysisPanel','newsPanel','attrSection','hazardPanel','statusPanel','so2Panel','eduPanel','sourcePanel'];
+    var STORAGE_KEY = 'siaga_layout_flex_v1';
+    var isEdit = false;
+    var dragState = null; // {panel, startX, startY, startLeft, startTop, z}
+
+    function isMobileView() { return window.innerWidth <= 768; }
+
+    function getPanels() {
+      var list = [];
+      PANEL_IDS.forEach(function (id) {
+        var el = $(id);
+        if (el) list.push(el);
+      });
+      return list;
+    }
+
+    function getMainRect() {
+      var main = $('main');
+      if (!main) return { left:0, top:0 };
+      var r = main.getBoundingClientRect();
+      return { left: r.left + window.scrollX, top: r.top + window.scrollY, width: r.width, height: r.height };
+    }
+
+    function enterEdit() {
+      if (isEdit) return;
+      isEdit = true;
+      document.body.classList.add('layout-edit');
+      document.body.classList.remove('layout-free');
+      bar.hidden = false;
+      toggleBtn.textContent = '✦ EDIT AKTIF';
+      toggleBtn.classList.add('active');
+
+      var mainRect = getMainRect();
+      var panels = getPanels();
+      // Convert to absolute based on current position
+      panels.forEach(function (p, idx) {
+        if (!p.dataset.origPosition) {
+          p.dataset.origPosition = p.style.position || '';
+          p.dataset.origLeft = p.style.left || '';
+          p.dataset.origTop = p.style.top || '';
+          p.dataset.origWidth = p.style.width || '';
+          p.dataset.origHeight = p.style.height || '';
+        }
+        var rect = p.getBoundingClientRect();
+        // Only convert if not already absolute with saved pos
+        if (p.style.position !== 'absolute' || !p.dataset.flexPlaced) {
+          p.style.position = 'absolute';
+          p.style.left = (rect.left - mainRect.left + window.scrollX) + 'px';
+          p.style.top = (rect.top - mainRect.top + window.scrollY) + 'px';
+          p.style.width = rect.width + 'px';
+          p.style.height = rect.height + 'px';
+          p.style.margin = '0';
+        }
+        p.style.zIndex = 10 + idx;
+        p.dataset.flexPlaced = '1';
+        // Enable resize observer for font auto-scale + map
+        attachResizeObserver(p);
+      });
+
+      // Ensure main has relative and enough height
+      var main = $('main');
+      if (main) {
+        var maxBottom = 0;
+        panels.forEach(function (p) {
+          var top = parseFloat(p.style.top) || 0;
+          var h = parseFloat(p.style.height) || p.offsetHeight;
+          maxBottom = Math.max(maxBottom, top + h);
+        });
+        main.style.minHeight = (maxBottom + 100) + 'px';
+      }
+
+      showHint('Mode atur layout aktif — drag header ⋮⋮ untuk geser, drag sudut kanan-bawah untuk resize. Font auto-scale ikut ukuran panel. Klik SIMPAN LOKAL jika sudah pas.', 5000);
+    }
+
+    function exitEdit() {
+      if (!isEdit) return;
+      isEdit = false;
+      document.body.classList.remove('layout-edit');
+      bar.hidden = true;
+      toggleBtn.textContent = '✦ ATUR LAYOUT';
+      toggleBtn.classList.remove('active');
+      // Keep absolute positions if saved, otherwise they stay as is for free mode
+      var hasSaved = false;
+      try { hasSaved = !!localStorage.getItem(STORAGE_KEY); } catch(e){}
+      if (hasSaved) {
+        document.body.classList.add('layout-free');
+      }
+      showHint('Mode atur selesai — layout tetap free floating. Klik ATUR LAYOUT lagi untuk edit, atau SIMPAN LOKAL untuk patenkan.', 4000);
+    }
+
+    function toggleEdit() {
+      if (isEdit) exitEdit();
+      else enterEdit();
+    }
+
+    // Drag logic for panels
+    function onDragStart(e, panel) {
+      if (!isEdit) return;
+      // Only drag via header
+      var head = panel.querySelector('.panel-head');
+      if (!head) return;
+      // If click on close or button inside header, ignore
+      if (e.target.closest && e.target.closest('button')) return;
+      if (e.target.closest && e.target.closest('.tab')) return;
+      // Must be header or its children
+      if (!head.contains(e.target)) return;
+
+      var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      dragState = {
+        panel: panel,
+        startX: clientX,
+        startY: clientY,
+        startLeft: parseFloat(panel.style.left) || 0,
+        startTop: parseFloat(panel.style.top) || 0,
+        z: parseInt(panel.style.zIndex) || 10
+      };
+      // Bring to front
+      var maxZ = 10;
+      getPanels().forEach(function (p) {
+        var z = parseInt(p.style.zIndex) || 10;
+        if (z > maxZ) maxZ = z;
+      });
+      panel.style.zIndex = maxZ + 1;
+      panel.style.transition = 'none';
+      if (e.type === 'mousedown') e.preventDefault();
+    }
+
+    function onDragMove(e) {
+      if (!dragState) return;
+      var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      var dx = clientX - dragState.startX;
+      var dy = clientY - dragState.startY;
+      var newLeft = dragState.startLeft + dx;
+      var newTop = dragState.startTop + dy;
+      // Clamp within main + viewport a bit
+      var main = $('main');
+      var mainW = main ? main.offsetWidth : window.innerWidth;
+      var maxLeft = mainW - dragState.panel.offsetWidth - 4;
+      var maxTop = (main ? main.offsetHeight : 2000) - 50;
+      newLeft = Math.max(0, Math.min(maxLeft, newLeft));
+      newTop = Math.max(0, Math.min(maxTop, newTop));
+      dragState.panel.style.left = newLeft + 'px';
+      dragState.panel.style.top = newTop + 'px';
+      if (e.type === 'touchmove') e.preventDefault();
+    }
+
+    function onDragEnd() {
+      if (!dragState) return;
+      dragState.panel.style.transition = '';
+      dragState = null;
+      // Update main height
+      var main = $('main');
+      if (main) {
+        var maxBottom = 0;
+        getPanels().forEach(function (p) {
+          var top = parseFloat(p.style.top) || 0;
+          var h = parseFloat(p.style.height) || p.offsetHeight;
+          maxBottom = Math.max(maxBottom, top + h);
+        });
+        main.style.minHeight = (maxBottom + 120) + 'px';
+      }
+      // Invalidate map if mapCard moved/resized
+      if (map && map.invalidateSize) {
+        setTimeout(function(){ map.invalidateSize(); }, 100);
+      }
+    }
+
+    // Attach drag listeners to each panel header
+    function attachDrag(panel) {
+      var head = panel.querySelector('.panel-head');
+      if (!head) return;
+      head.addEventListener('mousedown', function (e) { onDragStart(e, panel); });
+      head.addEventListener('touchstart', function (e) { onDragStart(e, panel); }, { passive:false });
+    }
+
+    // Resize observer for auto-scale font + map
+    var ro = null;
+    try {
+      ro = new ResizeObserver(function (entries) {
+        entries.forEach(function (entry) {
+          var p = entry.target;
+          var w = entry.contentRect.width;
+          var h = entry.contentRect.height;
+          // Auto-scale font via CSS variable --panel-scale
+          var scale = w / 400; // base 400px
+          scale = Math.max(0.7, Math.min(1.4, scale));
+          p.style.setProperty('--panel-scale', scale);
+          // If mapCard, invalidate map
+          if (p.id === 'mapCard' && map && map.invalidateSize) {
+            map.invalidateSize();
+          }
+        });
+      });
+    } catch(e) { ro = null; }
+
+    function attachResizeObserver(panel) {
+      if (!ro) return;
+      try { ro.observe(panel); } catch(e){}
+    }
+
+    // Save layout
+    function saveLayout() {
+      var mode = isMobileView() ? 'mobile' : 'desktop';
+      var data = null;
+      try { data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e){ data = {}; }
+      if (!data.desktop) data.desktop = [];
+      if (!data.mobile) data.mobile = [];
+      var panels = getPanels();
+      var layout = panels.map(function (p) {
+        return {
+          id: p.id,
+          left: p.style.left || '',
+          top: p.style.top || '',
+          width: p.style.width || '',
+          height: p.style.height || '',
+          zIndex: p.style.zIndex || ''
+        };
+      });
+      data[mode] = layout;
+      data.version = 1;
+      data.savedAt = new Date().toISOString();
+      data.mode = mode;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        showHint('Layout ' + mode + ' disimpan lokal — ' + layout.length + ' panel. Export JSON untuk dipatenkan jadi default semua user.', 4000);
+      } catch(e){
+        showHint('Gagal simpan — localStorage penuh atau blocked', 3000);
+      }
+    }
+
+    // Load layout
+    function loadLayout() {
+      var raw = null;
+      try { raw = localStorage.getItem(STORAGE_KEY); } catch(e){ return false; }
+      if (!raw) return false;
+      var data = null;
+      try { data = JSON.parse(raw); } catch(e){ return false; }
+      var mode = isMobileView() ? 'mobile' : 'desktop';
+      var layout = data[mode] || data.desktop;
+      if (!layout || !layout.length) return false;
+      var main = $('main');
+      if (main) main.style.position = 'relative';
+      layout.forEach(function (item) {
+        var p = $(item.id);
+        if (!p) return;
+        p.style.position = 'absolute';
+        if (item.left) p.style.left = item.left;
+        if (item.top) p.style.top = item.top;
+        if (item.width) p.style.width = item.width;
+        if (item.height) p.style.height = item.height;
+        if (item.zIndex) p.style.zIndex = item.zIndex;
+        p.dataset.flexPlaced = '1';
+        attachResizeObserver(p);
+      });
+      document.body.classList.add('layout-free');
+      // Adjust main height
+      var maxBottom = 0;
+      getPanels().forEach(function (p) {
+        var top = parseFloat(p.style.top) || 0;
+        var h = parseFloat(p.style.height) || p.offsetHeight;
+        maxBottom = Math.max(maxBottom, top + h);
+      });
+      if (main) main.style.minHeight = (maxBottom + 120) + 'px';
+      setTimeout(function(){ if (map && map.invalidateSize) map.invalidateSize(); }, 300);
+      return true;
+    }
+
+    // Export JSON
+    function exportLayout() {
+      var raw = null;
+      try { raw = localStorage.getItem(STORAGE_KEY); } catch(e){}
+      if (!raw) {
+        // Export current positions even if not saved
+        var panels = getPanels();
+        var layout = panels.map(function (p) {
+          return {
+            id: p.id,
+            left: p.style.left || '',
+            top: p.style.top || '',
+            width: p.style.width || '',
+            height: p.style.height || '',
+            zIndex: p.style.zIndex || ''
+          };
+        });
+        raw = JSON.stringify({ desktop: layout, mobile: layout, version:1, exportedAt: new Date().toISOString() }, null, 2);
+      } else {
+        try {
+          var obj = JSON.parse(raw);
+          raw = JSON.stringify(obj, null, 2);
+        } catch(e){}
+      }
+      // Try clipboard
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(raw).then(function(){
+          showHint('JSON layout disalin ke clipboard — paste ke docs/layout-default.json untuk dipatenkan', 4000);
+        }).catch(function(){
+          prompt('Copy JSON layout ini untuk dipatenkan sebagai default:', raw);
+        });
+      } else {
+        prompt('Copy JSON layout ini untuk dipatenkan sebagai default:', raw);
+      }
+      console.log('LAYOUT EXPORT:', raw);
+    }
+
+    // Reset layout
+    function resetLayout() {
+      if (!confirm('Reset layout ke default grid? Ini akan hapus simpanan lokal desktop & mobile.')) return;
+      try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+      // Reset styles
+      getPanels().forEach(function (p) {
+        p.style.position = '';
+        p.style.left = '';
+        p.style.top = '';
+        p.style.width = '';
+        p.style.height = '';
+        p.style.zIndex = '';
+        p.style.margin = '';
+        p.dataset.flexPlaced = '';
+        if (p.dataset.origPosition !== undefined) {
+          // restore orig if needed
+        }
+      });
+      var main = $('main');
+      if (main) { main.style.minHeight = ''; main.style.position = ''; }
+      document.body.classList.remove('layout-free');
+      document.body.classList.remove('layout-edit');
+      bar.hidden = true;
+      isEdit = false;
+      toggleBtn.textContent = '✦ ATUR LAYOUT';
+      toggleBtn.classList.remove('active');
+      showHint('Layout direset ke default grid — reload halaman', 3000);
+      setTimeout(function(){ location.reload(); }, 800);
+    }
+
+    // Init drag for all panels
+    getPanels().forEach(function (p) { attachDrag(p); });
+
+    // Global move/end listeners
+    document.addEventListener('mousemove', onDragMove);
+    document.addEventListener('mouseup', onDragEnd);
+    document.addEventListener('touchmove', onDragMove, { passive:false });
+    document.addEventListener('touchend', onDragEnd);
+
+    // Buttons
+    toggleBtn.addEventListener('click', toggleEdit);
+    if (closeBtn) closeBtn.addEventListener('click', exitEdit);
+    if (saveBtn) saveBtn.addEventListener('click', saveLayout);
+    if (exportBtn) exportBtn.addEventListener('click', exportLayout);
+    if (resetBtn) resetBtn.addEventListener('click', resetLayout);
+
+    // Shortcut L
+    document.addEventListener('keydown', function (e) {
+      if (e.key && e.key.toLowerCase() === 'l' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        var ae = document.activeElement;
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+        toggleEdit();
+      }
+    });
+
+    // Load saved layout on startup
+    setTimeout(function(){ loadLayout(); }, 500);
+
+    // Also load on resize to switch desktop/mobile layout if exists
+    var resizeTimer = null;
+    window.addEventListener('resize', function(){
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function(){
+        // If not in edit mode, try to load appropriate layout
+        if (!isEdit) loadLayout();
+        if (map && map.invalidateSize) map.invalidateSize();
+      }, 400);
+    });
+  })();
+
   $('lyQuake').addEventListener('change', function (e) {
     state.quakeOn = e.target.checked;
     if (state.quakeOn) {
