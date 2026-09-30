@@ -198,7 +198,8 @@
     // lapisan atmosfer yang sama, bukan permukaan lawan ketinggian.
     windLevel: 'auto', windLevelUsed: '10m', windMeta: null,
     wind: null, windKey: null, windOn: false, windBusy: false, particles: null, plumeHour: 0,
-    air: null, airKey: null, airOn: false, airBusy: false,
+    air: null, airKey: null, airOn: false, airBusy: false, airPendingQ: null,
+    airMinAqi: 0, airFilteredCount: 0, // Fase 2.5: filter AQI UI friendly
     ash: null, ashOn: false, ashBusy: false, newsAt: '',
     // Harus cocok dengan <option selected> pada #himaSel (nonaktif),
     // jika tidak, state dan tampilan kontrol saling bertentangan.
@@ -438,23 +439,56 @@
 
   /* ---------- kualitas udara (AQI) ---------- */
   // Digambar sebagai sel persegi seukuran grid agar membentuk heatmap.
+  // Fase 2.5: filter AQI + UI friendly + opacity lebih terlihat
   function drawAir() {
     gAir.clearLayers();
-    if (!state.air || !state.air.points.length) return;
+    if (!state.air || !state.air.points || !state.air.points.length) {
+      state.airFilteredCount = 0;
+      return;
+    }
     var half = (state.air.step || 1.5) / 2;
-    state.air.points.forEach(function (p) {
+    var minAqi = state.airMinAqi || 0;
+    var filtered = state.air.points.filter(function (p) { return p.aqi >= minAqi; });
+    state.airFilteredCount = filtered.length;
+
+    // Urutkan: AQI tinggi di atas agar terlihat (gambar terakhir di atas)
+    filtered.sort(function (a, b) { return a.aqi - b.aqi; });
+
+    filtered.forEach(function (p) {
       var bounds = [[p.lat - half, p.lon - half], [p.lat + half, p.lon + half]];
-      var op = p.aqi >= 200 ? 0.3 : p.aqi >= 100 ? 0.22 : p.aqi >= 50 ? 0.15 : 0.09;
+      // Opacity ditingkatkan agar lebih terlihat — sebelumnya 0.09-0.3 terlalu tipis
+      var op = p.aqi >= 300 ? 0.55 : p.aqi >= 200 ? 0.45 : p.aqi >= 150 ? 0.38 : p.aqi >= 100 ? 0.32 : p.aqi >= 50 ? 0.24 : 0.18;
+      var borderOp = p.aqi >= 100 ? 0.35 : 0.18;
       L.rectangle(bounds, {
         pane: 'airPane',
-        color: p.color, weight: 0, fillColor: p.color, fillOpacity: op, interactive: true
+        color: p.color,
+        weight: p.aqi >= 150 ? 1 : 0.6,
+        opacity: borderOp,
+        fillColor: p.color,
+        fillOpacity: op,
+        interactive: true
       }).bindPopup(popupNode('Kualitas udara — US AQI ' + nf.format(p.aqi), [
         'Kategori: ' + p.label,
         p.pm25 !== null ? 'PM2,5: ' + p.pm25 + ' µg/m³' : null,
         p.pm10 !== null ? 'PM10: ' + p.pm10 + ' µg/m³' : null,
-        'Koordinat: ' + p.lat.toFixed(2) + ', ' + p.lon.toFixed(2)
-      ], { warn: airAdvice(p.aqi) })).addTo(gAir);
+        'Koordinat: ' + p.lat.toFixed(2) + ', ' + p.lon.toFixed(2),
+        minAqi > 0 ? 'Filter: AQI ≥ ' + minAqi : null
+      ], { warn: airAdvice(p.aqi) }))
+      .bindTooltip('AQI ' + p.aqi + ' · ' + p.label, {
+        direction: 'top',
+        offset: [0, -4],
+        opacity: 0.9,
+        className: 'aqi-tip'
+      })
+      .addTo(gAir);
     });
+
+    // Update summary di panel jika ada
+    var confBox = $('confSummary');
+    if (confBox && state.airOn && state.air) {
+      // Jangan timpa confSummary bila sedang menampilkan hotspot summary
+      // confSummary dipakai bersama — hanya update jika air layer aktif dan tidak ada hotspot filter aktif
+    }
   }
 
   /* ---------- gunung api & sebaran abu vulkanik ---------- */
@@ -1708,7 +1742,7 @@
   }
 
   function loadAir() {
-    if (!state.airOn || state.airBusy) return Promise.resolve();
+    if (!state.airOn) return Promise.resolve();
     var step = airStepFor(map.getZoom());
     var b = map.getBounds();
     var q = 'step=' + step;
@@ -1716,7 +1750,18 @@
       q += '&west=' + b.getWest().toFixed(2) + '&south=' + b.getSouth().toFixed(2) +
            '&east=' + b.getEast().toFixed(2) + '&north=' + b.getNorth().toFixed(2);
     }
-    if (state.airKey === q) { drawAir(); return Promise.resolve(); }
+    // Fase 2.5: jika key sama, tetap redraw karena filter AQI mungkin berubah — jangan skip renderAirLegend
+    if (state.airKey === q) {
+      drawAir();
+      renderAirLegend();
+      try { if (typeof updateAirCfg === 'function') updateAirCfg(); } catch (e) {}
+      return Promise.resolve();
+    }
+    // Jika sedang sibuk, simpan pending agar tidak miss update saat geser peta cepat
+    if (state.airBusy) {
+      state.airPendingQ = q;
+      return Promise.resolve();
+    }
     state.airBusy = true;
     showHint('Memuat data kualitas udara…');
     return fetchTRetry('/api/air-quality?' + q, { headers: { Accept: 'application/json' } }, 15000, 3)
@@ -1726,7 +1771,7 @@
             var sec = j.retryAfter || 60;
             showHint('Kuota udara tercapai, coba lagi ' + sec + ' detik. Memakai cache terakhir.', 8000);
             // Jika ada cache lama, tetap gambar, jangan kosongkan
-            if (state.air) { drawAir(); renderAirLegend(); }
+            if (state.air) { drawAir(); renderAirLegend(); try { if (typeof updateAirCfg === 'function') updateAirCfg(); } catch (e) {} }
             return Promise.reject(new Error('quota'));
           });
         }
@@ -1737,8 +1782,9 @@
         state.airKey = q;
         drawAir();
         renderAirLegend();
+        try { if (typeof updateAirCfg === 'function') updateAirCfg(); } catch (e) {}
         showHint(d.count
-          ? nf.format(d.count) + ' sel kualitas udara · model CAMS via Open-Meteo.'
+          ? nf.format(d.count) + ' sel kualitas udara (filter: ' + nf.format(state.airFilteredCount) + ' tampil) · model CAMS via Open-Meteo.'
           : 'Tidak ada data kualitas udara pada area ini.', 5000);
       })
       .catch(function (err) {
@@ -1748,27 +1794,130 @@
           showHint('Gagal memuat data kualitas udara. Akan coba lagi saat peta digeser.', 6000);
         }
       })
-      .then(function () { state.airBusy = false; });
+      .then(function () {
+        state.airBusy = false;
+        // Jika ada pending request saat sibuk tadi, jalankan sekarang
+        if (state.airPendingQ && state.airPendingQ !== state.airKey) {
+          var pending = state.airPendingQ;
+          state.airPendingQ = null;
+          // Panggil ulang — akan cek key lagi
+          if (state.airOn) loadAir();
+        } else {
+          state.airPendingQ = null;
+        }
+      });
   }
 
-  // Legenda AQI muncul hanya saat lapisan aktif.
+  // Legenda AQI muncul hanya saat lapisan aktif — Fase 2.5 UI friendly + filter interaktif
   function renderAirLegend() {
     var box = $('airLegend');
     if (!box) return;
     clear(box);
     if (!state.airOn || !state.air || !state.air.legend) { box.hidden = true; return; }
     box.hidden = false;
-    box.appendChild(el('div', 'cs-title', 'Kualitas udara (US AQI)'));
+
+    var total = state.air.count || (state.air.points ? state.air.points.length : 0);
+    var filtered = state.airFilteredCount || total;
+    var minAqi = state.airMinAqi || 0;
+
+    // Header dengan count
+    var head = el('div', 'cs-title');
+    head.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px';
+    var titleSpan = el('span', '', 'Kualitas udara (US AQI)');
+    var countSpan = el('span', 'cs-count');
+    countSpan.style.cssText = 'font-size:10px;color:var(--tx-faint);font-weight:400';
+    countSpan.textContent = filtered === total ? nf.format(total) + ' sel' : nf.format(filtered) + '/' + nf.format(total) + ' sel';
+    head.appendChild(titleSpan);
+    head.appendChild(countSpan);
+    box.appendChild(head);
+
+    // Filter info jika aktif
+    if (minAqi > 0) {
+      var filterInfo = el('div', 'cs-filter-info');
+      filterInfo.style.cssText = 'font-size:10px;color:#fbbf24;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.25);border-radius:6px;padding:4px 7px;margin:4px 0 6px;display:flex;justify-content:space-between;align-items:center';
+      filterInfo.appendChild(el('span', '', 'Filter: AQI ≥ ' + minAqi));
+      var clearBtn = el('button', 'cs-clear');
+      clearBtn.type = 'button';
+      clearBtn.textContent = '✕ Reset';
+      clearBtn.style.cssText = 'background:none;border:0;color:#fbbf24;font-size:10px;cursor:pointer;padding:0 2px';
+      clearBtn.addEventListener('click', function () {
+        state.airMinAqi = 0;
+        var sel = $('airAqiSel');
+        if (sel) sel.value = '0';
+        drawAir();
+        renderAirLegend();
+        showHint('Filter AQI direset — menampilkan semua ' + nf.format(total) + ' sel.', 3000);
+      });
+      filterInfo.appendChild(clearBtn);
+      box.appendChild(filterInfo);
+    }
+
+    // Hitung count per kategori untuk ditampilkan di legenda
+    var catCounts = {};
+    if (state.air.points) {
+      state.air.points.forEach(function (p) {
+        var cat = p.label || 'Tidak diketahui';
+        catCounts[cat] = (catCounts[cat] || 0) + 1;
+      });
+    }
+
     state.air.legend.forEach(function (b, i) {
       var prev = i ? state.air.legend[i - 1].upto : -1;
       var range = b.upto === null ? '> ' + prev : (prev + 1) + '–' + b.upto;
       var row = el('div', 'cs-row');
-      var sw = el('i', 'cs-dot'); sw.style.background = b.color; sw.style.borderRadius = '3px';
+      row.style.cssText = 'cursor:pointer;padding:2px 4px;border-radius:5px;transition:background 0.15s';
+      // Highlight jika row ini sesuai filter aktif
+      var isActive = minAqi > 0 && b.upto !== null && b.upto >= minAqi && (i === 0 || state.air.legend[i-1].upto < minAqi) || (b.upto === null && minAqi > (i ? state.air.legend[i-1].upto : 0)) || (minAqi === 0);
+      // Simpler: highlight semua yang lolos filter
+      var rowMin = i ? state.air.legend[i-1].upto + 1 : 0;
+      var rowMax = b.upto === null ? 999 : b.upto;
+      var passes = rowMax >= minAqi;
+      if (!passes) row.style.opacity = '0.35';
+      if (passes && minAqi > 0) row.style.background = 'rgba(255,255,255,0.06)';
+
+      var sw = el('i', 'cs-dot'); sw.style.background = b.color; sw.style.borderRadius = '3px'; sw.style.width = '12px'; sw.style.height = '12px'; sw.style.flexShrink = '0';
       row.appendChild(sw);
-      row.appendChild(el('span', 'cs-lab', b.label));
-      row.appendChild(el('b', 'cs-num', range));
+      var lab = el('span', 'cs-lab', b.label);
+      lab.style.cssText = 'flex:1;font-size:11px';
+      row.appendChild(lab);
+      var cnt = catCounts[b.label] || 0;
+      var num = el('b', 'cs-num', cnt ? nf.format(cnt) + ' · ' + range : range);
+      num.style.cssText = 'font-size:10px;color:var(--tx-faint);white-space:nowrap';
+      row.appendChild(num);
+
+      // Klik baris legenda untuk filter ke kategori tersebut
+      row.title = 'Klik untuk filter AQI ≥ ' + rowMin;
+      row.addEventListener('click', function () {
+        state.airMinAqi = rowMin;
+        var sel = $('airAqiSel');
+        if (sel) {
+          // Cari option terdekat
+          var opts = [0, 50, 100, 150, 200, 300];
+          var closest = opts.reduce(function (a, b) { return Math.abs(b - rowMin) < Math.abs(a - rowMin) ? b : a; });
+          sel.value = String(closest);
+          state.airMinAqi = closest;
+        }
+        drawAir();
+        renderAirLegend();
+        showHint('Filter AQI ≥ ' + state.airMinAqi + ' — ' + nf.format(state.airFilteredCount) + ' sel ditampilkan. Klik Reset untuk tampil semua.', 4000);
+      });
+
       box.appendChild(row);
     });
+
+    // Footer: sumber + update time
+    var foot = el('div', 'cs-foot');
+    foot.style.cssText = 'margin-top:8px;padding-top:6px;border-top:1px solid var(--line);font-size:9.5px;color:var(--tx-faint);line-height:1.4';
+    if (state.air.updatedAt) {
+      var upd = new Date(state.air.updatedAt);
+      foot.appendChild(el('div', '', 'Update: ' + upd.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB · CAMS via Open-Meteo'));
+    } else {
+      foot.appendChild(el('div', '', 'Sumber: CAMS via Open-Meteo · Skala US EPA'));
+    }
+    if (state.air.step) {
+      foot.appendChild(el('div', '', 'Resolusi: ' + state.air.step + '° (~' + Math.round(state.air.step * 111) + ' km) · Zoom untuk detail'));
+    }
+    box.appendChild(foot);
   }
 
   /* ---------- medan angin ---------- */
@@ -2589,12 +2738,56 @@
     if (state.airOn) {
       map.addLayer(gAir);
       loadAir();
+      updateAirCfg();
     } else {
       map.removeLayer(gAir);
       renderAirLegend();
+      updateAirCfg();
       showHint(null);
     }
   });
+
+  // Fase 2.5: filter AQI — UI friendly
+  function updateAirCfg() {
+    var cntEl = $('airCfgCount');
+    if (!cntEl) return;
+    if (!state.airOn) {
+      cntEl.textContent = 'Aktifkan layer KUALITAS UDARA untuk melihat data';
+      return;
+    }
+    if (!state.air) {
+      cntEl.textContent = 'Memuat data kualitas udara…';
+      return;
+    }
+    var total = state.air.count || (state.air.points ? state.air.points.length : 0);
+    var filtered = state.airFilteredCount || total;
+    var minAqi = state.airMinAqi || 0;
+    if (minAqi === 0) {
+      cntEl.textContent = nf.format(total) + ' sel kualitas udara ditampilkan · Semua AQI';
+    } else {
+      cntEl.textContent = nf.format(filtered) + ' dari ' + nf.format(total) + ' sel (AQI ≥ ' + minAqi + ')';
+    }
+  }
+
+  var airSel = $('airAqiSel');
+  if (airSel) {
+    airSel.addEventListener('change', function (e) {
+      var v = parseInt(e.target.value, 10);
+      if (!isFinite(v)) v = 0;
+      state.airMinAqi = v;
+      if (state.airOn && state.air) {
+        drawAir();
+        renderAirLegend();
+        updateAirCfg();
+        showHint(
+          v === 0
+            ? 'Filter AQI direset — menampilkan semua ' + nf.format(state.air.count || 0) + ' sel.'
+            : 'Filter AQI ≥ ' + v + ' — ' + nf.format(state.airFilteredCount) + ' dari ' + nf.format(state.air.count || 0) + ' sel ditampilkan.',
+          4000
+        );
+      }
+    });
+  }
 
   $('lyAsh').addEventListener('change', function (e) {
     state.ashOn = e.target.checked;

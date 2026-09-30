@@ -203,6 +203,40 @@
         </div>
       </div>
     </div>
+
+    <div class="ctlbox ctlbox-grow">
+      <div class="ctlbox-h ch-info">KUALITAS UDARA</div>
+      <div class="ctlbox-b ctl-cfg">
+        <div class="cfg-g">
+          <span class="cfg-l">FILTER AQI</span>
+          <label class="sr-only" for="airAqiSel">Filter AQI minimum</label>
+          <select id="airAqiSel">
+            <option value="0" selected>SEMUA (AQI ≥0)</option>
+            <option value="50">SEDANG+ (≥50)</option>
+            <option value="100">TIDAK SEHAT (≥100)</option>
+            <option value="150">SANGAT TIDAK SEHAT (≥150)</option>
+            <option value="200">BERBAHAYA (≥200)</option>
+            <option value="300">SANGAT BERBAHAYA (≥300)</option>
+          </select>
+        </div>
+        <div class="cfg-g">
+          <span class="cfg-l">TAMPILAN</span>
+          <div class="cfg-lg" id="airCfgLegend">
+            <span><i class="dot" style="background:#22c55e"></i>BAIK 0-50</span>
+            <span><i class="dot" style="background:#facc15"></i>SEDANG 51-100</span>
+            <span><i class="dot" style="background:#fb923c"></i>TIDAK SEHAT 101-150</span>
+            <span><i class="dot" style="background:#ef4444"></i>BERBAHAYA 151+</span>
+          </div>
+        </div>
+        <div class="cfg-g">
+          <span class="cfg-l">STATUS</span>
+          <div class="cfg-lg" style="flex-direction:column;align-items:flex-start;gap:2px">
+            <span id="airCfgCount" style="font-size:11px;color:var(--tx-faint)">Aktifkan layer KUALITAS UDARA untuk melihat data</span>
+            <span id="airCfgHint" style="font-size:10px;color:var(--tx-faint)">Klik legenda di peta untuk filter cepat · Sumber: CAMS via Open-Meteo</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- Peta melebar penuh, seperti template. Fullscreen via ⛶ FULL button. -->
