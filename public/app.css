@@ -3173,3 +3173,141 @@ body.layout-free #main + .foot,
   font-size:9px;
   color:#666;
 }
+
+/* === Fase 3.10 — Accessibility Audit Fix: contrast 4.5:1 + typography 12px + ARIA === */
+/* Audit: Performance 74, Accessibility 97 fails contrast 0/100, Best Practices 92, SEO 100 */
+/* Fix low contrast #64748b on #191919 (1.5:1) -> need 4.5:1, use #cbd5e1 / #f8fafc on #0f172a */
+:root{
+  --bg-dark:#0f172a;
+  --text-primary:#f8fafc;
+  --text-secondary:#cbd5e1;
+  --text-muted:#94a3b8;
+  /* Override low contrast vars */
+  --tx:#f8fafc !important;
+  --tx-dim:#cbd5e1 !important;
+  --tx-faint:#94a3b8 !important;
+}
+
+/* Contrast & typography updates per audit */
+.topbar{
+  background:var(--bg-dark) !important;
+  color:var(--text-primary) !important;
+}
+.topbar-right .clock-lab,
+.ctlbox-b label.chk span,
+.ev-age,
+.stat-label,
+.panel-sub,
+.clock-lab,
+.tool-label,
+.chk span,
+.ev-detail,
+.news-m,
+.panel-sub,
+.stat-sub{
+  color:var(--text-secondary) !important;
+  font-size:12px !important; /* Increased from 7-9px */
+  line-height:1.4 !important;
+}
+.stat-label{
+  font-size:11px !important;
+  letter-spacing:.06em !important;
+}
+.stat strong{
+  font-size:14px !important;
+  color:var(--text-primary) !important;
+}
+.stat-sub{
+  font-size:11px !important;
+}
+.panel-head h2{
+  font-size:12px !important;
+  color:var(--text-primary) !important;
+}
+.pnum{
+  background:var(--text-secondary) !important;
+  color:var(--bg-dark) !important;
+}
+.ev-body, .pane, .news, .unit-detail, .ask-out{
+  font-size:12px !important;
+  line-height:1.5 !important;
+  color:var(--text-primary) !important;
+}
+.news-item{
+  padding:1rem !important;
+  border-radius:8px !important;
+  background:rgba(255,255,255,0.05) !important;
+  border:1px solid rgba(255,255,255,0.08) !important;
+  margin-bottom:8px !important;
+  transition:background .15s;
+}
+.news-item:hover{
+  background:rgba(255,255,255,0.08) !important;
+}
+.news-t{
+  font-size:13px !important;
+  color:var(--text-primary) !important;
+  line-height:1.4 !important;
+}
+.news-m, .news-src, .news-age{
+  font-size:11px !important;
+  color:var(--text-secondary) !important;
+}
+.chk{
+  font-size:12px !important;
+  color:var(--text-secondary) !important;
+}
+.sel, .ctlbox-b select, .tl-b, .bm{
+  font-size:11px !important;
+  color:var(--text-secondary) !important;
+}
+.cfg-l{
+  font-size:10px !important;
+  color:var(--text-secondary) !important;
+}
+.unit-name{
+  font-size:12px !important;
+  color:var(--text-primary) !important;
+}
+.unit-group, .unit-detail, .unit-count{
+  font-size:11px !important;
+  color:var(--text-secondary) !important;
+}
+.tag{
+  font-size:10px !important;
+}
+.ask-bar input{
+  font-size:13px !important;
+  color:var(--text-primary) !important;
+}
+.ask-bar input::placeholder{
+  color:var(--text-muted) !important;
+}
+.chip{
+  font-size:11px !important;
+  padding:6px 10px !important;
+  border-radius:6px !important;
+}
+/* Map layer labels contrast */
+.map-corner, .legend, .conf-summary, .air-legend, .ash-legend, .hima-info{
+  color:var(--text-secondary) !important;
+  font-size:11px !important;
+  background:rgba(15,23,42,0.85) !important;
+  backdrop-filter:blur(8px);
+  border-radius:6px !important;
+  padding:4px 8px !important;
+}
+.legend span, .legend-tip{
+  color:var(--text-secondary) !important;
+  font-size:11px !important;
+}
+/* Ensure minimum 4.5:1 contrast for all small text */
+.badge, .stamp, .clock-val, .ticker-tag{
+  color:var(--text-primary) !important;
+  font-size:11px !important;
+}
+/* Focus visible for keyboard */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible{
+  outline:2px solid #f97316 !important;
+  outline-offset:2px !important;
+}
