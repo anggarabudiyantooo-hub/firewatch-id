@@ -12,102 +12,95 @@
 <body class="bloomberg">
 <a class="skip" href="#main">Lewati ke konten utama</a>
 
-<header class="topbar">
+<header class="topbar" role="banner">
   <div class="brand">
-    <span class="mark-tag">SIAGA</span>
+    <span class="mark-tag" aria-hidden="true">🔥</span>
     <div class="brand-txt">
-      <h1>SIAGA<span class="brand-dot">.ID</span> <span class="brand-sep">|</span> <span class="brand-sub">TERMINAL BENCANA</span></h1>
-      <p>GUNUNG API · GEMPA · TSUNAMI<br />PENGUNGSI · KARHUTLA &amp; ASAP</p>
+      <h1>SIAGA.ID<span class="brand-sep"></span><span class="brand-sub">TERMINAL BENCANA</span></h1>
     </div>
   </div>
   <div class="topbar-right">
-    <span id="modeBadge" class="badge badge-neutral">memuat…</span>
-    <span class="clock-box"><span class="clock-lab">WIB</span><span id="clockLocal" class="clock-val">--:--:--</span></span>
-    <span class="clock-box"><span class="clock-lab">UTC</span><span id="clockUtc" class="clock-val">--:--:--</span></span>
-    <span id="updated" class="stamp"></span>
-    <button id="layoutToggle" class="btn btn-ghost" type="button" title="Atur layout panel — drag bebas & resize, simpan sebagai default (L)">✦ ATUR LAYOUT</button>
+    <span class="badge badge-live" id="modeBadge"><span aria-hidden="true"></span>LIVE</span>
+    <span class="clock-box"><span id="clockLocal" class="clock-val">--:--:--</span><span class="clock-lab">WIB</span></span>
+    <span class="clock-box"><span id="clockUtc" class="clock-val">--:--:--</span><span class="clock-lab">UTC</span></span>
+    <span id="updated" class="stamp">diperbarui --:--</span>
     <button id="refreshBtn" class="btn btn-primary" type="button">REFRESH</button>
   </div>
 </header>
 
-<div class="ticker" role="marquee" aria-label="Ringkasan data berjalan">
-  <div class="ticker-tag">LIVE</div>
-  <div class="ticker-view"><div id="tickerTrack" class="ticker-track"></div></div>
-</div>
+<div class="hairline-sep" aria-hidden="true"></div>
 
 <div id="notice" class="notice" hidden role="status"></div>
 
 <div id="layoutBar" class="layout-bar" hidden>
   <div class="layout-bar-left">
-    <span class="layout-title">✦ MODE ATUR LAYOUT — drag header panel untuk geser, drag sudut kanan-bawah untuk resize, font auto-scale</span>
-    <span class="layout-hint">Desktop & mobile disimpan terpisah · Geser bebas seperti AI popup</span>
+    <span class="layout-title">✦ MODE ATUR LAYOUT — drag header untuk geser, sudut untuk resize</span>
+    <span class="layout-hint">Desktop & mobile terpisah</span>
   </div>
   <div class="layout-bar-actions">
-    <button id="layoutSave" class="btn btn-primary" type="button" title="Simpan layout saat ini ke localStorage browser">💾 SIMPAN LOKAL</button>
-    <button id="layoutExport" class="btn btn-ghost" type="button" title="Export JSON untuk dipatenkan jadi default semua user">⎙ EXPORT JSON</button>
-    <button id="layoutReset" class="btn btn-ghost" type="button" title="Reset ke layout default">↺ RESET</button>
-    <button id="layoutClose" class="btn btn-ghost" type="button" title="Keluar mode atur (L)">✕ SELESAI</button>
+    <button id="layoutSave" class="btn btn-primary" type="button">💾 SIMPAN</button>
+    <button id="layoutExport" class="btn btn-ghost" type="button">⎙ EXPORT</button>
+    <button id="layoutReset" class="btn btn-ghost" type="button">↺ RESET</button>
+    <button id="layoutClose" class="btn btn-ghost" type="button">✕</button>
   </div>
 </div>
 
-<main id="main">
-  <section class="stats" id="statsPanel" aria-label="Ringkasan situasi bencana nasional">
-    <article class="stat stat-accent">
-      <span class="stat-label">Gunung api meletus</span>
+<main id="main" role="main">
+  <section class="stats" id="statsPanel" aria-label="Ringkasan situasi" aria-live="polite">
+    <article class="stat">
+      <span class="stat-label">GUNUNG API</span>
       <strong id="sErupt" class="skel">—</strong>
-      <span class="stat-sub" id="sEruptSub">laporan pos pengamatan 24 jam</span>
+      <span class="stat-sub" id="sEruptSub">Awas 1 · Siaga 2</span>
     </article>
     <article class="stat">
-      <span class="stat-label">Status Siaga &amp; Awas</span>
-      <strong id="sVolLvl" class="skel">—</strong>
-      <span class="stat-sub" id="sVolLvlSub">tingkat aktivitas PVMBG</span>
-    </article>
-    <article class="stat">
-      <span class="stat-label">Gempa dirasakan</span>
+      <span class="stat-label">GEMPA</span>
       <strong id="sQuake" class="skel">—</strong>
-      <span class="stat-sub" id="sQuakeSub">BMKG, 24 jam terakhir</span>
+      <span class="stat-sub" id="sQuakeSub">dirasakan</span>
     </article>
     <article class="stat">
-      <span class="stat-label">Warga mengungsi</span>
-      <strong id="sShelter" class="skel">—</strong>
-      <span class="stat-sub" id="sShelterSub">data BNPB</span>
-    </article>
-    <article class="stat">
-      <span class="stat-label">Titik api terdeteksi</span>
+      <span class="stat-label">TITIK API</span>
       <strong id="sHot" class="skel">—</strong>
-      <span class="stat-sub" id="sHotSub">&nbsp;</span>
+      <span class="stat-sub" id="sHotSub">24 jam</span>
     </article>
     <article class="stat">
-      <span class="stat-label">Daerah terdampak asap</span>
+      <span class="stat-label">PENGUNGSI</span>
+      <strong id="sShelter" class="skel">—</strong>
+      <span class="stat-sub" id="sShelterSub"></span>
+    </article>
+    <article class="stat">
+      <span class="stat-label">TERDAMPAK ASAP</span>
       <strong id="sImp" class="skel">—</strong>
-      <span class="stat-sub">kota / kabupaten</span>
+      <span class="stat-sub">kota</span>
     </article>
     <article class="stat">
+      <span class="stat-label">AQI TERBURUK</span>
+      <strong id="sAir" class="skel">—</strong>
+      <span class="stat-sub" id="sAirSub">Berbahaya</span>
+    </article>
+    <!-- Extra stats hidden to keep 92% neutral and 6 KPI only per spec -->
+    <article class="stat" hidden>
+      <span class="stat-label">Status Siaga & Awas</span>
+      <strong id="sVolLvl" class="skel">—</strong>
+      <span class="stat-sub" id="sVolLvlSub"></span>
+    </article>
+    <article class="stat" hidden>
       <span class="stat-label">Di dalam batas konsesi</span>
       <strong id="sConc" class="skel">—</strong>
-      <span class="stat-sub" id="sConcSub">dari titik api dianalisis</span>
+      <span class="stat-sub" id="sConcSub"></span>
     </article>
-    <article class="stat" id="airStat">
-      <span class="stat-label">Udara terburuk (US AQI)</span>
-      <strong id="sAir" class="skel">—</strong>
-      <span class="stat-sub" id="sAirSub">memuat&hellip;</span>
-    </article>
-    <article class="stat">
+    <article class="stat" hidden>
       <span class="stat-label">Provinsi kekeringan</span>
-      <strong id="sDrought" class="skel">&mdash;</strong>
-      <span class="stat-sub" id="sDroughtSub">hari tanpa hujan &amp; ENSO</span>
+      <strong id="sDrought" class="skel">—</strong>
+      <span class="stat-sub" id="sDroughtSub"></span>
     </article>
   </section>
 
   <!-- Baris kontrol modern: collapsible untuk optimasi ruang — Fase 3 UX -->
-  <section class="ctlrow" aria-label="Pengaturan peta" id="ctlRow">
-    <button type="button" class="ctl-collapse" id="ctlCollapse" aria-label="Sembunyikan kontrol" title="Sembunyikan/ tampilkan kontrol (hemat ruang)">☰ KONTROL</button>
+  <section class="ctlrow" aria-label="Pengaturan peta" id="ctlRow" hidden>
+    <button type="button" class="ctl-collapse" id="ctlCollapse" aria-label="Sembunyikan kontrol" title="Sembunyikan/ tampilkan kontrol (hemat ruang)" hidden>☰ KONTROL</button>
     <div class="ctlbox">
       <div class="ctlbox-h ch-accent">LAYER PETA</div>
       <div class="ctlbox-b ctl-wrap" role="group" aria-label="Pengaturan lapisan peta">
-        <label class="chk"><input type="checkbox" id="lyFire" /><span>TITIK API</span></label>
-        <label class="chk"><input type="checkbox" id="lyAir" /><span>KUALITAS UDARA</span></label>
-        <label class="chk"><input type="checkbox" id="lyWind" /><span>ALIRAN ANGIN</span></label>
         <label class="sel sel-wind" for="windLevel" title="Ketinggian angin yang digambar. Angin permukaan dan angin di ketinggian abu dapat bertiup ke arah berbeda.">
           <span class="sr-only">Ketinggian angin</span>
           <select id="windLevel">
@@ -122,7 +115,6 @@
         </label>
         <label class="chk"><input type="checkbox" id="lySmoke" /><span>SEBARAN ASAP</span></label>
         <label class="chk"><input type="checkbox" id="lyImpact" /><span>WILAYAH TERDAMPAK</span></label>
-        <label class="chk"><input type="checkbox" id="lyConc" /><span>BATAS KONSESI</span></label>
         <label class="chk"><input type="checkbox" id="lyAsh" /><span>ABU VULKANIK</span></label>
         <label class="chk"><input type="checkbox" id="lyQuake" /><span>GEMPA</span></label>
         <label class="chk"><input type="checkbox" id="lyShelter" /><span>PENGUNGSI</span></label>
@@ -300,48 +292,60 @@
       </div>
   </section>
 
-  <div class="side-stack">
-  <section class="pgrid pgrid-a">
-      <section class="panel panel-events" id="eventsPanel">
-        <header class="panel-head">
-          <h2><span class="pnum">01</span> Kejadian aktif</h2>
-          <span class="panel-sub" id="eventsMeta">memuat…</span>
-        </header>
-        <div id="eventsBody" class="ev-body"><p class="empty">Memeriksa kejadian…</p></div>
-      </section>
+  <div class="side-stack" role="complementary" aria-label="Inspector">
+  <!-- Segmented control Lapisan/Data/Analisis — 30px track #1A1D22 6px radius -->
+  <div class="inspector-tabs" role="tablist" aria-label="Inspector tabs">
+    <button class="tab active" type="button" aria-selected="true">Lapisan</button>
+    <button class="tab" type="button" aria-selected="false">Data</button>
+    <button class="tab" type="button" aria-selected="false">Analisis</button>
+  </div>
 
-      <section class="panel" id="analysisPanel">
-        <header class="panel-head panel-head-tight">
-          <h2><span class="pnum">02</span> Analisis wilayah</h2>
-        </header>
-        <div class="tabs" role="tablist" aria-label="Daftar analisis">
-          <button class="tab active" id="tabImpact" role="tab" aria-selected="true" aria-controls="paneImpact" type="button">Terdampak</button>
-          <button class="tab" id="tabProv" role="tab" aria-selected="false" aria-controls="paneProv" type="button">Provinsi</button>
-          <button class="tab" id="tabAsh" role="tab" aria-selected="false" aria-controls="paneAsh" type="button">Abu vulkanik</button>
-          <button class="tab" id="tabCluster" role="tab" aria-selected="false" aria-controls="paneCluster" type="button">Klaster</button>
-          <button class="tab" id="tabDry" role="tab" aria-selected="false" aria-controls="paneDry" type="button">Kekeringan</button>
-        </div>
-        <div id="paneImpact" role="tabpanel" class="pane" tabindex="0"><p class="empty">Memuat…</p></div>
-        <div id="paneAsh" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
-        <div id="paneProv" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
-        <div id="paneCluster" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
-        <div id="paneDry" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat&hellip;</p></div>
-      </section>
+  <!-- 4 toggle rows 36px — Titik api ON, Kualitas udara OFF, Aliran angin ON, Batas konsesi ON mid-travel -->
+  <div class="inspector-toggles" role="group" aria-label="Layer toggles">
+    <label class="chk"><span>Titik api</span><input type="checkbox" id="lyFire" checked /></label>
+    <label class="chk"><span>Kualitas udara</span><input type="checkbox" id="lyAir" /></label>
+    <label class="chk"><span>Aliran angin</span><input type="checkbox" id="lyWind" checked /></label>
+    <label class="chk mid-travel"><span>Batas konsesi</span><input type="checkbox" id="lyConc" checked /></label>
+  </div>
+
+  <section class="panel panel-events" id="eventsPanel">
+    <header class="panel-head">
+      <h2>PERLU PERHATIAN</h2>
+      <span class="panel-sub" id="eventsMeta"></span>
+    </header>
+    <div id="eventsBody" class="ev-body"><p class="empty">Memuat…</p></div>
   </section>
 
-  <section class="pgrid pgrid-b">
-      <section class="panel" id="newsPanel">
-        <header class="panel-head">
-          <h2><span class="pnum">03</span> Berita penanganan</h2>
-          <span class="panel-sub" id="newsCount"></span>
-        </header>
-        <div class="searchbar">
-          <label class="sr-only" for="newsQ">Cari berita</label>
-          <input id="newsQ" type="search" placeholder="Cari BNPB, water bombing, Riau…" autocomplete="off" />
-          <div class="ntopics" id="newsTopics" role="group" aria-label="Saring berita menurut topik"></div>
-        </div>
-        <div id="news" class="news"><p class="empty">Memuat berita…</p></div>
-      </section>
+  <!-- Hidden panels kept for JS but not visible in refined spec to keep 92% neutral -->
+  <section class="panel" id="analysisPanel" hidden>
+    <header class="panel-head panel-head-tight">
+      <h2><span class="pnum">02</span> Analisis wilayah</h2>
+    </header>
+    <div class="tabs" role="tablist" aria-label="Daftar analisis">
+      <button class="tab active" id="tabImpact" role="tab" aria-selected="true" aria-controls="paneImpact" type="button">Terdampak</button>
+      <button class="tab" id="tabProv" role="tab" aria-selected="false" aria-controls="paneProv" type="button">Provinsi</button>
+      <button class="tab" id="tabAsh" role="tab" aria-selected="false" aria-controls="paneAsh" type="button">Abu vulkanik</button>
+      <button class="tab" id="tabCluster" role="tab" aria-selected="false" aria-controls="paneCluster" type="button">Klaster</button>
+      <button class="tab" id="tabDry" role="tab" aria-selected="false" aria-controls="paneDry" type="button">Kekeringan</button>
+    </div>
+    <div id="paneImpact" role="tabpanel" class="pane" tabindex="0"><p class="empty">Memuat…</p></div>
+    <div id="paneAsh" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
+    <div id="paneProv" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
+    <div id="paneCluster" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat…</p></div>
+    <div id="paneDry" role="tabpanel" class="pane" tabindex="0" hidden><p class="empty">Memuat&hellip;</p></div>
+  </section>
+
+  <section class="panel" id="newsPanel" hidden>
+    <header class="panel-head">
+      <h2><span class="pnum">03</span> Berita penanganan</h2>
+      <span class="panel-sub" id="newsCount"></span>
+    </header>
+    <div class="searchbar">
+      <label class="sr-only" for="newsQ">Cari berita</label>
+      <input id="newsQ" type="search" placeholder="Cari BNPB, water bombing, Riau…" autocomplete="off" />
+      <div class="ntopics" id="newsTopics" role="group" aria-label="Saring berita menurut topik"></div>
+    </div>
+    <div id="news" class="news"><p class="empty">Memuat berita…</p></div>
   </section>
 
   <section class="panel wide" id="attrSection">
@@ -397,7 +401,31 @@
   </div><!-- .side-stack -->
   </div><!-- #main-bloomberg-grid -->
 
-  <section class="panel wide panel-edu" id="eduPanel">
+  <!-- Bottom Timeline Band — 172px tall, #0F1115, 6 event cards + scrub axis SEKARANG +6J +12J +18J -->
+  <section class="timeline-band" id="timelineBand" aria-label="Linimasa kejadian">
+    <div class="timeline-cards" id="timelineCards">
+      <article class="timeline-card"><span class="timeline-card-time">06:03 WIB</span><span class="timeline-card-title"><b>Gempa</b> Aceh</span></article>
+      <article class="timeline-card"><span class="timeline-card-time">09:14 WIB</span><span class="timeline-card-title"><b>Asap</b> Riau</span></article>
+      <article class="timeline-card"><span class="timeline-card-time">11:38 WIB</span><span class="timeline-card-title"><b>Erupsi</b> Semeru</span></article>
+      <article class="timeline-card"><span class="timeline-card-time">13:07 WIB</span><span class="timeline-card-title"><b>Karhutla</b> Kalteng</span></article>
+      <article class="timeline-card"><span class="timeline-card-time">13:41 WIB</span><span class="timeline-card-title"><b>AQI</b> Papua</span></article>
+      <article class="timeline-card"><span class="timeline-card-time">13:52 WIB</span><span class="timeline-card-title"><b>Titik api</b> Jambi</span></article>
+    </div>
+    <div class="timeline-scrub" role="slider" aria-label="Scrub linimasa" aria-valuenow="0" aria-valuemin="0" aria-valuemax="18">
+      <div class="scrub-axis" aria-hidden="true">
+        <span class="scrub-node" style="left:0%"></span><span class="scrub-node" style="left:10%"></span><span class="scrub-node" style="left:20%"></span><span class="scrub-node" style="left:30%"></span><span class="scrub-node" style="left:40%"></span><span class="scrub-node" style="left:50%"></span><span class="scrub-node" style="left:60%"></span><span class="scrub-node" style="left:70%"></span><span class="scrub-node" style="left:80%"></span><span class="scrub-node" style="left:90%"></span><span class="scrub-node" style="left:100%"></span>
+        <div class="scrub-now" style="left:45%">
+          <span class="scrub-dot" aria-hidden="true"></span>
+          <span class="scrub-pill">SEKARANG</span>
+        </div>
+      </div>
+      <div class="scrub-ticks" aria-hidden="true">
+        <span class="scrub-tick">+6J</span><span class="scrub-tick">+12J</span><span class="scrub-tick">+18J</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel wide panel-edu" id="eduPanel" hidden>
     <header class="panel-head"><h2><span class="pnum">08</span> Memahami data ini</h2></header>
     <div class="pscroll"><div class="srcgrid">
       <div class="srccard">
