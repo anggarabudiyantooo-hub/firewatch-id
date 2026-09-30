@@ -2820,65 +2820,32 @@
     });
   })();
 
-  // Fase 3.2 Bloomberg compact DEFAULT + overflow kebawah — user request: jadikan default tapi bisa overflow
+  // Fase 3.5 Bloomberg single design — user request: hapus tombol BLM COMPACT, jadikan satu desain permanen
+  // Normal = compact, tidak ada toggle lagi
   (function () {
-    var btn = $('bloombergToggle');
-    if (!btn) return;
-    var key = 'siaga_bloomberg';
-    var isBloomberg = true; // default compact — prinsip Bloomberg
-    try {
-      var stored = localStorage.getItem(key);
-      if (stored === null) isBloomberg = true; // default true jika belum pernah set
-      else isBloomberg = stored === '1';
-    } catch (e) {}
-    function applyBloomberg(on) {
-      isBloomberg = !!on;
-      document.body.classList.toggle('bloomberg', isBloomberg);
-      btn.classList.toggle('active', isBloomberg);
-      btn.textContent = isBloomberg ? '☷ NORMAL' : 'BLM COMPACT';
-      btn.title = isBloomberg ? 'Keluar mode Bloomberg compact (B) — mode compact default dengan overflow' : 'Mode Bloomberg compact — density tinggi, hemat ruang (B)';
-      try { localStorage.setItem(key, isBloomberg ? '1' : '0'); } catch (e) {}
-      // Pastikan peta selalu terlihat — invalidateSize berkali-kali untuk cegah height 0
-      function fixMap() {
-        try {
-          var mw = document.getElementById('mapWrap');
-          var m = document.getElementById('map');
-          if (mw) {
-            mw.style.height = isBloomberg ? '60vh' : '';
-            mw.style.minHeight = isBloomberg ? '520px' : '';
-          }
-          if (m) {
-            m.style.height = '100%';
-            m.style.minHeight = isBloomberg ? '520px' : '440px';
-          }
-          if (window.map && map && map.invalidateSize) {
-            map.invalidateSize();
-          } else if (map && map.invalidateSize) {
-            map.invalidateSize();
-          }
-        } catch (e) {}
-      }
-      setTimeout(fixMap, 100);
-      setTimeout(fixMap, 350);
-      setTimeout(fixMap, 800);
-      setTimeout(fixMap, 1500);
-      if (isBloomberg) {
-        showHint('Mode Bloomberg compact DEFAULT aktif — peta melebar 60vh, density tinggi, boleh scroll kebawah. Tekan B untuk toggle normal.', 4000);
-      } else {
-        showHint('Mode normal — layout modern lega.', 3000);
-      }
+    try { document.body.classList.add('bloomberg'); } catch (e) {}
+    // Bersihkan localStorage lama siaga_bloomberg agar tidak ganggu
+    try { localStorage.removeItem('siaga_bloomberg'); } catch (e) {}
+    function fixMap() {
+      try {
+        var mw = document.getElementById('mapWrap');
+        var m = document.getElementById('map');
+        if (mw) {
+          mw.style.height = '60vh';
+          mw.style.minHeight = '520px';
+        }
+        if (m) {
+          m.style.height = '100%';
+          m.style.minHeight = '520px';
+        }
+        if (window.map && map && map.invalidateSize) map.invalidateSize();
+        else if (map && map.invalidateSize) map.invalidateSize();
+      } catch (e) {}
     }
-    // Terapkan langsung — default compact
-    applyBloomberg(isBloomberg);
-    btn.addEventListener('click', function () { applyBloomberg(!isBloomberg); });
-    // Shortcut B untuk toggle Bloomberg
-    document.addEventListener('keydown', function (e) {
-      if (e.key && e.key.toLowerCase() === 'b' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        var ae = document.activeElement;
-        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
-        applyBloomberg(!isBloomberg);
-      }
-    });
+    setTimeout(fixMap, 100);
+    setTimeout(fixMap, 350);
+    setTimeout(fixMap, 800);
+    setTimeout(fixMap, 1500);
   })();
 
   $('lyQuake').addEventListener('change', function (e) {
