@@ -3048,7 +3048,7 @@
           var h = parseFloat(p.style.height) || p.offsetHeight;
           maxBottom = Math.max(maxBottom, top + h);
         });
-        main.style.minHeight = (maxBottom + 100) + 'px';
+        main.style.minHeight = (maxBottom + 20) + 'px';
       }
 
       showHint('Mode atur layout aktif — drag header ⋮⋮ untuk geser, drag sudut kanan-bawah untuk resize. Font auto-scale ikut ukuran panel. Klik SIMPAN LOKAL jika sudah pas.', 5000);
@@ -3141,7 +3141,7 @@
           var h = parseFloat(p.style.height) || p.offsetHeight;
           maxBottom = Math.max(maxBottom, top + h);
         });
-        main.style.minHeight = (maxBottom + 120) + 'px';
+        main.style.minHeight = (maxBottom + 20) + 'px';
       }
       // Invalidate map if mapCard moved/resized
       if (map && map.invalidateSize) {
@@ -3246,7 +3246,7 @@
         var h = parseFloat(p.style.height) || p.offsetHeight;
         maxBottom = Math.max(maxBottom, top + h);
       });
-      if (main) main.style.minHeight = (maxBottom + 120) + 'px';
+      if (main) main.style.minHeight = (maxBottom + 20) + 'px';
       setTimeout(function(){ if (map && map.invalidateSize) map.invalidateSize(); }, 300);
       return true;
     }

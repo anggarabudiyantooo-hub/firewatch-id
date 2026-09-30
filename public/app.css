@@ -3058,7 +3058,9 @@ body.layout-edit .map-card::after{
 /* Free floating saved layout — when not in edit but has saved layout */
 body.layout-free #main{
   position:relative;
-  min-height:140vh;
+  min-height:auto !important;
+  padding-bottom:0 !important;
+  margin-bottom:0 !important;
 }
 body.layout-free .panel,
 body.layout-free .map-card{
@@ -3067,6 +3069,15 @@ body.layout-free .map-card{
   box-shadow:0 4px 20px rgba(0,0,0,.4);
 }
 body.layout-free .map-card{ z-index:5; }
+body.layout-free + .foot,
+body.layout-free #main + .foot,
+.layout-free .foot{
+  margin-top:0 !important;
+  padding-top:12px !important;
+}
+/* Hilangkan blank padding bawah */
+#main{ padding-bottom:0 !important; margin-bottom:0 !important; }
+.foot{ margin-top:0 !important; }
 
 /* Mobile free floating — stack but still draggable */
 @media (max-width:768px){
