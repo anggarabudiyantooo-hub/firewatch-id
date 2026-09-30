@@ -2395,51 +2395,44 @@
     if (d.meta && d.meta.disclaimer) $('attrDisclaimer').textContent = d.meta.disclaimer;
 
     if (!d.units.length) {
-      // Nol unit bisa berarti dua hal yang sangat berbeda. Menyatakan
-      // "tidak ada" padahal analisisnya belum jalan adalah klaim keliru.
       unitPane.appendChild(el('p', 'empty', d.analyzed
         ? 'Tidak ada titik api yang jatuh di dalam batas konsesi terdata.'
         : 'Analisis atribusi sedang berjalan…'));
     } else {
+      // Fase 3.7 list hemat ruang — ganti card kotak jadi list compact
       var grid = el('div', 'unit-list');
       d.units.forEach(function (u) {
-        var card = el('button', 'unit'); card.type = 'button';
+        var row = el('button', 'unit unit-row'); row.type = 'button';
+        row.title = 'Klik untuk zoom ke ' + u.name + ' di peta';
         var top = el('div', 'unit-top');
-        var names = el('div');
-        names.appendChild(el('div', 'unit-name', u.name));
-        if (u.group) names.appendChild(el('div', 'unit-group', 'Grup ' + u.group));
-        top.appendChild(names);
-        top.appendChild(el('span', 'tag t-' + u.badge, TAGS[u.badge] || u.kind));
-        card.appendChild(top);
+        var left = el('div', 'unit-left');
+        left.appendChild(el('div', 'unit-name', u.name));
+        if (u.group) left.appendChild(el('div', 'unit-group', 'Grup ' + u.group));
+        var right = el('div', 'unit-right');
+        right.appendChild(el('span', 'tag t-' + u.badge, TAGS[u.badge] || u.kind));
+        right.appendChild(el('span', 'unit-count', nf.format(u.hotspotCount) + ' titik'));
+        top.appendChild(left);
+        top.appendChild(right);
+        row.appendChild(top);
 
-        var m = el('div', 'unit-metrics');
-        [[nf.format(u.hotspotCount), 'titik api'],
-         [nf.format(Math.round(u.totalFrp)), 'total FRP (MW)'],
-         [u.areaHa ? nf.format(u.areaHa) : '—', 'luas (ha)']
-        ].forEach(function (pair) {
-          var box = el('div', 'metric');
-          box.appendChild(el('b', null, pair[0]));
-          box.appendChild(el('span', null, pair[1]));
-          m.appendChild(box);
-        });
-        card.appendChild(m);
-
-        var meta = el('div', 'unit-meta');
+        var detail = el('div', 'unit-detail');
         var bits = [];
-        if (u.tenure) bits.push('Alas hak: ' + u.tenure);
-        if (u.licenseId) bits.push('Izin: ' + u.licenseId);
-        if (u.status) bits.push('Status: ' + u.status);
-        if (u.mineral) bits.push('Komoditas: ' + u.mineral);
-        bits.push('Sumber: ' + u.source + (u.sourceYear ? ' (' + u.sourceYear + ')' : ''));
-        meta.textContent = bits.join(' · ');
-        card.appendChild(meta);
+        bits.push(nf.format(Math.round(u.totalFrp)) + ' MW FRP');
+        if (u.areaHa) bits.push(nf.format(u.areaHa) + ' ha');
+        if (u.tenure) bits.push(u.tenure);
+        if (u.licenseId) bits.push(u.licenseId);
+        if (u.status) bits.push(u.status);
+        if (u.mineral) bits.push(u.mineral);
+        bits.push(u.source + (u.sourceYear ? ' ' + u.sourceYear : ''));
+        detail.textContent = bits.join(' · ');
+        row.appendChild(detail);
 
-        card.addEventListener('click', function () {
+        row.addEventListener('click', function () {
           map.setView([u.lat, u.lon], 10);
           if (!state.concOn) { $('lyConc').checked = true; toggleConc(true); }
           document.querySelector('.map-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
-        grid.appendChild(card);
+        grid.appendChild(row);
       });
       unitPane.appendChild(grid);
     }
