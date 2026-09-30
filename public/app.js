@@ -1587,6 +1587,37 @@
     return z >= 10 ? 0.25 : z >= 9 ? 0.5 : z >= 7 ? 1 : 1.5;
   }
 
+  // Fase 1.3: fetch dengan retry backoff + jitter untuk klien (3 percobaan)
+  function fetchTRetry(url, opts, ms, retries) {
+    ms = ms || 12000;
+    retries = retries || 3;
+    var attempt = 0;
+    function tryOnce() {
+      return fetchT(url, opts, ms).then(function (r) {
+        // 429 atau 5xx → retry
+        if ((r.status === 429 || (r.status >= 500 && r.status <= 599)) && attempt < retries - 1) {
+          attempt++;
+          var backoff = Math.pow(2, attempt - 1) * 600 + Math.random() * 300;
+          var retryAfter = r.headers.get('Retry-After');
+          if (retryAfter) {
+            var sec = Number(retryAfter);
+            if (isFinite(sec)) backoff = Math.max(backoff, sec * 1000);
+          }
+          return new Promise(function (res) { setTimeout(res, backoff); }).then(tryOnce);
+        }
+        return r;
+      }).catch(function (e) {
+        if (attempt < retries - 1) {
+          attempt++;
+          var backoff = Math.pow(2, attempt - 1) * 600 + Math.random() * 300;
+          return new Promise(function (res) { setTimeout(res, backoff); }).then(tryOnce);
+        }
+        throw e;
+      });
+    }
+    return tryOnce();
+  }
+
   function loadAir() {
     if (!state.airOn || state.airBusy) return Promise.resolve();
     var step = airStepFor(map.getZoom());
@@ -1599,8 +1630,19 @@
     if (state.airKey === q) { drawAir(); return Promise.resolve(); }
     state.airBusy = true;
     showHint('Memuat data kualitas udara…');
-    return fetchT('/api/air-quality?' + q, { headers: { Accept: 'application/json' } })
-      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('x')); })
+    return fetchTRetry('/api/air-quality?' + q, { headers: { Accept: 'application/json' } }, 15000, 3)
+      .then(function (r) {
+        if (r.status === 429) {
+          return r.json().then(function (j) {
+            var sec = j.retryAfter || 60;
+            showHint('Kuota udara tercapai, coba lagi ' + sec + ' detik. Memakai cache terakhir.', 8000);
+            // Jika ada cache lama, tetap gambar, jangan kosongkan
+            if (state.air) { drawAir(); renderAirLegend(); }
+            return Promise.reject(new Error('quota'));
+          });
+        }
+        return r.ok ? r.json() : Promise.reject(new Error('x'));
+      })
       .then(function (d) {
         state.air = d;
         state.airKey = q;
@@ -1609,9 +1651,14 @@
         showHint(d.count
           ? nf.format(d.count) + ' sel kualitas udara · model CAMS via Open-Meteo.'
           : 'Tidak ada data kualitas udara pada area ini.', 5000);
-
       })
-      .catch(function () { showHint('Gagal memuat data kualitas udara.'); })
+      .catch(function (err) {
+        if (err && err.message === 'quota') {
+          // sudah ditangani di atas, jangan tampilkan gagal lagi
+        } else {
+          showHint('Gagal memuat data kualitas udara. Akan coba lagi saat peta digeser.', 6000);
+        }
+      })
       .then(function () { state.airBusy = false; });
   }
 
@@ -2525,6 +2572,8 @@
   }
   $('lyConc').addEventListener('change', function (e) { toggleConc(e.target.checked); });
 
+  // Fase 1.3: debounce naik 450ms → 800ms untuk kurangi beban hulu
+  // loadAir() tiap moveend dengan 450ms memicu 9 request berurutan → 502
   var moveTimer = null;
   map.on('moveend zoomend', function () {
     clearTimeout(moveTimer);
@@ -2532,7 +2581,7 @@
       if (state.concOn) loadConcessions();
       if (state.windOn) loadWind();
       if (state.airOn) loadAir();
-    }, 450);
+    }, 800);
   });
 
   $('confSel').addEventListener('change', function (e) {

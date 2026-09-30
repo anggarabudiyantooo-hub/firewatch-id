@@ -243,14 +243,87 @@ async function fetchWithTimeout(url, opts = {}, ms = 12000) {
   try { return await fetch(url, { ...opts, signal: ac.signal, headers: { 'User-Agent': 'SiagaID/1.0', ...(opts.headers || {}) } }); }
   finally { clearTimeout(t); }
 }
-// cache in-memory
+
+// Retry dengan backoff eksponensial + jitter (3 percobaan) — Fase 1.3
+// 429 dan 5xx dianggap retryable, 4xx lain tidak.
+async function fetchWithRetry(url, opts = {}, ms = 12000, retries = 3) {
+  let lastErr = null;
+  let lastRes = null;
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const r = await fetchWithTimeout(url, opts, ms);
+      lastRes = r;
+      // 429 = rate limit, 5xx = server error → retry
+      if (r.status === 429 || (r.status >= 500 && r.status <= 599)) {
+        const retryAfter = r.headers.get('retry-after');
+        const waitMs = retryAfter ? Math.min(10000, Number(retryAfter) * 1000 || 0) : 0;
+        if (attempt < retries - 1) {
+          const backoff = Math.pow(2, attempt) * 500 + Math.random() * 250; // 500, 1000, 2000 + jitter
+          const delay = Math.max(waitMs, backoff);
+          console.warn(`[retry] ${url} → ${r.status} attempt ${attempt + 1}/${retries}, wait ${Math.round(delay)}ms`);
+          await new Promise(res => setTimeout(res, delay));
+          continue;
+        }
+        // last attempt, return response as is untuk ditangani caller (biar bisa balas 429)
+        return r;
+      }
+      // 2xx atau 4xx non-429 → jangan retry, langsung return
+      return r;
+    } catch (err) {
+      lastErr = err;
+      // network error / timeout → retry
+      if (attempt < retries - 1) {
+        const backoff = Math.pow(2, attempt) * 500 + Math.random() * 250;
+        console.warn(`[retry] ${url} → error ${err.message} attempt ${attempt + 1}/${retries}, wait ${Math.round(backoff)}ms`);
+        await new Promise(res => setTimeout(res, backoff));
+        continue;
+      }
+    }
+  }
+  if (lastRes) return lastRes;
+  throw lastErr || new Error('fetch_retry_failed');
+}
+
+// cache in-memory dengan stale-while-revalidate — Fase 1.3
+// - Jika hit fresh (age < ttl) → return langsung
+// - Jika hit stale tapi masih dalam jendela stale (age < ttl + staleMs) → return stale segera, revalidasi di background
+// - Jika fetch gagal dan ada stale → return stale (jangan 502)
+// - TTL default stale 2x TTL, bisa override via opts.staleMs
 const cache = new Map();
-async function cached(key, ttlMs, fn) {
+async function cached(key, ttlMs, fn, opts = {}) {
   const hit = cache.get(key);
-  if (hit && Date.now() - hit.t < ttlMs) return hit.v;
-  const v = await fn();
-  cache.set(key, { t: Date.now(), v });
-  return v;
+  const now = Date.now();
+  const staleMs = opts.staleMs != null ? opts.staleMs : ttlMs * 2;
+  const background = opts.background !== false; // default true untuk SWR
+
+  if (hit && now - hit.t < ttlMs) {
+    return hit.v; // fresh
+  }
+
+  if (hit && now - hit.t < ttlMs + staleMs) {
+    if (background) {
+      // SWR: return stale segera, revalidasi background
+      fn().then(v => {
+        cache.set(key, { t: Date.now(), v });
+      }).catch(err => {
+        console.warn(`[cache:bg] ${key} revalidate gagal: ${err.message}`);
+      });
+      return hit.v;
+    }
+    // jika background false, coba fetch sync di bawah
+  }
+
+  try {
+    const v = await fn();
+    cache.set(key, { t: Date.now(), v });
+    return v;
+  } catch (e) {
+    if (hit) {
+      console.warn(`[cache] ${key} gagal (${e.message}), pakai stale ${Math.round((now - hit.t) / 1000)}s`);
+      return hit.v;
+    }
+    throw e;
+  }
 }
 
 // ---------- sumber titik api ----------
@@ -1254,8 +1327,10 @@ const gfsLast = new Map();
 
 async function gfsField(fhour) {
   try {
+    // Fase 1.3: pakai fetchWithRetry + SWR untuk ketahanan terhadap rate limit NOMADS/AWS
     const f = await cached(`gfs:${fhour}`, 3 * 60 * 60 * 1000,
-      () => fetchWindField(fetchWithTimeout, fhour));
+      () => fetchWindField(fetchWithRetry, fhour),
+      { staleMs: 6 * 60 * 60 * 1000, background: true });
     gfsLast.set(fhour, f);
     return f;
   } catch (e) {
@@ -1353,8 +1428,11 @@ async function aloftWindField(level, box) {
     + `&current=wind_speed_${lv.hPa}hPa,wind_direction_${lv.hPa}hPa`
     + '&wind_speed_unit=ms';
 
-  const r = await fetchWithTimeout(url, {}, 30000);
-  if (!r.ok) throw new Error('aloft_' + r.status);
+  const r = await fetchWithRetry(url, {}, 30000, 3);
+  if (!r.ok) {
+    if (r.status === 429) throw new Error('aloft_429_limit');
+    throw new Error('aloft_' + r.status);
+  }
   const j = await r.json();
   const list = Array.isArray(j) ? j : [j];
 
@@ -1426,7 +1504,8 @@ app.get('/api/wind-field', async (req, res) => {
       const af = await cached(
         `wind:aloft:${level}:${box.west.toFixed(0)},${box.south.toFixed(0)},${box.east.toFixed(0)},${box.north.toFixed(0)}`,
         30 * 60 * 1000,
-        () => aloftWindField(level, box));
+        () => aloftWindField(level, box),
+        { staleMs: 60 * 60 * 1000, background: true });
       res.set('Cache-Control', 'public, max-age=1800, stale-while-revalidate=3600');
       return res.json({
         updatedAt: new Date().toISOString(),
@@ -1436,7 +1515,7 @@ app.get('/api/wind-field', async (req, res) => {
     }
 
     const wf = await windField(step, box);
-    res.set('Cache-Control', 'public, max-age=1800');
+    res.set('Cache-Control', 'public, max-age=1800, stale-while-revalidate=3600');
     res.json({
       updatedAt: new Date().toISOString(),
       level: '10m',
@@ -1449,6 +1528,11 @@ app.get('/api/wind-field', async (req, res) => {
     });
   } catch (e) {
     console.error('[wind-field]', e.message);
+    if (/429|limit/i.test(e.message)) {
+      res.set('Retry-After', '60');
+      res.set('Cache-Control', 'no-store');
+      return res.status(429).json({ error: 'Kuota layanan angin tercapai, coba lagi dalam 1 menit.', retryAfter: 60 });
+    }
     res.status(502).json({ error: 'Data angin gagal dimuat.' });
   }
 });
@@ -1484,6 +1568,7 @@ async function airQualityField(stepDeg, box) {
   const key = box
     ? `aq:${step}:${b.west.toFixed(1)},${b.south.toFixed(1)},${b.east.toFixed(1)},${b.north.toFixed(1)}`
     : `aq:${step}`;
+  // TTL 30 menit, stale 60 menit (SWR) — Fase 1.3
   return cached(key, 30 * 60 * 1000, async () => {
     const lats = [], lons = [];
     for (let la = b.south + step / 2; la <= b.north && lats.length < 400; la += step) {
@@ -1496,8 +1581,12 @@ async function airQualityField(stepDeg, box) {
     const url = 'https://air-quality-api.open-meteo.com/v1/air-quality'
       + `?latitude=${lats.join(',')}&longitude=${lons.join(',')}`
       + '&current=pm2_5,pm10,us_aqi';
-    const r = await fetchWithTimeout(url, {}, 25000);
-    if (!r.ok) throw new Error('aq_' + r.status);
+    const r = await fetchWithRetry(url, {}, 25000, 3);
+    if (!r.ok) {
+      // 429 = kuota habis, lempar error khusus agar caller bisa balas 429 bukan 502
+      if (r.status === 429) throw new Error('aq_429_limit');
+      throw new Error('aq_' + r.status);
+    }
     const j = await r.json();
     const arr = Array.isArray(j) ? j : [j];
 
@@ -1519,7 +1608,7 @@ async function airQualityField(stepDeg, box) {
       });
     }
     return { step, count: points.length, points };
-  });
+  }, { staleMs: 60 * 60 * 1000, background: true });
 }
 
 app.get('/api/air-quality', async (req, res) => {
@@ -1546,7 +1635,8 @@ app.get('/api/air-quality', async (req, res) => {
   }
   try {
     const field = await airQualityField(step, box);
-    res.set('Cache-Control', 'public, max-age=900');
+    // Cache-Control dengan stale-while-revalidate — Fase 1.3
+    res.set('Cache-Control', 'public, max-age=900, stale-while-revalidate=1800');
     res.json({
       updatedAt: new Date().toISOString(),
       source: 'Open-Meteo Air Quality (model CAMS) — skala US AQI',
@@ -1557,11 +1647,18 @@ app.get('/api/air-quality', async (req, res) => {
     });
   } catch (err) {
     console.error('[air-quality]', err.message);
+    // Fase 1.3: balas 429 dengan Retry-After bila kuota, bukan 502 generik
+    if (/429|limit/i.test(err.message)) {
+      res.set('Retry-After', '60');
+      res.set('Cache-Control', 'no-store');
+      return res.status(429).json({ error: 'Kuota layanan kualitas udara tercapai, coba lagi dalam 1 menit.', retryAfter: 60 });
+    }
+    // Jika ada cache stale, cached() sudah return stale di atas — jadi 502 hanya bila benar-benar belum pernah berhasil
     res.status(502).json({ error: 'Data kualitas udara sedang tidak tersedia.' });
   }
 });
 
-// AQI pada satu koordinat (dipakai popup "cek titik").
+// AQI pada satu koordinat (dipakai popup "cek titik") — Fase 1.3: retry + stale
 app.get('/api/air-point', async (req, res) => {
   const lat = Number(req.query.lat), lon = Number(req.query.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
@@ -1571,8 +1668,11 @@ app.get('/api/air-point', async (req, res) => {
     const out = await cached(`ap:${lat.toFixed(2)},${lon.toFixed(2)}`, 30 * 60 * 1000, async () => {
       const url = 'https://air-quality-api.open-meteo.com/v1/air-quality'
         + `?latitude=${lat}&longitude=${lon}&current=pm2_5,pm10,us_aqi,sulphur_dioxide,carbon_monoxide`;
-      const r = await fetchWithTimeout(url, {}, 12000);
-      if (!r.ok) throw new Error('aqp_' + r.status);
+      const r = await fetchWithRetry(url, {}, 12000, 3);
+      if (!r.ok) {
+        if (r.status === 429) throw new Error('aqp_429_limit');
+        throw new Error('aqp_' + r.status);
+      }
       const c = (await r.json()).current || {};
       const aqi = Number(c.us_aqi);
       if (!Number.isFinite(aqi)) return null;
@@ -1585,9 +1685,14 @@ app.get('/api/air-point', async (req, res) => {
         co: Number.isFinite(Number(c.carbon_monoxide)) ? Math.round(Number(c.carbon_monoxide)) : null,
         label: band.label, color: band.color, advice: band.advice
       };
-    });
+    }, { staleMs: 60 * 60 * 1000, background: true });
     res.json({ lat, lon, air: out });
-  } catch {
+  } catch (err) {
+    // Jika 429, tetap balas null tapi jangan 502 — popup akan tampil "tidak tersedia" bukan error
+    if (/429|limit/i.test(err.message)) {
+      res.set('Cache-Control', 'no-store');
+      return res.json({ lat, lon, air: null, quota: true });
+    }
     res.json({ lat, lon, air: null });
   }
 });
@@ -1868,7 +1973,8 @@ app.get('/api/volcano-ash', async (_req, res) => {
   try {
     const d = await scheduler.get('volcano');
     if (d && d.activeCount) ashLast = d;
-    res.set('Cache-Control', 'public, max-age=900');
+    // Fase 1.3: satukan TTL dengan /api/eruptions (sebelumnya 900 vs 300) → 600 + SWR 1200
+    res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=1200');
     res.json(d);
   } catch {
     if (ashLast) {
@@ -1889,7 +1995,8 @@ app.get('/api/volcano-ash', async (_req, res) => {
 app.get('/api/eruptions', async (_req, res) => {
   try {
     const d = await scheduler.get('eruption');
-    res.set('Cache-Control', 'public, max-age=300');
+    // Fase 1.3: satukan TTL dengan /api/volcano-ash (sebelumnya 300 vs 900) → 600 + SWR 1200
+    res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=1200');
     res.json(d);
   } catch {
     res.status(502).json({ error: 'Laporan letusan gagal dimuat.' });
