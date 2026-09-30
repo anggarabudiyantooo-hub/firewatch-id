@@ -25,6 +25,7 @@
     <span class="clock-box"><span class="clock-lab">WIB</span><span id="clockLocal" class="clock-val">--:--:--</span></span>
     <span class="clock-box"><span class="clock-lab">UTC</span><span id="clockUtc" class="clock-val">--:--:--</span></span>
     <span id="updated" class="stamp"></span>
+    <button id="bloombergToggle" class="bloomberg-toggle" type="button" title="Mode Bloomberg compact — satu layar capture semua (B)">BLM COMPACT</button>
     <button id="refreshBtn" class="btn btn-primary" type="button">REFRESH</button>
   </div>
 </header>
@@ -239,6 +240,8 @@
     </div>
   </section>
 
+  <!-- Bloomberg grid: map + side panels satu layar — Fase 3 compact -->
+  <div id="main-bloomberg-grid">
   <!-- Peta melebar penuh, seperti template. Fullscreen via ⛶ FULL button. -->
   <section class="map-card" id="mapCard">
     <div class="panel-head map-head">
@@ -284,6 +287,7 @@
       </div>
   </section>
 
+  <div class="side-stack">
   <section class="pgrid pgrid-a">
       <section class="panel panel-events" id="eventsPanel">
         <header class="panel-head">
@@ -398,6 +402,8 @@
     <div class="so2grid" id="so2Grid"></div>
     <p class="fineprint">Nilai adalah konsentrasi SO<sub>2</sub> permukaan dari model CAMS (Open-Meteo) di koordinat puncak — bukan pengukuran fluks kawah langsung oleh PVMBG. Ringkasan aktivitas dikutip apa adanya dari laporan mingguan Smithsonian Global Volcanism Program (berbahasa Inggris).</p>
   </section>
+  </div><!-- .side-stack -->
+  </div><!-- #main-bloomberg-grid -->
 
   <section class="panel wide panel-edu">
     <header class="panel-head"><h2><span class="pnum">09</span> Memahami data ini</h2></header>

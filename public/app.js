@@ -2820,6 +2820,37 @@
     });
   })();
 
+  // Fase 3.1 Bloomberg compact — satu layar capture semua
+  (function () {
+    var btn = $('bloombergToggle');
+    if (!btn) return;
+    var key = 'siaga_bloomberg';
+    var isBloomberg = false;
+    try { isBloomberg = localStorage.getItem(key) === '1'; } catch (e) {}
+    function applyBloomberg(on) {
+      isBloomberg = !!on;
+      document.body.classList.toggle('bloomberg', isBloomberg);
+      btn.classList.toggle('active', isBloomberg);
+      btn.textContent = isBloomberg ? '☷ NORMAL' : 'BLM COMPACT';
+      btn.title = isBloomberg ? 'Keluar mode Bloomberg compact (B)' : 'Mode Bloomberg compact — satu layar capture semua (B)';
+      try { localStorage.setItem(key, isBloomberg ? '1' : '0'); } catch (e) {}
+      setTimeout(function () { if (window.map && map.invalidateSize) map.invalidateSize(); }, 250);
+      showHint(isBloomberg
+        ? 'Mode Bloomberg compact aktif — density tinggi, semua panel dalam satu layar, scroll internal. Tekan B untuk toggle.'
+        : 'Mode normal — layout modern lega.', 3500);
+    }
+    if (isBloomberg) applyBloomberg(true);
+    btn.addEventListener('click', function () { applyBloomberg(!isBloomberg); });
+    // Shortcut B untuk toggle Bloomberg
+    document.addEventListener('keydown', function (e) {
+      if (e.key && e.key.toLowerCase() === 'b' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        var ae = document.activeElement;
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+        applyBloomberg(!isBloomberg);
+      }
+    });
+  })();
+
   $('lyQuake').addEventListener('change', function (e) {
     state.quakeOn = e.target.checked;
     if (state.quakeOn) {
