@@ -2838,9 +2838,32 @@
       btn.textContent = isBloomberg ? '☷ NORMAL' : 'BLM COMPACT';
       btn.title = isBloomberg ? 'Keluar mode Bloomberg compact (B) — mode compact default dengan overflow' : 'Mode Bloomberg compact — density tinggi, hemat ruang (B)';
       try { localStorage.setItem(key, isBloomberg ? '1' : '0'); } catch (e) {}
-      setTimeout(function () { if (window.map && map.invalidateSize) map.invalidateSize(); }, 250);
+      // Pastikan peta selalu terlihat — invalidateSize berkali-kali untuk cegah height 0
+      function fixMap() {
+        try {
+          var mw = document.getElementById('mapWrap');
+          var m = document.getElementById('map');
+          if (mw) {
+            mw.style.height = isBloomberg ? '60vh' : '';
+            mw.style.minHeight = isBloomberg ? '520px' : '';
+          }
+          if (m) {
+            m.style.height = '100%';
+            m.style.minHeight = isBloomberg ? '520px' : '440px';
+          }
+          if (window.map && map && map.invalidateSize) {
+            map.invalidateSize();
+          } else if (map && map.invalidateSize) {
+            map.invalidateSize();
+          }
+        } catch (e) {}
+      }
+      setTimeout(fixMap, 100);
+      setTimeout(fixMap, 350);
+      setTimeout(fixMap, 800);
+      setTimeout(fixMap, 1500);
       if (isBloomberg) {
-        showHint('Mode Bloomberg compact DEFAULT aktif — density tinggi, compact, boleh scroll kebawah. Tekan B untuk toggle normal.', 3500);
+        showHint('Mode Bloomberg compact DEFAULT aktif — peta melebar 60vh, density tinggi, boleh scroll kebawah. Tekan B untuk toggle normal.', 4000);
       } else {
         showHint('Mode normal — layout modern lega.', 3000);
       }

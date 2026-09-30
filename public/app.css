@@ -2580,7 +2580,10 @@ body.bloomberg #main-bloomberg-grid{
 body.bloomberg #main-bloomberg-grid .map-card{
   grid-column:1;
   grid-row:1;
-  min-height:58vh;
+  min-height:60vh;
+  height:60vh;
+  display:flex;
+  flex-direction:column;
 }
 body.bloomberg #main-bloomberg-grid .side-stack{
   grid-column:2;
@@ -2696,4 +2699,5 @@ body.bloomberg #statusPanel,
 body.bloomberg #so2Panel{ max-height:300px; }
 body.bloomberg .foot{ display:none; }
 /* Peta melebar penuh seperti awal — 58vh */
-body.bloomberg .map-wrap{ height:58vh; min-height:480px; }
+body.bloomberg .map-wrap{ height:60vh !important; min-height:520px !important; flex:none !important; } 
+body.bloomberg #map{ height:100% !important; min-height:520px !important; }
