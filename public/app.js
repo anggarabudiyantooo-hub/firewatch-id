@@ -3384,6 +3384,141 @@
     });
   })();
 
+  // Fase 3.9 Panel toggle collapsible — hemat ruang, jika tidak muat pakai toggle
+  (function () {
+    var STORAGE_KEY = 'siaga_panel_collapsed_v1';
+    var collapsed = {};
+    try { collapsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e){ collapsed = {}; }
+
+    function saveCollapsed() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collapsed)); } catch(e){}
+    }
+
+    function togglePanel(panel, force) {
+      var id = panel.id;
+      if (!id) return;
+      var isCollapsed = typeof force === 'boolean' ? force : !panel.classList.contains('is-collapsed');
+      panel.classList.toggle('is-collapsed', isCollapsed);
+      collapsed[id] = isCollapsed;
+      saveCollapsed();
+      // Update button icon
+      var btn = panel.querySelector('.panel-toggle');
+      if (btn) btn.textContent = isCollapsed ? '›' : '⌄';
+      // Invalidate map if needed and adjust main height if free layout
+      if (map && map.invalidateSize) setTimeout(function(){ map.invalidateSize(); }, 150);
+      if (document.body.classList.contains('layout-free') || document.body.classList.contains('layout-edit')) {
+        var main = $('main');
+        if (main) {
+          var maxBottom = 0;
+          var panels = document.querySelectorAll('#main .panel, #main .map-card');
+          for (var i=0;i<panels.length;i++) {
+            var p = panels[i];
+            if (p.style.display === 'none') continue;
+            var top = parseFloat(p.style.top) || 0;
+            var h = p.classList.contains('is-collapsed') ? (p.querySelector('.panel-head') ? p.querySelector('.panel-head').offsetHeight : 40) : (parseFloat(p.style.height) || p.offsetHeight);
+            maxBottom = Math.max(maxBottom, top + h);
+          }
+          main.style.minHeight = (maxBottom + 20) + 'px';
+        }
+      }
+    }
+
+    function initPanels() {
+      var panels = document.querySelectorAll('#main .panel, #main .map-card');
+      for (var i=0;i<panels.length;i++) {
+        var panel = panels[i];
+        if (!panel.id) continue;
+        // Skip mapCard toggle (peta jangan collapse total)
+        if (panel.id === 'mapCard') continue;
+        var head = panel.querySelector('.panel-head');
+        if (!head) continue;
+        // Cek apakah sudah ada toggle
+        if (head.querySelector('.panel-toggle')) continue;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'panel-toggle';
+        btn.title = 'Sembunyikan/tampilkan panel';
+        btn.textContent = '⌄';
+        btn.setAttribute('aria-label', 'Toggle panel');
+        (function(p, b){
+          b.addEventListener('click', function(e){
+            e.stopPropagation();
+            togglePanel(p);
+          });
+        })(panel, btn);
+        head.appendChild(btn);
+        // Apply saved collapsed state
+        if (collapsed[panel.id]) {
+          panel.classList.add('is-collapsed');
+          btn.textContent = '›';
+        }
+      }
+    }
+
+    // Berita topics toggle khusus — banyak chip
+    function initNewsTopicsToggle() {
+      var topicsBox = $('newsTopics');
+      var newsPanel = $('newsPanel');
+      if (!topicsBox || !newsPanel) return;
+      // Tambah tombol toggle topics jika belum ada
+      var searchbar = newsPanel.querySelector('.searchbar');
+      if (!searchbar) return;
+      if (searchbar.querySelector('.ntopics-toggle')) return;
+      var toggleBtn = document.createElement('button');
+      toggleBtn.type = 'button';
+      toggleBtn.className = 'ntopics-toggle';
+      toggleBtn.textContent = '▼ topik';
+      toggleBtn.title = 'Sembunyikan/tampilkan filter topik';
+      toggleBtn.addEventListener('click', function(){
+        topicsBox.classList.toggle('is-collapsed');
+        toggleBtn.textContent = topicsBox.classList.contains('is-collapsed') ? '► topik' : '▼ topik';
+      });
+      // Default collapsed jika banyak topik (>8)
+      if (topicsBox.children.length > 8) {
+        topicsBox.classList.add('is-collapsed');
+        toggleBtn.textContent = '► topik (' + topicsBox.children.length + ')';
+      }
+      searchbar.appendChild(toggleBtn);
+    }
+
+    // Init setelah DOM ready + setelah news render
+    setTimeout(initPanels, 600);
+    setTimeout(initNewsTopicsToggle, 1000);
+    // Re-init saat news topics berubah
+    var newsObsTimer = null;
+    var origRenderNewsTopics = window.renderNewsTopics;
+    // Poll untuk cek perubahan topics
+    setInterval(function(){
+      var topicsBox = $('newsTopics');
+      if (topicsBox && topicsBox.children.length > 0) {
+        var searchbar = document.querySelector('#newsPanel .searchbar');
+        if (searchbar && !searchbar.querySelector('.ntopics-toggle')) {
+          initNewsTopicsToggle();
+        }
+      }
+    }, 2000);
+
+    // Global toggle all — tekan T untuk toggle semua panel yang tidak muat
+    document.addEventListener('keydown', function(e){
+      if (e.key && e.key.toLowerCase() === 't' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        var ae = document.activeElement;
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+        // Toggle semua panel kecuali peta dan stats
+        var panels = document.querySelectorAll('#main .panel');
+        var anyCollapsed = false;
+        for (var i=0;i<panels.length;i++) {
+          if (panels[i].classList.contains('is-collapsed')) { anyCollapsed = true; break; }
+        }
+        for (var i=0;i<panels.length;i++) {
+          var p = panels[i];
+          if (p.id === 'mapCard' || p.id === 'statsPanel') continue;
+          togglePanel(p, !anyCollapsed);
+        }
+        showHint(anyCollapsed ? 'Semua panel ditampilkan' : 'Panel disembunyikan hemat ruang — tekan T lagi untuk tampilkan', 3000);
+      }
+    });
+  })();
+
   $('lyQuake').addEventListener('change', function (e) {
     state.quakeOn = e.target.checked;
     if (state.quakeOn) {

@@ -3092,3 +3092,84 @@ body.layout-free #main + .foot,
   .layout-title{ font-size:10px; }
   .layout-hint{ display:block; margin-left:0; margin-top:4px; }
 }
+
+/* === Fase 3.9 — Panel toggle collapsible hemat ruang === */
+.panel-head{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.panel-toggle{
+  background:none;
+  border:1px solid var(--line, #2a2a2a);
+  border-radius:4px;
+  color:var(--tx-faint, #888);
+  width:22px;
+  height:22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  font-size:12px;
+  flex-shrink:0;
+  margin-left:8px;
+  transition:background .12s, color .12s, transform .15s;
+}
+.panel-toggle:hover{
+  background:rgba(255,255,255,.06);
+  color:#fff;
+}
+.panel.is-collapsed .panel-toggle{
+  transform:rotate(-90deg);
+}
+.panel.is-collapsed .ev-body,
+.panel.is-collapsed .pane,
+.panel.is-collapsed .news,
+.panel.is-collapsed .searchbar,
+.panel.is-collapsed .tabs,
+.panel.is-collapsed .unit-list,
+.panel.is-collapsed .so2grid,
+.panel.is-collapsed #hazardBody,
+.panel.is-collapsed #statusBody,
+.panel.is-collapsed .pscroll,
+.panel.is-collapsed .srcgrid,
+.panel.is-collapsed .callout{
+  display:none !important;
+}
+.panel.is-collapsed{
+  min-height:auto !important;
+  height:auto !important;
+}
+.panel.is-collapsed .panel-head{
+  border-bottom:none !important;
+}
+/* Berita topics toggle */
+.ntopics{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+  max-height:60px;
+  overflow-y:auto;
+}
+.ntopics.is-collapsed{
+  max-height:28px;
+  overflow:hidden;
+}
+.ntopics-toggle{
+  font-size:9px;
+  color:#f97316;
+  background:none;
+  border:none;
+  cursor:pointer;
+  padding:2px 6px;
+}
+.map-card .panel-toggle{ /* peta jangan collapse total, hanya legend */
+  display:none;
+}
+/* Global toggle bar */
+.panel.is-collapsed .panel-sub::after{
+  content:" (disembunyikan)";
+  font-size:9px;
+  color:#666;
+}
