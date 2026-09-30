@@ -1,3313 +1,915 @@
+/* === SIAGA.ID — Bloomberg Terminal / Dense Data UI — Fase 4.0 Refactor === */
+/* Design Tokens — Bloomberg Terminal Dense */
 :root{
-  /* Palet terminal SIAGA.ID — sudut tajam, monospace, kontras tinggi.
-     Nama variabel lama dipertahankan agar seluruh komponen ikut berubah
-     tanpa perlu menyentuh ratusan aturan satu per satu. */
-  --bg:#080b0f;
-  --surface:#0f1318;
-  --surface-2:#131920;
-  --line:#1e2530;
-  --line-soft:#252d38;
-  --line-3:#2d3748;
-  --tx:#e2e8f0;
-  --tx-dim:#64748b;
-  --tx-faint:#334155;
-  --accent:#f97316;
-  --accent-red:#ef4444;
-  --hi:#ef4444; --md:#f97316; --lo:#eab308;
-  --ok:#22c55e; --warn:#eab308; --bad:#ef4444; --info:#3b82f6;
-  --cyan:#06b6d4; --magenta:#a855f7;
-  --mono:'JetBrains Mono','DejaVu Sans Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  --r:0px;
+  /* Palette — Dark pure */
+  --bg:#0a0a0c;
+  --bg-2:#0f1115;
+  --bg-3:#14161a;
+  --surface:#14161a;
+  --surface-2:#1a1d23;
+  --surface-3:#1e222d;
+  --border:#222630;
+  --border-2:#1e222d;
+  --border-strong:#2a2f3e;
+  /* Text — high contrast 4.5:1+ */
+  --text-primary:#e6e8eb;
+  --text-secondary:#8b8fa3;
+  --text-muted:#5a5e6e;
+  --text-faint:#3a3e4e;
+  /* Accent — terminal monitoring */
+  --amber:#ff9f0a;
+  --amber-bg:rgba(255,159,10,.12);
+  --amber-border:rgba(255,159,10,.32);
+  --red:#ff453a;
+  --red-bg:rgba(255,69,58,.12);
+  --red-border:rgba(255,69,58,.32);
+  --green:#30d158;
+  --green-bg:rgba(48,209,88,.12);
+  --green-border:rgba(48,209,88,.32);
+  --cyan:#64d2ff;
+  --cyan-bg:rgba(100,210,255,.12);
+  --cyan-border:rgba(100,210,255,.32);
+  --blue:#0a84ff;
+  /* Typography — dense mono */
+  --font-mono:'JetBrains Mono','Fira Code',Consolas,'Courier New',monospace;
+  --font-sans:Inter,system-ui,-apple-system,sans-serif;
+  --fs-xs:10px;
+  --fs-sm:11px;
+  --fs-base:12px;
+  --fs-md:13px;
+  --fs-lg:14px;
+  --fs-xl:16px;
+  --lh-tight:1.2;
+  --lh-normal:1.3;
+  --lh-relaxed:1.4;
+  /* Spacing — 4-8px dense */
+  --pad-xs:4px;
+  --pad-sm:6px;
+  --pad-md:8px;
+  --pad-lg:10px;
+  --pad-xl:12px;
+  --gap-xs:2px;
+  --gap-sm:4px;
+  --gap-md:6px;
+  --gap-lg:8px;
+  /* Layout */
+  --header-h:42px;
+  --ticker-h:28px;
+  --ctl-h:44px;
+  --radius-xs:2px;
+  --radius-sm:3px;
+  --radius-md:4px;
+  /* Legacy compat */
+  --tx:var(--text-primary);
+  --tx-dim:var(--text-secondary);
+  --tx-faint:var(--text-muted);
+  --line:var(--border);
+  --line-soft:var(--border-2);
+  --surface-2:var(--surface-2);
 }
-*{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+
+/* Reset — Bloomberg dense */
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:13px;-webkit-font-smoothing:antialiased}
 body{
-  margin:0;background:var(--bg);color:var(--tx);
-  font-family:var(--mono);
-  font-size:12px;line-height:1.5;
-  -webkit-font-smoothing:antialiased;
-  letter-spacing:.01em;
-}
-::selection{background:var(--accent-red);color:#fff}
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--line-soft)}
-::-webkit-scrollbar-thumb:hover{background:var(--line-3)}
-h1,h2,h3{margin:0;font-weight:650;letter-spacing:-.01em}
-p{margin:0}
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-.skip{position:absolute;left:-9999px}
-.skip:focus{left:12px;top:12px;z-index:9999;background:#fff;color:#000;padding:10px 14px;border-radius:8px}
-:focus-visible{outline:2px solid var(--info);outline-offset:2px;border-radius:4px}
-
-/* ---------- topbar ---------- */
-.topbar{
-  position:sticky;top:0;z-index:700;
-  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
-  padding:14px 22px;background:rgba(15,21,29,.92);backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--line);
-}
-.brand{display:flex;align-items:center;gap:12px;min-width:0}
-.mark{width:34px;height:34px;flex:none}
-.brand-txt h1{font-size:18px}
-.brand-txt p{color:var(--tx-dim);font-size:12.5px;margin-top:1px}
-.topbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.stamp{color:var(--tx-faint);font-size:12px;font-variant-numeric:tabular-nums}
-.badge{
-  font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-  padding:5px 10px;border-radius:999px;border:1px solid transparent;white-space:nowrap;
-}
-.badge-live{background:rgba(52,211,153,.14);color:#6ee7b7;border-color:rgba(52,211,153,.35)}
-.badge-demo{background:rgba(251,191,36,.14);color:#fcd34d;border-color:rgba(251,191,36,.35)}
-.badge-neutral{background:var(--surface-2);color:var(--tx-dim);border-color:var(--line)}
-.btn{
-  font:inherit;font-size:13.5px;font-weight:550;cursor:pointer;
-  background:var(--surface-2);color:var(--tx);border:1px solid var(--line);
-  border-radius:9px;padding:8px 15px;transition:background .15s,border-color .15s;
-}
-.btn:hover{background:#212d3c;border-color:#2f3e50}
-.btn:disabled{opacity:.5;cursor:progress}
-.btn-primary{background:rgba(255,107,53,.14);border-color:rgba(255,107,53,.4);color:#ffb494}
-.btn-primary:hover{background:rgba(255,107,53,.22);border-color:rgba(255,107,53,.6)}
-
-.notice{
-  margin:14px 22px 0;padding:11px 16px;border-radius:10px;font-size:13.5px;
-  background:rgba(251,191,36,.09);border:1px solid rgba(251,191,36,.28);color:#fcd9a0;
-}
-
-main{max-width:1560px;margin:0 auto;padding:18px 22px 32px}
-
-/* ---------- stats ---------- */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px;margin-bottom:16px}
-.stat{
-  background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--r);
-  padding:13px 15px;display:flex;flex-direction:column;gap:3px;min-width:0;
-}
-.stat-accent{border-color:rgba(255,107,53,.3);background:linear-gradient(160deg,rgba(255,107,53,.07),var(--surface) 60%)}
-.stat-label{font-size:11.5px;color:var(--tx-dim);letter-spacing:.02em}
-.stat strong{font-size:27px;line-height:1.1;font-variant-numeric:tabular-nums;font-weight:600}
-.stat-sub{font-size:11.5px;color:var(--tx-faint)}
-.skel{color:var(--tx-faint)}
-
-/* ---------- layout ---------- */
-.layout{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:16px;align-items:start}
-@media(max-width:1080px){.layout{grid-template-columns:1fr}}
-
-.map-card,.side,.panel{min-width:0}
-.map-card,.panel{background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--r);overflow:hidden}
-.panel.wide{margin-top:16px}
-.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 16px 0}
-.panel-head h2{font-size:14.5px}
-.panel-sub{font-size:11.5px;color:var(--tx-faint)}
-
-.map-toolbar{
-  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
-  padding:11px 16px;border-bottom:1px solid var(--line-soft);font-size:13px;
-}
-.tool-label{color:var(--tx-faint);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em}
-.spacer{flex:1}
-.chk{display:inline-flex;align-items:center;gap:7px;cursor:pointer;user-select:none;color:var(--tx-dim)}
-.chk input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
-.chk:hover{color:var(--tx)}
-.sel{color:var(--tx-dim);font-size:12.5px;display:inline-flex;align-items:center;gap:7px}
-.sel select{font:inherit;font-size:12.5px;background:var(--surface-2);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:5px 8px;cursor:pointer}
-
-.map-wrap{position:relative}
-#map{height:min(64vh,640px);width:100%;background:#0a1017}
-.map-hint{
-  position:absolute;right:12px;bottom:26px;z-index:500;max-width:min(320px,62%);
-  background:rgba(12,18,26,.93);border:1px solid var(--line);border-radius:9px;
-  padding:9px 12px;font-size:12.5px;color:var(--tx-dim);
-}
-
-/* ---------- panel ringkasan titik panas (kiri peta) ---------- */
-.conf-summary{
-  position:absolute;left:12px;top:12px;z-index:500;min-width:132px;
-  background:rgba(12,18,26,.9);border:1px solid var(--line);border-radius:10px;
-  padding:9px 11px;backdrop-filter:blur(6px);
-}
-.cs-title{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx-faint);margin-bottom:6px}
-.cs-row{display:flex;align-items:center;gap:7px;padding:2px 0}
-.cs-dot{width:9px;height:9px;border-radius:50%;flex:none}
-.cs-lab{font-size:12px;color:var(--tx-dim);flex:1}
-.cs-num{font-size:12.5px;font-variant-numeric:tabular-nums}
-.cs-total{
-  display:flex;justify-content:space-between;gap:10px;margin-top:6px;padding-top:6px;
-  border-top:1px solid var(--line);font-size:12px;color:var(--tx-dim);
-}
-.cs-total b{font-variant-numeric:tabular-nums;color:var(--tx)}
-
-/* ---------- pemilih peta dasar ---------- */
-.basemap-switch{
-  position:absolute;right:12px;top:12px;z-index:500;display:flex;gap:2px;
-  background:rgba(12,18,26,.9);border:1px solid var(--line);border-radius:9px;
-  padding:3px;backdrop-filter:blur(6px);
-}
-.bm{
-  font:inherit;font-size:11.5px;font-weight:550;cursor:pointer;
-  background:none;border:0;border-radius:6px;color:var(--tx-faint);padding:5px 9px;
-  transition:background .14s,color .14s;
-}
-.bm:hover{color:var(--tx-dim)}
-.bm.active{background:var(--surface-2);color:var(--tx)}
-
-/* kontras teks peta saat citra satelit aktif */
-.basemap-citra .conf-summary,
-.basemap-citra .basemap-switch,
-.basemap-citra .map-hint{background:rgba(8,12,18,.82)}
-
-.legend{
-  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
-  padding:10px 16px;border-top:1px solid var(--line-soft);font-size:11.5px;color:var(--tx-faint);
-}
-.legend span{display:inline-flex;align-items:center;gap:6px}
-.dot{width:10px;height:10px;border-radius:50%;flex:none}
-.d-hi{background:var(--hi)}.d-md{background:var(--md)}.d-lo{background:var(--lo)}
-.sw{width:18px;height:10px;border-radius:3px;flex:none}
-.sw-smoke{background:rgba(201,139,82,.55);border:1px solid rgba(226,177,132,.85)}
-.sw-ring{width:10px;height:10px;border-radius:50%;background:none;border:2px solid var(--info)}
-.sw-conc{background:rgba(124,196,255,.12);border:1.5px dashed #7cc4ff}
-.legend-tip{margin-left:auto;color:var(--tx-faint);font-style:italic}
-
-/* ---------- side ---------- */
-.side{display:flex;flex-direction:column;gap:16px}
-.tabs{display:flex;border-bottom:1px solid var(--line-soft);gap:2px;padding:0 6px}
-.tabs-inline{margin:14px 16px 0;padding:0;border-bottom:1px solid var(--line-soft)}
-.tab{
-  font:inherit;font-size:13px;font-weight:600;cursor:pointer;
-  background:none;border:0;border-bottom:2px solid transparent;
-  color:var(--tx-faint);padding:11px 12px;transition:color .15s;
-}
-.tab:hover{color:var(--tx-dim)}
-.tab.active{color:var(--tx);border-bottom-color:var(--accent)}
-.pane{max-height:400px;overflow:auto;overscroll-behavior:contain}
-
-.row{
-  display:flex;align-items:center;gap:12px;width:100%;text-align:left;
-  font:inherit;color:inherit;background:none;border:0;border-bottom:1px solid var(--line-soft);
-  padding:11px 16px;cursor:pointer;transition:background .12s;
-}
-.row:last-child{border-bottom:0}
-.row:hover{background:var(--surface-2)}
-.row-main{flex:1;min-width:0}
-.row-t{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row-s{font-size:11.5px;color:var(--tx-faint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row-rank{
-  width:24px;height:24px;flex:none;border-radius:7px;background:var(--surface-2);
-  color:var(--tx-dim);font-size:11.5px;font-weight:700;display:grid;place-items:center;
-}
-.bar{height:4px;border-radius:99px;background:#1f2a37;margin-top:6px;overflow:hidden}
-.bar>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--lo),var(--hi))}
-.pill{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;letter-spacing:.02em}
-.p-Berat{background:rgba(248,113,113,.15);color:#fca5a5}
-.p-Sedang{background:rgba(251,191,36,.15);color:#fcd34d}
-.p-Ringan{background:rgba(52,211,153,.13);color:#6ee7b7}
-
-.searchbar{padding:11px 16px 6px}
-.searchbar input{
-  width:100%;font:inherit;font-size:13px;background:var(--surface-2);color:var(--tx);
-  border:1px solid var(--line);border-radius:9px;padding:9px 12px;
-}
-.searchbar input::placeholder{color:var(--tx-faint)}
-.news{max-height:420px;overflow:auto;overscroll-behavior:contain}
-.news-item{display:block;padding:11px 16px;border-bottom:1px solid var(--line-soft);text-decoration:none;color:inherit;transition:background .12s}
-.news-item:last-child{border-bottom:0}
-.news-item:hover{background:var(--surface-2)}
-.news-t{font-size:13px;font-weight:550;line-height:1.45;color:#dbe4ee}
-.news-m{font-size:11.5px;color:var(--tx-faint);margin-top:4px;display:flex;gap:7px;align-items:center}
-.news-src{color:var(--info)}
-.empty{padding:18px 16px;color:var(--tx-faint);font-size:13px}
-
-/* ---------- atribusi ---------- */
-.callout{margin:12px 16px 0;padding:12px 15px;border-radius:10px;font-size:12.8px;line-height:1.6;color:var(--tx-dim)}
-.callout strong{color:var(--tx);display:block;margin-bottom:3px;font-size:13px}
-.callout-warn{background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.24)}
-
-.unit-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;padding:14px 16px 16px}
-.unit{
-  background:var(--surface-2);border:1px solid var(--line);border-radius:11px;
-  padding:13px 14px;display:flex;flex-direction:column;gap:8px;
-  text-align:left;font:inherit;color:inherit;cursor:pointer;transition:border-color .15s,transform .12s;
-}
-.unit:hover{border-color:#33465c;transform:translateY(-1px)}
-.unit-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.unit-name{font-size:13.5px;font-weight:650;line-height:1.35}
-.unit-group{font-size:11.5px;color:var(--info);margin-top:2px}
-.tag{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:6px;white-space:nowrap;flex:none}
-.t-sawit{background:rgba(255,159,28,.15);color:#fcd34d}
-.t-kayu{background:rgba(52,211,153,.13);color:#6ee7b7}
-.t-hph{background:rgba(122,167,255,.14);color:#a5c4ff}
-.t-tambang{background:rgba(167,139,250,.15);color:#c4b5fd}
-.t-rspo{background:rgba(45,212,191,.13);color:#5eead4}
-.unit-metrics{display:flex;gap:16px;flex-wrap:wrap}
-.metric{display:flex;flex-direction:column}
-.metric b{font-size:17px;font-variant-numeric:tabular-nums;font-weight:650}
-.metric span{font-size:10.5px;color:var(--tx-faint)}
-.unit-meta{font-size:11px;color:var(--tx-faint);line-height:1.55;border-top:1px solid var(--line);padding-top:8px}
-.unit-meta b{color:var(--tx-dim);font-weight:600}
-
-/* ---------- sumber ---------- */
-.srcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;padding:14px 16px 4px}
-.srccard{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
-.srccard h3{font-size:12.5px;color:var(--accent);margin-bottom:5px;letter-spacing:.02em}
-.srccard p{font-size:12px;color:var(--tx-dim);line-height:1.6}
-.fineprint{padding:12px 16px 16px;font-size:11.5px;color:var(--tx-faint);line-height:1.6}
-
-.foot{text-align:center;color:var(--tx-faint);font-size:11.5px;padding:20px;border-top:1px solid var(--line-soft)}
-
-/* ---------- responsif ---------- */
-@media(max-width:720px){
-  .topbar{padding:11px 14px;gap:10px}
-  .brand-txt h1{font-size:16.5px}
-  .brand-txt p{font-size:11.5px}
-  .topbar-right{width:100%;justify-content:flex-start}
-  .btn{margin-left:auto}
-  .notice{margin:10px 14px 0;padding:10px 13px;font-size:12.5px}
-  main{padding:12px 14px 24px}
-  .stats{grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
-  .stat{padding:10px 12px}
-  .stat strong{font-size:21px}
-  .stat-label,.stat-sub{font-size:10.5px}
-  #map{height:58vh;min-height:340px}
-  .map-toolbar{gap:10px 12px;padding:10px 13px;font-size:12.5px}
-  .tool-label{width:100%}
-  .legend{gap:10px;padding:9px 13px}
-  .legend-tip{margin-left:0;width:100%}
-  .pane,.news{max-height:330px}
-  .unit-list{grid-template-columns:1fr;padding:12px 13px 14px}
-  .srcgrid{grid-template-columns:1fr;padding:12px 13px 4px}
-  .callout,.tabs-inline{margin-left:13px;margin-right:13px}
-  .panel-head{padding:13px 13px 0}
-  .map-hint{max-width:calc(100% - 70px);font-size:11px;right:8px;bottom:24px}
-}
-@media(max-width:359px){
-  .stats{grid-template-columns:1fr}
-}
-
-/* ---------- leaflet ---------- */
-.leaflet-container{font:inherit;background:#0a1017}
-.leaflet-popup-content-wrapper{background:#16202c;color:var(--tx);border-radius:11px;box-shadow:0 8px 28px rgba(0,0,0,.5);border:1px solid var(--line)}
-.leaflet-popup-tip{background:#16202c;border:1px solid var(--line)}
-.leaflet-popup-content{margin:12px 14px;font-size:12.5px;line-height:1.6}
-.leaflet-popup-close-button{color:var(--tx-faint)!important;padding:6px 8px 0 0!important}
-.leaflet-control-zoom a{background:#16202c!important;color:var(--tx)!important;border-color:var(--line)!important}
-.leaflet-control-zoom a:hover{background:#1e2937!important}
-.leaflet-control-attribution{background:rgba(11,15,20,.8)!important;color:var(--tx-faint)!important;font-size:10.5px!important}
-.leaflet-control-attribution a{color:var(--tx-dim)!important}
-.pp-t{font-weight:700;font-size:13px;margin-bottom:5px}
-.pp-r{color:var(--tx-dim);font-size:12px}
-.pp-tag{display:inline-block;margin-bottom:6px}
-.pp-warn{color:var(--warn);font-size:11.5px;margin-top:6px;line-height:1.5}
-.pp-load{color:var(--tx-faint);font-style:italic}
-.conf-tinggi{background:rgba(239,68,68,.16);color:#fca5a5}
-.conf-sedang{background:rgba(250,204,21,.16);color:#fde047}
-.conf-rendah{background:rgba(34,197,94,.15);color:#86efac}
-
-@media(max-width:720px){
-  .conf-summary{left:8px;top:8px;min-width:112px;padding:7px 9px}
-  .cs-lab,.cs-num,.cs-total{font-size:11px}
-  .basemap-switch{right:8px;top:8px;padding:2px}
-  .bm{font-size:10.5px;padding:4px 7px}
-}
-
-/* beri ruang agar kontrol zoom tidak tertutup atribusi Leaflet */
-.leaflet-bottom.leaflet-left{bottom:18px}
-@media(max-width:720px){
-  .leaflet-bottom.leaflet-left{bottom:34px}
-  .leaflet-control-attribution{font-size:9.5px!important;line-height:1.35!important}
-}
-
-/* ---------- panah arah angin ---------- */
-/* Kotak panah tidak boleh menelan klik; hanya garis panahnya yang interaktif. */
-.wind-arrow{background:none;border:0;pointer-events:none;cursor:help}
-.wind-arrow svg g{pointer-events:stroke}
-.wind-arrow svg{display:block;filter:drop-shadow(0 0 2px rgba(0,0,0,.85))}
-.sw-wind{
-  background:none;border:0;width:18px;height:10px;position:relative;
-}
-.sw-wind::before{
-  content:"";position:absolute;left:0;top:4px;width:14px;height:0;
-  border-top:2px solid #7dd3fc;border-radius:2px;
-}
-.sw-wind::after{
-  content:"";position:absolute;right:1px;top:1px;width:6px;height:6px;
-  border-top:2px solid #7dd3fc;border-right:2px solid #7dd3fc;transform:rotate(45deg);
-}
-@media (prefers-reduced-motion:no-preference){
-  .wind-arrow svg{animation:windPulse 3.4s ease-in-out infinite}
-  @keyframes windPulse{0%,100%{opacity:.72}50%{opacity:1}}
-}
-
-/* ---------- legenda kualitas udara — Fase 2.5 UI friendly ---------- */
-.air-legend{
-  position:absolute;right:12px;bottom:26px;z-index:500;min-width:240px;max-width:320px;
-  background:rgba(12,18,26,.94);border:1px solid var(--line);border-radius:12px;
-  padding:10px 12px;backdrop-filter:blur(8px);box-shadow:0 8px 24px rgba(0,0,0,.35);
-}
-.air-legend .cs-title{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--tx);margin-bottom:6px}
-.air-legend .cs-count{font-size:10px;color:var(--tx-faint);background:rgba(255,255,255,.08);padding:2px 6px;border-radius:10px}
-.air-legend .cs-lab{font-size:11px;line-height:1.3;flex:1}
-.air-legend .cs-num{font-size:10.5px;color:var(--tx-faint);white-space:nowrap}
-.air-legend .cs-row{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;transition:all .15s;cursor:pointer;margin:1px 0}
-.air-legend .cs-row:hover{background:rgba(255,255,255,.08);transform:translateX(2px)}
-.air-legend .cs-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
-.air-legend .cs-filter-info{font-size:10px;display:flex;justify-content:space-between;align-items:center}
-.air-legend .cs-clear{cursor:pointer;transition:color .15s}
-.air-legend .cs-clear:hover{color:#fde68a!important}
-.air-legend .cs-foot{font-size:9.5px;color:var(--tx-faint);line-height:1.4}
-.basemap-citra .air-legend{background:rgba(8,12,18,.9)}
-.aqi-chip{
-  display:inline-block;padding:2px 7px;border-radius:6px;font-size:11px;font-weight:700;
-  color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);
-}
-.aqi-tip{
-  background:rgba(12,18,26,.95)!important;border:1px solid var(--line)!important;
-  border-radius:6px!important;color:var(--tx)!important;font-size:11px!important;
-  padding:4px 8px!important;backdrop-filter:blur(6px);
-  box-shadow:0 4px 12px rgba(0,0,0,.3)!important;
-}
-/* Di layar kecil legenda diringkas jadi skala warna agar peta tetap lega. */
-@media(max-width:720px){
-  .air-legend{
-    right:8px;bottom:22px;left:auto;min-width:0;max-width:calc(100% - 72px);width:max-content;
-    padding:8px 10px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;
-  }
-  .air-legend .cs-title{width:100%;margin:0 0 2px;font-size:10px;letter-spacing:.06em;display:flex;justify-content:space-between}
-  .air-legend .cs-row{display:flex;align-items:center;gap:4px;margin:0;padding:3px 5px}
-  .air-legend .cs-lab{font-size:10px}
-  .air-legend .cs-num{font-size:9.5px}
-  .air-legend .cs-dot{width:10px;height:10px}
-  .air-legend .cs-filter-info{width:100%}
-  .air-legend .cs-foot{width:100%}
-}
-
-/* ---------- gunung api & abu vulkanik ---------- */
-.volcano-mark{background:none;border:0;filter:drop-shadow(0 2px 4px rgba(0,0,0,.55))}
-.ash-legend{
-  position:absolute;left:12px;bottom:96px;z-index:500;min-width:186px;
-  background:rgba(12,18,26,.9);border:1px solid var(--line);border-radius:10px;
-  padding:9px 11px;backdrop-filter:blur(6px);
-}
-.ash-legend .cs-lab{font-size:11.5px}
-.ash-legend .cs-dot{width:11px;height:4px;border-radius:2px}
-.cs-note{
-  margin-top:6px;padding-top:6px;border-top:1px solid var(--line);
-  font-size:10.5px;color:var(--tx-faint);
-}
-.basemap-citra .ash-legend{background:rgba(8,12,18,.85)}
-
-/* ---------- label citra Himawari ---------- */
-.hima-info{
-  position:absolute;left:50%;top:12px;z-index:600;transform:translateX(-50%);
-  display:flex;align-items:center;gap:7px;white-space:nowrap;
-  background:rgba(12,18,26,.92);border:1px solid var(--line);border-radius:8px;
-  padding:5px 10px;backdrop-filter:blur(6px);
-}
-.hi-sat{font-size:11px;font-weight:700;letter-spacing:.03em;color:#7dd3fc}
-.hi-mode{font-size:11px;color:var(--tx-dim)}
-.hi-time{font-size:11px;font-variant-numeric:tabular-nums;color:var(--tx-faint)}
-
-@media(max-width:720px){
-  .ash-legend{left:8px;bottom:92px;min-width:150px;padding:7px 9px}
-  .ash-legend .cs-lab{font-size:10.5px}
-  /* Di layar sempit label pindah ke bawah agar tidak menimpa ringkasan & basemap. */
-  /* kolom kiri disisakan untuk kontrol zoom (lebar ~34px + margin) */
-  .hima-info{
-    top:auto;bottom:22px;left:56px;right:8px;transform:none;
-    padding:4px 7px;gap:5px;width:max-content;max-width:calc(100% - 64px);
-    margin-left:auto;
-  }
-  .hi-sat,.hi-mode,.hi-time{font-size:10px}
-  /* legenda abu naik & bergeser agar bebas dari zoom dan label Himawari */
-  .ash-legend{left:56px;bottom:58px;min-width:0;max-width:calc(100% - 64px)}
-}
-
-/* =========================================================
-   MODE TERMINAL — tampilan padat bergaya terminal keuangan
-   Ditulis sebagai lapisan penimpa agar struktur lama tetap utuh.
-   ========================================================= */
-:root{
-  /* Lapisan terminal disamakan dengan palet template SIAGA.ID. */
-  --term-mono:var(--mono);
-  --term-amber:#f97316;
-  --term-grid:#1e2530;
-}
-body{
-  font-family:var(--term-mono);
-  font-size:12px;
-  line-height:1.5;
-}
-h1,h2,h3{letter-spacing:.02em;text-transform:uppercase}
-
-/* --- topbar --- */
-.topbar{padding:8px 14px;gap:10px;border-bottom:2px solid var(--term-grid)}
-.mark-tag{
-  font-family:var(--term-mono);font-size:12px;font-weight:700;letter-spacing:.12em;
-  color:#0b0f14;background:var(--accent);padding:5px 8px;border-radius:3px;flex:none;
-}
-.brand{gap:9px}
-.brand-txt h1{font-size:14px;letter-spacing:.08em}
-.brand-sep{color:var(--tx-faint);font-weight:400}
-.brand-sub{color:var(--term-amber);letter-spacing:.1em}
-.brand-txt p{font-size:9.5px;letter-spacing:.14em;color:var(--tx-faint);margin-top:2px}
-.topbar-right{gap:8px}
-.clock-box{
-  display:inline-flex;align-items:center;gap:5px;padding:3px 7px;
-  border:1px solid var(--line);border-radius:3px;background:#0d131b;
-}
-.clock-lab{font-size:9px;letter-spacing:.1em;color:var(--tx-faint)}
-.clock-val{font-size:12px;font-variant-numeric:tabular-nums;color:var(--term-amber)}
-.stamp{font-size:10px;letter-spacing:.04em}
-.badge{border-radius:3px;font-size:9.5px;padding:4px 8px;letter-spacing:.1em}
-.btn{border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.09em;padding:6px 12px;font-family:var(--term-mono)}
-
-/* --- ticker berjalan --- */
-.ticker{
-  display:flex;align-items:stretch;height:26px;overflow:hidden;
-  background:#0d131b;border-bottom:1px solid var(--term-grid);
-}
-.ticker-tag{
-  display:flex;align-items:center;padding:0 10px;flex:none;
-  background:var(--accent);color:#0b0f14;
-  font-size:10px;font-weight:700;letter-spacing:.14em;
-}
-.ticker-view{position:relative;flex:1;overflow:hidden}
-.ticker-track{
-  position:absolute;top:0;left:0;height:100%;
-  display:flex;align-items:center;gap:26px;white-space:nowrap;
-  will-change:transform;
-}
-.tk{display:inline-flex;align-items:center;gap:6px;font-size:11.5px}
-.tk-k{color:var(--tx-faint);letter-spacing:.08em}
-.tk-v{color:var(--tx);font-variant-numeric:tabular-nums;font-weight:700}
-.tk-up{color:var(--bad)}
-.tk-dn{color:var(--ok)}
-.tk-am{color:var(--term-amber)}
-.tk-sep{color:var(--line);}
-@media (prefers-reduced-motion:reduce){.ticker-track{animation:none!important}}
-
-/* --- kartu statistik jadi sel data padat --- */
-.stats{gap:1px;background:var(--term-grid);padding:0;margin:0;border-bottom:1px solid var(--term-grid)}
-.stat{
-  border-radius:0;border:0;background:var(--bg);padding:7px 11px;
-  position:relative;
-}
-.stat-label{font-size:9px;letter-spacing:.12em;color:var(--tx-faint);text-transform:uppercase}
-.stat strong{font-size:23px;letter-spacing:-.01em;font-variant-numeric:tabular-nums;line-height:1.15}
-.stat-sub{font-size:9.5px;letter-spacing:.03em;color:var(--tx-faint)}
-.stat-accent{background:#131a12}
-.stat-accent::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent)}
-
-/* --- panel --- */
-.panel{border-radius:0;border:1px solid var(--term-grid);background:var(--bg)}
-.panel-head{padding:6px 11px;border-bottom:1px solid var(--term-grid);background:#0d131b}
-.panel-head h2{font-size:11px;letter-spacing:.1em;display:flex;align-items:center;gap:7px}
-.panel-head-tight{border-bottom:0}
-.pnum{
-  font-size:9px;letter-spacing:.06em;color:#0b0f14;background:var(--tx-faint);
-  padding:2px 5px;border-radius:2px;font-weight:700;
-}
-.panel-sub{font-size:9.5px;letter-spacing:.06em;color:var(--tx-faint)}
-.map-card{border-radius:0;border:1px solid var(--term-grid)}
-.map-toolbar{border-radius:0;background:#0d131b;padding:6px 10px;gap:9px}
-.tool-label{font-size:9px;letter-spacing:.14em}
-.chk,.sel{font-size:11px;letter-spacing:.03em}
-.sel select{font-family:var(--term-mono);font-size:11px;border-radius:3px;padding:3px 6px}
-.tab{font-family:var(--term-mono);font-size:10.5px;letter-spacing:.09em;font-weight:700;border-radius:0}
-.legend{border-radius:0;font-size:10.5px;letter-spacing:.03em;background:#0d131b}
-.basemap-switch,.bm{border-radius:3px;font-family:var(--term-mono);font-size:10px;letter-spacing:.08em}
-.conf-summary,.air-legend,.ash-legend,.hima-info{border-radius:3px}
-.cs-title{font-size:9px;letter-spacing:.12em}
-
-/* --- panel kueri RAG --- */
-.ask-bar{
-  display:flex;align-items:center;gap:7px;padding:7px 10px;
-  border-bottom:1px solid var(--term-grid);background:#0d131b;
-}
-.ask-prompt{color:var(--accent);font-weight:700;flex:none}
-.ask-bar input{
-  flex:1;min-width:0;background:#070b10;border:1px solid var(--line);border-radius:3px;
-  color:var(--tx);font-family:var(--term-mono);font-size:12px;padding:5px 8px;
-}
-.ask-bar input:focus{outline:none;border-color:var(--accent)}
-.btn-ghost{background:transparent;border-color:var(--line);color:var(--tx-dim);flex:none}
-.btn-ghost:hover{background:#1a2431;color:var(--tx)}
-.ask-chips{display:flex;flex-wrap:wrap;gap:5px;padding:7px 10px 0}
-.chip{
-  font-family:var(--term-mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
-  background:#131b26;color:var(--tx-dim);border:1px solid var(--line);border-radius:2px;
-  padding:3px 7px;cursor:pointer;
-}
-.chip:hover{border-color:var(--accent);color:var(--tx)}
-.ask-out{padding:9px 11px;max-height:290px;overflow:auto}
-.ask-line{
-  display:flex;gap:7px;font-size:12px;line-height:1.5;padding:2px 0;color:var(--tx);
-}
-.ask-line::before{content:"▸";color:var(--accent);flex:none}
-.ask-line.ask-head{color:var(--term-amber);font-weight:700}
-.ask-line.ask-note{color:var(--tx-faint);font-size:10.5px;font-style:normal}
-.ask-line.ask-note::before{content:"!";color:var(--warn)}
-.ask-src{
-  margin-top:8px;padding-top:7px;border-top:1px solid var(--term-grid);
-  display:flex;flex-wrap:wrap;gap:5px;
-}
-.ask-src-lab{font-size:9px;letter-spacing:.12em;color:var(--tx-faint);width:100%}
-.src-pill{
-  font-size:9.5px;letter-spacing:.04em;background:#131b26;border:1px solid var(--line);
-  border-radius:2px;padding:2px 6px;color:var(--tx-dim);text-decoration:none;
-}
-a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
-.ask-busy{color:var(--term-amber);font-size:11.5px;letter-spacing:.06em}
-
-/* --- canvas partikel angin --- */
-.wind-particle-canvas{
-  position:absolute;top:0;left:0;pointer-events:none;
-  transition:opacity .18s ease;
-}
-
-/* --- daftar & berita lebih padat --- */
-.news-item,.rank,.unit{font-size:12px}
-.foot{font-size:10px;letter-spacing:.08em;text-transform:uppercase}
-.fineprint{font-size:10.5px}
-.callout{border-radius:0;font-size:11.5px}
-.srccard h3{font-size:11px;letter-spacing:.08em}
-.srccard p{font-size:11px}
-
-@media(max-width:720px){
-  body{font-size:12.5px}
-  /* header dipadatkan: satu baris identitas + satu baris status */
-  .topbar{padding:6px 10px;gap:6px}
-  .brand-txt p{display:none}
-  .brand-txt h1{font-size:12px;letter-spacing:.05em}
-  .brand-sub{display:none}
-  .brand-sep{display:none}
-  .mark-tag{font-size:10px;padding:4px 6px}
-  .topbar-right{gap:6px;width:100%;justify-content:flex-start}
-  .clock-box{padding:2px 5px}
-  .clock-val{font-size:11px}
-  .clock-box:first-of-type{display:none}   /* cukup UTC di layar sempit */
-  .stamp{display:none}
-  .btn{padding:5px 9px;font-size:10px}
-  #refreshBtn{margin-left:auto}
-  .notice{margin:8px 10px 0;padding:7px 10px;font-size:11px;line-height:1.4}
-  .stats{grid-template-columns:repeat(2,1fr)}
-  .stat{padding:6px 9px}
-  .stat strong{font-size:18px}
-  .stat-label{font-size:8.5px;letter-spacing:.08em}
-  .stat-sub{font-size:9px}
-  .ticker{height:22px}
-  .ticker-tag{padding:0 7px;font-size:9px}
-  .tk{font-size:10.5px}
-  .map-toolbar{padding:5px 8px;gap:6px}
-  .ask-out{max-height:240px}
-}
-
-/* Catatan konteks di dalam panel analisis */
-.pane-note {
-  margin: 0 0 10px;
-  padding: 8px 10px;
-  border-left: 2px solid var(--term-amber);
-  background: rgba(255, 176, 0, 0.06);
-  color: var(--muted);
-  font-size: 11.5px;
-  line-height: 1.5;
-}
-
-/* Timeline prakiraan sebaran asap */
-.tl{display:flex;align-items:center;gap:0}
-.tl-lb{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:8px}
-.tl-b{
-  font:inherit;font-size:11px;padding:3px 9px;cursor:pointer;
-  background:transparent;color:var(--muted);
-  border:1px solid var(--term-grid);border-right:0;
-}
-.tl-b:last-child{border-right:1px solid var(--term-grid)}
-.tl-b:hover{color:var(--fg);background:rgba(255,176,0,.07)}
-.tl-b.active{background:var(--term-amber);color:#12161c;border-color:var(--term-amber);font-weight:600}
-.tl-b:focus-visible{outline:2px solid var(--term-amber);outline-offset:1px}
-
-/* Panel gas SO2 gunung api */
-.so2-intro{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px 22px;margin-bottom:16px}
-.so2-intro p{margin:0;font-size:12px;line-height:1.65;color:var(--muted)}
-.so2-intro b{color:var(--fg)}
-.so2grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:12px}
-.so2card{border:1px solid var(--term-grid);background:rgba(255,255,255,.015);padding:12px 13px;cursor:pointer;transition:border-color .12s,background .12s}
-.so2card:hover{border-color:var(--term-amber);background:rgba(255,176,0,.05)}
-.so2hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
-.so2hd h3{margin:0;font-size:12.5px;letter-spacing:.02em}
-.so2badge{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;border:1px solid;padding:1px 6px}
-.so2val{display:flex;align-items:baseline;gap:3px;margin-bottom:7px}
-.so2val b{font-size:22px;font-weight:600;color:var(--fg)}
-.so2val span{font-size:10.5px;color:var(--muted)}
-.so2note{margin:0 0 6px;font-size:11px;line-height:1.5;color:var(--muted)}
-.so2act{margin:0 0 6px;font-size:10px;line-height:1.55;color:var(--muted);
-  max-height:88px;overflow:auto;padding-right:4px}
-.so2act b{color:var(--term-amber);font-weight:600}
-.so2act::-webkit-scrollbar{width:4px}
-.so2act::-webkit-scrollbar-thumb{background:var(--term-grid)}
-.so2meta{margin:0;font-size:10px;color:var(--muted);opacity:.7;border-top:1px solid var(--term-grid);padding-top:6px}
-.hd-note{font-size:10.5px;color:var(--muted);letter-spacing:.04em}
-
-/* Penyaring topik berita */
-.ntopics{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
-.ntopic{
-  font:inherit;font-size:10.5px;letter-spacing:.02em;cursor:pointer;
-  display:inline-flex;align-items:center;gap:5px;padding:3px 8px;
-  background:transparent;color:var(--muted);border:1px solid var(--term-grid);
-}
-.ntopic:hover{color:var(--fg);border-color:var(--muted)}
-.ntopic.active{background:var(--term-amber);color:#12161c;border-color:var(--term-amber);font-weight:600}
-.ntopic i{font-style:normal;opacity:.65;font-size:9.5px}
-.ntopic.active i{opacity:.8}
-.news-tag{
-  font-size:9.5px;letter-spacing:.03em;color:var(--term-amber);
-  border:1px solid rgba(255,176,0,.32);padding:0 5px;opacity:.9;
-}
-
-/* Pemisah & nilai pada legenda gunung api */
-.cs-sep{height:1px;background:var(--term-grid);margin:6px 0}
-.cs-val{margin-left:auto;font-weight:600;color:var(--fg)}
-
-/* Umur citra satelit */
-.hi-age{color:var(--muted);font-size:10px;letter-spacing:.03em}
-
-/* ---------- panel gempa, tsunami & pengungsi ---------- */
-.hazard-body{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
-.hz-block{border:1px solid var(--term-grid);padding:12px 13px;background:rgba(255,255,255,.012)}
-.hz-head{display:flex;align-items:center;gap:9px;margin-bottom:7px}
-.hz-title{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
-.hz-badge{margin-left:auto;font-size:10.5px;font-weight:700;color:#12161c;padding:1px 7px;letter-spacing:.04em}
-.hz-main{font-size:13.5px;line-height:1.45;color:var(--fg)}
-.hz-sub{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.5}
-.hz-note{font-size:11px;color:var(--muted);margin-top:7px;line-height:1.5;
-  border-left:2px solid var(--term-grid);padding-left:8px}
-.hz-alert{border-left-color:#ef4444;color:#fca5a5}
-.hz-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:7px;margin-top:10px}
-.hz-card{border:1px solid var(--term-grid);padding:7px 8px}
-.hz-card-t{font-size:16px;font-weight:700;color:var(--term-amber);line-height:1.2}
-.hz-card-s{font-size:9.5px;color:var(--muted);letter-spacing:.03em;margin-top:2px;line-height:1.35}
-.hz-bul{margin-top:9px;padding-top:8px;border-top:1px solid var(--term-grid)}
-.hz-bul-t{font-size:12px;color:var(--fg);text-decoration:none;display:block;line-height:1.4}
-.hz-bul-t:hover{color:var(--term-amber);text-decoration:underline}
-.hz-bul-s{font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.5}
-
-/* ---------- korban menurut media ---------- */
-.cas-box{margin-top:14px;border:1px solid rgba(167,139,250,.3);padding:12px 13px;
-  background:rgba(167,139,250,.045)}
-.hz-warn{border-left-color:#a78bfa;color:#c4b5fd}
-.cas-grid{display:grid;gap:8px;margin-top:10px;
-  grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
-.cas-item{border:1px solid var(--term-grid);padding:9px 10px}
-.cas-n{font-size:19px;font-weight:700;color:#c4b5fd;line-height:1.15}
-.cas-l{font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-top:2px}
-.cas-q{font-size:11px;color:var(--fg);margin-top:6px;line-height:1.45;opacity:.85}
-.cas-src{display:inline-block;margin-top:6px;font-size:10.5px;color:var(--term-amber);
-  text-decoration:none;letter-spacing:.02em}
-.cas-src:hover{text-decoration:underline}
-
-/* ---------- status pembaruan data ---------- */
-.st-grid{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(185px,1fr))}
-.st-card{border:1px solid var(--term-grid);padding:9px 10px}
-.st-card.st-bad{border-color:rgba(239,68,68,.45)}
-.st-top{display:flex;align-items:center;gap:7px}
-.st-dot{width:7px;height:7px;border-radius:50%;flex:none}
-.st-name{font-size:11.5px;color:var(--fg);line-height:1.35}
-.st-age{font-size:14px;color:var(--term-amber);font-weight:600;margin-top:5px}
-.st-every{font-size:9.5px;color:var(--muted);letter-spacing:.03em;margin-top:2px}
-
-/* ============================================================
-   PANEL KEJADIAN AKTIF
-   Satu daftar lintas jenis bencana, diurutkan menurut keparahan.
-   Pita warna di tepi kiri memberi jenis bencana identitas visual
-   yang bisa dipindai sekilas tanpa harus membaca labelnya.
-   ============================================================ */
-.panel-events { border-color: #2b3a4a; }
-.ev-body { display: flex; flex-direction: column; gap: 1px; background: #1a2430; }
-.ev {
-  background: var(--panel, #111a24);
-  padding: 9px 11px 10px 13px;
-  border-left: 3px solid #475569;
-}
-.ev-volcano { border-left-color: #fb923c; }
-.ev-quake   { border-left-color: #7dd3fc; }
-.ev-tsunami { border-left-color: #ef4444; }
-.ev-shelter { border-left-color: #a78bfa; }
-.ev-fire    { border-left-color: var(--accent, #ff6b35); }
-
-.ev-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.ev-kind {
-  font-size: 10px; letter-spacing: .09em; text-transform: uppercase;
-  color: #94a3b8; font-weight: 700;
-}
-.ev-volcano .ev-kind { color: #fb923c; }
-.ev-quake   .ev-kind { color: #7dd3fc; }
-.ev-tsunami .ev-kind { color: #ef4444; }
-.ev-shelter .ev-kind { color: #a78bfa; }
-.ev-fire    .ev-kind { color: var(--accent, #ff6b35); }
-
-.ev-age { font-size: 10px; color: #64748b; white-space: nowrap; }
-.ev-title {
-  margin: 3px 0 2px; font-size: 13px; font-weight: 600;
-  color: #e2e8f0; line-height: 1.3;
-}
-.ev-detail { margin: 0; font-size: 11px; color: #94a3b8; line-height: 1.45; }
-.ev-note {
-  margin: 4px 0 0; font-size: 10px; color: #cbd5e1;
-  border-left: 2px solid #475569; padding-left: 6px;
-}
-
-/* =========================================================
-   LAPISAN TEMPLATE SIAGA.ID
-   Menyelaraskan tampilan dengan template yang diberikan:
-   sudut benar-benar tajam, kepala panel "NN › LABEL" berwarna
-   per-kategori, metrik berwarna, dan aksen pemisah tipis.
-   ========================================================= */
-
-/* Sudut tajam menyeluruh — template tidak memakai radius sama sekali. */
-.panel, .map-card, .stat, .btn, .chip, .tab, .ntopic, .bm,
-.sel select, .ask-in, .news-search input, .basemap-switch,
-.conf-summary, .air-legend, .ash-legend, .hima-info, .legend,
-.mark-tag, .badge, .pnum { border-radius: 0 !important; }
-
-/* --- topbar --- */
-.topbar{
-  height:auto;min-height:42px;padding:0 14px;
-  background:var(--surface);border-bottom:2px solid var(--line);
-  backdrop-filter:none;
-}
-.mark-tag{
-  background:var(--accent-red);color:#000;font-weight:700;
-  letter-spacing:.1em;font-size:11px;padding:4px 7px;
-}
-.brand-txt h1{font-size:15px;letter-spacing:.08em;font-weight:700}
-.brand-sub{color:var(--tx-dim);font-weight:400;font-size:10px;letter-spacing:.14em}
-.brand-sep{color:var(--tx-faint)}
-.brand-txt p{font-size:9px;letter-spacing:.1em;color:var(--tx-faint);margin-top:2px}
-.clock-box{font-size:10px;letter-spacing:.04em}
-.clock-lab{color:var(--tx-faint);margin-right:4px}
-.clock-val{color:var(--tx);font-variant-numeric:tabular-nums}
-.stamp{font-size:9.5px;color:var(--tx-faint)}
-.btn{
-  font-family:var(--mono);font-size:10px;letter-spacing:.1em;font-weight:400;
-  background:transparent;border:1px solid var(--line-soft);color:var(--tx);
-  padding:4px 12px;
-}
-.btn:hover{background:var(--surface-2);border-color:var(--line-3)}
-.btn-primary{background:transparent;border-color:var(--line-soft);color:var(--tx)}
-.btn-primary:hover{background:var(--surface-2)}
-.badge{font-size:9.5px;letter-spacing:.1em;padding:3px 9px;border-radius:0}
-
-/* Titik LIVE berdenyut, seperti pada template. */
-.badge-live{
-  background:transparent;border-color:transparent;color:var(--ok);
-  display:inline-flex;align-items:center;gap:6px;
-}
-.badge-live::before{
-  content:"";width:6px;height:6px;border-radius:50%;
-  background:var(--ok);animation:siagaPulse 1.4s ease-in-out infinite;
-}
-@keyframes siagaPulse{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* --- metrik --- */
-.stats{
-  /* Sembilan kartu: delapan metrik asli ditambah kekeringan. */
-  grid-template-columns:repeat(9,1fr);
-  gap:0;background:var(--line);border-bottom:1px solid var(--line);
-}
-/* Pembagi dipilih yang habis membagi sembilan, supaya tidak ada sel
-   kosong menganga di ujung baris. */
-@media(max-width:1700px){.stats{grid-template-columns:repeat(3,1fr)}}
-/* Di bawah 900 px dipakai dua kolom meski menyisakan satu sel di baris
-   terakhir: tiga kolom pada lebar segitu membuat angka metrik terlalu
-   sempit untuk dibaca, dan keterbacaan lebih penting daripada kerapian
-   grid. Sel terakhir dibiarkan melebar mengisi sisa. */
-@media(max-width:900px){
-  .stats{grid-template-columns:repeat(2,1fr)}
-  .stats .stat:last-child{grid-column:span 2}
-}
-@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
-.stat{
-  background:var(--surface-2);padding:7px 12px;
-  border-right:1px solid var(--line);
-}
-.stat-label{font-size:8px;letter-spacing:.1em;color:var(--tx-dim);margin-bottom:2px}
-.stat strong{font-size:20px;font-weight:700;line-height:1}
-.stat-sub{font-size:8px;letter-spacing:.08em;margin-top:2px;opacity:.65}
-.stat-accent{background:var(--surface-2)}
-.stat-accent::before{display:none}
-
-/* Warna per metrik, mengikuti urutan kartu pada template. */
-.stats .stat:nth-child(1) strong,.stats .stat:nth-child(1) .stat-sub{color:var(--accent-red)}
-.stats .stat:nth-child(2) strong,.stats .stat:nth-child(2) .stat-sub{color:var(--accent)}
-.stats .stat:nth-child(3) strong,.stats .stat:nth-child(3) .stat-sub{color:var(--warn)}
-.stats .stat:nth-child(4) strong,.stats .stat:nth-child(4) .stat-sub{color:var(--cyan)}
-.stats .stat:nth-child(5) strong,.stats .stat:nth-child(5) .stat-sub{color:var(--accent-red)}
-.stats .stat:nth-child(6) strong,.stats .stat:nth-child(6) .stat-sub{color:var(--accent)}
-.stats .stat:nth-child(7) strong,.stats .stat:nth-child(7) .stat-sub{color:var(--warn)}
-.stats .stat:nth-child(8) strong,.stats .stat:nth-child(8) .stat-sub{color:var(--accent-red)}
-.stat .skel{color:var(--tx-faint) !important}
-
-/* --- panel & kepala panel --- */
-.panel,.map-card{background:var(--surface);border:1px solid var(--line)}
-.panel-head{
-  background:var(--surface-2);border-bottom:1px solid var(--line);
-  padding:4px 10px;align-items:center;
-}
-.panel-head h2{
-  font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--accent);
-}
-/* Nomor panel jadi bagian dari judul: "01 › ANALISIS" */
-.pnum{
-  background:transparent;color:inherit;padding:0;font-weight:700;
-  font-size:10px;letter-spacing:.1em;
-}
-.pnum::after{content:" \203A";color:var(--tx-faint)}
-.panel-sub{font-size:9px;color:var(--tx-faint);letter-spacing:.04em}
-
-/* Warna kepala per panel, meniru pengelompokan template. */
-#eventsPanel .panel-head h2{color:var(--accent-red)}
-#attrSection .panel-head h2{color:var(--accent)}
-#hazardPanel .panel-head h2{color:var(--accent-red)}
-#statusPanel .panel-head h2{color:var(--ok)}
-#so2Panel   .panel-head h2{color:var(--warn)}
-.panel-ask  .panel-head h2{color:var(--cyan)}
-
-/* --- kontrol peta --- */
-.map-toolbar{background:var(--surface-2);border-bottom:1px solid var(--line);padding:6px 10px}
-.tool-label{font-size:8px;letter-spacing:.12em;color:var(--tx-faint)}
-.chk{font-size:10px;color:var(--tx-dim)}
-.sel{font-size:9px;letter-spacing:.06em;color:var(--tx-faint)}
-.sel select{
-  font-family:var(--mono);font-size:10px;background:var(--surface);
-  border:1px solid var(--line-soft);color:var(--tx);padding:3px 6px;
-}
-.tl-b,.bm{
-  font-family:var(--mono);font-size:10px;letter-spacing:.04em;
-  border:1px solid var(--line);background:transparent;color:var(--tx-dim);padding:2px 8px;
-}
-.tl-b.active,.bm.active{
-  border-color:var(--info);background:rgba(59,130,246,.13);color:var(--info);
-}
-.legend{background:var(--surface-2);font-size:10px;border-top:1px solid var(--line)}
-.legend-tip{color:var(--tx-faint);font-size:9px}
-
-/* --- tab --- */
-.tab{
-  font-family:var(--mono);font-size:9px;letter-spacing:.08em;font-weight:400;
-  border:1px solid var(--line);background:transparent;color:var(--tx-dim);padding:3px 12px;
-}
-.tab.active{border-color:var(--warn);background:rgba(234,179,8,.09);color:var(--warn)}
-
-/* --- kejadian aktif --- */
-.ev-body{background:var(--line)}
-.ev{background:var(--surface);padding:8px 10px 9px 12px}
-.ev-kind{font-size:9px;letter-spacing:.11em}
-.ev-title{font-size:12px;letter-spacing:.02em;text-transform:uppercase}
-.ev-detail{font-size:10px;color:var(--tx-dim)}
-.ev-age{font-size:9px;color:var(--tx-faint)}
-.ev-note{font-size:9px;color:var(--tx-dim);border-left-color:var(--line-soft)}
-
-/* --- berita --- */
-.news-item{border:1px solid var(--line);border-bottom:0;padding:7px 10px}
-.news-item:last-child{border-bottom:1px solid var(--line)}
-.news-item:hover{background:var(--surface-2)}
-.news-t{font-size:11px;line-height:1.45;letter-spacing:.01em}
-.news-m{font-size:9px;letter-spacing:.04em;gap:8px;color:var(--tx-faint)}
-.news-src{color:var(--magenta)}
-.news-tag{
-  border:1px solid var(--line-soft);color:var(--tx-dim);
-  padding:0 5px;font-size:8.5px;letter-spacing:.08em;
-}
-/* Media negara tetangga ditandai warna berbeda agar langsung terbaca. */
-.news-foreign{border-color:rgba(6,182,212,.45);color:var(--cyan)}
-.news-age{color:var(--tx-dim)}
-.news-clock{color:var(--tx-faint);font-variant-numeric:tabular-nums}
-.ntopic{
-  font-family:var(--mono);font-size:9px;letter-spacing:.06em;
-  border:1px solid var(--line);background:transparent;color:var(--tx-dim);padding:2px 8px;
-}
-.ntopic.active{border-color:var(--magenta);background:rgba(168,85,247,.12);color:var(--magenta)}
-.ntopic i{font-style:normal;color:var(--tx-faint);margin-left:5px}
-
-/* --- kueri --- */
-.ask-bar{background:var(--surface-2);border-bottom:1px solid var(--line)}
-.ask-prompt{color:var(--accent)}
-.ask-in{
-  font-family:var(--mono);font-size:10px;background:var(--surface-2);
-  border:1px solid var(--line-soft);color:var(--tx);
-}
-.ask-in:focus{border-color:var(--accent);outline:none}
-.chip{
-  font-family:var(--mono);font-size:8px;letter-spacing:.06em;
-  border:1px solid var(--line);background:transparent;color:var(--tx-faint);padding:2px 8px;
-}
-.chip:hover{color:var(--tx-dim);border-color:var(--line-soft)}
-
-/* --- kartu edukasi & sumber --- */
-.srcgrid{gap:1px;background:var(--line)}
-.srccard{background:var(--surface);padding:12px 14px;border-radius:0;border:0;border-top:2px solid var(--accent)}
-.srccard h3{font-size:9px;letter-spacing:.1em;color:var(--accent);margin-bottom:7px}
-.srccard p{font-size:10px;line-height:1.7;color:var(--tx-dim)}
-.srccard:nth-child(2){border-top-color:var(--accent-red)}
-.srccard:nth-child(3){border-top-color:var(--warn)}
-.srccard:nth-child(4){border-top-color:var(--cyan)}
-.srccard:nth-child(5){border-top-color:var(--info)}
-.srccard:nth-child(6){border-top-color:var(--magenta)}
-
-/* --- footer --- */
-.foot{
-  border-top:1px solid var(--line);color:var(--tx-faint);
-  font-size:9px;letter-spacing:.1em;text-align:center;padding:14px;
-}
-.foot b{color:var(--accent-red);font-size:13px}
-
-/* --- footer tiga kolom, mengikuti template --- */
-.brand-dot{color:var(--accent)}
-.foot{text-align:left;padding:0}
-.foot-grid{
-  display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:end;
-  padding:14px 16px;border-bottom:1px solid var(--line);
-}
-@media(max-width:860px){.foot-grid{grid-template-columns:1fr;gap:14px}}
-.foot-lab{font-size:8px;letter-spacing:.12em;color:var(--tx-faint);margin-bottom:6px}
-.foot-p{font-size:10px;line-height:1.7;color:var(--tx-dim);letter-spacing:.01em}
-.foot-refs{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
-.foot-refs span{font-size:9px;letter-spacing:.08em;color:var(--tx-faint)}
-.foot-emg{text-align:center}
-.emg-box{border:1px solid rgba(239,68,68,.27);background:rgba(239,68,68,.06);padding:6px 24px;display:inline-block}
-.emg-box b{display:block;color:var(--accent-red);font-size:28px;font-weight:700;line-height:1}
-.emg-box span{display:block;color:rgba(239,68,68,.55);font-size:8px;letter-spacing:.12em;margin-top:3px}
-.foot-right{text-align:right}
-@media(max-width:860px){.foot-right{text-align:left}}
-.foot-btm{text-align:center;padding:9px;font-size:9px;letter-spacing:.1em;color:var(--tx-faint)}
-
-/* --- ticker --- */
-.ticker{background:var(--surface-2);border-bottom:1px solid var(--line);height:24px}
-.ticker-tag{background:var(--accent-red);color:#000;font-size:9px;letter-spacing:.14em}
-.tk{font-size:10px;letter-spacing:.04em}
-.tk-k{font-size:9px;letter-spacing:.1em}
-
-/* Keadaan kosong panel bencana: nol harus terbaca sebagai fakta,
-   bukan sebagai kegagalan memuat. */
-.hz-empty{font-size:12px;color:var(--tx-dim);padding:10px 0 2px;line-height:1.6}
-.chk-off{opacity:.4;cursor:not-allowed}
-.chk-off input{cursor:not-allowed}
-
-/* ============================================================
-   PENYELARASAN AKHIR DENGAN TEMPLATE
-   Rincian yang tersisa dari mockup: teks kapital, grid + scanline
-   pada peta, label koordinat sudut, tabel zebra, dan baris fungsi
-   cepat. Semua murni lapisan visual — tidak ada perilaku berubah.
-   ============================================================ */
-
-/* Kepala panel: mockup memakai kapital dengan spasi huruf lebar. */
-.panel-head h2{
-  text-transform:uppercase;
-  letter-spacing:.1em;
-  font-size:10px;
-  font-weight:700;
-}
-.panel-head{background:var(--surface-2)}
-
-/* Kartu metrik: sub-teks memakai warna angka pada opasitas rendah,
-   bukan abu-abu netral. Inilah yang membuat bilah atas mockup
-   terlihat berwarna-warni alih-alih datar. */
-.stat .stat-label{
-  text-transform:uppercase;letter-spacing:.1em;font-size:8px;color:var(--tx-dim);
-}
-.stat strong{font-size:20px;line-height:1}
-.stat .stat-sub{
-  text-transform:uppercase;letter-spacing:.08em;font-size:8px;opacity:.62;
-}
-.stat:nth-child(1) .stat-sub{color:var(--accent-red)}
-.stat:nth-child(2) .stat-sub{color:var(--accent)}
-.stat:nth-child(3) .stat-sub{color:var(--warn)}
-.stat:nth-child(4) .stat-sub{color:var(--cyan)}
-.stat:nth-child(5) .stat-sub{color:var(--accent-red)}
-.stat:nth-child(6) .stat-sub{color:var(--accent)}
-.stat:nth-child(7) .stat-sub{color:var(--warn)}
-.stat:nth-child(8) .stat-sub{color:var(--accent-red)}
-
-/* Peta: grid 48px + scanline halus, persis mockup. Ditaruh di atas
-   ubin tetapi di bawah data, dan tidak menangkap klik sehingga peta
-   tetap dapat digeser dan diklik seperti biasa. */
-.map-wrap{position:relative}
-.map-wrap::after{
-  content:"";position:absolute;inset:0;pointer-events:none;z-index:400;
-  /* Mockup memakai grid pekat karena tidak punya peta sungguhan di
-     baliknya. Di sini ada data nyata, jadi kadarnya diturunkan jauh:
-     cukup untuk memberi kesan terminal, tidak sampai mengaburkan
-     titik api atau nama kota. Scanline dihilangkan sama sekali —
-     itulah yang tadi membuat peta tampak berkabut. */
-  background-image:
-    linear-gradient(rgba(120,140,165,.07) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(120,140,165,.07) 1px,transparent 1px);
-  background-size:48px 48px,48px 48px;
-}
-/* Label koordinat di empat sudut peta — Fase 2.1: diturunkan dari BBOX config, bukan hardcoded.
-   ::before dikosongkan (grid ada di ::after), semua 4 sudut via span[data-corner] yang diisi JS. */
-.map-wrap::before{
-  content:"";position:absolute;inset:0;pointer-events:none;z-index:399;
-}
-.map-corner{
-  position:absolute;z-index:401;color:var(--line-3);font-size:9px;
-  letter-spacing:.06em;pointer-events:none;
-}
-.map-corner.tl{top:6px;left:10px}
-.map-corner.tr{top:6px;right:10px}
-.map-corner.bl{bottom:22px;left:10px}
-.map-corner.br{bottom:22px;right:10px}
-
-/* Tabel sumber data: baris berselang-seling seperti mockup. */
-.srctable tbody tr:nth-child(even),
-.panel table tbody tr:nth-child(even){background:var(--surface-2)}
-.panel table thead th{
-  text-transform:uppercase;letter-spacing:.12em;font-size:8px;
-  color:var(--tx-dim);font-weight:700;
-}
-
-/* Baris fungsi cepat F1–F8 pada footer. */
-.fkeys{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin-top:4px}
-.fkey{display:flex;align-items:center;gap:3px}
-.fkey b{
-  background:var(--accent);color:#000;font-size:9px;font-weight:700;
-  padding:1px 4px;line-height:1;
-}
-.fkey span{color:var(--tx-faint);font-size:9px;letter-spacing:.04em}
-
-/* ============================================================
-   TATA LETAK TEMPLATE
-   Template menyusun halaman secara bertumpuk: baris kotak kontrol,
-   lalu peta melebar penuh, lalu pasangan panel 1fr/2fr dan 1fr/1fr.
-   Sebelumnya halaman ini memakai peta di kiri dengan sidebar sempit
-   di kanan — itulah kenapa masih terasa tampilan lama meski warna
-   dan tipografinya sudah diganti.
-   ============================================================ */
-
-.layout{display:block}
-
-/* -- baris kotak kontrol -- */
-.ctlrow{
-  display:grid;
-  grid-template-columns:auto auto auto auto minmax(0,1fr);
-  gap:6px;align-items:start;margin-bottom:6px;
-}
-.ctlbox{background:var(--surface);border:1px solid var(--line);min-width:0}
-.ctlbox-h{
-  border-bottom:1px solid var(--line);background:var(--surface-2);
-  padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:.1em;
-}
-.ch-accent{color:var(--accent)}
-.ch-info{color:var(--info)}
-.ch-warn{color:var(--warn)}
-.ch-mute{color:var(--tx-dim)}
-.ch-red{color:var(--accent-red)}
-.ctlbox-b{padding:6px 8px;display:flex;flex-direction:column;gap:3px}
-.ctlbox-b.ctl-wrap{flex-direction:row;flex-wrap:wrap;gap:3px;max-width:330px}
-
-/* Kotak kendali memakai kotak-centang bergaya chip agar sepadat mockup,
-   tetapi tetap input asli sehingga keyboard dan pembaca layar bekerja. */
-.ctl-wrap .chk{
-  border:1px solid var(--line);padding:2px 7px;font-size:10px;
-  letter-spacing:.04em;color:var(--tx-dim);gap:5px;
-}
-.ctl-wrap .chk input{width:11px;height:11px}
-.ctl-wrap .chk:has(input:checked){
-  border-color:var(--accent);color:var(--accent);background:rgba(249,115,22,.13);
-}
-.ctlbox .tl{display:flex;flex-direction:column;gap:3px;padding:6px 8px}
-.ctlbox .tl-b{width:100%;text-align:center}
-.ctlbox .basemap-switch{
-  position:static;display:flex;flex-direction:column;gap:3px;
-  background:none;border:0;padding:6px 8px;
-}
-.ctlbox select{width:100%}
-
-.ctl-cfg{flex-direction:row;flex-wrap:wrap;gap:16px;padding:6px 10px}
-.cfg-g{display:flex;flex-direction:column;gap:4px;min-width:0}
-.cfg-l{color:var(--tx-faint);font-size:8px;letter-spacing:.1em}
-.cfg-lg{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.cfg-lg span{display:inline-flex;align-items:center;gap:4px;font-size:9px;color:var(--tx-dim)}
-
-/* -- peta melebar penuh -- */
-.map-card{display:block;margin-bottom:6px}
-.map-head{padding:4px 10px;border-bottom:1px solid var(--line);background:var(--surface-2)}
-.map-head h2{font-size:10px}
-.map-wrap{height:440px}
-#map{height:100%}
-
-/* -- pasangan panel seperti template -- */
-.pgrid{display:grid;gap:6px;margin-bottom:6px;align-items:start}
-.pgrid-a{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
-.pgrid-b{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-.pgrid > .panel{margin-top:0;min-width:0}
-.panel.wide{margin-top:0;margin-bottom:6px}
-
-@media(max-width:1100px){
-  .ctlrow{grid-template-columns:1fr}
-  .ctlbox-b.ctl-wrap{max-width:none}
-  .pgrid-a,.pgrid-b{grid-template-columns:1fr}
-}
-
-/* Panel berita dan kejadian diberi tinggi tetap dengan gulir sendiri
-   supaya kedua kolom tetap sejajar, seperti pada mockup. */
-.ev-body,.news{max-height:430px;overflow-y:auto}
-
-.sr-only{
-  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
-  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
-}
-
-/* Peta dasar kini punya kotak kontrolnya sendiri di baris atas, jadi
-   tombol lama yang mengambang di atas peta dihapus agar tidak ada dua
-   kendali untuk hal yang sama. Yang di dalam .ctlbox tetap tampil. */
-.map-wrap > .basemap-switch{display:none}
-
-/* Dropdown mengikuti gaya terminal: sudut tajam, latar surface-2. */
-.ctlbox select{
-  font-family:var(--mono);font-size:10px;letter-spacing:.04em;
-  background:var(--surface-2);color:var(--tx);
-  border:1px solid var(--line-soft);border-radius:0;padding:3px 6px;
-}
-.ctlbox select:focus{outline:none;border-color:var(--accent)}
-.cfg-g select{min-width:130px}
-
-/* Catatan di dalam panel: menjelaskan pemotongan atau keadaan data.
-   Kontras dinaikkan karena isinya justru keterangan yang menentukan
-   cara membaca angka di atasnya. */
-.pane-note{
-  font-size:12px;color:var(--tx-dim);
-  border-left:2px solid var(--line-3);
-  padding:4px 0 4px 8px;margin-bottom:8px;line-height:1.5;
-}
-
-/* ============================================================
-   KETERBACAAN — hasil audit aksesibilitas
-   Teks yang membawa keterangan penting sebelumnya berkontras
-   1,71:1 pada ukuran 8-10 px: praktis tidak terbaca. Justru di
-   sanalah keterangan sampel, umur data, dan arti warna peta
-   ditulis. Luminansi dinaikkan tanpa mengubah palet dasarnya.
-   ============================================================ */
-
-/* rgb(148,163,184) ~ 7:1 terhadap latar #131920 */
-.panel-sub,
-.legend,
-.legend span,
-.fineprint,
-.hz-note,
-.pane-note,
-.stat-label{
-  color:#94a3b8;
-}
-.panel-sub,.legend,.legend span{font-size:12px}
-.fineprint{font-size:12px}
-.stat-label{font-size:11px;letter-spacing:.08em}
-.stat-sub{font-size:11px;opacity:.85}
-.cfg-l{color:#94a3b8;font-size:10px}
-.foot-lab{color:#94a3b8;font-size:10px}
-.foot-p,.foot-refs span,.fkey span{color:#94a3b8;font-size:12px}
-.map-corner{color:#64748b;font-size:10px}
-.ctlbox-h{font-size:11px}
-.ctl-wrap .chk{font-size:11px}
-.tl-b,.bm{font-size:11px}
-.ntopic{font-size:11px}
-.news-m,.news-age,.news-clock{font-size:11px}
-
-/* Target sentuh minimal 24x24 px (WCAG 2.5.8). Kotak-centang
-   diperbesar dan seluruh label dijadikan area klik. */
-.chk{min-height:24px;padding:2px 4px}
-.chk input[type="checkbox"]{width:18px;height:18px}
-.ctl-wrap .chk{min-height:26px;padding:3px 8px}
-.ctl-wrap .chk input{width:16px;height:16px}
-.tl-b,.bm,.tab,.ntopic,.chip{min-height:26px}
-
-@media(max-width:768px){
-  /* Peta adalah inti aplikasi; jangan sampai terdesak kontrol.
-     #map diberi tinggi eksplisit, BUKAN height:100%. Induk bertinggi
-     auto membuat persentase me-resolve ke indefinite dan CSS
-     menghitungnya nol — itulah yang membuat peta hilang total pada
-     721-768 px, celah antara blok ini dan penyelamat di max-width:720px. */
-  .map-wrap{height:auto;min-height:60vh}
-  #map{height:60vh;min-height:340px}
-  .chk{min-height:32px}
-  .chk input[type="checkbox"]{width:20px;height:20px}
-  .ctl-wrap{gap:6px}
-}
-
-/* Hormati preferensi pengguna yang sensitif terhadap gerak. */
-@media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{
-    animation-duration:.001ms !important;
-    animation-iteration-count:1 !important;
-    transition-duration:.001ms !important;
-  }
-  .ticker-track{animation:none !important;transform:none !important}
-}
-
-/* Selektor di atas memakai .stat .stat-label (dua kelas) sehingga
-   mengalahkan aturan satu kelas. Ditulis ulang dengan spesifisitas
-   setara agar ukuran dan kontras yang benar yang berlaku. */
-.stat .stat-label{
-  font-size:11px;color:#94a3b8;letter-spacing:.08em;
-}
-.stat .stat-sub{
-  font-size:11px;opacity:1;
-}
-/* Sub-teks berwarna per kategori tetap dipertahankan, tetapi memakai
-   nada yang lolos ambang kontras terhadap latar kartu. */
-.stats .stat:nth-child(1) .stat-sub,.stat:nth-child(1) .stat-sub,
-.stats .stat:nth-child(5) .stat-sub,.stat:nth-child(5) .stat-sub,
-.stats .stat:nth-child(8) .stat-sub,.stat:nth-child(8) .stat-sub{color:#f87171}
-.stats .stat:nth-child(2) .stat-sub,.stat:nth-child(2) .stat-sub,
-.stats .stat:nth-child(6) .stat-sub,.stat:nth-child(6) .stat-sub{color:#fb923c}
-.stats .stat:nth-child(3) .stat-sub,.stat:nth-child(3) .stat-sub,
-.stats .stat:nth-child(7) .stat-sub,.stat:nth-child(7) .stat-sub{color:#facc15}
-.stats .stat:nth-child(4) .stat-sub,.stat:nth-child(4) .stat-sub{color:#22d3ee}
-
-/* Catatan panel: latar sendiri lebih terang daripada panel, jadi
-   warnanya perlu dinaikkan lagi supaya tetap lolos 4,5:1. */
-.pane-note{color:#cbd5e1;background:transparent}
-
-/* Label konfigurasi hotspot. */
-.ctl-cfg .cfg-l{color:#94a3b8;font-size:11px}
-
-/* Kotak-centang: 15px terlalu kecil untuk disentuh dengan andal. */
-.chk input[type="checkbox"],
-.ctl-wrap .chk input[type="checkbox"]{width:24px;height:24px;flex:none}
-.map-toolbar .chk input{width:24px;height:24px}
-
-/* Sisa temuan kontras. Diperiksa ulang terhadap latar sebenarnya,
-   bukan terhadap latar halaman. */
-.news-m{color:#94a3b8}
-.hz-note{color:#94a3b8}
-.foot-lab{font-size:11px}
-.ntopic i{opacity:1;color:#94a3b8;font-size:11px}
-.ntopic.active i{color:#3b1d06;opacity:1}
-
-/* Dropdown dan tautan fungsi cepat perlu tinggi sentuh yang layak. */
-.ctlbox select,.map-toolbar select,.sel select{min-height:26px;padding:4px 6px}
-.fkey{min-height:24px;align-items:center}
-
-/* Sisa perbaikan kontras, diukur dengan latar efektif (lapisan
-   semi-transparan dikomposit lebih dulu). --tx-dim #64748b hanya
-   mencapai 3,92:1 di atas panel, jadi seluruh teks kontrol dan
-   keadaan kosong dinaikkan ke #94a3b8 atau lebih terang. */
-.tl-b,.bm,.tab,.ntopic{color:#94a3b8;font-size:11px}
-.tab{font-size:11px}
-.tl-b.active,.bm.active{color:#93c5fd;border-color:#3b82f6}
-.tab.active{color:#fdba74}
-.ntopic.active{color:#e9d5ff;border-color:#a855f7}
-.ntopic.active i{color:#e9d5ff;opacity:.85}
-.ctlbox-h.ch-mute{color:#94a3b8}
-.empty{color:#94a3b8;font-size:12px}
-.srccard p{color:#94a3b8;font-size:12px}
-.foot-btm{color:#94a3b8;font-size:11px}
-
-/* Tinggi kartu statistik disamakan supaya baris tidak bergelombang
-   ketika salah satu keterangan lebih panjang. */
-.stats .stat{align-content:start}
-.stat .stat-sub{
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
-  overflow:hidden;line-height:1.35;
-}
-
-/* ============================================================
-   BARIS KONTROL HORIZONTAL
-   Sebelumnya tiap kotak menyusun isinya ke bawah, sehingga baris
-   setinggi 242 px hanya untuk menampung kotak terpadat yang
-   tingginya 86 px — sisanya ruang kosong. Semua isi kini mengalir
-   mendatar, dan yang tidak muat digulir menyamping alih-alih
-   menambah tinggi.
-   ============================================================ */
-
-.ctlrow{
-  display:flex;
-  flex-wrap:wrap;
-  align-items:stretch;
-  gap:6px;
-}
-.ctlbox{display:flex;flex-direction:column;min-width:0}
-.ctlbox-grow{flex:1 1 320px}
-
-/* Semua isi kotak mengalir mendatar. */
-.ctlbox-b,
-.ctlbox .tl,
-.ctlbox .basemap-switch{
-  flex-direction:row;
-  flex-wrap:nowrap;
-  align-items:center;
-  gap:4px;
-  overflow-x:auto;
-  overflow-y:hidden;
-  padding:5px 8px;
-}
-.ctlbox .tl-b,
-.ctlbox .bm{width:auto;white-space:nowrap;flex:none}
-.ctlbox select{width:auto;min-width:120px}
-
-/* Kotak lapisan boleh membungkus ke baris kedua karena isinya
-   sembilan chip; dibatasi tinggi agar tidak mendorong peta turun. */
-.ctlbox-b.ctl-wrap{
-  flex-wrap:wrap;
-  max-width:none;
-  max-height:64px;
-  overflow-y:auto;
-  align-content:flex-start;
-}
-.ctl-wrap .chk{flex:none;white-space:nowrap}
-
-/* Konfigurasi hotspot: kelompoknya berdampingan, label di atas kendali. */
-.ctl-cfg{flex-wrap:nowrap;gap:14px;align-items:flex-start}
-.cfg-g{flex:none}
-
-/* Gulir mendatar yang tipis supaya tidak memakan tinggi. */
-.ctlbox-b::-webkit-scrollbar,
-.pscroll::-webkit-scrollbar{height:6px;width:6px}
-.ctlbox-b::-webkit-scrollbar-thumb,
-.pscroll::-webkit-scrollbar-thumb{background:var(--line-3);border-radius:3px}
-.ctlbox-b::-webkit-scrollbar-track,
-.pscroll::-webkit-scrollbar-track{background:transparent}
-
-/* ============================================================
-   PANEL PANJANG: SATU KOLOM + GULIR
-   Panel 09 setinggi 2.394 px dan panel 10 setinggi 1.591 px
-   mendorong sisa halaman jauh ke bawah. Isinya dijadikan satu
-   kolom bertumpuk di dalam wadah bertinggi tetap, sehingga
-   panjangnya tidak lagi menentukan panjang halaman.
-   ============================================================ */
-.pscroll{max-height:340px;overflow-y:auto;overscroll-behavior:contain}
-#sourcePanel .srcgrid,
-.panel-edu .srcgrid{grid-template-columns:1fr}
-
-/* Daftar panjang lain diberi batas yang sama. */
-.unit-list,.so2grid,.st-grid{max-height:340px;overflow-y:auto;overscroll-behavior:contain}
-.pane{max-height:340px;overflow-y:auto;overscroll-behavior:contain}
-
-@media(max-width:1100px){
-  .ctlbox-grow{flex:1 1 100%}
-  .ctl-cfg{flex-wrap:wrap}
-}
-
-/* ------------------------------------------------------------
-   Lebar kotak pada baris kontrol — satu tempat, tanpa tumpang tindih.
-
-   LAYER PETA memuat sembilan chip dan paling sering dipakai, jadi ia
-   yang menyerap sisa ruang. Empat kotak lain selebar isinya. Bila
-   masih kurang, isi kotak digulir menyamping, bukan menambah tinggi.
-   ------------------------------------------------------------ */
-/* LAYER PETA mendapat prioritas ruang terbesar dan tidak boleh
-   tergencet di bawah lebar yang masih berguna; KONFIGURASI HOTSPOT
-   yang mengalah lebih dulu karena isinya berupa dropdown pendek
-   dan legenda yang tetap terbaca meski digulir. */
-.ctlrow > .ctlbox:nth-child(1){flex:1 1 560px;min-width:340px}
-.ctlrow > .ctlbox:nth-child(2),
-.ctlrow > .ctlbox:nth-child(3),
-.ctlrow > .ctlbox:nth-child(4){flex:0 0 auto}
-.ctlrow > .ctlbox:nth-child(5),
-.ctlrow > .ctlbox:nth-child(6){flex:1 1 320px;min-width:280px}
-
-/* flex-basis 0 pada kotak pertama membuat lebarnya dihitung dari sisa
-   ruang, bukan dari lebar isinya — tanpa ini isinya yang sepanjang
-   1.274 px memaksa baris pecah menjadi dua tingkat. */
-
-/* Legenda adalah keterangan, bukan kendali: paling dulu menyusut. */
-.ctl-cfg .cfg-g:last-child{flex:0 1 auto;min-width:0;overflow:hidden}
-
-@media(max-width:1100px){
-  .ctlrow{flex-wrap:wrap}
-  .ctlrow > .ctlbox,
-  .ctlrow > .ctlbox:nth-child(1),
-  .ctlrow > .ctlbox:nth-child(2),
-  .ctlrow > .ctlbox:nth-child(3),
-  .ctlrow > .ctlbox:nth-child(4),
-  .ctlrow > .ctlbox:nth-child(5),
-  .ctlrow > .ctlbox:nth-child(6){flex:1 1 100%}
-}
-
-/* Chip lapisan TIDAK boleh membungkus: satu baris mendatar, sisanya
-   digulir. Aturan wrap sebelumnya masih aktif dan membuat baris
-   kontrol kembali menjadi dua tingkat. */
-.ctlbox-b.ctl-wrap{
-  flex-wrap:nowrap !important;
-  max-height:none !important;
-  max-width:none;
-  overflow-x:auto;
-  overflow-y:hidden;
-  align-items:center;
-}
-
-/* Kotak konfigurasi ikut satu baris: kelompok kendali berjajar dan
-   digulir menyamping bila kurang ruang, bukan menumpuk ke bawah dan
-   menaikkan tinggi seluruh baris kontrol. */
-.ctl-cfg{
-  flex-wrap:nowrap !important;
-  overflow-x:auto;
-  overflow-y:hidden;
-  align-items:center;
-  gap:12px;
-}
-.ctl-cfg .cfg-g{flex:0 0 auto}
-/* Label di kiri, kendali di kanan supaya tinggi tinggal satu baris. */
-.ctl-cfg .cfg-g{flex-direction:row;align-items:center;gap:6px}
-.ctl-cfg .cfg-l{white-space:nowrap}
-.cfg-lg{flex-wrap:nowrap}
-
-/* Ticker: jalur teksnya sengaja jauh lebih lebar dari layar untuk efek
-   berjalan, jadi induknya wajib memotong. Tanpa ini seluruh halaman
-   ikut dapat digeser menyamping. */
-.ticker{overflow:hidden;max-width:100%}
-.ticker-view{overflow:hidden;min-width:0}
-
-/* Baris kontrol tidak boleh melebihi lebar induknya. Dengan nowrap,
-   kotak ber-flex-basis tetap (LINIMASA/CITRA/PETA DASAR) menjumlah
-   melebihi viewport dan mendorong dokumen melebar 219 px. Batas
-   eksplisit memaksa kotak yang fleksibel menyusut lebih dulu. */
-.ctlrow{max-width:100%;min-width:0}
-.ctlrow > .ctlbox{min-width:0}
-.ctlrow > .ctlbox:nth-child(2),
-.ctlrow > .ctlbox:nth-child(3),
-.ctlrow > .ctlbox:nth-child(4){flex:0 1 auto;min-width:0}
-
-/* .sr-only memakai position:absolute. Bila induk terdekatnya tidak
-   membentuk containing block, label itu diposisikan relatif terhadap
-   halaman dan dapat mendarat di luar tepi kanan — cukup untuk
-   memperlebar dokumen 219 px meski lebarnya hanya 1 px. Kelompok
-   kendali dijadikan containing block agar label tetap di dalam. */
-.cfg-g,.ctlbox-b,.ctlbox{position:relative}
-/* Sekalian pastikan label tersembunyi tidak pernah menambah lebar. */
-.sr-only{left:0;top:0}
-
-/* Pada layar 320 px, min-width 340 px pada kotak LAYER PETA melebihi
-   viewport dan memaksa halaman dapat digeser. Batas itu hanya masuk
-   akal di layar lebar. */
-@media(max-width:1100px){
-  .ctlrow > .ctlbox:nth-child(1){min-width:0;flex:1 1 100%}
-  .ctlbox,.ctlbox-b,.ctl-cfg,.ctl-wrap{max-width:100%;min-width:0}
-  .ctl-cfg{flex-wrap:nowrap !important;overflow-x:auto}
-}
-
-/* Keseimbangan lebar akhir pada layar lebar.
-   Kedua kotak yang bisa digulir (LAYER PETA dan KONFIGURASI HOTSPOT)
-   berbagi sisa ruang secara proporsional, alih-alih satu menyita
-   hampir semuanya sementara yang lain tinggal satu setengah kolom. */
-@media(min-width:1101px){
-  .ctlrow > .ctlbox:nth-child(1){flex:5 1 0;min-width:260px}
-  .ctlrow > .ctlbox:nth-child(5),
-.ctlrow > .ctlbox:nth-child(6){flex:4 1 0;min-width:260px}
-}
-
-
-/* ============================================================
-   BARIS KONTROL: SATU FUNGSI PER BARIS
-   Sebelumnya lima kotak berjajar menyamping, sehingga LAYER PETA
-   — kendali yang paling sering dipakai — hanya kebagian seperempat
-   lebar dan tujuh dari sembilan chipnya tersembunyi di balik gulir.
-   Kini tiap fungsi menempati satu baris penuh: nama fungsi di kiri
-   sebagai label, isinya mengalir mendatar memakai seluruh sisa
-   lebar. Yang tetap tidak muat digulir menyamping, bukan
-   menambah tinggi.
-   ============================================================ */
-.ctlrow{
-  display:flex;
-  flex-direction:column;
-  flex-wrap:nowrap;
-  gap:0;
-  background:var(--surface);
-  border:1px solid var(--line);
-  max-width:100%;
-  min-width:0;
-}
-
-/* Tiap kotak menjadi satu baris: label | isi */
-.ctlrow > .ctlbox,
-.ctlrow > .ctlbox:nth-child(1),
-.ctlrow > .ctlbox:nth-child(2),
-.ctlrow > .ctlbox:nth-child(3),
-.ctlrow > .ctlbox:nth-child(4),
-.ctlrow > .ctlbox:nth-child(5),
-.ctlrow > .ctlbox:nth-child(6){
-  flex:0 0 auto;
-  flex-direction:row;
-  align-items:stretch;
-  min-width:0;
-  max-width:none;
-  border:0;
-  border-bottom:1px solid var(--line);
-  background:transparent;
-}
-.ctlrow > .ctlbox:last-child{border-bottom:0}
-
-/* Label fungsi: lebar tetap supaya seluruh isi baris sejajar rapi. */
-.ctlbox > .ctlbox-h{
-  flex:0 0 132px;
-  display:flex;
-  align-items:center;
-  border:0;
-  border-right:1px solid var(--line);
-  background:var(--surface-2);
-  padding:0 10px;
-  font-size:10px;
-  letter-spacing:.09em;
-  white-space:nowrap;
-}
-
-/* Isi baris memakai seluruh sisa lebar. */
-.ctlbox > .ctlbox-b,
-.ctlbox > .ctlbox-b.ctl-wrap,
-.ctlbox > .ctlbox-b.tl,
-.ctlbox > .ctlbox-b.basemap-switch,
-.ctlbox > .ctlbox-b.ctl-cfg{
-  flex:1 1 auto;
-  min-width:0;
-  flex-direction:row;
-  flex-wrap:nowrap;
-  align-items:center;
-  gap:5px;
-  padding:5px 10px;
-  overflow-x:auto;
-  overflow-y:hidden;
-}
-
-/* Sembilan chip lapisan kini punya lebar penuh, jadi boleh
-   merenggang sedikit agar lebih mudah disentuh. */
-.ctl-wrap .chk{padding:3px 9px;gap:6px}
-
-/* Konfigurasi hotspot: kelompok berjajar di satu baris. */
-.ctl-cfg{gap:14px}
-.ctl-cfg .cfg-g{flex:0 0 auto;flex-direction:row;align-items:center;gap:6px}
-
-@media(max-width:768px){
-  /* Layar sempit: label pindah ke atas isinya agar tidak memakan
-     lebih dari sepertiga lebar. */
-  .ctlrow > .ctlbox,
-  .ctlrow > .ctlbox:nth-child(1),
-  .ctlrow > .ctlbox:nth-child(2),
-  .ctlrow > .ctlbox:nth-child(3),
-  .ctlrow > .ctlbox:nth-child(4),
-  .ctlrow > .ctlbox:nth-child(5),
-.ctlrow > .ctlbox:nth-child(6){flex-direction:column}
-  .ctlbox > .ctlbox-h{
-    flex:0 0 auto;
-    border-right:0;
-    border-bottom:1px solid var(--line);
-    padding:4px 10px;
-  }
-}
-
-
-/* ============================================================
-   BARIS KONTROL — VERSI FINAL: BERTUMPUK, TIDAK TERPOTONG
-
-   Dua pendekatan sebelumnya sama-sama memotong isi: lima kotak
-   berjajar membuat LAYER PETA hanya kebagian seperempat lebar,
-   dan satu-fungsi-per-baris membuat KONFIGURASI HOTSPOT terpotong
-   di kanan. Keduanya menyembunyikan kendali di balik gulir.
-
-   Susunannya kini:
-     Baris 1 : LAYER PETA        — satu kartu selebar halaman
-     Baris 2 : LINIMASA ASAP · CITRA SATELIT · PETA DASAR
-               · KONFIGURASI HOTSPOT — dikelompokkan berdampingan
-
-   Isi kartu MEMBUNGKUS ke baris berikutnya, tidak digulir, sehingga
-   tidak ada kendali yang terpotong. Bentuk kartu dipertahankan.
-   ============================================================ */
-.ctlrow{
-  display:flex;
-  flex-direction:row;
-  flex-wrap:wrap;
-  gap:6px;
-  background:transparent;
-  border:0;
-  max-width:100%;
-  min-width:0;
-  align-items:stretch;
-}
-
-/* Kembalikan bentuk kartu pada tiap kotak. */
-.ctlrow > .ctlbox,
-.ctlrow > .ctlbox:nth-child(1),
-.ctlrow > .ctlbox:nth-child(2),
-.ctlrow > .ctlbox:nth-child(3),
-.ctlrow > .ctlbox:nth-child(4),
-.ctlrow > .ctlbox:nth-child(5),
-.ctlrow > .ctlbox:nth-child(6){
-  flex-direction:column;
-  background:var(--surface);
-  border:1px solid var(--line);
-  border-bottom:1px solid var(--line);
-  min-width:0;
-  max-width:none;
-}
-
-/* Baris 1: LAYER PETA selebar halaman. */
-.ctlrow > .ctlbox:nth-child(1){flex:1 1 100%}
-
-/* Baris 2: tiga kotak kecil selebar isinya, konfigurasi menyerap sisa. */
-.ctlrow > .ctlbox:nth-child(2),
-.ctlrow > .ctlbox:nth-child(3),
-.ctlrow > .ctlbox:nth-child(4){flex:0 1 auto}
-.ctlrow > .ctlbox:nth-child(5),
-.ctlrow > .ctlbox:nth-child(6){flex:1 1 380px}
-
-/* Kepala kartu kembali ke atas, bukan di samping. */
-.ctlbox > .ctlbox-h{
-  flex:0 0 auto;
-  display:block;
-  border:0;
-  border-bottom:1px solid var(--line);
-  background:var(--surface-2);
-  padding:4px 10px;
-  font-size:10px;
-  letter-spacing:.1em;
-  white-space:nowrap;
-}
-
-/* Isi MEMBUNGKUS, tidak digulir — inilah yang menghilangkan
-   pemotongan. Tinggi kartu menyesuaikan isinya. */
-.ctlbox > .ctlbox-b,
-.ctlbox > .ctlbox-b.ctl-wrap,
-.ctlbox > .ctlbox-b.tl,
-.ctlbox > .ctlbox-b.basemap-switch,
-.ctlbox > .ctlbox-b.ctl-cfg{
-  flex:1 1 auto;
-  min-width:0;
-  flex-direction:row;
-  flex-wrap:wrap;
-  align-items:center;
-  gap:5px;
-  padding:6px 10px;
-  overflow:visible;
-}
-.ctlbox-b.ctl-wrap{flex-wrap:wrap !important;max-height:none !important}
-.ctl-cfg{flex-wrap:wrap !important;gap:10px 16px;overflow:visible}
-.ctl-cfg .cfg-g{flex:0 0 auto;flex-direction:row;align-items:center;gap:6px}
-.cfg-lg{flex-wrap:wrap}
-
-/* Chip lapisan kini punya lebar penuh; beri jarak yang nyaman. */
-.ctl-wrap .chk{flex:0 0 auto;padding:3px 9px;gap:6px}
-
-@media(max-width:768px){
-  /* Layar sempit: setiap kartu satu baris penuh. */
-  .ctlrow > .ctlbox,
-  .ctlrow > .ctlbox:nth-child(1),
-  .ctlrow > .ctlbox:nth-child(2),
-  .ctlrow > .ctlbox:nth-child(3),
-  .ctlrow > .ctlbox:nth-child(4),
-  .ctlrow > .ctlbox:nth-child(5),
-.ctlrow > .ctlbox:nth-child(6){flex:1 1 100%}
-}
-
-/* Kartu pada baris kedua diregangkan setinggi kartu tertinggi supaya
-   tepi bawahnya sejajar; isinya diratakan ke atas agar tidak melayang
-   di tengah ruang kosong. */
-.ctlrow > .ctlbox{align-self:stretch}
-.ctlbox > .ctlbox-b{align-content:flex-start}
-
-/* ============================================================
-   SISA TEMUAN AKSESIBILITAS — AUDIT PUTARAN-3
-   ============================================================ */
-
-/* .ev-detail dan .cs-lab terukur 3,92:1 dan 3,95:1 terhadap latar
-   panelnya — di bawah ambang AA 4,5:1. Keduanya memuat keterangan
-   kejadian dan label legenda, justru teks yang menjelaskan arti
-   angka di sebelahnya. */
-.ev-detail{color:#cbd5e1;font-size:11px}
-.cs-lab{color:#cbd5e1}
-
-/* Empat target sentuh masih di bawah 24 px. Tinggi minimum diberikan
-   pada seluruh kendali kecil di dalam peta dan panel. */
-.tl-b,.bm,.tab,.ntopic,.chip,.fkey,
-.ctlbox select,.map-toolbar select,.sel select,
-.news-src,.pg-b{min-height:26px}
-.chip{padding:4px 10px}
-
-/* Label kota terdampak abu vulkanik.
-   Ditulis permanen di peta supaya pertanyaan "daerah mana yang kena"
-   terjawab tanpa perlu mengeklik satu per satu. */
-.ash-city-tip{
-  background:rgba(8,11,15,.88);
-  border:1px solid var(--line-3);
-  color:#e2e8f0;
-  font-family:var(--mono);
-  font-size:10px;
-  letter-spacing:.04em;
-  padding:1px 6px;
-  border-radius:0;
-  box-shadow:none;
-  white-space:nowrap;
-}
-.ash-city-tip::before{display:none}
-.ash-city-berat{border-color:#ef4444;color:#fca5a5}
-.ash-city-sedang{border-color:#f97316;color:#fdba74}
-.ash-city-ringan{border-color:#eab308;color:#fde047}
-
-/* Tombol pemutar animasi citra Himawari. Awan yang diam pada satu citra
-   mudah disangka beku; memutar riwayat slot memperlihatkan geraknya. */
-.hi-play{
-  font-family:var(--mono);font-size:10px;letter-spacing:.06em;
-  background:rgba(59,130,246,.16);color:#93c5fd;
-  border:1px solid #3b82f6;border-radius:0;
-  padding:2px 8px;margin-left:8px;cursor:pointer;min-height:22px;
-}
-.hi-play:hover{background:rgba(59,130,246,.28)}
-
-
-/* Kartu kekeringan mengikuti pola warna kartu lain: sub-teks mewarisi
-   nada angkanya supaya bilah metrik tetap terbaca sebagai satu kesatuan. */
-.stat:nth-child(9) .stat-sub,
-.stats .stat:nth-child(9) .stat-sub{color:#fbbf24}
-
-/* Kejadian kekeringan. Nada kuning-kecokelatan membedakannya dari
-   karhutla yang oranye, meski keduanya sering muncul bersamaan. */
-.ev-drought { border-left-color: #fbbf24; }
-.ev-drought .ev-kind { color: #fbbf24; }
-
-/* Tombol "citra" pada baris daftar kekeringan. Jalan pintas dari angka
-   ke keadaan lapangan — memindahkan peta sekaligus menyalakan lapisan
-   citra yang sesuai. */
-.pill.row-act{
-  font-family:var(--mono);font-size:10px;letter-spacing:.06em;
-  background:rgba(6,182,212,.14);color:#67e8f9;
-  border:1px solid #06b6d4;border-radius:0;
-  padding:3px 9px;white-space:nowrap;
-}
-.row:hover .pill.row-act{background:rgba(6,182,212,.3);color:#a5f3fc}
-
-/* Peringatan pada panel citra: dibedakan tegas dari keterangan biasa,
-   karena isinya menjelaskan mengapa layar belum berubah — bukan
-   informasi tambahan yang boleh terlewat. */
-.hi-warn{
-  background:rgba(234,179,8,.18);
-  border:1px solid #eab308;
-  color:#fde047;
-  padding:1px 7px;
-  font-size:11px;
-  letter-spacing:.03em;
-  white-space:nowrap;
-}
-
-/* Badge ketinggian angin.
-   Menjawab pertanyaan "angin di ketinggian berapa yang sedang saya lihat"
-   — tanpa itu, perbedaan arah dengan abu terbaca sebagai kesalahan. */
-.wind-badge{
-  position:absolute;left:10px;top:10px;z-index:640;
-  display:flex;align-items:center;gap:6px;
-  background:rgba(8,11,15,.9);border:1px solid var(--line-3);
-  padding:3px 9px;font-family:var(--mono);font-size:11px;
-}
-.wb-lab{color:#94a3b8;letter-spacing:.1em;font-weight:700}
-.wb-h{color:#7dd3fc}
-.wb-auto{color:#67e8f9;border:1px solid #06b6d4;padding:0 5px;font-size:10px}
-.wb-src{color:#94a3b8}
-.wb-mode{color:#fbbf24;border:1px solid #eab308;padding:0 5px;font-size:10px}
-.sel-wind select{min-width:180px}
-
-/* ============================================================
-   FULLSCREEN PETA — dapat dikeluarkan ke layar penuh
-   Tujuan: analisis wilayah butuh ruang, terutama di laptop kecil
-   dan saat koordinasi darurat. Tombol ⛶ FULL di kepala peta.
-   ============================================================ */
-.map-head{
-  display:flex;
-  align-items:center;
-  justify-content:flex-start;
-  gap:10px;
-}
-.map-head h2{flex:1;min-width:0}
-.map-head .panel-sub{margin-right:auto}
-
-/* Tombol fullscreen — gaya terminal, bukan pill generic */
-.btn-fullscreen{
-  font-family:var(--mono);
-  font-size:10px;
-  font-weight:700;
-  letter-spacing:.08em;
-  background:var(--surface-2);
-  color:var(--tx-dim);
-  border:1px solid var(--line);
-  border-radius:0;
-  padding:3px 9px;
-  cursor:pointer;
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
-  min-height:24px;
-  transition:background .14s,color .14s,border-color .14s;
-  flex:none;
-}
-.btn-fullscreen:hover{
-  background:rgba(249,115,22,.12);
-  color:var(--accent);
-  border-color:var(--accent);
-}
-.btn-fullscreen:focus-visible{
-  outline:2px solid var(--info);
-  outline-offset:1px;
-}
-.btn-fullscreen .fs-ic{font-size:13px;line-height:1}
-.btn-fullscreen.is-active{
-  background:var(--accent);
-  color:#000;
-  border-color:var(--accent);
-}
-
-/* State fullscreen — native Fullscreen API */
-.map-card:fullscreen{
-  width:100vw;
-  height:100vh;
-  max-width:none;
-  max-height:none;
-  margin:0;
-  border:0;
-  border-radius:0;
   background:var(--bg);
-  display:flex;
-  flex-direction:column;
-}
-.map-card:fullscreen .map-wrap{
-  flex:1;
-  height:auto;
-  min-height:0;
-}
-.map-card:fullscreen #map{
-  height:100%;
-  min-height:0;
-}
-.map-card:fullscreen .map-head{
-  background:var(--surface);
-  border-bottom:1px solid var(--line);
-  padding:6px 12px;
-}
-.map-card:fullscreen .legend{
-  background:var(--surface);
-  border-top:1px solid var(--line);
-  padding:8px 12px;
-}
-
-/* Fallback class .is-fullscreen untuk browser yang tidak support :fullscreen atau saat pakai class toggle */
-.map-card.is-fullscreen{
-  position:fixed;
-  inset:0;
-  width:100vw;
+  color:var(--text-primary);
+  font-family:var(--font-mono);
+  font-size:var(--fs-base);
+  line-height:var(--lh-normal);
+  font-variant-ligatures:none;
+  overflow:hidden;
   height:100vh;
-  z-index:9999;
-  margin:0;
-  border:0;
-  border-radius:0;
-  background:var(--bg);
-  display:flex;
-  flex-direction:column;
+  display:grid;
+  grid-template-rows:var(--header-h) var(--ticker-h) 1fr;
 }
-.map-card.is-fullscreen .map-wrap{
-  flex:1;
-  height:auto;
-  min-height:0;
-}
-.map-card.is-fullscreen #map{
-  height:100%;
-  min-height:0;
+button,input,select{font-family:var(--font-mono)}
+/* Tabular nums for data alignment */
+.stat strong, .clock-val, .badge, .metric b, .unit-count, .pnum{
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum";
 }
 
-/* Di fullscreen, sembunyikan scroll body agar tidak ikut bergulir */
-body.has-fullscreen-map{
-  overflow:hidden;
-}
-
-/* Tombol keluar fullscreen yang muncul di atas peta saat fullscreen aktif */
-.map-fs-exit{
-  position:absolute;
-  top:10px;
-  left:50%;
-  transform:translateX(-50%);
-  z-index:700;
-  font-family:var(--mono);
-  font-size:11px;
-  font-weight:700;
-  letter-spacing:.08em;
-  background:rgba(8,11,15,.92);
-  color:var(--tx);
-  border:1px solid var(--line);
-  padding:6px 14px;
-  cursor:pointer;
-  display:none;
-}
-.map-card:fullscreen .map-fs-exit,
-.map-card.is-fullscreen .map-fs-exit{
-  display:block;
-}
-.map-fs-exit:hover{
-  background:var(--surface-2);
-  border-color:var(--accent);
-  color:var(--accent);
-}
-
-/* ============================================================
-   MODERN LAYOUT — Fase 3 UX: menarik, heuristik, optimasi ruang
-   Tujuan: dari terminal kaku ke modern glassmorphism yang tetap
-   terbaca di jaringan buruk, hemat ruang vertikal, hierarki jelas.
-   Prinsip heuristik: visibility, consistency, error prevention,
-   recognition, flexibility, aesthetic minimalism.
-   ============================================================ */
-
-/* -- Variabel modern -- */
-:root{
-  --r-modern:12px;
-  --r-pill:999px;
-  --shadow-sm:0 2px 8px rgba(0,0,0,.25);
-  --shadow-md:0 8px 24px rgba(0,0,0,.35);
-  --shadow-lg:0 20px 60px rgba(0,0,0,.5);
-  --glass:rgba(15,19,24,.88);
-  --glass-strong:rgba(12,18,26,.94);
-}
-
-/* -- Topbar modern: glass + pulse live -- */
+/* === Top Header — 40-45px fixed === */
 .topbar{
-  padding:12px 20px;
-  background:rgba(8,11,15,.88);
-  backdrop-filter:blur(20px) saturate(1.2);
-  -webkit-backdrop-filter:blur(20px) saturate(1.2);
-  border-bottom:1px solid rgba(255,255,255,.06);
-  box-shadow:0 1px 0 rgba(255,255,255,.04), 0 8px 24px rgba(0,0,0,.25);
-  gap:12px;
-}
-.brand{ gap:14px; }
-.mark-tag{
-  width:38px;height:38px;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,#f97316,#ef4444);color:#000;
-  font-weight:800;font-size:13px;letter-spacing:.02em;border-radius:10px;
-  box-shadow:0 2px 8px rgba(249,115,22,.35);
-}
-.brand-txt h1{ font-size:17px; letter-spacing:-.02em; line-height:1.1; }
-.brand-txt p{ font-size:10.5px; line-height:1.3; letter-spacing:.06em; opacity:.9; margin-top:2px; }
-.topbar-right{ gap:10px; }
-.clock-box{
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
-  border-radius:8px;padding:4px 8px;display:flex;align-items:center;gap:6px;
-}
-.clock-lab{ font-size:9px; letter-spacing:.08em; opacity:.7; }
-.clock-val{ font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; }
-.badge{
-  border-radius:8px;padding:5px 10px;font-size:10px;letter-spacing:.07em;
-  backdrop-filter:blur(6px);
-}
-.badge-live{
-  background:rgba(34,197,94,.14);color:#4ade80;border-color:rgba(34,197,94,.28);
-  box-shadow:0 0 0 1px rgba(34,197,94,.15), 0 0 12px rgba(34,197,94,.15);
-  animation:pulse-live 2.5s infinite;
-}
-@keyframes pulse-live{
-  0%,100%{ box-shadow:0 0 0 1px rgba(34,197,94,.15), 0 0 12px rgba(34,197,94,.15); }
-  50%{ box-shadow:0 0 0 1px rgba(34,197,94,.25), 0 0 18px rgba(34,197,94,.25); }
-}
-.btn{
-  border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
-  transition:all .18s ease;
-}
-.btn:hover{ background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.18); transform:translateY(-1px); box-shadow:var(--shadow-sm); }
-.btn-primary{
-  background:linear-gradient(135deg,rgba(249,115,22,.18),rgba(239,68,68,.18));
-  border-color:rgba(249,115,22,.32);color:#fdba74;
-}
-.btn-primary:hover{
-  background:linear-gradient(135deg,rgba(249,115,22,.26),rgba(239,68,68,.26));
-  border-color:rgba(249,115,22,.45);color:#fed7aa;
-}
-
-/* -- Ticker modern: lebih ramping, glass -- */
-.ticker{
-  margin:0;padding:0 20px;height:32px;
-  background:rgba(8,11,15,.72);backdrop-filter:blur(12px);
-  border-bottom:1px solid rgba(255,255,255,.04);
-  font-size:11px;
-}
-.ticker-tag{
-  background:linear-gradient(135deg,#ef4444,#f97316);color:#000;
-  font-weight:800;font-size:10px;padding:3px 8px;border-radius:6px;
-  letter-spacing:.06em;
-}
-.ticker-track{ gap:28px; }
-
-/* -- Main: kurangi padding, tambah gap modern -- */
-main{ max-width:1680px; padding:16px 20px 28px; }
-
-/* -- Stats modern: 3 kolom, card glass + hover lift + icon -- */
-.stats{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:10px;
-  margin-bottom:14px;
-}
-.stat{
-  background:linear-gradient(180deg,rgba(19,25,32,.96),rgba(15,19,24,.92));
-  border:1px solid rgba(255,255,255,.06);
-  border-radius:var(--r-modern);
-  padding:14px 14px 12px;
-  box-shadow:var(--shadow-sm);
-  transition:all .22s ease;
-  position:relative;
-  overflow:hidden;
-  min-width:0;
-}
-.stat::before{
-  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
-  background:var(--line);transition:background .22s;
-}
-.stat:hover{
-  transform:translateY(-2px);
-  box-shadow:var(--shadow-md);
-  border-color:rgba(255,255,255,.1);
-}
-.stat:hover::before{ width:4px; }
-.stat-accent::before{ background:linear-gradient(180deg,#f97316,#ef4444); }
-.stat:nth-child(1)::before{ background:linear-gradient(180deg,#f87171,#ef4444); }
-.stat:nth-child(2)::before{ background:linear-gradient(180deg,#fb923c,#f97316); }
-.stat:nth-child(3)::before{ background:linear-gradient(180deg,#facc15,#eab308); }
-.stat:nth-child(4)::before{ background:linear-gradient(180deg,#22d3ee,#06b6d4); }
-.stat:nth-child(5)::before{ background:linear-gradient(180deg,#f97316,#fb923c); }
-.stat:nth-child(6)::before{ background:linear-gradient(180deg,#a78bfa,#8b5cf6); }
-.stat:nth-child(7)::before{ background:linear-gradient(180deg,#fbbf24,#f59e0b); }
-.stat:nth-child(8)::before{ background:linear-gradient(180deg,#4ade80,#22c55e); }
-.stat:nth-child(9)::before{ background:linear-gradient(180deg,#38bdf8,#0ea5e9); }
-.stat-label{
-  font-size:9px;letter-spacing:.09em;font-weight:700;
-  color:var(--tx-dim);text-transform:uppercase;
-  margin-bottom:6px;display:flex;align-items:center;gap:6px;
-}
-.stat strong{
-  font-size:22px;line-height:1.1;font-weight:750;letter-spacing:-.02em;
-  display:block;margin-bottom:4px;
-}
-.stat-sub{
-  font-size:11px;line-height:1.35;color:var(--tx-dim);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-
-/* -- Control row modern: unified toolbar glass + collapse -- */
-.ctlrow{
-  background:linear-gradient(180deg,rgba(19,25,32,.96),rgba(15,19,24,.94));
-  border:1px solid rgba(255,255,255,.06);
-  border-radius:var(--r-modern);
-  box-shadow:var(--shadow-sm);
-  padding:0;
-  gap:0;
-  overflow:hidden;
-  margin-bottom:14px;
-  position:relative;
-}
-.ctlrow > .ctlbox{
-  background:transparent;
-  border:0;
-  border-bottom:1px solid rgba(255,255,255,.05);
-  border-radius:0;
-}
-.ctlrow > .ctlbox:last-child{ border-bottom:0; }
-.ctlbox > .ctlbox-h{
-  background:rgba(255,255,255,.03);
-  border:0;
-  border-bottom:1px solid rgba(255,255,255,.05);
-  border-right:0;
-  padding:8px 14px;
-  font-size:10px;letter-spacing:.1em;font-weight:700;
-  display:flex;align-items:center;gap:8px;
-}
-.ctlbox-h::before{
-  content:'';width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.8;
-}
-.ch-accent{ color:#fb923c; }
-.ch-info{ color:#38bdf8; }
-.ch-warn{ color:#facc15; }
-.ch-mute{ color:#94a3b8; }
-.ch-red{ color:#f87171; }
-
-.ctlbox > .ctlbox-b{
-  padding:10px 14px;
-  gap:8px;
-  background:transparent;
-}
-.ctlbox-b.ctl-wrap{ gap:6px; }
-
-/* Chip modern: pill glass */
-.ctl-wrap .chk{
-  border-radius:var(--r-pill);
-  padding:6px 12px;
-  font-size:11px;font-weight:500;letter-spacing:.02em;
-  background:rgba(255,255,255,.05);
-  border:1px solid rgba(255,255,255,.08);
-  color:var(--tx-dim);
-  transition:all .18s ease;
-  cursor:pointer;
-  user-select:none;
-}
-.ctl-wrap .chk:hover{
-  background:rgba(255,255,255,.08);
-  border-color:rgba(255,255,255,.14);
-  transform:translateY(-1px);
-}
-.ctl-wrap .chk:has(input:checked){
-  background:linear-gradient(135deg,rgba(249,115,22,.18),rgba(239,68,68,.14));
-  border-color:rgba(249,115,22,.35);
-  color:#fdba74;
-  box-shadow:0 0 0 1px rgba(249,115,22,.15), 0 2px 8px rgba(249,115,22,.15);
-}
-.ctl-wrap .chk input{ accent-color:#f97316; }
-
-/* Timeline segmented control modern */
-.tl-b{
-  border-radius:var(--r-pill);
-  padding:6px 14px;
-  font-size:11px;font-weight:600;
-  background:rgba(255,255,255,.05);
-  border:1px solid rgba(255,255,255,.08);
-  color:var(--tx-dim);
-  transition:all .18s;
-}
-.tl-b:hover{ background:rgba(255,255,255,.08); transform:translateY(-1px); }
-.tl-b.active{
-  background:linear-gradient(135deg,#f97316,#ef4444);
-  border-color:transparent;
-  color:#000;
-  box-shadow:0 2px 10px rgba(249,115,22,.35);
-  font-weight:700;
-}
-
-/* Select modern */
-.ctlbox select{
-  border-radius:8px;
-  padding:6px 10px;
-  font-size:11px;
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.1);
-  color:var(--tx);
-  transition:all .18s;
-}
-.ctlbox select:hover{ background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.16); }
-.ctlbox select:focus{
-  border-color:rgba(249,115,22,.45);
-  box-shadow:0 0 0 3px rgba(249,115,22,.15);
-  outline:0;
-}
-
-/* Basemap switch modern */
-.basemap-switch .bm{
-  border-radius:var(--r-pill);
-  padding:6px 12px;
-  font-size:11px;font-weight:500;
-  background:rgba(255,255,255,.05);
-  border:1px solid rgba(255,255,255,.08);
-  color:var(--tx-dim);
-  transition:all .18s;
-}
-.basemap-switch .bm:hover{ background:rgba(255,255,255,.08); transform:translateY(-1px); }
-.basemap-switch .bm.active{
-  background:linear-gradient(135deg,rgba(56,189,248,.18),rgba(59,130,246,.18));
-  border-color:rgba(56,189,248,.35);
-  color:#7dd3fc;
-}
-
-/* Config groups modern */
-.ctl-cfg{ gap:12px 20px; }
-.cfg-g{ gap:6px; }
-.cfg-l{ font-size:9px; letter-spacing:.1em; font-weight:700; color:var(--tx-dim); }
-.cfg-lg{ gap:8px; }
-.cfg-lg span{ font-size:11px; }
-
-/* Collapse control */
-.ctl-collapse{
-  position:absolute;right:10px;top:8px;z-index:2;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
-  color:var(--tx-dim);border-radius:8px;padding:4px 8px;
-  font-size:10px;font-weight:600;letter-spacing:.06em;cursor:pointer;
-  transition:all .18s;
-}
-.ctl-collapse:hover{ background:rgba(255,255,255,.1); color:var(--tx); }
-.ctlrow.is-collapsed > .ctlbox{ display:none; }
-.ctlrow.is-collapsed > .ctlbox:nth-child(1){ display:flex; }
-.ctlrow.is-collapsed{ padding-bottom:0; }
-
-/* -- Map modern: 70vh, rounded 16px, shadow, floating -- */
-.map-card{
-  border-radius:16px;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.08);
-  box-shadow:var(--shadow-lg);
-  background:linear-gradient(180deg,rgba(19,25,32,.98),rgba(15,19,24,.96));
-  margin-bottom:16px;
-}
-.map-head{
-  padding:10px 16px;
-  background:rgba(255,255,255,.03);
-  border-bottom:1px solid rgba(255,255,255,.06);
-  backdrop-filter:blur(12px);
-}
-.map-head h2{ font-size:12px; letter-spacing:.04em; font-weight:700; }
-.map-head .panel-sub{ font-size:10.5px; opacity:.7; }
-.map-wrap{ height:68vh; min-height:520px; }
-#map{ background:#0b1016; }
-
-/* Legend floating modern */
-.conf-summary,.air-legend,.ash-legend,.hima-info{
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.08);
-  box-shadow:var(--shadow-md);
-  backdrop-filter:blur(16px) saturate(1.2);
-}
-.map-hint,.wind-badge{
-  border-radius:10px;
-  backdrop-filter:blur(12px);
-  box-shadow:var(--shadow-sm);
-  border:1px solid rgba(255,255,255,.08);
-}
-
-/* Fullscreen button modern */
-.btn-fullscreen{
-  border-radius:8px;
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.1);
-  padding:5px 10px;
-  font-size:11px;
-  transition:all .18s;
-}
-.btn-fullscreen:hover{
-  background:rgba(255,255,255,.1);
-  transform:translateY(-1px);
-  box-shadow:var(--shadow-sm);
-}
-
-/* -- Panels modern: 12px radius, shadow, better spacing -- */
-.panel{
-  background:linear-gradient(180deg,rgba(19,25,32,.96),rgba(15,19,24,.94));
-  border:1px solid rgba(255,255,255,.06);
-  border-radius:var(--r-modern);
-  box-shadow:var(--shadow-sm);
-  overflow:hidden;
-  transition:box-shadow .22s;
-}
-.panel:hover{ box-shadow:var(--shadow-md); }
-.panel-head{
-  padding:12px 16px;
-  background:rgba(255,255,255,.03);
-  border-bottom:1px solid rgba(255,255,255,.05);
-}
-.panel-head h2{ font-size:12px; font-weight:700; letter-spacing:.04em; }
-.panel-sub{ font-size:11px; opacity:.7; }
-.pnum{
-  background:linear-gradient(135deg,#f97316,#ef4444);
-  color:#000;
-  font-weight:800;
-  width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;
-  border-radius:6px;font-size:10px;margin-right:8px;
-}
-.pgrid{ gap:14px; margin-bottom:14px; }
-.pgrid-a{ grid-template-columns:1.1fr 1.9fr; }
-.pgrid-b{ grid-template-columns:1fr 1fr; }
-.ev-body,.news,.pane{ padding:12px 14px; }
-.ev-body,.news{ max-height:480px; }
-
-/* Tabs modern: pill */
-.tabs{ padding:8px 12px 0; gap:6px; background:transparent; border-bottom:1px solid rgba(255,255,255,.05); }
-.tab{
-  border-radius:var(--r-pill);
-  padding:6px 12px;
-  font-size:11px;font-weight:500;
-  background:rgba(255,255,255,.05);
-  border:1px solid rgba(255,255,255,.06);
-  color:var(--tx-dim);
-  transition:all .18s;
-}
-.tab:hover{ background:rgba(255,255,255,.08); transform:translateY(-1px); }
-.tab.active{
-  background:linear-gradient(135deg,rgba(249,115,22,.18),rgba(239,68,68,.14));
-  border-color:rgba(249,115,22,.32);
-  color:#fdba74;
-  box-shadow:0 0 0 1px rgba(249,115,22,.12);
-}
-
-/* -- Footer modern -- */
-.foot{
-  margin-top:20px;
-  background:linear-gradient(180deg,rgba(15,19,24,.92),rgba(8,11,15,.96));
-  border-top:1px solid rgba(255,255,255,.06);
-  border-radius:var(--r-modern) var(--r-modern) 0 0;
-}
-.foot-btm{
-  background:rgba(0,0,0,.25);
-  border-top:1px solid rgba(255,255,255,.04);
-  letter-spacing:.08em;
-}
-
-/* -- Responsive modern -- */
-@media(max-width:1200px){
-  .stats{ grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .pgrid-a,.pgrid-b{ grid-template-columns:1fr; }
-}
-@media(max-width:768px){
-  main{ padding:12px 12px 20px; }
-  .topbar{ padding:10px 14px; }
-  .ticker{ padding:0 14px; }
-  .stats{ grid-template-columns:1fr; gap:8px; }
-  .stat{ padding:12px; }
-  .stat strong{ font-size:20px; }
-  .map-wrap{ height:62vh; min-height:420px; }
-  .ctlbox > .ctlbox-b{ padding:10px 12px; }
-  .ctl-collapse{ position:static; margin:8px 12px 0 auto; display:block; }
-}
-@media(max-width:420px){
-  .stats{ gap:8px; }
-  .brand-txt p{ display:none; }
-}
-
-/* -- Scrollbar modern -- */
-::-webkit-scrollbar{ width:6px; height:6px; }
-::-webkit-scrollbar-thumb{
-  background:rgba(255,255,255,.12);
-  border-radius:999px;
-}
-::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,.18); }
-::-webkit-scrollbar-track{ background:transparent; }
-
-/* -- Focus modern -- */
-:focus-visible{
-  outline:2px solid rgba(249,115,22,.6);
-  outline-offset:2px;
-  border-radius:6px;
-}
-
-/* -- Animations subtle -- */
-.stat,.panel,.ctlbox{
-  animation:fade-in .4s ease-out both;
-}
-@keyframes fade-in{
-  from{ opacity:0; transform:translateY(6px); }
-  to{ opacity:1; transform:translateY(0); }
-}
-.stat:nth-child(1){ animation-delay:.02s; }
-.stat:nth-child(2){ animation-delay:.04s; }
-.stat:nth-child(3){ animation-delay:.06s; }
-.stat:nth-child(4){ animation-delay:.08s; }
-.stat:nth-child(5){ animation-delay:.10s; }
-.stat:nth-child(6){ animation-delay:.12s; }
-.stat:nth-child(7){ animation-delay:.14s; }
-.stat:nth-child(8){ animation-delay:.16s; }
-.stat:nth-child(9){ animation-delay:.18s; }
-
-/* -- Heuristik: empty states lebih jelas -- */
-.empty{
-  padding:18px 14px;
-  background:rgba(255,255,255,.03);
-  border:1px dashed rgba(255,255,255,.08);
-  border-radius:10px;
-  color:var(--tx-dim);
-  font-size:12px;
-  text-align:center;
-}
-.pane-note{
-  background:rgba(56,189,248,.08);
-  border:1px solid rgba(56,189,248,.18);
-  border-radius:8px;
-  padding:8px 10px;
-  font-size:11px;
-}
-
-
-/* ============================================================
-   BLOOMBERG TERMINAL COMPACT — satu layar capture semua
-   Prinsip: density tinggi, font kecil, gap minimal, no scroll
-   halaman, hanya scroll internal panel. Mirip Bloomberg Terminal.
-   Aktif via body atau tombol toggle.
-   ============================================================ */
-body{
-  --r-modern:4px;
-  font-size:11px;
-  line-height:1.35;
-  background:#000;
-  overflow:auto;
-  height:auto;
-  min-height:100vh;
-  display:block;
-}
-body .topbar{
-  padding:6px 12px;
-  height:38px;
-  min-height:38px;
-  gap:8px;
-  background:#0a0a0a;
-  border-bottom:1px solid #1a1a1a;
-  backdrop-filter:none;
-  box-shadow:none;
-}
-body .mark-tag{ width:28px;height:28px;font-size:11px;border-radius:4px; }
-body .brand-txt h1{ font-size:13px; }
-body .brand-txt p{ font-size:8px; letter-spacing:.08em; }
-body .clock-box{ padding:2px 6px;border-radius:4px; }
-body .clock-lab{ font-size:7px; }
-body .clock-val{ font-size:10px; }
-body .badge{ padding:2px 6px;font-size:8px;border-radius:4px; }
-body .btn{ padding:4px 8px;font-size:10px;border-radius:4px; }
-
-body .ticker{
-  height:22px;
-  padding:0 12px;
-  font-size:10px;
-  background:#0a0a0a;
-  border-bottom:1px solid #1a1a1a;
-}
-body .ticker-tag{ padding:1px 5px;font-size:8px;border-radius:3px; }
-
-body main{
-  flex:none;
-  display:grid;
-  grid-template-rows:auto auto auto;
-  grid-template-columns:1fr;
-  gap:6px;
-  padding:6px;
-  max-width:1680px;
-  margin:0 auto;
-  overflow:visible;
-  height:auto;
-  max-height:none;
-}
-
-body .stats{
-  grid-template-columns:repeat(9,minmax(0,1fr));
-  gap:4px;
-  margin:0;
-}
-body .stat{
-  padding:4px 6px 3px;
-  border-radius:4px;
-  background:#0f0f0f;
-  border:1px solid #1e1e1e;
-  box-shadow:none;
-  min-height:48px;
-}
-body .stat::before{ width:2px; }
-body .stat:hover{ transform:none; box-shadow:none; border-color:#2a2a2a; }
-body .stat-label{ font-size:7px;margin-bottom:2px;letter-spacing:.06em; }
-body .stat strong{ font-size:13px;margin-bottom:1px;line-height:1; }
-body .stat-sub{ font-size:8px;line-height:1.2; }
-
-body .ctlrow{
-  gap:4px;
-  margin:0;
-  background:transparent;
-  border:0;
-  box-shadow:none;
+  height:var(--header-h);
   display:flex;
-  flex-direction:row;
-  flex-wrap:wrap;
-  padding:0;
-}
-body .ctlrow > .ctlbox{
-  border:1px solid #1e1e1e;
-  border-radius:4px;
-  background:#0f0f0f;
-  flex:1 1 auto;
-  min-width:0;
-  margin:0;
-}
-body .ctlrow > .ctlbox:nth-child(1){ flex:2 1 320px; }
-body .ctlrow > .ctlbox:nth-child(2),
-body .ctlrow > .ctlbox:nth-child(3),
-body .ctlrow > .ctlbox:nth-child(4){ flex:0 1 auto; }
-body .ctlrow > .ctlbox:nth-child(5),
-body .ctlrow > .ctlbox:nth-child(6){ flex:1 1 260px; }
-body .ctlbox > .ctlbox-h{
-  padding:3px 8px;
-  font-size:8px;
-  background:#141414;
-  border-bottom:1px solid #1e1e1e;
-}
-body .ctlbox > .ctlbox-b{
-  padding:4px 6px;
-  gap:4px;
-}
-body .ctl-wrap .chk{
-  padding:2px 6px;
-  font-size:9px;
-  border-radius:3px;
-}
-body .tl-b, body .bm, body .ctlbox select{
-  padding:2px 6px;
-  font-size:9px;
-  border-radius:3px;
-  min-height:20px;
-}
-body .cfg-l{ font-size:7px; }
-body .cfg-lg span{ font-size:8px; }
-body .ctl-collapse{ display:none; }
-
-body .map-card{
-  border-radius:4px;
-  margin:0;
-  border:1px solid #1e1e1e;
-  box-shadow:none;
-  background:#0a0a0a;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-  min-height:0;
-}
-body .map-head{
-  padding:4px 8px;
-  background:#141414;
-  border-bottom:1px solid #1e1e1e;
-}
-body .map-head h2{ font-size:10px; }
-body .map-head .panel-sub{ font-size:8px; }
-body .map-wrap{ flex:1; min-height:0; height:auto; }
-body #map{ height:100%; }
-
-body .pgrid,
-body .panel.wide{
-  margin:0;
-  gap:4px;
-}
-body .pgrid-a,
-body .pgrid-b{
-  display:contents;
-}
-
-body #main-bloomberg-grid{
-  display:grid;
-  grid-template-columns:1fr;
-  grid-template-rows:auto auto;
-  gap:6px;
-  min-height:0;
-  overflow:visible;
-  flex:none;
-}
-body #main-bloomberg-grid .map-card{
-  grid-column:1;
-  grid-row:1;
-  min-height:60vh;
-  height:60vh;
-  display:flex;
-  flex-direction:column;
-}
-body #main-bloomberg-grid .side-stack{
-  grid-column:2;
-  display:grid;
-  grid-template-rows:auto 1fr 1fr;
-  gap:4px;
-  min-height:0;
-  overflow:visible;
-}
-body .panel{
-  border-radius:4px;
-  border:1px solid #1e1e1e;
-  background:#0f0f0f;
-  box-shadow:none;
-  min-height:0;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-}
-body .panel:hover{ box-shadow:none; border-color:#2a2a2a; }
-body .panel-head{
-  padding:4px 8px;
-  background:#141414;
-  border-bottom:1px solid #1e1e1e;
-}
-body .panel-head h2{ font-size:9px; }
-body .panel-sub{ font-size:8px; }
-body .pnum{ width:16px;height:16px;font-size:8px;border-radius:3px;margin-right:4px; }
-body .ev-body,
-body .news,
-body .pane{
-  padding:4px 6px;
-  font-size:10px;
-  overflow-y:auto;
-  flex:1;
-  min-height:0;
-}
-body .ev-body,
-body .news{ max-height:none; }
-
-body .tabs{
-  padding:2px 4px 0;
-  gap:3px;
-}
-body .tab{
-  padding:2px 6px;
-  font-size:8px;
-  border-radius:3px;
-  min-height:18px;
-}
-body .foot{ display:none; }
-body #notice{ margin:0 4px;padding:4px 8px;font-size:10px;border-radius:4px; }
-
-body .air-legend,
-body .conf-summary,
-body .ash-legend,
-body .hima-info{
-  border-radius:4px;
-  font-size:9px;
-  padding:4px 6px;
-  min-width:0;
-}
-body .btn-fullscreen{
-  padding:2px 6px;
-  font-size:8px;
-  border-radius:3px;
-  min-height:18px;
-}
-
-.bloomberg-toggle{
-  background:#0f0f0f;border:1px solid #2a2a2a;color:#f97316;
-  border-radius:4px;padding:4px 8px;font-size:10px;font-weight:700;
-  letter-spacing:.06em;cursor:pointer;transition:all .15s;
-}
-.bloomberg-toggle:hover{ background:#1a1a1a;border-color:#f97316;color:#fdba74; }
-.bloomberg-toggle.active{ background:#f97316;color:#000;border-color:#f97316; }
-
-@media(max-width:1100px){
-  body .stats{ grid-template-columns:repeat(3,minmax(0,1fr)); }
-  body #main-bloomberg-grid{ grid-template-columns:1fr; grid-template-rows:1fr auto; }
-  body #main-bloomberg-grid .map-card{ grid-column:1; grid-row:1; min-height:40vh; }
-  body #main-bloomberg-grid .side-stack{ grid-column:1; grid-row:2; grid-template-rows:auto; }
-}
-@media(max-width:768px){
-  body{ overflow:auto; height:auto; }
-  body main{ height:auto; max-height:none; overflow:visible; display:block; }
-  body #main-bloomberg-grid{ display:block; }
-  body .map-card{ min-height:50vh; }
-}
-
-/* Bloomberg DEFAULT compact + peta melebar — user request: terlalu banyak scroll, peta melebar saja seperti awal */
-body .panel-edu,
-body #sourcePanel{
-  display:none;
-}
-body .panel.wide{
-  max-height:320px;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column;
-}
-body .panel.wide .pane,
-body .panel.wide .so2grid,
-body .panel.wide #hazardBody,
-body .panel.wide #statusBody{
-  overflow-y:auto;
-  flex:1;
-  min-height:0;
-}
-body #attrSection{ max-height:340px; }
-body #hazardPanel,
-body #statusPanel,
-body #so2Panel{ max-height:300px; }
-body .foot{ display:none; }
-/* Peta melebar penuh seperti awal — 58vh */
-body .map-wrap{ height:60vh !important; min-height:520px !important; flex:none !important; } 
-body #map{ height:100% !important; min-height:520px !important; }
-
-
-/* === Fase 3.5 SINGLE DESIGN — Bloomberg jadi satu-satunya, normal = compact === */
-body{
-  overflow:auto !important;
-  height:auto !important;
-  min-height:100vh !important;
-  display:block !important;
-  background:#000 !important;
-}
-body main{
-  height:auto !important;
-  max-height:none !important;
-  overflow:visible !important;
-  display:block !important;
-  max-width:1680px;
-  margin:0 auto;
-  gap:6px;
-}
-#main-bloomberg-grid{
-  display:grid !important;
-  grid-template-columns:1fr !important;
-  grid-template-rows:auto auto !important;
-  gap:6px !important;
-}
-#main-bloomberg-grid .map-card{
-  grid-column:1 !important;
-  grid-row:1 !important;
-  min-height:60vh !important;
-  height:60vh !important;
-  display:flex !important;
-  flex-direction:column !important;
-}
-#main-bloomberg-grid .side-stack{
-  grid-column:1 !important;
-  grid-row:2 !important;
-  display:grid !important;
-  grid-template-columns:repeat(2,1fr) !important;
-  gap:6px !important;
-}
-body .map-wrap{ height:60vh !important; min-height:520px !important; flex:none !important; }
-body #map{ height:100% !important; min-height:520px !important; }
-.bloomberg-toggle{ display:none !important; }
-
-
-/* === Fase 3.6 — Panel Berita scroll terbatas + AI Asisten popup draggable === */
-#newsPanel{
-  max-height:380px !important;
-  display:flex !important;
-  flex-direction:column !important;
-  overflow:hidden !important;
-}
-#newsPanel .searchbar{
+  align-items:center;
+  justify-content:space-between;
+  padding:0 var(--pad-md);
+  background:var(--bg-2);
+  border-bottom:1px solid var(--border);
+  gap:var(--gap-md);
   flex-shrink:0;
 }
-#newsPanel #news{
-  flex:1 !important;
-  overflow-y:auto !important;
-  overflow-x:hidden !important;
-  max-height:300px !important;
-  min-height:120px !important;
+.brand{display:flex;align-items:center;gap:var(--gap-md)}
+.mark-tag{
+  width:32px;height:24px;
+  background:var(--amber);
+  color:#000;
+  font-weight:800;
+  font-size:11px;
+  letter-spacing:.06em;
+  display:grid;place-items:center;
+  border-radius:var(--radius-xs);
 }
-#newsPanel #news::-webkit-scrollbar{ width:6px; }
-#newsPanel #news::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.12); border-radius:999px; }
+.brand-txt h1{
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.04em;
+  line-height:var(--lh-tight);
+}
+.brand-dot{color:var(--amber)}
+.brand-sep{color:var(--text-faint);font-weight:400}
+.brand-sub{color:var(--text-secondary);font-size:10px;letter-spacing:.12em}
+.brand-txt p{
+  font-size:9px;
+  letter-spacing:.12em;
+  color:var(--text-muted);
+  line-height:var(--lh-tight);
+  margin-top:1px;
+}
+.topbar-right{
+  display:flex;
+  align-items:center;
+  gap:var(--gap-sm);
+  flex-shrink:0;
+}
+.badge{
+  padding:2px 6px;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.06em;
+  border-radius:var(--radius-xs);
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text-secondary);
+}
+.badge-live{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
+.badge-neutral{background:var(--surface);color:var(--text-secondary)}
+.clock-box{
+  display:flex;
+  align-items:center;
+  gap:3px;
+  padding:2px 6px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-xs);
+}
+.clock-lab{font-size:9px;color:var(--text-muted);letter-spacing:.08em}
+.clock-val{font-size:11px;font-weight:600;color:var(--text-primary)}
+.stamp{font-size:10px;color:var(--text-muted)}
+.btn{
+  padding:4px 10px;
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.04em;
+  border:1px solid var(--border);
+  border-radius:var(--radius-xs);
+  background:var(--surface-2);
+  color:var(--text-secondary);
+  cursor:pointer;
+  transition:background .12s,border-color .12s,color .12s;
+}
+.btn:hover{background:var(--surface-3);color:var(--text-primary);border-color:var(--border-strong)}
+.btn-primary{background:var(--amber);color:#000;border-color:var(--amber);font-weight:700}
+.btn-primary:hover{background:#ffb340;border-color:#ffb340}
+.btn-ghost{background:transparent}
+.btn-ghost.active{background:var(--surface-3);color:var(--amber);border-color:var(--amber-border)}
 
-/* AI FAB */
+/* === Ticker — 28px fixed === */
+.ticker{
+  height:var(--ticker-h);
+  display:flex;
+  align-items:center;
+  gap:var(--gap-sm);
+  padding:0 var(--pad-md);
+  background:var(--bg-2);
+  border-bottom:1px solid var(--border);
+  overflow:hidden;
+  flex-shrink:0;
+}
+.ticker-tag{
+  padding:1px 6px;
+  background:var(--green);
+  color:#000;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.08em;
+  border-radius:var(--radius-xs);
+  flex-shrink:0;
+}
+.ticker-view{flex:1;overflow:hidden;position:relative}
+.ticker-track{
+  display:flex;
+  gap:24px;
+  white-space:nowrap;
+  will-change:transform;
+  font-size:11px;
+  color:var(--text-secondary);
+}
+
+/* === Main — 100vh split view, no global scroll === */
+main{
+  height:calc(100vh - var(--header-h) - var(--ticker-h));
+  display:grid;
+  grid-template-rows:auto auto 1fr;
+  overflow:hidden;
+  background:var(--border);
+  gap:1px;
+}
+#notice{
+  padding:6px 10px;
+  font-size:11px;
+  background:var(--amber-bg);
+  color:var(--amber);
+  border-bottom:1px solid var(--amber-border);
+}
+#notice[hidden]{display:none}
+
+/* === Stats — 1 row 4-8 cols dense, padding 6px 10px === */
+.stats{
+  display:grid;
+  grid-template-columns:repeat(9,1fr);
+  gap:1px;
+  background:var(--border);
+  flex-shrink:0;
+}
+.stat{
+  background:var(--surface);
+  padding:6px 10px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  border:none;
+  min-width:0;
+}
+.stat::before{content:none}
+.stat-label{
+  font-size:9px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--text-muted);
+  line-height:var(--lh-tight);
+}
+.stat strong{
+  font-size:13px;
+  font-weight:700;
+  line-height:var(--lh-tight);
+  color:var(--text-primary);
+}
+.stat-sub{
+  font-size:10px;
+  color:var(--text-muted);
+  line-height:var(--lh-tight);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.stat-accent{border-left:2px solid var(--amber)}
+
+/* === Control Toolbar — compact horizontal === */
+.ctlrow{
+  display:flex;
+  flex-wrap:wrap;
+  gap:1px;
+  background:var(--border);
+  padding:0;
+  flex-shrink:0;
+  max-height:var(--ctl-h);
+  overflow-y:auto;
+}
+.ctlbox{
+  background:var(--surface);
+  display:flex;
+  flex-direction:column;
+  flex:1 1 200px;
+  min-width:160px;
+}
+.ctlbox-h{
+  padding:4px 8px;
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--text-muted);
+  background:var(--surface-2);
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.ctlbox-h::before{
+  content:"";
+  width:6px;height:6px;
+  border-radius:50%;
+  background:var(--text-faint);
+  display:inline-block;
+}
+.ch-accent::before{background:var(--amber)}
+.ch-info::before{background:var(--cyan)}
+.ch-warn::before{background:var(--amber)}
+.ch-mute::before{background:var(--text-muted)}
+.ch-red::before{background:var(--red)}
+.ctlbox-b{
+  padding:6px 8px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+  align-items:center;
+}
+.ctl-wrap .chk{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:2px 6px;
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-xs);
+  font-size:10px;
+  color:var(--text-secondary);
+  cursor:pointer;
+}
+.ctl-wrap .chk:has(input:checked){
+  background:var(--amber-bg);
+  border-color:var(--amber-border);
+  color:var(--amber);
+}
+.ctl-wrap input{accent-color:var(--amber)}
+.tl-b,.bm,.ctlbox select{
+  padding:3px 8px;
+  font-size:10px;
+  border:1px solid var(--border);
+  background:var(--surface-2);
+  color:var(--text-secondary);
+  border-radius:var(--radius-xs);
+  cursor:pointer;
+}
+.tl-b.active,.bm.active{
+  background:var(--amber);
+  color:#000;
+  border-color:var(--amber);
+  font-weight:700;
+}
+.ctl-cfg{display:flex;gap:12px;flex-wrap:wrap}
+.cfg-g{display:flex;align-items:center;gap:4px}
+.cfg-l{font-size:9px;color:var(--text-muted);letter-spacing:.06em}
+.cfg-lg{display:flex;gap:6px;flex-wrap:wrap}
+.cfg-lg span{font-size:10px;color:var(--text-secondary);display:flex;align-items:center;gap:3px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.sw{width:12px;height:4px;border-radius:1px;display:inline-block;background:var(--text-muted)}
+.sw-smoke{background:var(--text-secondary)}
+.sw-wind{background:var(--cyan)}
+.sw-ring{border:1px solid var(--amber);background:transparent;border-radius:50%;width:8px;height:8px}
+.sw-conc{border:1px dashed var(--red);background:transparent}
+.ctl-collapse{
+  display:none;
+  padding:4px 8px;
+  font-size:10px;
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  color:var(--text-secondary);
+}
+
+/* === Main Bloomberg Grid — split view === */
+#main-bloomberg-grid{
+  display:grid;
+  grid-template-columns:1.6fr 1fr;
+  gap:1px;
+  background:var(--border);
+  overflow:hidden;
+  height:100%;
+  min-height:0;
+}
+.map-card{
+  background:var(--surface);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  min-height:0;
+}
+.map-head{
+  padding:6px 10px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:var(--surface-2);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.map-head h2{font-size:11px;font-weight:700;letter-spacing:.04em}
+.map-head .panel-sub{font-size:10px;color:var(--text-muted);margin-left:auto}
+.btn-fullscreen{
+  padding:2px 6px;
+  font-size:10px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text-secondary);
+  border-radius:var(--radius-xs);
+  cursor:pointer;
+}
+.btn-fullscreen:hover{border-color:var(--amber);color:var(--amber)}
+.map-wrap{
+  flex:1;
+  min-height:0;
+  position:relative;
+  background:var(--bg);
+}
+#map{width:100%;height:100%;min-height:400px}
+.map-corner{
+  position:absolute;
+  font-size:9px;
+  color:var(--text-muted);
+  background:rgba(10,10,12,.85);
+  padding:2px 4px;
+  border-radius:var(--radius-xs);
+  z-index:400;
+}
+.map-corner.tl{top:4px;left:4px}
+.map-corner.tr{top:4px;right:4px}
+.map-corner.bl{bottom:24px;left:4px}
+.map-corner.br{bottom:24px;right:4px}
+.conf-summary,.air-legend,.ash-legend,.hima-info{
+  position:absolute;
+  left:8px;bottom:8px;
+  background:rgba(15,17,21,.92);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:6px 8px;
+  font-size:10px;
+  color:var(--text-secondary);
+  z-index:500;
+  max-width:320px;
+  backdrop-filter:blur(8px);
+}
+.air-legend{left:auto;right:8px;top:8px;bottom:auto}
+.legend{
+  padding:4px 8px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  font-size:10px;
+  color:var(--text-muted);
+  background:var(--surface-2);
+  border-top:1px solid var(--border);
+  flex-shrink:0;
+}
+.legend-tip{margin-left:auto;font-style:italic}
+
+/* Side stack — fit-height overflow-y auto */
+.side-stack{
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  background:var(--border);
+  overflow-y:auto;
+  overflow-x:hidden;
+  min-height:0;
+}
+.pgrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:1px;
+  background:var(--border);
+}
+.pgrid-a,.pgrid-b{display:contents}
+.panel{
+  background:var(--surface);
+  border:none;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  overflow:hidden;
+}
+.panel.wide{grid-column:1 / -1}
+.panel-head{
+  padding:6px 10px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background:var(--surface-2);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.panel-head h2{font-size:11px;font-weight:700;letter-spacing:.04em;display:flex;align-items:center;gap:6px}
+.pnum{
+  width:18px;height:16px;
+  background:var(--text-secondary);
+  color:var(--bg);
+  font-size:9px;
+  font-weight:800;
+  display:grid;place-items:center;
+  border-radius:var(--radius-xs);
+}
+.panel-sub{font-size:10px;color:var(--text-muted);margin-left:auto}
+.panel-head-tight{padding:4px 10px}
+.tabs{
+  display:flex;
+  gap:1px;
+  background:var(--border);
+  flex-shrink:0;
+}
+.tab{
+  padding:4px 10px;
+  font-size:10px;
+  font-weight:600;
+  background:var(--surface-2);
+  color:var(--text-muted);
+  border:none;
+  cursor:pointer;
+}
+.tab.active{background:var(--surface);color:var(--amber);border-bottom:1px solid var(--amber)}
+.tab:hover{color:var(--text-secondary)}
+.pane{
+  padding:6px 8px;
+  overflow-y:auto;
+  flex:1;
+  min-height:120px;
+  max-height:280px;
+}
+.ev-body,.news{
+  overflow-y:auto;
+  flex:1;
+  min-height:0;
+}
+.ev-body{max-height:300px}
+#newsPanel{max-height:380px;display:flex;flex-direction:column}
+#newsPanel #news{flex:1;overflow-y:auto;max-height:300px}
+.searchbar{
+  padding:6px 8px;
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  border-bottom:1px solid var(--border);
+  background:var(--surface-2);
+}
+.searchbar input{
+  flex:1;
+  min-width:120px;
+  padding:4px 8px;
+  font-size:11px;
+  background:var(--bg);
+  border:1px solid var(--border);
+  color:var(--text-primary);
+  border-radius:var(--radius-xs);
+}
+.ntopics{display:flex;flex-wrap:wrap;gap:4px;max-height:60px;overflow-y:auto}
+.ntopics.is-collapsed{max-height:28px;overflow:hidden}
+.ntopic{
+  padding:2px 6px;
+  font-size:10px;
+  background:var(--surface-3);
+  border:1px solid var(--border);
+  color:var(--text-secondary);
+  border-radius:var(--radius-xs);
+  cursor:pointer;
+}
+.ntopic.active{background:var(--amber-bg);border-color:var(--amber-border);color:var(--amber)}
+.ntopic i{font-style:normal;margin-left:4px;background:rgba(255,255,255,.08);padding:0 4px;border-radius:10px;font-size:9px}
+.news-item{
+  display:block;
+  padding:8px 10px;
+  border-bottom:1px solid var(--border-2);
+  text-decoration:none;
+  color:inherit;
+}
+.news-item:hover{background:rgba(255,255,255,.03)}
+.news-t{font-size:11px;line-height:1.3;color:var(--text-primary)}
+.news-m{font-size:10px;color:var(--text-muted);display:flex;gap:6px;margin-top:3px}
+.news-src{color:var(--cyan)}
+.news-tag{padding:1px 4px;background:var(--surface-3);border-radius:var(--radius-xs);font-size:9px}
+.news-foreign{background:var(--amber-bg);color:var(--amber)}
+.news-age,.news-clock{color:var(--text-faint)}
+
+/* Atribusi list — dense */
+.unit-list{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  padding:0;
+  border-top:1px solid var(--border);
+  max-height:320px;
+  overflow-y:auto;
+}
+.unit.unit-row{
+  background:transparent;
+  border:none;
+  border-bottom:1px solid var(--border-2);
+  border-radius:0;
+  padding:6px 10px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  cursor:pointer;
+  text-align:left;
+  transition:background .12s;
+}
+.unit.unit-row:hover{background:rgba(255,255,255,.03)}
+.unit-top{display:flex;justify-content:space-between;gap:8px}
+.unit-left{flex:1;min-width:0}
+.unit-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-primary)}
+.unit-group{font-size:10px;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unit-right{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.unit-count{font-size:10px;background:var(--surface-3);padding:2px 6px;border-radius:var(--radius-xs);color:var(--text-secondary)}
+.unit-detail{font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:9px;padding:2px 6px;border-radius:var(--radius-xs);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.t-sawit{background:var(--amber-bg);color:var(--amber)}
+.t-kayu{background:var(--green-bg);color:var(--green)}
+.t-hph{background:var(--cyan-bg);color:var(--cyan)}
+.t-tambang{background:rgba(167,139,250,.15);color:#c4b5fd}
+.t-rspo{background:rgba(45,212,191,.13);color:#5eead4}
+
+/* Wide panels */
+.panel.wide .callout{margin:6px 8px;padding:8px 10px;border-radius:var(--radius-sm);font-size:11px}
+.tabs-inline{padding:0 8px;background:var(--surface-2)}
+#paneUnit,#paneGroup{max-height:340px;overflow-y:auto}
+.hazard-body,.st-grid,.so2grid{padding:6px 8px;max-height:300px;overflow-y:auto}
+.so2grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1px;background:var(--border)}
+.so2grid > *{background:var(--surface);padding:6px 8px}
+
+/* Edu & source */
+.panel-edu .pscroll,.panel-wide .pscroll{overflow-y:auto;max-height:400px}
+.srcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--border);padding:0}
+.srccard{background:var(--surface);padding:8px 10px}
+.srccard h3{font-size:11px;color:var(--amber);margin-bottom:4px}
+.srccard p{font-size:11px;color:var(--text-secondary);line-height:1.4}
+.fineprint{padding:8px 10px;font-size:10px;color:var(--text-muted)}
+
+/* Footer — no blank */
+.foot{
+  background:var(--bg-2);
+  border-top:1px solid var(--border);
+  padding:10px 12px;
+  font-size:10px;
+  color:var(--text-muted);
+  flex-shrink:0;
+}
+.foot-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:12px}
+.foot-lab{font-size:9px;letter-spacing:.1em;color:var(--text-faint);text-transform:uppercase;margin-bottom:4px}
+.foot-p{font-size:10px;color:var(--text-secondary);line-height:1.4}
+.foot-refs{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.foot-refs span{font-size:10px;color:var(--text-muted)}
+.emg-box{background:var(--red-bg);border:1px solid var(--red-border);padding:6px 10px;border-radius:var(--radius-sm);display:flex;flex-direction:column;align-items:center}
+.emg-box b{font-size:16px;color:var(--red)}
+.emg-box span{font-size:9px;color:var(--red)}
+.fkeys{display:flex;flex-wrap:wrap;gap:4px}
+.fkey{
+  padding:3px 6px;
+  background:var(--surface-3);
+  border:1px solid var(--border);
+  border-radius:var(--radius-xs);
+  text-decoration:none;
+  display:flex;
+  gap:4px;
+  align-items:center;
+}
+.fkey b{font-size:9px;background:var(--text-secondary);color:var(--bg);padding:1px 3px;border-radius:2px}
+.fkey span{font-size:10px;color:var(--text-secondary)}
+.foot-btm{text-align:center;padding:8px;font-size:9px;color:var(--text-faint);border-top:1px solid var(--border-2);margin-top:8px}
+
+/* === AI Fab & Popup — retro terminal === */
 .ai-fab{
   position:fixed;
-  bottom:20px;
-  right:20px;
+  bottom:16px;right:16px;
   z-index:9999;
-  background:#f97316;
+  background:var(--amber);
   color:#000;
-  border:1px solid #f97316;
-  border-radius:999px;
-  padding:10px 16px;
-  font-family:var(--mono, 'JetBrains Mono', monospace);
-  font-size:12px;
+  border:1px solid var(--amber);
+  border-radius:20px;
+  padding:8px 14px;
+  font-size:11px;
   font-weight:700;
   letter-spacing:.06em;
   box-shadow:0 8px 24px rgba(0,0,0,.4);
   cursor:pointer;
-  display:flex;
-  align-items:center;
-  gap:6px;
-  transition:transform .15s, box-shadow .15s;
+  display:flex;gap:6px;align-items:center;
 }
-.ai-fab:hover{ transform:translateY(-2px); box-shadow:0 12px 32px rgba(0,0,0,.5); }
-.ai-fab-ic{ font-size:14px; }
-.ai-fab-txt{ font-size:11px; }
-
-/* AI Popup draggable */
+.ai-fab:hover{transform:translateY(-1px);box-shadow:0 12px 32px rgba(0,0,0,.5)}
 .ai-popup{
   position:fixed;
-  bottom:70px;
-  right:20px;
-  width:400px;
-  max-width:calc(100vw - 24px);
-  height:480px;
-  max-height:calc(100vh - 100px);
-  background:#0f0f0f;
-  border:1px solid #2a2a2a;
-  border-radius:12px;
+  bottom:60px;right:16px;
+  width:380px;
+  max-width:calc(100vw - 16px);
+  height:460px;
+  max-height:calc(100vh - 80px);
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-md);
   box-shadow:0 20px 60px rgba(0,0,0,.6);
   z-index:10000;
   display:flex;
   flex-direction:column;
   overflow:hidden;
 }
-.ai-popup[hidden]{ display:none !important; }
+.ai-popup[hidden]{display:none !important}
 .ai-popup-head{
+  padding:8px 10px;
+  background:var(--surface-2);
+  border-bottom:1px solid var(--border);
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding:10px 12px;
-  background:#1a1a1a;
-  border-bottom:1px solid #2a2a2a;
   cursor:move;
   user-select:none;
-  flex-shrink:0;
   touch-action:none;
 }
-.ai-head-left{ display:flex; align-items:center; gap:8px; }
-.ai-dot{ width:8px; height:8px; background:#22c55e; border-radius:50%; box-shadow:0 0 8px #22c55e; flex-shrink:0; }
-.ai-popup-head h3{ font-size:11px; letter-spacing:.08em; margin:0; color:#e8e8e8; }
-.ai-head-sub{ font-size:9px; color:#888; }
-.ai-head-actions{ display:flex; align-items:center; gap:6px; }
-.ai-drag-hint{ font-size:9px; color:#666; }
-.ai-close{
-  background:none;
-  border:1px solid #333;
-  border-radius:4px;
-  color:#aaa;
-  width:24px; height:24px;
-  cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  font-size:12px;
-}
-.ai-close:hover{ background:#222; color:#fff; border-color:#555; }
-.ai-popup-body{
-  flex:1;
-  overflow-y:auto;
-  overflow-x:hidden;
-  padding:12px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-.ai-popup-body .ask-bar{ flex-shrink:0; }
-.ai-popup-body .ask-chips{ flex-shrink:0; }
-.ai-popup-body .ask-out{ flex:1; overflow-y:auto; }
-.ai-popup-foot{
-  padding:6px 12px;
-  font-size:9px;
-  color:#666;
-  border-top:1px solid #1e1e1e;
-  background:#0a0a0a;
-  flex-shrink:0;
-  line-height:1.3;
-}
-@media (max-width:768px){
-  .ai-popup{
-    width:calc(100vw - 16px);
-    right:8px;
-    left:8px;
-    bottom:70px;
-    height:60vh;
-  }
-  .ai-fab{ bottom:12px; right:12px; }
-  #newsPanel{ max-height:340px !important; }
-  #newsPanel #news{ max-height:260px !important; }
-}
+.ai-head-left{display:flex;gap:6px;align-items:center}
+.ai-dot{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 8px var(--green)}
+.ai-popup-head h3{font-size:11px;letter-spacing:.06em}
+.ai-head-sub{font-size:9px;color:var(--text-muted)}
+.ai-drag-hint{font-size:9px;color:var(--text-faint)}
+.ai-close{width:22px;height:22px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text-muted);cursor:pointer}
+.ai-popup-body{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:8px}
+.ai-popup-foot{padding:6px 10px;font-size:9px;color:var(--text-muted);border-top:1px solid var(--border);background:var(--bg-2)}
 
-/* === Fase 3.7 — Atribusi lahan list hemat ruang, bukan card kotak === */
-.unit-list{
-  display:flex !important;
-  flex-direction:column !important;
-  gap:0 !important;
-  padding:0 !important;
-  grid-template-columns:1fr !important;
-  border-top:1px solid var(--line, #1e1e1e);
-  max-height:320px;
-  overflow-y:auto;
-}
-.unit.unit-row{
-  background:transparent !important;
-  border:none !important;
-  border-bottom:1px solid var(--line, #1e1e1e) !important;
-  border-radius:0 !important;
-  padding:8px 12px !important;
-  display:flex !important;
-  flex-direction:column !important;
-  gap:3px !important;
-  cursor:pointer;
-  text-align:left;
-  transition:background .12s;
-  transform:none !important;
-}
-.unit.unit-row:hover{
-  background:rgba(255,255,255,.04) !important;
-  border-color:var(--line, #1e1e1e) !important;
-}
-.unit-top{
-  display:flex !important;
-  align-items:flex-start !important;
-  justify-content:space-between !important;
-  gap:8px !important;
-  width:100%;
-}
-.unit-left{ flex:1; min-width:0; }
-.unit-name{
-  font-size:12px !important;
-  font-weight:600 !important;
-  line-height:1.3 !important;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.unit-group{
-  font-size:10px !important;
-  color:var(--info, #7dd3fc) !important;
-  margin-top:1px !important;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.unit-right{
+/* Ask bar retro */
+.ask-bar{
   display:flex;
-  align-items:center;
   gap:6px;
-  flex-shrink:0;
+  padding:6px 8px;
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
 }
-.unit-count{
+.ask-prompt{color:var(--amber);font-weight:700}
+#askQ{
+  flex:1;
+  background:transparent;
+  border:none;
+  color:var(--text-primary);
+  font-size:11px;
+  outline:none;
+}
+.ask-chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{
+  padding:3px 8px;
   font-size:10px;
-  font-weight:600;
-  color:var(--tx-dim, #aaa);
-  background:rgba(255,255,255,.06);
-  padding:2px 6px;
-  border-radius:4px;
-  white-space:nowrap;
+  background:var(--surface-3);
+  border:1px solid var(--border);
+  color:var(--text-secondary);
+  border-radius:12px;
+  cursor:pointer;
 }
-.unit-detail{
-  font-size:10px !important;
-  color:var(--tx-faint, #777) !important;
-  line-height:1.4 !important;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  border-top:none !important;
-  padding-top:0 !important;
-}
-.tag{
-  font-size:9px !important;
-  padding:2px 6px !important;
-  border-radius:4px !important;
-}
-/* Compact untuk Bloomberg single design */
-body .unit-list{ max-height:300px !important; }
-body .unit.unit-row{ padding:6px 10px !important; }
-body .unit-name{ font-size:11px !important; }
-body .unit-group{ font-size:9px !important; }
-body .unit-detail{ font-size:9px !important; }
-body .unit-count{ font-size:9px !important; }
+.chip:hover{border-color:var(--amber);color:var(--amber)}
+.ask-out{flex:1;overflow-y:auto;padding:6px 0;font-size:11px;line-height:1.4}
+.ask-line{margin-bottom:4px}
+.ask-head{font-weight:700;color:var(--amber)}
+.ask-note{color:var(--text-muted);font-size:10px}
+.ask-src{margin-top:8px;padding-top:6px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px}
+.ask-src-lab{font-size:9px;color:var(--text-faint);width:100%;letter-spacing:.08em}
+.src-pill{padding:2px 6px;background:var(--surface-3);border:1px solid var(--border);border-radius:var(--radius-xs);font-size:10px;color:var(--text-secondary);text-decoration:none}
 
-/* === Fase 3.8 — Panel fleksibel free floating draggable + resize + font auto-scale + save === */
+/* === Layout bar & free floating === */
 .layout-bar{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  gap:12px;
-  padding:10px 14px;
-  background:#1a1a1a;
-  border:1px solid #f97316;
-  border-radius:8px;
-  margin:8px 16px;
+  gap:8px;
+  padding:6px 10px;
+  background:var(--surface-2);
+  border:1px solid var(--amber-border);
+  border-radius:var(--radius-sm);
+  margin:0;
   flex-wrap:wrap;
+  flex-shrink:0;
 }
-.layout-bar[hidden]{ display:none !important; }
-.layout-title{ font-size:11px; font-weight:700; letter-spacing:.06em; color:#f97316; }
-.layout-hint{ font-size:10px; color:#888; margin-left:8px; }
-.layout-bar-actions{ display:flex; gap:6px; flex-wrap:wrap; }
-
-/* Edit mode — panels jadi draggable free floating */
-body.layout-edit #main{
-  position:relative;
-  min-height:120vh;
-}
-body.layout-edit .panel,
-body.layout-edit .map-card{
+.layout-bar[hidden]{display:none !important}
+.layout-title{font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.06em}
+.layout-hint{font-size:9px;color:var(--text-muted);margin-left:6px}
+.layout-bar-actions{display:flex;gap:4px;flex-wrap:wrap}
+body.layout-edit #main{position:relative;min-height:120vh}
+body.layout-edit .panel,body.layout-edit .map-card{
   position:absolute !important;
   z-index:10;
-  cursor:default;
   box-shadow:0 8px 32px rgba(0,0,0,.5) !important;
-  border:1px dashed #f97316 !important;
+  border:1px dashed var(--amber) !important;
   resize:both;
   overflow:auto;
   container-type:inline-size;
-  container-name:panel;
   min-width:200px;
   min-height:120px;
 }
-body.layout-edit .panel-head{
-  cursor:move !important;
-  user-select:none;
-  touch-action:none;
-  background:rgba(249,115,22,.12) !important;
-  border-bottom:1px dashed rgba(249,115,22,.4) !important;
+body.layout-edit .panel-head{cursor:move !important;background:rgba(255,159,10,.12) !important;border-bottom:1px dashed rgba(255,159,10,.4) !important}
+body.layout-edit .panel-head::before{content:"⋮⋮";margin-right:6px;color:var(--amber);font-size:12px}
+body.layout-edit .map-card{min-width:300px;min-height:300px}
+body.layout-edit .panel::after,body.layout-edit .map-card::after{
+  content:"◢";position:absolute;right:2px;bottom:2px;font-size:14px;color:var(--amber);pointer-events:none;opacity:.7;
 }
-body.layout-edit .panel-head::before{
-  content:"⋮⋮";
-  margin-right:6px;
-  color:#f97316;
-  font-size:12px;
-}
-body.layout-edit .map-card{
-  min-width:300px;
-  min-height:300px;
-}
-body.layout-edit .map-wrap{
-  resize:both;
-  overflow:auto;
-}
+body.layout-free #main{position:relative;min-height:auto !important;padding-bottom:0 !important;margin-bottom:0 !important}
+body.layout-free .panel,body.layout-free .map-card{position:absolute !important;container-type:inline-size;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+#main{padding-bottom:0 !important;margin-bottom:0 !important}
+.foot{margin-top:0 !important}
 
-/* Resize handle visual */
-body.layout-edit .panel::after,
-body.layout-edit .map-card::after{
-  content:"◢";
-  position:absolute;
-  right:2px;
-  bottom:2px;
-  font-size:14px;
-  color:#f97316;
-  pointer-events:none;
-  opacity:.7;
-}
-
-/* Font auto-scale via container query */
-@container panel (max-width: 280px){
-  .panel-head h2{ font-size:9px !important; }
-  .panel-sub{ font-size:7px !important; }
-  .stat-label{ font-size:6px !important; }
-  .stat strong{ font-size:11px !important; }
-  .ev-body, .news, .pane, .unit-detail{ font-size:9px !important; }
-}
-@container panel (min-width: 281px) and (max-width: 380px){
-  .panel-head h2{ font-size:11px !important; }
-  .stat strong{ font-size:13px !important; }
-}
-@container panel (min-width: 500px){
-  .panel-head h2{ font-size:14px !important; }
-  .stat strong{ font-size:18px !important; }
-  .ev-body, .news{ font-size:13px !important; }
-}
-
-/* Free floating saved layout — when not in edit but has saved layout */
-body.layout-free #main{
-  position:relative;
-  min-height:auto !important;
-  padding-bottom:0 !important;
-  margin-bottom:0 !important;
-}
-body.layout-free .panel,
-body.layout-free .map-card{
-  position:absolute !important;
-  container-type:inline-size;
-  box-shadow:0 4px 20px rgba(0,0,0,.4);
-}
-body.layout-free .map-card{ z-index:5; }
-body.layout-free + .foot,
-body.layout-free #main + .foot,
-.layout-free .foot{
-  margin-top:0 !important;
-  padding-top:12px !important;
-}
-/* Hilangkan blank padding bawah */
-#main{ padding-bottom:0 !important; margin-bottom:0 !important; }
-.foot{ margin-top:0 !important; }
-
-/* Mobile free floating — stack but still draggable */
-@media (max-width:768px){
-  body.layout-edit #main{ min-height:200vh; }
-  body.layout-edit .panel,
-  body.layout-edit .map-card{
-    min-width:160px;
-    min-height:100px;
-    max-width:calc(100vw - 16px);
-  }
-  .layout-bar{ margin:6px 8px; padding:8px 10px; }
-  .layout-title{ font-size:10px; }
-  .layout-hint{ display:block; margin-left:0; margin-top:4px; }
-}
-
-/* === Fase 3.9 — Panel toggle collapsible hemat ruang === */
-.panel-head{
-  position:relative;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
+/* === Panel toggle === */
+.panel-head{position:relative;display:flex;align-items:center;justify-content:space-between}
 .panel-toggle{
   background:none;
-  border:1px solid var(--line, #2a2a2a);
-  border-radius:4px;
-  color:var(--tx-faint, #888);
-  width:22px;
-  height:22px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  border:1px solid var(--border);
+  border-radius:var(--radius-xs);
+  color:var(--text-muted);
+  width:20px;height:20px;
+  display:flex;align-items:center;justify-content:center;
   cursor:pointer;
   font-size:12px;
   flex-shrink:0;
   margin-left:8px;
-  transition:background .12s, color .12s, transform .15s;
 }
-.panel-toggle:hover{
-  background:rgba(255,255,255,.06);
-  color:#fff;
+.panel-toggle:hover{background:rgba(255,255,255,.06);color:#fff}
+.panel.is-collapsed .panel-toggle{transform:rotate(-90deg)}
+.panel.is-collapsed .ev-body,.panel.is-collapsed .pane,.panel.is-collapsed .news,.panel.is-collapsed .searchbar,.panel.is-collapsed .tabs,.panel.is-collapsed .unit-list,.panel.is-collapsed .so2grid,.panel.is-collapsed #hazardBody,.panel.is-collapsed #statusBody,.panel.is-collapsed .pscroll,.panel.is-collapsed .srcgrid,.panel.is-collapsed .callout{display:none !important}
+.panel.is-collapsed{min-height:auto !important;height:auto !important}
+.panel.is-collapsed .panel-head{border-bottom:none !important}
+.ntopics{display:flex;flex-wrap:wrap;gap:4px;max-height:60px;overflow-y:auto}
+.ntopics.is-collapsed{max-height:28px;overflow:hidden}
+.ntopics-toggle{font-size:9px;color:var(--amber);background:none;border:none;cursor:pointer;padding:2px 6px}
+.map-card .panel-toggle{display:none}
+.panel.is-collapsed .panel-sub::after{content:" (disembunyikan)";font-size:9px;color:var(--text-faint)}
+
+/* === Scrollbar — minimal === */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+
+/* === Responsive — Mobile <768px stack + sticky tabs === */
+@media(max-width:1100px){
+  .stats{grid-template-columns:repeat(3,1fr)}
+  #main-bloomberg-grid{grid-template-columns:1fr;grid-template-rows:auto auto}
+  .map-card{grid-column:1;grid-row:1}
+  .side-stack{grid-column:1;grid-row:2}
+  .pgrid{grid-template-columns:1fr}
 }
-.panel.is-collapsed .panel-toggle{
-  transform:rotate(-90deg);
+@media(max-width:768px){
+  body{
+    overflow:auto;
+    height:auto;
+    display:block;
+  }
+  .topbar{height:auto;min-height:var(--header-h);flex-wrap:wrap;padding:6px 8px}
+  .ticker{height:auto;min-height:var(--ticker-h);padding:4px 8px}
+  main{
+    height:auto;
+    display:block;
+    overflow:visible;
+  }
+  #main-bloomberg-grid{display:block}
+  .map-card{height:60vh;min-height:400px}
+  .side-stack{overflow:visible}
+  .pgrid{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .ctlrow{max-height:none;overflow:visible}
+  .ctlbox{flex:1 1 100%;min-width:0}
+  .foot-grid{grid-template-columns:1fr;gap:8px}
+  /* Sticky tab nav mobile */
+  .tabs{
+    position:sticky;
+    top:0;
+    z-index:10;
+    background:var(--surface-2);
+  }
+  .ai-popup{
+    width:calc(100vw - 12px);
+    right:6px;left:6px;
+    bottom:60px;
+    height:60vh;
+  }
+  .ai-fab{bottom:10px;right:10px}
+  body.layout-edit #main{min-height:200vh}
+  body.layout-edit .panel,body.layout-edit .map-card{max-width:calc(100vw - 12px)}
+  .layout-bar{margin:0;padding:6px 8px}
 }
-.panel.is-collapsed .ev-body,
-.panel.is-collapsed .pane,
-.panel.is-collapsed .news,
-.panel.is-collapsed .searchbar,
-.panel.is-collapsed .tabs,
-.panel.is-collapsed .unit-list,
-.panel.is-collapsed .so2grid,
-.panel.is-collapsed #hazardBody,
-.panel.is-collapsed #statusBody,
-.panel.is-collapsed .pscroll,
-.panel.is-collapsed .srcgrid,
-.panel.is-collapsed .callout{
-  display:none !important;
-}
-.panel.is-collapsed{
-  min-height:auto !important;
-  height:auto !important;
-}
-.panel.is-collapsed .panel-head{
-  border-bottom:none !important;
-}
-/* Berita topics toggle */
-.ntopics{
-  display:flex;
-  flex-wrap:wrap;
-  gap:4px;
-  max-height:60px;
-  overflow-y:auto;
-}
-.ntopics.is-collapsed{
-  max-height:28px;
-  overflow:hidden;
-}
-.ntopics-toggle{
-  font-size:9px;
-  color:#f97316;
-  background:none;
-  border:none;
-  cursor:pointer;
-  padding:2px 6px;
-}
-.map-card .panel-toggle{ /* peta jangan collapse total, hanya legend */
-  display:none;
-}
-/* Global toggle bar */
-.panel.is-collapsed .panel-sub::after{
-  content:" (disembunyikan)";
-  font-size:9px;
-  color:#666;
+@media(max-width:480px){
+  .stats{grid-template-columns:1fr}
 }
 
-/* === Fase 3.10 — Accessibility Audit Fix: contrast 4.5:1 + typography 12px + ARIA === */
-/* Audit: Performance 74, Accessibility 97 fails contrast 0/100, Best Practices 92, SEO 100 */
-/* Fix low contrast #64748b on #191919 (1.5:1) -> need 4.5:1, use #cbd5e1 / #f8fafc on #0f172a */
-:root{
-  --bg-dark:#0f172a;
-  --text-primary:#f8fafc;
-  --text-secondary:#cbd5e1;
-  --text-muted:#94a3b8;
-  /* Override low contrast vars */
-  --tx:#f8fafc !important;
-  --tx-dim:#cbd5e1 !important;
-  --tx-faint:#94a3b8 !important;
-}
-
-/* Contrast & typography updates per audit */
-.topbar{
-  background:var(--bg-dark) !important;
-  color:var(--text-primary) !important;
-}
-.topbar-right .clock-lab,
-.ctlbox-b label.chk span,
-.ev-age,
-.stat-label,
-.panel-sub,
-.clock-lab,
-.tool-label,
-.chk span,
-.ev-detail,
-.news-m,
-.panel-sub,
-.stat-sub{
-  color:var(--text-secondary) !important;
-  font-size:12px !important; /* Increased from 7-9px */
-  line-height:1.4 !important;
-}
-.stat-label{
-  font-size:11px !important;
-  letter-spacing:.06em !important;
-}
-.stat strong{
-  font-size:14px !important;
-  color:var(--text-primary) !important;
-}
-.stat-sub{
-  font-size:11px !important;
-}
-.panel-head h2{
-  font-size:12px !important;
-  color:var(--text-primary) !important;
-}
-.pnum{
-  background:var(--text-secondary) !important;
-  color:var(--bg-dark) !important;
-}
-.ev-body, .pane, .news, .unit-detail, .ask-out{
-  font-size:12px !important;
-  line-height:1.5 !important;
-  color:var(--text-primary) !important;
-}
-.news-item{
-  padding:1rem !important;
-  border-radius:8px !important;
-  background:rgba(255,255,255,0.05) !important;
-  border:1px solid rgba(255,255,255,0.08) !important;
-  margin-bottom:8px !important;
-  transition:background .15s;
-}
-.news-item:hover{
-  background:rgba(255,255,255,0.08) !important;
-}
-.news-t{
-  font-size:13px !important;
-  color:var(--text-primary) !important;
-  line-height:1.4 !important;
-}
-.news-m, .news-src, .news-age{
-  font-size:11px !important;
-  color:var(--text-secondary) !important;
-}
-.chk{
-  font-size:12px !important;
-  color:var(--text-secondary) !important;
-}
-.sel, .ctlbox-b select, .tl-b, .bm{
-  font-size:11px !important;
-  color:var(--text-secondary) !important;
-}
-.cfg-l{
-  font-size:10px !important;
-  color:var(--text-secondary) !important;
-}
-.unit-name{
-  font-size:12px !important;
-  color:var(--text-primary) !important;
-}
-.unit-group, .unit-detail, .unit-count{
-  font-size:11px !important;
-  color:var(--text-secondary) !important;
-}
-.tag{
-  font-size:10px !important;
-}
-.ask-bar input{
-  font-size:13px !important;
-  color:var(--text-primary) !important;
-}
-.ask-bar input::placeholder{
-  color:var(--text-muted) !important;
-}
-.chip{
-  font-size:11px !important;
-  padding:6px 10px !important;
-  border-radius:6px !important;
-}
-/* Map layer labels contrast */
-.map-corner, .legend, .conf-summary, .air-legend, .ash-legend, .hima-info{
-  color:var(--text-secondary) !important;
-  font-size:11px !important;
-  background:rgba(15,23,42,0.85) !important;
-  backdrop-filter:blur(8px);
-  border-radius:6px !important;
-  padding:4px 8px !important;
-}
-.legend span, .legend-tip{
-  color:var(--text-secondary) !important;
-  font-size:11px !important;
-}
-/* Ensure minimum 4.5:1 contrast for all small text */
-.badge, .stamp, .clock-val, .ticker-tag{
-  color:var(--text-primary) !important;
-  font-size:11px !important;
-}
-/* Focus visible for keyboard */
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible{
-  outline:2px solid #f97316 !important;
+/* === Accessibility — focus & contrast === */
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{
+  outline:2px solid var(--amber) !important;
   outline-offset:2px !important;
 }
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip{
+  position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;
+}
+.skip:focus{left:8px;top:8px;width:auto;height:auto;padding:8px 12px;background:var(--amber);color:#000;z-index:10000;border-radius:var(--radius-sm)}
+
+/* === Leaflet overrides — terminal === */
+.leaflet-container{background:var(--bg) !important;font-family:var(--font-mono) !important}
+.leaflet-control-zoom a{background:var(--surface) !important;color:var(--text-primary) !important;border-color:var(--border) !important}
+.leaflet-popup-content-wrapper{background:var(--surface) !important;color:var(--text-primary) !important;border:1px solid var(--border) !important;border-radius:var(--radius-sm) !important}
+.leaflet-popup-tip{background:var(--surface) !important}
+
+/* === Bloomberg single design compat === */
+body{overflow:auto !important;height:auto !important;min-height:100vh !important;display:block !important;background:#0a0a0c !important}
+body main{height:auto !important;max-height:none !important;overflow:visible !important;display:block !important;max-width:100% !important;margin:0 auto !important;gap:1px !important;background:var(--border) !important}
+#main-bloomberg-grid{display:grid !important;grid-template-columns:1.6fr 1fr !important;gap:1px !important;background:var(--border) !important}
+@media(max-width:1100px){#main-bloomberg-grid{grid-template-columns:1fr !important}}
+.map-card{grid-column:auto !important;grid-row:auto !important}
+.side-stack{grid-column:auto !important;grid-row:auto !important;display:flex !important;flex-direction:column !important;gap:1px !important}
+body .map-wrap{height:100% !important;min-height:400px !important;flex:1 !important}
+body #map{height:100% !important;min-height:400px !important}
+.bloomberg-toggle{display:none !important}
+
+/* Preserve previous phases */
+#newsPanel{max-height:380px !important;display:flex !important;flex-direction:column !important;overflow:hidden !important}
+#newsPanel #news{flex:1 !important;overflow-y:auto !important;max-height:300px !important}
