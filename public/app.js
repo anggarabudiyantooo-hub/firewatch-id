@@ -105,7 +105,6 @@
 
   var map = L.map('map', { zoomControl: false, minZoom: 4, maxZoom: 12, worldCopyJump: false })
     .setView([-2.2, 117.5], 5);
-  L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
   // Leaflet menyimpan ukuran petanya saat inisialisasi dan tidak
   // memperbaruinya sendiri. Bila tinggi wadah berubah karena media query
@@ -145,6 +144,27 @@
   updateScale();
   // Skala ikut berubah saat zoom maupun lintang bergeser.
   map.on('zoomend moveend', updateScale);
+
+  // Tiga tombol di prototipe hanya ikon tanpa penangan, dan kontrol zoom
+  // bawaan Leaflet membuat pasangan tombol jadi ganda. Kini hanya tiga ini.
+  var alat = document.querySelectorAll('.map-tools .tool');
+  if (alat.length >= 3) {
+    alat[0].addEventListener('click', function () { map.zoomIn(); });
+    alat[1].addEventListener('click', function () { map.zoomOut(); });
+    alat[2].addEventListener('click', function () { map.locate({ setView: true, maxZoom: 12 }); });
+  }
+  var tandaLokasi = null;
+  map.on('locationfound', function (e) {
+    if (tandaLokasi) map.removeLayer(tandaLokasi);
+    tandaLokasi = L.circleMarker(e.latlng, {
+      radius: 6, color: '#64D2FF', weight: 2, fillColor: '#64D2FF', fillOpacity: 0.3
+    }).addTo(map);
+    showHint('Perkiraan posisi Anda ditandai pada peta.', 5000);
+  });
+  map.on('locationerror', function () {
+    showHint('Posisi tidak dapat dibaca: peramban menolak permintaan lokasi, '
+      + 'atau perangkat ini tidak menyediakannya.', 8000);
+  });
 
   var AGS = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
   var ATTR = 'Peta dasar &copy; Esri, Maxar, Earthstar Geographics, HERE, Garmin, &copy; OpenStreetMap contributors';
