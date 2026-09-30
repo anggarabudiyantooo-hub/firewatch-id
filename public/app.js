@@ -2848,6 +2848,135 @@
     setTimeout(fixMap, 1500);
   })();
 
+  // Fase 3.6 AI Asisten popup draggable — gantikan panel Kueri data, Berita scroll terbatas
+  (function () {
+    var fab = $('aiFab');
+    var popup = $('aiPopup');
+    var head = $('aiPopupHead');
+    var closeBtn = $('aiClose');
+    var footAi = $('footAi');
+    if (!fab || !popup || !head) return;
+
+    function openAi() {
+      popup.hidden = false;
+      // Reset posisi ke default jika belum pernah digeser
+      if (!popup.dataset.dragged) {
+        popup.style.left = '';
+        popup.style.top = '';
+        popup.style.right = '20px';
+        popup.style.bottom = '70px';
+      }
+      setTimeout(function () {
+        var q = $('askQ');
+        if (q) q.focus();
+      }, 100);
+      showHint('AI Asisten dibuka — drag header ⋮⋮ untuk geser posisi, ketik pertanyaan tentang data bencana.', 3500);
+    }
+    function closeAi() {
+      popup.hidden = true;
+    }
+    function toggleAi() {
+      if (popup.hidden) openAi();
+      else closeAi();
+    }
+
+    fab.addEventListener('click', toggleAi);
+    if (closeBtn) closeBtn.addEventListener('click', closeAi);
+    if (footAi) footAi.addEventListener('click', function (e) {
+      e.preventDefault();
+      openAi();
+    });
+
+    // Shortcut F7 untuk AI
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'F7') {
+        e.preventDefault();
+        toggleAi();
+      }
+      if (e.key === 'Escape' && !popup.hidden) {
+        closeAi();
+      }
+    });
+
+    // Draggable logic
+    var isDragging = false;
+    var startX = 0, startY = 0, startLeft = 0, startTop = 0;
+
+    function getClient(e) {
+      if (e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    function onStart(e) {
+      // Jangan drag jika klik tombol close
+      if (e.target && e.target.closest && e.target.closest('#aiClose')) return;
+      var c = getClient(e);
+      isDragging = true;
+      startX = c.x;
+      startY = c.y;
+      var rect = popup.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+      // Convert bottom/right to left/top for dragging
+      popup.style.left = startLeft + 'px';
+      popup.style.top = startTop + 'px';
+      popup.style.right = 'auto';
+      popup.style.bottom = 'auto';
+      popup.dataset.dragged = '1';
+      popup.style.transition = 'none';
+      head.style.cursor = 'grabbing';
+      if (e.type === 'mousedown') e.preventDefault();
+    }
+
+    function onMove(e) {
+      if (!isDragging) return;
+      var c = getClient(e);
+      var dx = c.x - startX;
+      var dy = c.y - startY;
+      var newLeft = startLeft + dx;
+      var newTop = startTop + dy;
+      // Clamp dalam viewport
+      var maxLeft = window.innerWidth - popup.offsetWidth - 4;
+      var maxTop = window.innerHeight - popup.offsetHeight - 4;
+      newLeft = Math.max(4, Math.min(maxLeft, newLeft));
+      newTop = Math.max(4, Math.min(maxTop, newTop));
+      popup.style.left = newLeft + 'px';
+      popup.style.top = newTop + 'px';
+      if (e.type === 'touchmove') e.preventDefault();
+    }
+
+    function onEnd() {
+      if (!isDragging) return;
+      isDragging = false;
+      popup.style.transition = '';
+      head.style.cursor = 'move';
+    }
+
+    head.addEventListener('mousedown', onStart);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    head.addEventListener('touchstart', onStart, { passive: false });
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+
+    // Reset posisi saat resize agar tidak keluar layar
+    window.addEventListener('resize', function () {
+      if (popup.hidden) return;
+      var rect = popup.getBoundingClientRect();
+      var maxLeft = window.innerWidth - popup.offsetWidth - 4;
+      var maxTop = window.innerHeight - popup.offsetHeight - 4;
+      var curLeft = rect.left;
+      var curTop = rect.top;
+      var need = false;
+      if (curLeft > maxLeft) { popup.style.left = Math.max(4, maxLeft) + 'px'; need = true; }
+      if (curTop > maxTop) { popup.style.top = Math.max(4, maxTop) + 'px'; need = true; }
+      if (need) {
+        popup.style.right = 'auto';
+        popup.style.bottom = 'auto';
+      }
+    });
+  })();
+
   $('lyQuake').addEventListener('change', function (e) {
     state.quakeOn = e.target.checked;
     if (state.quakeOn) {

@@ -316,30 +316,9 @@
   </section>
 
   <section class="pgrid pgrid-b">
-      <section class="panel panel-ask">
+      <section class="panel" id="newsPanel">
         <header class="panel-head">
-          <h2><span class="pnum">03</span> Kueri data</h2>
-          <span class="panel-sub" id="askMeta">indeks lokal</span>
-        </header>
-        <form id="askForm" class="ask-bar" autocomplete="off">
-          <label class="sr-only" for="askQ">Tanyakan tentang data bencana</label>
-          <span class="ask-prompt">&gt;</span>
-          <input id="askQ" type="text" placeholder="siapa perusahaan yang bertanggung jawab?" maxlength="200" />
-          <button class="btn btn-ghost" type="submit">JALANKAN</button>
-        </form>
-        <div class="ask-chips">
-          <button type="button" class="chip" data-q="siapa perusahaan yang bertanggung jawab">konsesi</button>
-          <button type="button" class="chip" data-q="provinsi mana paling banyak titik api">provinsi</button>
-          <button type="button" class="chip" data-q="bagaimana kualitas udara">udara</button>
-          <button type="button" class="chip" data-q="gunung apa yang sedang erupsi">gunung</button>
-          <button type="button" class="chip" data-q="kemana arah sebaran asap">angin</button>
-        </div>
-        <div id="askOut" class="ask-out"><p class="empty">Ajukan pertanyaan; jawaban disusun dari data langsung di dashboard ini.</p></div>
-      </section>
-
-      <section class="panel">
-        <header class="panel-head">
-          <h2><span class="pnum">04</span> Berita penanganan</h2>
+          <h2><span class="pnum">03</span> Berita penanganan</h2>
           <span class="panel-sub" id="newsCount"></span>
         </header>
         <div class="searchbar">
@@ -353,7 +332,7 @@
 
   <section class="panel wide" id="attrSection">
     <header class="panel-head">
-      <h2><span class="pnum">05</span> Siapa yang bertanggung jawab — atribusi lahan</h2>
+      <h2><span class="pnum">04</span> Siapa yang bertanggung jawab — atribusi lahan</h2>
       <span class="panel-sub" id="attrMeta"></span>
     </header>
 
@@ -372,7 +351,7 @@
 
   <section class="panel wide" id="hazardPanel" hidden>
     <header class="panel-head">
-      <h2><span class="pnum">06</span> Gempa, tsunami &amp; pengungsi</h2>
+      <h2><span class="pnum">05</span> Gempa, tsunami &amp; pengungsi</h2>
       <span class="panel-sub" id="hazardMeta"></span>
     </header>
     <div id="hazardBody" class="hazard-body"></div>
@@ -381,7 +360,7 @@
 
   <section class="panel wide" id="statusPanel" hidden>
     <header class="panel-head">
-      <h2><span class="pnum">07</span> Status pembaruan data</h2>
+      <h2><span class="pnum">06</span> Status pembaruan data</h2>
       <span class="panel-sub" id="statusMeta"></span>
     </header>
     <div id="statusBody" class="st-grid"></div>
@@ -389,7 +368,7 @@
 
   <section class="panel wide" id="so2Panel" hidden>
     <header class="panel-head">
-      <h2><span class="pnum">08</span> Gas SO<sub>2</sub> gunung api</h2>
+      <h2><span class="pnum">07</span> Gas SO<sub>2</sub> gunung api</h2>
       <span class="hd-note">model CAMS · diperbarui tiap 30 menit</span>
     </header>
     <div class="so2-intro">
@@ -405,7 +384,7 @@
   </div><!-- #main-bloomberg-grid -->
 
   <section class="panel wide panel-edu">
-    <header class="panel-head"><h2><span class="pnum">09</span> Memahami data ini</h2></header>
+    <header class="panel-head"><h2><span class="pnum">08</span> Memahami data ini</h2></header>
     <div class="pscroll"><div class="srcgrid">
       <div class="srccard">
         <h3>Apa itu titik api (hotspot)?</h3>
@@ -458,7 +437,7 @@
   </section>
 
   <section class="panel wide" id="sourcePanel">
-    <header class="panel-head"><h2><span class="pnum">10</span> Sumber data &amp; batasan</h2></header>
+    <header class="panel-head"><h2><span class="pnum">09</span> Sumber data &amp; batasan</h2></header>
     <div class="pscroll"><div class="srcgrid">
       <div class="srccard">
         <h3>Letusan gunung api</h3>
@@ -522,7 +501,7 @@
         <a class="fkey" href="#so2Panel"><b>F4</b><span>GUNUNG API</span></a>
         <a class="fkey" href="#news"><b>F5</b><span>BERITA</span></a>
         <a class="fkey" href="#sourcePanel"><b>F6</b><span>SUMBER</span></a>
-        <a class="fkey" href="#askQ"><b>F7</b><span>KUERI</span></a>
+        <a class="fkey" href="#" id="footAi"><b>F7</b><span>AI</span></a>
         <a class="fkey" href="#statusPanel"><b>F8</b><span>STATUS</span></a>
       </nav>
       <div class="foot-lab" style="margin-top:10px">CAKUPAN</div>
@@ -531,6 +510,41 @@
   </div>
   <div class="foot-btm">SIAGA.ID · TERMINAL BENCANA · DATA PUBLIK · BUKAN PENGGANTI SUMBER RESMI</div>
 </footer>
+
+<!-- AI Asisten Popup — draggable, menggantikan panel Kueri data Fase 3.6 -->
+<button id="aiFab" class="ai-fab" type="button" aria-label="Buka AI Asisten" title="AI Asisten — tanya data bencana (F7)">
+  <span class="ai-fab-ic">✦</span><span class="ai-fab-txt">AI ASISTEN</span>
+</button>
+<div id="aiPopup" class="ai-popup" hidden role="dialog" aria-label="AI Asisten SIAGA" aria-modal="false">
+  <div class="ai-popup-head" id="aiPopupHead">
+    <div class="ai-head-left">
+      <span class="ai-dot"></span>
+      <h3>AI ASISTEN SIAGA</h3>
+      <span class="ai-head-sub" id="askMeta">indeks lokal</span>
+    </div>
+    <div class="ai-head-actions">
+      <span class="ai-drag-hint">⋮⋮ geser</span>
+      <button id="aiClose" class="ai-close" type="button" aria-label="Tutup">✕</button>
+    </div>
+  </div>
+  <div class="ai-popup-body">
+    <form id="askForm" class="ask-bar" autocomplete="off">
+      <label class="sr-only" for="askQ">Tanyakan tentang data bencana</label>
+      <span class="ask-prompt">&gt;</span>
+      <input id="askQ" type="text" placeholder="siapa perusahaan yang bertanggung jawab?" maxlength="200" />
+      <button class="btn btn-ghost" type="submit">JALANKAN</button>
+    </form>
+    <div class="ask-chips">
+      <button type="button" class="chip" data-q="siapa perusahaan yang bertanggung jawab">konsesi</button>
+      <button type="button" class="chip" data-q="provinsi mana paling banyak titik api">provinsi</button>
+      <button type="button" class="chip" data-q="bagaimana kualitas udara">udara</button>
+      <button type="button" class="chip" data-q="gunung apa yang sedang erupsi">gunung</button>
+      <button type="button" class="chip" data-q="kemana arah sebaran asap">angin</button>
+    </div>
+    <div id="askOut" class="ask-out"><p class="empty">Ajukan pertanyaan; jawaban disusun dari data langsung di dashboard ini. Contoh: ketik 'siapa perusahaan yang bertanggung jawab?' atau klik chip di atas.</p></div>
+  </div>
+  <div class="ai-popup-foot">Data lokal RAG · Sumber: FIRMS, PVMBG, BMKG, BNPB, CAMS · Bukan pengganti sumber resmi</div>
+</div>
 
 <script src="/vendor/leaflet.js"></script>
 <script src="/wind-particles.js"></script>
