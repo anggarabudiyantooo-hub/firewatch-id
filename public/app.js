@@ -3212,21 +3212,22 @@
       }
     }
 
-    // Load layout
-    function loadLayout() {
-      var raw = null;
-      try { raw = localStorage.getItem(STORAGE_KEY); } catch(e){ return false; }
-      if (!raw) return false;
-      var data = null;
-      try { data = JSON.parse(raw); } catch(e){ return false; }
+    // Load layout — cek localStorage dulu, jika tidak ada pakai default paten dari /layout-default.json
+    function applyLayoutData(data) {
       var mode = isMobileView() ? 'mobile' : 'desktop';
-      var layout = data[mode] || data.desktop;
+      var layout = data[mode] && data[mode].length ? data[mode] : data.desktop;
       if (!layout || !layout.length) return false;
       var main = $('main');
       if (main) main.style.position = 'relative';
       layout.forEach(function (item) {
         var p = $(item.id);
         if (!p) return;
+        // Skip jika width/height 0 (panel disembunyikan)
+        if (item.width === '0px' || item.height === '0px') {
+          p.style.display = 'none';
+          return;
+        }
+        p.style.display = '';
         p.style.position = 'absolute';
         if (item.left) p.style.left = item.left;
         if (item.top) p.style.top = item.top;
@@ -3240,6 +3241,7 @@
       // Adjust main height
       var maxBottom = 0;
       getPanels().forEach(function (p) {
+        if (p.style.display === 'none') return;
         var top = parseFloat(p.style.top) || 0;
         var h = parseFloat(p.style.height) || p.offsetHeight;
         maxBottom = Math.max(maxBottom, top + h);
@@ -3247,6 +3249,32 @@
       if (main) main.style.minHeight = (maxBottom + 120) + 'px';
       setTimeout(function(){ if (map && map.invalidateSize) map.invalidateSize(); }, 300);
       return true;
+    }
+
+    function loadLayout() {
+      var raw = null;
+      try { raw = localStorage.getItem(STORAGE_KEY); } catch(e){ raw = null; }
+      if (raw) {
+        try {
+          var data = JSON.parse(raw);
+          if (applyLayoutData(data)) {
+            console.log('[layout] loaded from localStorage');
+            return true;
+          }
+        } catch(e){}
+      }
+      // Jika tidak ada localStorage, pakai default paten
+      fetch('/layout-default.json', { cache: 'no-store' })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(data){
+          if (!data) return;
+          if (applyLayoutData(data)) {
+            console.log('[layout] loaded from /layout-default.json (patented default)');
+            showHint('Layout default paten dimuat — klik ATUR LAYOUT untuk edit lagi', 3500);
+          }
+        })
+        .catch(function(){});
+      return false;
     }
 
     // Export JSON
