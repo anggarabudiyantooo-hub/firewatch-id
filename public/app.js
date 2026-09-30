@@ -119,6 +119,33 @@
     resizeTimer = setTimeout(function () { map.invalidateSize(); }, 200);
   });
 
+  // Skala kartu peta dihitung dari zoom, bukan ditulis tetap: label "20m"
+  // milik prototipe meleset ~10.000 kali karena satu piksel di zoom 5
+  // mewakili 4,9 km. Tangga 1-2-3-5 x pangkat sepuluh sama seperti kontrol
+  // skala Leaflet; tangga yang lebih kasar membuat batang melompat 2x.
+  var SKALA_M = [];
+  for (var p = 1; p <= 1000000; p *= 10) {
+    [1, 2, 3, 5].forEach(function (d) { SKALA_M.push(d * p); });
+  }
+  var skalaBar = document.querySelector('.scale-bar');
+  var skalaLab = document.querySelector('.scale-lab');
+  function updateScale() {
+    if (!skalaBar || !skalaLab) return;
+    // Resolusi Web Mercator untuk ubin 256 px, terkoreksi lintang.
+    var mPerPx = 156543.03392 * Math.cos(map.getCenter().lat * Math.PI / 180)
+      / Math.pow(2, map.getZoom());
+    var pilih = SKALA_M[0], beda = Infinity;
+    SKALA_M.forEach(function (m) {
+      var d = Math.abs(m / mPerPx - 40);
+      if (d < beda) { beda = d; pilih = m; }
+    });
+    skalaBar.style.width = Math.round(pilih / mPerPx) + 'px';
+    skalaLab.textContent = pilih >= 1000 ? (pilih / 1000) + ' km' : pilih + ' m';
+  }
+  updateScale();
+  // Skala ikut berubah saat zoom maupun lintang bergeser.
+  map.on('zoomend moveend', updateScale);
+
   var AGS = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
   var ATTR = 'Peta dasar &copy; Esri, Maxar, Earthstar Geographics, HERE, Garmin, &copy; OpenStreetMap contributors';
 

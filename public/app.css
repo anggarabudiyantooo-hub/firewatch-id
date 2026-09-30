@@ -852,6 +852,9 @@ button{border-radius:8px;max-radius:12px}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:80ms !important;transition-duration:80ms !important}
   .badge-live::before{animation:none !important}
+  /* 80ms pada animasi infinite membuat lampu indikator berkedip ~12 Hz;
+     reduced-motion seharusnya membekukan animasi, bukan mempercepatnya. */
+  .led{animation:none !important}
 }
 
 /* === A11y === */
@@ -1130,6 +1133,27 @@ details .body b{color:var(--text-primary);font-weight:600}
   .page,#main-bloomberg-grid{max-width:100vw;overflow-x:hidden}
   .dock-tabs{max-width:100vw}
 }
+/* === Responsive — Tablet === */
+/* Wajib setelah aturan dasar .grid4; bila ditaruh sebelumnya, kisi tetap
+   empat kolom dan kartu menyusut ke ~200 px pada 900-1000 px. */
+@media(max-width:1100px){
+  .grid4{grid-template-columns:repeat(2,1fr)}
+  /* Rel KPI memakai perlakuan lebar sempit milik prototipe audit — kartu
+     dikunci 148 px dan dapat digeser — sebab enam kolom menyusut ke ~123 px
+     pada 800 px sampai isi antar kartu saling menumpuk. */
+  .kpi-rail{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px;
+    -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent 100%);
+    mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent 100%)}
+  .kpi-rail::-webkit-scrollbar{display:none}
+  .kpi{flex:0 0 148px;scroll-snap-align:start;min-height:92px}
+  .kpi-num{font-size:24px}
+}
+/* Isi topbar berjumlah 773 px plus padding 32 px, jadi di bawah 860 px baris
+   itu meluber dan seluruh halaman ikut bisa digeser mendatar. */
+@media(max-width:859px){
+  .clocks{display:none}
+}
+
 @media(max-width:768px){
   body{height:auto;min-height:100dvh;overflow:auto}
   :root{--dock-h:none}
