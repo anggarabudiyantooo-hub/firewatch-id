@@ -1094,6 +1094,10 @@
   function renderHazard() {
     var panel = $('hazardPanel');
     var body = $('hazardBody');
+    // Buletin tsunami kawasan dan rincian pengungsi bukan bagian dari kartu
+    // "Gempa terkini". Di audit keduanya berada di bawah ketiga kartu sebagai
+    // catatan kaki panel, sehingga kartu 1 tetap memuat gempa saja.
+    var foot = $('hazardFoot') || body;
     var meta = $('hazardMeta');
     if (!panel || !body) return;
     var d = state.hazard;
@@ -1241,7 +1245,7 @@
           tb.appendChild(row);
         });
       }
-      body.appendChild(tb);
+      foot.appendChild(tb);
     }
 
     /* --- pengungsi --- */
@@ -1267,7 +1271,7 @@
         }
         sb.appendChild(el('div', 'hz-note',
           'Sumber: ' + sh.source + (ev.updatedAt ? ' · diperbarui ' + ev.updatedAt.slice(0, 10) : '')));
-        body.appendChild(sb);
+        foot.appendChild(sb);
       });
     } else if (sh) {
       // Tidak ada pengungsian aktif. Blok ini tetap ditampilkan agar

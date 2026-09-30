@@ -110,3 +110,9 @@ button.card:hover{background:var(--surface-2);border-color:var(--surface-3)}
   text-overflow:ellipsis;color:var(--text-tertiary);padding:1px 0}
 .st-log-critical,.st-log-error{color:var(--status-danger)}
 .st-log-warn{color:var(--status-caution)}
+
+/* Catatan kaki panel Bahaya: buletin tsunami kawasan dan rincian pengungsi.
+   Di audit keduanya berada di bawah ketiga kartu, bukan di dalam kartu gempa. */
+.hazard-foot{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--card-gap);padding-top:2px}
+.hazard-foot .hz-block{border-top:1px solid var(--hairline);padding-top:8px;margin-top:0}
+@media (max-width:768px){.hazard-foot{grid-template-columns:1fr}}
