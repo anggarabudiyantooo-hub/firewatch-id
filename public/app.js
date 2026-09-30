@@ -1486,18 +1486,70 @@
     clear(body);
     if (meta) meta.textContent = s.healthy + '/' + s.total + ' sumber sehat · ' + s.mode;
 
+    // Fase 2.2: alert kritis menonjol di atas
+    if (s.criticalAlerts && s.criticalAlerts.length) {
+      var alertBox = el('div', 'st-alert-box');
+      alertBox.style.cssText = 'background:rgba(239,68,68,0.15);border:1px solid #ef4444;border-radius:8px;padding:10px 12px;margin-bottom:12px;color:#fca5a5;font-size:0.85rem';
+      alertBox.appendChild(el('div', '', '⚠️ ' + s.criticalAlerts.length + ' tugas kritis gagal berturut:'));
+      s.criticalAlerts.forEach(function (a) {
+        alertBox.appendChild(el('div', '', '• ' + a.id + ': ' + a.message));
+      });
+      body.appendChild(alertBox);
+    }
+
+    // Fase 2.2: ringkasan kuota & log
+    if (s.quota || s.summary) {
+      var qBox = el('div', 'st-quota');
+      qBox.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;font-size:0.78rem;color:var(--muted)';
+      if (s.quota) {
+        var qText = 'Kuota: 429=' + (s.quota['429']||0) + ' · 5xx=' + (s.quota['5xx']||0) + ' · total=' + (s.quota.total||0);
+        if (s.quota.last429At) qText += ' · terakhir 429: ' + s.quota.last429At.slice(11,19);
+        qBox.appendChild(el('span', '', qText));
+      }
+      if (s.summary) {
+        qBox.appendChild(el('span', '', 'Runs: ' + s.summary.totalRuns + ' · Fails: ' + s.summary.totalFails));
+      }
+      body.appendChild(qBox);
+    }
+
     s.tasks.forEach(function (t) {
-      var c = el('div', 'st-card' + (t.healthy ? '' : ' st-bad'));
+      var c = el('div', 'st-card' + (t.healthy ? '' : ' st-bad') + (t.alert ? ' st-alert' : ''));
+      if (t.alert) c.style.cssText = (c.style.cssText||'') + ';border-color:#ef4444;box-shadow:0 0 0 1px rgba(239,68,68,0.3)';
       var top = el('div', 'st-top');
       var dot = el('i', 'st-dot');
-      dot.style.background = t.healthy ? '#22c55e' : '#ef4444';
+      dot.style.background = t.healthy ? '#22c55e' : t.consecutiveFails >= 3 ? '#ef4444' : '#f59e0b';
       top.appendChild(dot);
-      top.appendChild(el('span', 'st-name', t.label));
+      var nameSpan = el('span', 'st-name', t.label);
+      if (t.critical) { nameSpan.textContent += ' ★'; nameSpan.title = 'Kritis'; }
+      top.appendChild(nameSpan);
       c.appendChild(top);
-      c.appendChild(el('div', 'st-age', t.ageLabel));
-      c.appendChild(el('div', 'st-every', 'diperbarui ' + t.everyLabel));
+      c.appendChild(el('div', 'st-age', t.ageLabel + (t.consecutiveFails ? ' · gagal ' + t.consecutiveFails + 'x' : '')));
+      c.appendChild(el('div', 'st-every', 'diperbarui ' + t.everyLabel + ' · run ' + t.runs + '/' + t.fails));
+      if (t.alert) {
+        var alertEl = el('div', 'st-task-alert');
+        alertEl.style.cssText = 'color:#fca5a5;font-size:0.75rem;margin-top:4px';
+        alertEl.textContent = t.alert;
+        c.appendChild(alertEl);
+      }
       body.appendChild(c);
     });
+
+    // Fase 2.2: log terstruktur terbaru
+    if (s.recentLogs && s.recentLogs.length) {
+      var logBox = el('div', 'st-logs');
+      logBox.style.cssText = 'margin-top:12px;border-top:1px solid var(--border);padding-top:8px;max-height:160px;overflow:auto';
+      var logTitle = el('div', '', 'Log terbaru:');
+      logTitle.style.cssText = 'font-size:0.78rem;color:var(--muted);margin-bottom:4px';
+      logBox.appendChild(logTitle);
+      s.recentLogs.slice(0,10).forEach(function (lg) {
+        var l = el('div', 'st-log');
+        l.style.cssText = 'font-size:0.72rem;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:' + (lg.level==='critical'?'#fca5a5':lg.level==='warn'?'#fcd34d':lg.level==='error'?'#fb7185':'var(--muted)') + ';padding:2px 0';
+        l.textContent = (lg.at?lg.at.slice(11,19):'') + ' [' + (lg.level||'info') + '] ' + (lg.task||'') + ' ' + (lg.message||'').slice(0,120);
+        l.title = JSON.stringify(lg);
+        logBox.appendChild(l);
+      });
+      body.appendChild(logBox);
+    }
   }
 
   function loadStatus() {
@@ -3019,7 +3071,7 @@
 
   /* ---------- mulai ---------- */
   tickClock();
-  setInterval(tickClock, 1000);
+  var clockIv = setInterval(tickClock, 1000);
   updateLegend();
   loadOverview();
   // loadWind() tidak dipanggil di sini: lapisan angin mulai mati, dan
@@ -3027,25 +3079,65 @@
   loadNews();
   loadAttribution();
   loadDrought();
-  setInterval(function () { loadOverview(); loadAttribution(); }, 10 * 60 * 1000);
-  setInterval(loadDrought, 60 * 60 * 1000);
-  // Berita disegarkan tiap 5 menit agar panel penanganan selalu terkini.
-  // Berita adalah panel yang paling terasa "mati" bila basi, jadi klien
-  // memeriksa tiap 3 menit. Sumbernya sendiri disegarkan penjadwal tiap
-  // 10 menit, sehingga ini hanya menarik hasil terbaru yang sudah ada.
-  setInterval(loadNews, 3 * 60 * 1000);
+
+  // Fase 2.4: Page Visibility API — hentikan polling saat tab tersembunyi
+  // 5 tab terbuka = 5x beban hulu. Saat hidden, pause semua interval kecuali jam.
+  var intervals = [];
+  function addInterval(fn, ms) {
+    var id = setInterval(fn, ms);
+    intervals.push(id);
+    return id;
+  }
+  function clearAllIntervals() {
+    for (var i = 0; i < intervals.length; i++) clearInterval(intervals[i]);
+    intervals = [];
+  }
+  function startIntervals() {
+    clearAllIntervals();
+    intervals.push(setInterval(function () { loadOverview(); loadAttribution(); }, 10 * 60 * 1000));
+    intervals.push(setInterval(loadDrought, 60 * 60 * 1000));
+    intervals.push(setInterval(loadNews, 3 * 60 * 1000));
+    intervals.push(setInterval(loadHazard, 2 * 60 * 1000));
+    intervals.push(setInterval(loadEruptions, 5 * 60 * 1000));
+    intervals.push(setInterval(loadCasualties, 10 * 60 * 1000));
+    intervals.push(setInterval(loadStatus, 60 * 1000));
+    intervals.push(setInterval(refreshHimawari, 60 * 1000));
+  }
+  startIntervals();
+
   // Gempa & tsunami harus sesegar mungkin: perbarui tiap 2 menit.
   loadHazard();
-  setInterval(loadHazard, 2 * 60 * 1000);
   // Laporan letusan menentukan apakah sebaran abu digambar, jadi disegarkan
   // serapat data gempa.
   loadEruptions();
-  setInterval(loadEruptions, 5 * 60 * 1000);
   loadCasualties();
-  setInterval(loadCasualties, 10 * 60 * 1000);
   loadStatus();
-  setInterval(loadStatus, 60 * 1000);
+
+  // Visibility handling
+  var wasHidden = false;
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      wasHidden = true;
+      clearAllIntervals();
+      // Hentikan animasi ticker dan partikel angin juga untuk hemat CPU
+      if (ticker) ticker.paused = true;
+      if (state.particles) state.particles.stop();
+      showHint('Tab tersembunyi — polling dijeda untuk hemat kuota.', 4000);
+    } else {
+      if (wasHidden) {
+        wasHidden = false;
+        if (ticker) ticker.paused = false;
+        if (state.windOn && state.particles) state.particles.start();
+        // Saat kembali terlihat, segarkan data yang mungkin basi
+        loadOverview();
+        loadHazard();
+        loadStatus();
+        startIntervals();
+        showHint('Tab aktif kembali — data disegarkan.', 4000);
+      }
+    }
+  });
+
   // Citra Himawari terbit tiap 10 menit; periksa tiap menit agar slot baru
   // langsung tampil tanpa perlu memuat ulang halaman.
-  setInterval(refreshHimawari, 60 * 1000);
 })();

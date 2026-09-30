@@ -1,0 +1,64 @@
+name: Refresh snapshot PVMBG & regions
+
+# Fase 2.3 — perbarui cadangan PVMBG dan rapikan regions.json secara otomatis
+# Dijalankan mingguan + manual, commit kembali ke repo bila ada perubahan.
+
+on:
+  schedule:
+    # Tiap Senin jam 02:00 WIB (19:00 UTC Minggu)
+    - cron: '0 19 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-snapshots
+  cancel-in-progress: false
+
+jobs:
+  refresh-snapshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Refresh snapshots
+        run: |
+          set -euo pipefail
+          node scripts/refresh-snapshots.js
+
+      - name: Cek perubahan
+        id: diff
+        run: |
+          if git diff --quiet -- lib/pvmbg-snapshot.js data/regions.json; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Tidak ada perubahan snapshot"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            git diff --stat
+          fi
+
+      - name: Commit & push bila berubah
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add lib/pvmbg-snapshot.js data/regions.json
+          git commit -m "chore(snapshot): auto refresh PVMBG & regions $(date -u +%Y-%m-%d)"
+          git push
+
+      - name: Ringkasan
+        run: |
+          echo "Snapshot PVMBG:"
+          node -e "const s=require('./lib/pvmbg-snapshot.js'); console.log('Updated:', s.updatedAt, 'Total:', s.total, JSON.stringify(s.counts))"
+          echo "Regions:"
+          node -e "const r=require('./data/regions.json'); console.log(r.length+' entri, '+new Set(r.map(x=>x.prov)).size+' provinsi')"

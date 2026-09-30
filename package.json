@@ -6,7 +6,10 @@
     "start": "node server.js",
     "dev": "node server.js",
     "check": "node scripts/check-bundle.js && node scripts/test-atmos.js",
-    "test": "node scripts/test-atmos.js"
+    "test": "node scripts/test-atmos.js",
+    "refresh:snapshots": "node scripts/refresh-snapshots.js",
+    "refresh:pvmbg": "node scripts/refresh-snapshots.js --only-pvmbg",
+    "refresh:regions": "node scripts/refresh-snapshots.js --only-regions"
   },
   "keywords": [
     "karhutla",
