@@ -205,11 +205,15 @@
     </div>
   </section>
 
-  <!-- Peta melebar penuh, seperti template. -->
-  <section class="map-card">
+  <!-- Peta melebar penuh, seperti template. Fullscreen via ⛶ FULL button. -->
+  <section class="map-card" id="mapCard">
     <div class="panel-head map-head">
       <h2><span class="pnum">00</span> Peta interaktif &mdash; Indonesia</h2>
       <span class="panel-sub">EPSG:4326 &middot; WGS84 &middot; 5&deg;N / 141&deg;E</span>
+      <button id="mapFullscreenBtn" class="btn-fullscreen" type="button" aria-label="Peta layar penuh" title="Layar penuh (F) — ESC untuk keluar">
+        <span class="fs-ic" aria-hidden="true">⛶</span>
+        <span class="fs-txt">FULL</span>
+      </button>
     </div>
       <div class="map-wrap">
         <div id="map" role="region" aria-label="Peta kejadian bencana Indonesia: gunung api, gempa, titik api, dan sebaran asap" aria-describedby="mapA11y"></div>
@@ -228,6 +232,7 @@
         </div>
         <div id="mapHint" class="map-hint" role="status" aria-live="polite" aria-atomic="true" hidden></div>
         <div id="windBadge" class="wind-badge" role="status" aria-live="polite" hidden></div>
+        <button id="mapFsExit" class="map-fs-exit" type="button" aria-label="Keluar layar penuh" hidden>✕ KELUAR FULLSCREEN (ESC)</button>
       </div>
       <div class="legend">
         <span id="legendPoints">

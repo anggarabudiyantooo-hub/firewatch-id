@@ -2578,6 +2578,102 @@
   });
   $('newsQ').addEventListener('input', renderNews);
 
+  /* ---------- fullscreen peta — dapat dikeluarkan ke layar penuh ---------- */
+  // Tujuan: analisis butuh ruang, terutama saat koordinasi darurat atau layar kecil.
+  // Menggunakan Fullscreen API native, fallback ke class .is-fullscreen bila tidak tersedia.
+  // Keluar via ESC, tombol ✕, atau tombol FULL lagi.
+  (function () {
+    var card = document.getElementById('mapCard') || document.querySelector('.map-card');
+    var btn = $('mapFullscreenBtn');
+    var exitBtn = $('mapFsExit');
+    if (!card || !btn) return;
+
+    function isFullscreen() {
+      return !!(document.fullscreenElement === card || card.classList.contains('is-fullscreen'));
+    }
+
+    function updateBtn() {
+      var fs = isFullscreen();
+      btn.classList.toggle('is-active', fs);
+      btn.setAttribute('aria-pressed', fs ? 'true' : 'false');
+      var txt = btn.querySelector('.fs-txt');
+      if (txt) txt.textContent = fs ? 'EXIT' : 'FULL';
+      btn.title = fs ? 'Keluar layar penuh (ESC)' : 'Layar penuh (F) — ESC untuk keluar';
+      if (exitBtn) exitBtn.hidden = !fs;
+      document.body.classList.toggle('has-fullscreen-map', fs);
+      // Leaflet perlu tahu ukurannya berubah, kalau tidak ubinnya berantakan
+      setTimeout(function () { map.invalidateSize(); }, 120);
+      setTimeout(function () { map.invalidateSize(); }, 400);
+    }
+
+    function enterFs() {
+      if (card.requestFullscreen) {
+        card.requestFullscreen().catch(function () {
+          // Fallback bila ditolak (mis. iframe tanpa allow)
+          card.classList.add('is-fullscreen');
+          updateBtn();
+        });
+      } else {
+        card.classList.add('is-fullscreen');
+        updateBtn();
+      }
+    }
+
+    function exitFs() {
+      if (document.fullscreenElement === card && document.exitFullscreen) {
+        document.exitFullscreen();
+      } else {
+        card.classList.remove('is-fullscreen');
+        updateBtn();
+      }
+    }
+
+    function toggleFs() {
+      if (isFullscreen()) exitFs();
+      else enterFs();
+    }
+
+    btn.addEventListener('click', toggleFs);
+    if (exitBtn) exitBtn.addEventListener('click', exitFs);
+
+    // ESC dan F sebagai shortcut — F untuk masuk, ESC untuk keluar
+    document.addEventListener('keydown', function (e) {
+      // Jangan ganggu saat sedang mengetik di input
+      var tag = (e.target && e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (e.key === 'f' || e.key === 'F') {
+        // Hanya aktif bila fokus tidak di dalam form dan peta terlihat
+        if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault();
+          toggleFs();
+        }
+      } else if (e.key === 'Escape' || e.key === 'Esc') {
+        if (isFullscreen()) {
+          e.preventDefault();
+          exitFs();
+        }
+      }
+    });
+
+    // Sinkron saat fullscreen berubah via browser (mis. ESC native)
+    document.addEventListener('fullscreenchange', function () {
+      // Jika keluar fullscreen native tapi class fallback masih ada, bersihkan
+      if (!document.fullscreenElement && card.classList.contains('is-fullscreen') && !card.matches(':fullscreen')) {
+        // Biarkan, karena is-fullscreen adalah fallback yang sengaja — tapi jika fullscreenElement null dan kita tidak dalam fallback mode yang diminta, bersihkan
+        // Untuk membedakan, cek apakah kita baru saja exitFs via fallback
+      }
+      // Jika document.fullscreenElement bukan card, berarti sudah keluar
+      if (document.fullscreenElement !== card) {
+        card.classList.remove('is-fullscreen');
+      }
+      updateBtn();
+    });
+
+    // Awal: pastikan tombol dalam keadaan tidak aktif
+    updateBtn();
+  })();
+
 
 
   /* ---------- jam terminal ---------- */

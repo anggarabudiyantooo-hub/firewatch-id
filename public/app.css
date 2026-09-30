@@ -1775,3 +1775,142 @@ a.src-pill:hover{border-color:var(--accent);color:var(--tx)}
 .wb-src{color:#94a3b8}
 .wb-mode{color:#fbbf24;border:1px solid #eab308;padding:0 5px;font-size:10px}
 .sel-wind select{min-width:180px}
+
+/* ============================================================
+   FULLSCREEN PETA — dapat dikeluarkan ke layar penuh
+   Tujuan: analisis wilayah butuh ruang, terutama di laptop kecil
+   dan saat koordinasi darurat. Tombol ⛶ FULL di kepala peta.
+   ============================================================ */
+.map-head{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
+}
+.map-head h2{flex:1;min-width:0}
+.map-head .panel-sub{margin-right:auto}
+
+/* Tombol fullscreen — gaya terminal, bukan pill generic */
+.btn-fullscreen{
+  font-family:var(--mono);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.08em;
+  background:var(--surface-2);
+  color:var(--tx-dim);
+  border:1px solid var(--line);
+  border-radius:0;
+  padding:3px 9px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  min-height:24px;
+  transition:background .14s,color .14s,border-color .14s;
+  flex:none;
+}
+.btn-fullscreen:hover{
+  background:rgba(249,115,22,.12);
+  color:var(--accent);
+  border-color:var(--accent);
+}
+.btn-fullscreen:focus-visible{
+  outline:2px solid var(--info);
+  outline-offset:1px;
+}
+.btn-fullscreen .fs-ic{font-size:13px;line-height:1}
+.btn-fullscreen.is-active{
+  background:var(--accent);
+  color:#000;
+  border-color:var(--accent);
+}
+
+/* State fullscreen — native Fullscreen API */
+.map-card:fullscreen{
+  width:100vw;
+  height:100vh;
+  max-width:none;
+  max-height:none;
+  margin:0;
+  border:0;
+  border-radius:0;
+  background:var(--bg);
+  display:flex;
+  flex-direction:column;
+}
+.map-card:fullscreen .map-wrap{
+  flex:1;
+  height:auto;
+  min-height:0;
+}
+.map-card:fullscreen #map{
+  height:100%;
+  min-height:0;
+}
+.map-card:fullscreen .map-head{
+  background:var(--surface);
+  border-bottom:1px solid var(--line);
+  padding:6px 12px;
+}
+.map-card:fullscreen .legend{
+  background:var(--surface);
+  border-top:1px solid var(--line);
+  padding:8px 12px;
+}
+
+/* Fallback class .is-fullscreen untuk browser yang tidak support :fullscreen atau saat pakai class toggle */
+.map-card.is-fullscreen{
+  position:fixed;
+  inset:0;
+  width:100vw;
+  height:100vh;
+  z-index:9999;
+  margin:0;
+  border:0;
+  border-radius:0;
+  background:var(--bg);
+  display:flex;
+  flex-direction:column;
+}
+.map-card.is-fullscreen .map-wrap{
+  flex:1;
+  height:auto;
+  min-height:0;
+}
+.map-card.is-fullscreen #map{
+  height:100%;
+  min-height:0;
+}
+
+/* Di fullscreen, sembunyikan scroll body agar tidak ikut bergulir */
+body.has-fullscreen-map{
+  overflow:hidden;
+}
+
+/* Tombol keluar fullscreen yang muncul di atas peta saat fullscreen aktif */
+.map-fs-exit{
+  position:absolute;
+  top:10px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:700;
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.08em;
+  background:rgba(8,11,15,.92);
+  color:var(--tx);
+  border:1px solid var(--line);
+  padding:6px 14px;
+  cursor:pointer;
+  display:none;
+}
+.map-card:fullscreen .map-fs-exit,
+.map-card.is-fullscreen .map-fs-exit{
+  display:block;
+}
+.map-fs-exit:hover{
+  background:var(--surface-2);
+  border-color:var(--accent);
+  color:var(--accent);
+}
