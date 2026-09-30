@@ -1169,6 +1169,14 @@ details .body b{color:var(--text-primary);font-weight:600}
   .live{padding:3px 7px;font-size:9px}
   .topbar-right{gap:8px}
   #main,.wrap{padding:8px}
+  /* Aturan main{height:calc(100vh - 53px)} menjepit #main ke tinggi layar dan
+     #main-bloomberg-grid{flex:1 1 auto!important} menyusutkannya, sehingga isi
+     terpotong overflow:hidden dan dokumen tidak dapat digulir: panel inspeksi
+     tinggal 1 px dan subtabnya tertimpa dok kejadian. Prototipe audit tidak
+     begitu — di 390 px dokumennya 1301 px dan dapat digulir — jadi kedua
+     penjepit itu dilepas pada rentang ini. */
+  #main{height:auto;overflow:visible}
+  #main-bloomberg-grid{flex:0 0 auto}
   .kpi-rail{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px;
     -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent 100%);
     mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent 100%);scrollbar-width:none}
@@ -1193,10 +1201,38 @@ details .body b{color:var(--text-primary);font-weight:600}
 .foot,.ai-fab,.ai-popup,.layout-bar,#notice,.hairline-sep{display:none!important}
 
 #main{flex:1 1 auto;min-height:0;padding:var(--gutter);display:flex;flex-direction:column;gap:var(--card-gap)}
-/* Di bawah 768 px tinggi kartu peta tertekan kisi sehingga hanya bagian
-   atasnya yang tampak; toolbar yang menempel di bawah ikut terpotong dan
-   tidak dapat disentuh. Pada rentang ini toolbar dipindah ke kanan-atas,
-   bercermin dengan legenda yang sudah ada di kiri-atas. */
-@media(max-width:768px){
-  .map-tools{top:44px;bottom:auto}
+
+/* === Sasaran sentuh — area klik, bukan tampilan === */
+/* Tinggi tombol ini mengikuti pembungkusan label (22-42 px), jadi area klik
+   dibuat kotak 44 px yang ditengahkan pada tombol. Inset tetap tidak dipakai
+   karena akan meluber keluar batang atas begitu tombolnya sudah tinggi. */
+.chipbtn,.seg button,.dock-tab,.collapse{position:relative}
+.chipbtn::after,.seg button::after,.dock-tab::after,.collapse::after{
+  content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
+/* Tombol lipat dok hanya 12 px lebar; tetangganya teks petunjuk yang tidak
+   dapat ditekan, jadi area kliknya boleh melebar ke samping sampai 44 px. */
+.collapse::after{left:-16px;right:-16px}
+/* === Topbar pada lebar sangat sempit === */
+/* Isi topbar berjumlah 389 px, jadi REFRESH — satu-satunya tombol berisi di
+   halaman — terpotong di bawah 390 px. Dua langkah di bawah ini memadatkan
+   baris itu tanpa membuang satu pun kontrol yang dapat ditekan: pertama jarak
+   dan padding dirapatkan, lalu label chip sumber dipendekkan menjadi titiknya
+   saja. Tombolnya tetap ada dan tetap dapat ditekan. */
+@media(max-width:480px){
+  .topbar{padding:0 8px}
+  .topbar-right{gap:4px}
+}
+@media(max-width:400px){
+  #srcTxt{display:none}
+  /* Setelah labelnya dilepas, chip menyusut jadi 25x17 px dan itu justru gagal
+     ambang 24 px. Topbar mobile tingginya tepat 44 px, jadi chip dibuat 44x44
+     penuh: sasaran sentuh yang benar tanpa menambah tinggi baris. */
+  #srcChip{min-width:44px;min-height:44px;justify-content:center;padding:0}
+}
+/* Di bawah 340 px bahkan baris yang sudah dipadatkan tidak cukup, jadi lencana
+   status — satu-satunya bagian yang tidak dapat ditekan — disembunyikan.
+   Keadaan sumber data tetap terbaca dari titik pada chip sumber dan dari panel
+   Sumber. */
+@media(max-width:340px){
+  #modeBadge{display:none}
 }
