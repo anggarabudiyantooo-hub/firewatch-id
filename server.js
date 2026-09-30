@@ -1941,10 +1941,20 @@ app.get('/api/status', (_req, res) => {
 // Gempa diperbarui sangat sering, jadi cache-nya pendek (2 menit).
 app.get('/api/hazard', async (_req, res) => {
   try {
+    // Fase 3.1: shelter BNPB sering lambat (60s+), jangan block quake & tsunami yang kritis
+    // Quake & tsunami harus tetap tampil meski shelter timeout — prinsip Bloomberg: data kritis tidak boleh tertahan data lambat
+    const withTimeout = (p, ms, fallback = null) => {
+      let timer;
+      const timeout = new Promise(resolve => {
+        timer = setTimeout(() => resolve(fallback), ms);
+      });
+      return Promise.race([p.catch(() => fallback), timeout]).finally(() => clearTimeout(timer));
+    };
+
     const [quakes, tsunami, shelters] = await Promise.all([
       scheduler.get('quake').catch(() => null),
       scheduler.get('tsunami').catch(() => null),
-      scheduler.get('shelter').catch(() => null)
+      withTimeout(scheduler.get('shelter').catch(() => scheduler.peek('shelter')), 8000, scheduler.peek('shelter'))
     ]);
     if (!quakes && !tsunami && !shelters) {
       return res.status(502).json({ error: 'Data kebencanaan tidak tersedia.' });
