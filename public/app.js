@@ -2795,6 +2795,31 @@
     else { map.removeLayer(gAsh); renderAshInfo(); showHint(null); }
   });
 
+  // Fase 3 UX: collapse kontrol peta untuk optimasi ruang
+  (function () {
+    var row = $('ctlRow');
+    var btn = $('ctlCollapse');
+    if (!row || !btn) return;
+    var key = 'siaga_ctl_collapsed';
+    var collapsed = false;
+    try { collapsed = localStorage.getItem(key) === '1'; } catch (e) {}
+    if (collapsed) {
+      row.classList.add('is-collapsed');
+      btn.textContent = '☰ TAMPILKAN KONTROL';
+      btn.setAttribute('aria-label', 'Tampilkan kontrol');
+    }
+    btn.addEventListener('click', function () {
+      collapsed = !collapsed;
+      row.classList.toggle('is-collapsed', collapsed);
+      btn.textContent = collapsed ? '☰ TAMPILKAN KONTROL' : '☰ KONTROL';
+      btn.setAttribute('aria-label', collapsed ? 'Tampilkan kontrol' : 'Sembunyikan kontrol');
+      try { localStorage.setItem(key, collapsed ? '1' : '0'); } catch (e) {}
+      // Resize map agar tidak ada gap kosong setelah collapse
+      setTimeout(function () { if (map && map.invalidateSize) map.invalidateSize(); }, 220);
+      showHint(collapsed ? 'Kontrol disembunyikan — hemat ruang. Klik lagi untuk tampil.' : 'Kontrol ditampilkan.', 2500);
+    });
+  })();
+
   $('lyQuake').addEventListener('change', function (e) {
     state.quakeOn = e.target.checked;
     if (state.quakeOn) {
