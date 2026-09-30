@@ -2570,8 +2570,8 @@ body.bloomberg .pgrid-b{
 
 body.bloomberg #main-bloomberg-grid{
   display:grid;
-  grid-template-columns:1.6fr 1fr;
-  grid-template-rows:auto;
+  grid-template-columns:1fr;
+  grid-template-rows:auto auto;
   gap:6px;
   min-height:0;
   overflow:visible;
@@ -2579,7 +2579,8 @@ body.bloomberg #main-bloomberg-grid{
 }
 body.bloomberg #main-bloomberg-grid .map-card{
   grid-column:1;
-  grid-row:1 / span 2;
+  grid-row:1;
+  min-height:58vh;
 }
 body.bloomberg #main-bloomberg-grid .side-stack{
   grid-column:2;
@@ -2670,18 +2671,29 @@ body.bloomberg .btn-fullscreen{
   body.bloomberg .map-card{ min-height:50vh; }
 }
 
-/* Bloomberg DEFAULT: compact tapi boleh overflow kebawah — user request jadikan default */
+/* Bloomberg DEFAULT compact + peta melebar — user request: terlalu banyak scroll, peta melebar saja seperti awal */
 body.bloomberg .panel-edu,
 body.bloomberg #sourcePanel{
-  display:block;
-  opacity:0.9;
+  display:none;
 }
 body.bloomberg .panel.wide{
-  max-height:none;
-  overflow:visible;
+  max-height:320px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
 }
-body.bloomberg #attrSection{ max-height:none; }
+body.bloomberg .panel.wide .pane,
+body.bloomberg .panel.wide .so2grid,
+body.bloomberg .panel.wide #hazardBody,
+body.bloomberg .panel.wide #statusBody{
+  overflow-y:auto;
+  flex:1;
+  min-height:0;
+}
+body.bloomberg #attrSection{ max-height:340px; }
 body.bloomberg #hazardPanel,
 body.bloomberg #statusPanel,
-body.bloomberg #so2Panel{ max-height:none; }
-body.bloomberg .foot{ display:block; opacity:0.8; }
+body.bloomberg #so2Panel{ max-height:300px; }
+body.bloomberg .foot{ display:none; }
+/* Peta melebar penuh seperti awal — 58vh */
+body.bloomberg .map-wrap{ height:58vh; min-height:480px; }
