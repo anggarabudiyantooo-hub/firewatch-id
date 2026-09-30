@@ -151,3 +151,16 @@ menjadi penemuan otomatis.
 | **Sedang** | Label sudut peta dari `BBOX` | Menghapus kemungkinan tidak sinkron |
 | **Rendah** | `limit` atribusi | Baru relevan bila pindah platform |
 | **Rendah** | Timeout klien | Nilai sekarang sudah memadai |
+
+---
+
+## Temuan terbuka — nilai keras yang belum tercatat
+
+Bagian ini mencatat nilai keras yang lolos dari audit 8 September 2026 dan
+ditemukan kemudian. Setiap baris disertai keadaan setelah penanganan.
+
+| Nilai | Letak | Mengapa rapuh | Tindakan |
+|---|---|---|---|
+| `504` | `public/index.html`, baris "Klaster titik api" pada panel Lapisan | Angka klaster titik api ditulis harfiah di markup, padahal `/api/overview` menghitungnya dari data (saat diperiksa: **40**). Tidak ikut berubah saat hulu berubah, dan tidak pernah menandai dirinya sebagai basi. ⚠️ | **Diperbaiki 30 Sep 2026** — diganti `id="sClusters"` dan diisi dari `d.clusters` di `app.js`. |
+| `14.365 titik` | `public/index.html` elemen `#mapCount` | Teks awal sebelum data tiba; tidak pernah terbaca pengguna setelah `app.js` menulis ulang, tetapi tetap salah bila JS gagal. 🔄 | Dibiarkan — berfungsi sebagai teks cadangan; sudah ditimpa saat data tiba. |
+| `20m` | `public/index.html`, `.scale-lab` di kartu peta | Skala batang peta statis; tidak mengikuti tingkat zoom Leaflet. ⚠️ | **Belum ditangani** — perlu dihitung dari `map.getZoom()` atau dihapus. |

@@ -2073,6 +2073,7 @@
   var hintTimer = null;
   function showHint(msg, autoHideMs) {
     var h = $('mapHint');
+    if (!h) return;
     if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
     h.style.bottom = (state.airOn ? '150px' : '');
     if (!msg) { h.hidden = true; h.textContent = ''; return; }
@@ -2392,7 +2393,8 @@
         + nf.format(d.population) + ' titik';
     }
     $('attrMeta').textContent = attrTxt;
-    if (d.meta && d.meta.disclaimer) $('attrDisclaimer').textContent = d.meta.disclaimer;
+    var _ad = $('attrDisclaimer');
+    if (d.meta && d.meta.disclaimer && _ad) _ad.textContent = d.meta.disclaimer;
 
     if (!d.units.length) {
       unitPane.appendChild(el('p', 'empty', d.analyzed
@@ -2544,7 +2546,7 @@
         buildTicker();
         $('updated').textContent = 'diperbarui ' + new Date(d.meta.updatedAt)
           .toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-        $('srcline').textContent = 'Sumber titik api: ' + d.meta.source + ' · rentang ' + d.meta.days +
+        var _sl = $('srcline'); if (_sl) _sl.textContent = 'Sumber titik api: ' + d.meta.source + ' · rentang ' + d.meta.days +
           ' hari · atribusi: ' + d.meta.attribution.join(', ') + '.';
         setNotice(d.meta.notice || '');
         renderEvents();
@@ -2606,6 +2608,12 @@
         // abu digambar ulang begitu daftar kotanya siap.
         if (state.ashOn && state.ash) drawAsh();
         renderImpactList(); renderAshList(); renderProvList(); renderClusterList();
+        // Jumlah klaster titik api pernah tertulis harfiah "504" di markup
+        // sementara server menghitungnya sendiri (kini 40). Angka mati pada
+        // dasbor bencana menyesatkan pembaca; ambil dari data yang sama
+        // dengan daftar klaster di bawah peta.
+        var cl = document.getElementById('sClusters');
+        if (cl) cl.textContent = nf.format((d.clusters || []).length);
       })
       .catch(function () {
         setNotice('Gagal memuat data pemantauan. Periksa koneksi lalu tekan "Muat ulang".');
@@ -2726,7 +2734,7 @@
   bindLayer('lySmoke', gSmoke);
   bindLayer('lyImpact', gImpact);
 
-  $('lyAir').addEventListener('change', function (e) {
+  var _lyAir = $('lyAir'); _lyAir && _lyAir.addEventListener('change', function (e) {
     state.airOn = e.target.checked;
     if (state.airOn) {
       map.addLayer(gAir);
@@ -3545,7 +3553,7 @@
     setHimawari(e.target.value);
   });
 
-  $('lyWind').addEventListener('change', function (e) {
+  var _lyWind = $('lyWind'); _lyWind && _lyWind.addEventListener('change', function (e) {
     state.windOn = e.target.checked;
     if (state.windOn) { map.addLayer(gWind); loadWind(); }
     else {
@@ -3607,7 +3615,7 @@
   });
 
   function updateLegend() {
-    var box = $('legendPoints'); clear(box);
+    var box = $('legendPoints'); if (!box) return; clear(box);
     var sets = state.colorBy === 'confidence'
       ? [['#ef4444', 'keyakinan tinggi'], ['#facc15', 'sedang'], ['#22c55e', 'rendah']]
       : [['#ff4d2e', 'FRP tinggi'], ['#ff9f1c', 'sedang'], ['#ffd166', 'rendah']];
@@ -4057,4 +4065,32 @@
 
   // Citra Himawari terbit tiap 10 menit; periksa tiap menit agar slot baru
   // langsung tampil tanpa perlu memuat ulang halaman.
+
+  // Lapisan peta harus mengikuti keadaan kotak centang saat halaman dibuka.
+  // Sebelum ini setiap map.addLayer() hanya hidup di dalam change handler,
+  // jadi lapisan yang sudah tercentang di markup — termasuk titik api yang
+  // menjadi inti produk — tidak pernah muncul sampai seseorang mengklik
+  // sakelarnya dua kali. Diukur: 0 titik di peta, menjadi 2.000 setelah
+  // satu toggle.
+  //
+  // Penambahan layer group hampir tanpa biaya dan tetap aman meski panel
+  // Lapisan sedang tersembunyi — justru itu keadaan normal saat halaman
+  // dibuka, jadi tab tersembunyi sengaja TIDAK dijadikan penjaga. Data
+  // titik api sendiri sudah dimuat dan digambar oleh alur yang ada
+  // (drawFires dipanggil begitu /api/overview tiba), sehingga yang perlu
+  // ditambahkan di sini hanyalah memasang layer group-nya ke peta.
+  // Abu dan angin dikecualikan: keduanya sudah punya pemeriksaan sendiri
+  // saat mulai, dan menambahkannya di sini akan memicu muat dua kali.
+  (function syncLayers() {
+    [['lyFire', gFire], ['lyAir', gAir], ['lyQuake', gQuake],
+     ['lyShelter', gShelter], ['lySmoke', gSmoke], ['lyConc', gConc]
+    ].forEach(function (t) {
+      var el = $(t[0]);
+      if (!el || !el.checked) return;
+      try { map.addLayer(t[1]); } catch (e) {}
+    });
+    setTimeout(function () {
+      try { map.invalidateSize(); } catch (e) {}
+    }, 260);
+  })();
 })();
