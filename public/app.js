@@ -3778,14 +3778,8 @@
     });
   }
 
-  Array.prototype.forEach.call(document.querySelectorAll('.bm'), function (btn) {
-    btn.addEventListener('click', function () {
-      Array.prototype.forEach.call(document.querySelectorAll('.bm'), function (o) {
-        o.classList.toggle('active', o === btn);
-      });
-      setBasemap(btn.getAttribute('data-base'));
-    });
-  });
+  var _baseSel = $('baseSel');
+  if (_baseSel) _baseSel.addEventListener('change', function (e) { setBasemap(e.target.value); });
   $('refreshBtn').addEventListener('click', function () {
     loadOverview(); loadNews(); loadAttribution();
   });
@@ -4077,20 +4071,20 @@
     });
   });
 
-  // Timeline sebaran: 0 = kondisi sekarang, >0 = prakiraan angin ke depan.
-  Array.prototype.forEach.call(document.querySelectorAll('.tl-b'), function (b) {
-    b.addEventListener('click', function () {
-      Array.prototype.forEach.call(document.querySelectorAll('.tl-b'), function (o) {
-        o.classList.remove('active');
-      });
-      b.classList.add('active');
-      state.plumeHour = Number(b.getAttribute('data-h')) || 0;
-      if (!$('lySmoke').checked) { $('lySmoke').checked = true; map.addLayer(gSmoke); }
-      drawSmoke();
-      showHint(state.plumeHour === 0
-        ? 'Menampilkan sebaran asap saat ini.'
-        : 'Prakiraan sebaran ' + state.plumeHour + ' jam ke depan (garis putus-putus).');
-    });
+// Linimasa sebaran: 0 = kondisi sekarang, >0 = prakiraan angin ke depan.
+  // Idiomnya select .field seperti baris lain panel — grup tombol lamanya bekerja
+  // tetapi tidak pernah diberi gaya, sehingga muncul sebagai tombol bawaan
+  // peramban yang menabrak gelapnya panel (laporan: "ada yang tidak sesuai").
+  var _tlSel = $('tlSel');
+  if (_tlSel) _tlSel.addEventListener('change', function (e) {
+    state.plumeHour = Number(e.target.value) || 0;
+    // Memilih prakiraan tanpa lapisan asap hanya menghasilkan petunjuk kosong,
+    // jadi asapnya dinyalakan sendiri seperti perilaku tombol sebelumnya.
+    if (!$('lySmoke').checked) { $('lySmoke').checked = true; map.addLayer(gSmoke); }
+    drawSmoke();
+    showHint(state.plumeHour === 0
+      ? 'Menampilkan sebaran asap saat ini.'
+      : 'Prakiraan sebaran ' + state.plumeHour + ' jam ke depan (garis putus-putus).');
   });
 
   // Panel SO2: hanya muncul bila ada gunung yang sedang erupsi.
