@@ -100,6 +100,7 @@
         <span class="micro">Peta interaktif — Indonesia · EPSG:4326 · WGS84</span>
         <span class="micro" id="mapCount">14.365 titik</span>
         <span class="micro" id="legendPoints"></span>
+        <button id="mapFullscreenBtn" class="btn-fullscreen" type="button" aria-label="Peta layar penuh" aria-pressed="false" title="Layar penuh (F) — ESC untuk keluar"><span class="fs-ic" aria-hidden="true">⛶</span><span class="fs-txt">FULL</span></button>
       </div>
       <svg class="map-svg" viewBox="0 0 960 546" preserveAspectRatio="none" role="img"
            aria-label="Peta Indonesia dengan sebaran titik api">
@@ -300,7 +301,6 @@
         <button class="tool" type="button" aria-label="Perbesar"><svg width="13" height="13" viewBox="0 0 24 24" stroke="#9BA1B0" stroke-width="1.8" fill="none"><path d="M12 5v14M5 12h14"/></svg></button>
         <button class="tool" type="button" aria-label="Perkecil"><svg width="13" height="13" viewBox="0 0 24 24" stroke="#9BA1B0" stroke-width="1.8" fill="none"><path d="M5 12h14"/></svg></button>
         <button class="tool" type="button" aria-label="Pusatkan ke lokasi saya"><svg width="13" height="13" viewBox="0 0 24 24" stroke="#9BA1B0" stroke-width="1.6" fill="none"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
-        <button class="tool" type="button" id="mapFullBtn" aria-label="Layar penuh peta"><svg width="13" height="13" viewBox="0 0 24 24" stroke="#9BA1B0" stroke-width="1.8" fill="none"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
       </div>
       <p class="micro" id="srcline"></p>
       <div class="scale" aria-hidden="true"><div class="scale-bar"></div><div class="scale-lab">—</div></div>
@@ -311,7 +311,8 @@
            pada elemen ini punya ukuran. Peta SVG skematik di atas adalah
            pengganti sementara dari prototipe dan tidak memuat data nyata. -->
       <div id="mapWrap"><div id="map"></div>
-      <div id="mapHint" class="map-hint" hidden></div></div>
+      <div id="mapHint" class="map-hint" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+      <button id="mapFsExit" class="map-fs-exit" type="button" aria-label="Keluar layar penuh" hidden>✕ KELUAR FULLSCREEN (ESC)</button></div>
       <div id="confSummary" hidden></div>
       <div id="airLegend" hidden></div>
       <div id="ashLegend" hidden></div>

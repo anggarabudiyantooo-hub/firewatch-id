@@ -1242,3 +1242,33 @@ details .body b{color:var(--text-primary);font-weight:600}
    mengesampingkan tinggi dari penulis, jadi tinggi ditetapkan ulang. */
 #mapCard:fullscreen{width:100vw;height:100vh;border-radius:0;border:none}
 #mapCard:-webkit-full-screen{width:100vw;height:100vh;border-radius:0;border:none}
+/* Pemulihan tombol ⛶ FULL (1d52b8e). Refactor paritas menghapus markup dan
+   gaya fallback-nya tetapi meninggalkan JS dan gaya tombolnya — itulah sebabnya
+   tombol "sebelumnya ada, sekarang hilang": tanpa elemen, JS bail-out diam-diam.
+   Kepala peta adalah overlay pointer-events:none, jadi tombolnya menyalakan
+   kembali kemampuan klik sendiri. */
+.map-head .btn-fullscreen{pointer-events:auto;flex:none;min-height:24px;margin-left:auto}
+.btn-fullscreen .fs-ic{font-size:13px;line-height:1}
+.btn-fullscreen .fs-txt{letter-spacing:.08em}
+.btn-fullscreen.is-active{background:var(--status-alert);border-color:var(--status-alert);color:#14100a}
+.btn-fullscreen:focus-visible{outline:2px solid var(--status-info);outline-offset:1px}
+/* Mode kelas untuk peramban tanpa Fullscreen API (Safari iOS, webview aplikasi).
+   #mapWrap sudah overlay absolut di dalam kartu, jadi memaku kartu ke viewport
+   otomatis membesar pula petanya; Leaflet tinggal diukur ulang (di JS). */
+.map-card.is-fullscreen{
+  position:fixed;inset:0;z-index:9999;
+  border:0;border-radius:0;background:var(--bg);
+}
+.map-card.is-fullscreen .map-head{
+  background:var(--surface-1);border-bottom:1px solid var(--hairline);
+}
+body.has-fullscreen-map{overflow:hidden}
+/* Jalan keluar untuk layar sentuh: tidak punya ESC fisik. */
+.map-fs-exit{
+  position:absolute;top:44px;left:50%;transform:translateX(-50%);z-index:700;
+  padding:6px 14px;font:700 11px/1.4 var(--font-data);letter-spacing:.08em;
+  background:rgba(8,11,15,.92);color:var(--text-primary);
+  border:1px solid var(--hairline);border-radius:6px;cursor:pointer;display:none;
+}
+.map-card:fullscreen .map-fs-exit,.map-card.is-fullscreen .map-fs-exit{display:block}
+.map-fs-exit:hover{border-color:var(--status-alert);color:var(--status-alert)}

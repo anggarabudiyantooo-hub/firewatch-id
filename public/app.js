@@ -155,7 +155,10 @@
       // Umpan balik wajib saat klik: dialog izin peramban bisa menggantung lama,
       // dan tanpanya tombol terasa mati. Petunjuk menahan diri sampai ada jawaban.
       if (!('geolocation' in navigator)) {
-        showHint('Peramban ini tidak menyediakan layanan lokasi.', 6000);
+        // Peramban dalam aplikasi (WhatsApp/Telegram) dan mode privat sering tidak
+        // punya geolocation sama sekali. Tombol harus tetap berguna: pusatkan ke
+        // kejadian terpanas dari data yang sudah dimuat, jangan sekadar mengeluh.
+        showHint('Peramban ini tidak menyediakan layanan lokasi.' + pusatKeKejadianTerpanas(), 9000);
         return;
       }
       showHint('Meminta izin lokasi ke peramban…');
@@ -181,47 +184,21 @@
     else if (e && e.code === 2) msg = 'Perangkat tidak dapat membaca posisi saat ini — cek layanan lokasi (GPS) perangkat.';
     else if (e && e.code === 3) msg = 'Waktu pembacaan posisi habis. Pastikan pertanyaan izin lokasi dijawab, lalu klik lagi.';
     else if (e && e.message) msg = 'Posisi tidak dapat dibaca: ' + e.message;
-    showHint(msg, 9000);
+    showHint(msg + pusatKeKejadianTerpanas(), 10000);
   });
-
-  // Layar penuh untuk kartu peta. Kartu yang melebar penuh adalah niat awal
-  // refactor (lihat komentar pada index.html), tetapi tombolnya tidak pernah
-  // dibuat sehingga pengguna tidak punya jalan keluar dari bingkai sempit.
-  var kartuPeta = $('mapCard');
-  var tombolPenuh = $('mapFullBtn');
-  function layarPenuhAktif() {
-    return document.fullscreenElement === kartuPeta || document.webkitFullscreenElement === kartuPeta;
-  }
-  if (kartuPeta && tombolPenuh) {
-    var mintaPenuh = kartuPeta.requestFullscreen || kartuPeta.webkitRequestFullscreen;
-    if (mintaPenuh) {
-      tombolPenuh.addEventListener('click', function () {
-        if (layarPenuhAktif()) {
-          var keluar = document.exitFullscreen || document.webkitExitFullscreen;
-          if (keluar) keluar.call(document);
-          return;
-        }
-        var janji = mintaPenuh.call(kartuPeta);
-        if (janji && janji.catch) {
-          janji.catch(function () {
-            showHint('Peramban menolak tampilan layar penuh untuk halaman ini.', 6000);
-          });
-        }
-      });
-      var saatBerubah = function () {
-        tombolPenuh.setAttribute('aria-label',
-          layarPenuhAktif() ? 'Keluar dari layar penuh' : 'Layar penuh peta');
-        // Leaflet mengunci ukuran kontainernya saat dibuat; tanpa pengukuran
-        // ulang ini peta tetap menggambar pada kotak lama dan sisinya bolong.
-        setTimeout(function () { map.invalidateSize(); }, 60);
-      };
-      document.addEventListener('fullscreenchange', saatBerubah);
-      document.addEventListener('webkitfullscreenchange', saatBerubah);
-    } else {
-      // iOS Safari tidak mengizinkan layar penuh elemen; menyembunyikan tombol
-      // lebih jujur daripada menyisakan kontrol yang mati.
-      tombolPenuh.remove();
+  // Kalimat tambahan bila pemusatan darurat berhasil; kosong bila data belum tiba,
+  // sehingga petunjuk galat tidak pernah menjanjikan hal yang tidak terjadi.
+  function pusatKeKejadianTerpanas() {
+    var hs = (state.data && state.data.hotspots) || [];
+    var puncak = null;
+    for (var i = 0; i < hs.length; i++) {
+      if (!puncak || (hs[i].frp || 0) > (puncak.frp || 0)) puncak = hs[i];
     }
+    if (puncak && typeof puncak.lat === 'number' && typeof puncak.lon === 'number') {
+      map.setView([puncak.lat, puncak.lon], 8);
+      return ' Peta dipusatkan ke titik api terpanas saat ini sebagai gantinya.';
+    }
+    return '';
   }
 
   var AGS = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
