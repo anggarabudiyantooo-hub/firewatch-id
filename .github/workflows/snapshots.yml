@@ -52,7 +52,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add lib/pvmbg-snapshot.js data/regions.json
+          git add lib/pvmbg-snapshot.js lib/volcano-coords-snapshot.js data/regions.json
           git commit -m "chore(snapshot): auto refresh PVMBG & regions $(date -u +%Y-%m-%d)"
           git push
 

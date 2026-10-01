@@ -16,6 +16,8 @@ const path = require('path');
 const PVMBG_URL = process.env.MAGMA_STATUS_URL || 'https://magma.esdm.go.id/v1/gunung-api/tingkat-aktivitas';
 const SNAPSHOT_PATH = path.join(__dirname, '..', 'lib', 'pvmbg-snapshot.js');
 const REGIONS_PATH = path.join(__dirname, '..', 'data', 'regions.json');
+const COORDS_PATH = path.join(__dirname, '..', 'lib', 'volcano-coords-snapshot.js');
+const GVP_WFS = 'https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows';
 
 const LEVELS = {
   Awas: { level: 4, roman: 'IV', color: '#ef4444', order: 0 },
@@ -176,6 +178,58 @@ function refreshRegions() {
   return { changed, before, after };
 }
 
+/** Perbarui snapshot koordinat gunung dari GVP WFS (sumber kanonik).
+ *  Berkas lama TIDAK ditimpa bila GVP gagal/down atau katalog mencurigakan
+ *  (< 100 entri) - supaya seed OSM/Wikidata tidak hilang sia-sia. */
+async function refreshVolcanoCoords() {
+  console.log('[coords] Mengambil katalog GVP WFS Indonesia untuk snapshot koordinat ...');
+  let j = null;
+  for (let attempt = 0; attempt < 2 && !j; attempt++) {
+    try {
+      const url = GVP_WFS
+        + '?service=WFS&version=2.0.0&request=GetFeature'
+        + '&typeName=GVP-VOTW:Smithsonian_VOTW_Holocene_Volcanoes'
+        + '&outputFormat=application/json&count=1000'
+        + '&CQL_FILTER=' + encodeURIComponent("Country='Indonesia'");
+      j = JSON.parse(await fetchWithTimeout(url, 30000));
+    } catch (e) {
+      console.warn(`[coords] Percobaan ${attempt + 1} gagal: ${e.message}`);
+      j = null;
+      if (attempt === 0) await new Promise(res => setTimeout(res, 2500));
+    }
+  }
+  if (!j) { console.warn('[coords] GVP tidak bisa dihubungi - snapshot lama dipertahankan'); return false; }
+  const valid = [];
+  for (const f of (j.features || [])) {
+    const g = f.geometry, p = f.properties || {};
+    if (!g || g.type !== 'Point') continue;
+    const lon = Number(g.coordinates[0]), lat = Number(g.coordinates[1]);
+    const name = String(p.Volcano_Name || '').trim();
+    if (!name || !Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    if (lat < -12 || lat > 8 || lon < 93 || lon > 143) continue;
+    valid.push({ name, lat: +lat.toFixed(4), lon: +lon.toFixed(4), elevM: Number(p.Elevation) || null });
+  }
+  if (valid.length < 100) {
+    console.warn(`[coords] Katalog janggal (${valid.length} entri) - snapshot lama dipertahankan`);
+    return false;
+  }
+  valid.sort((a, b) => a.name.localeCompare(b.name, 'id'));
+  const snap = {
+    updatedAt: new Date().toISOString(),
+    source: 'GVP / Smithsonian VOTW (WFS)',
+    total: valid.length,
+    volcanoes: valid
+  };
+  const header = '/* eslint-disable */\n'
+    + '// Snapshot koordinat gunung api (fallback bila katalog GVP WFS hidup tetapi\n'
+    + '// kosong/down). Nama mengikuti katalog GVP - pencocokan PVMBG dilakukan\n'
+    + '// terhadapnya di lib/volcano.js. Dibuat otomatis oleh\n'
+    + '// scripts/refresh-snapshots.js; jangan disunting manual.\n';
+  fs.writeFileSync(COORDS_PATH, header + 'module.exports = ' + JSON.stringify(snap, null, 1) + ';\n', 'utf8');
+  console.log(`[coords] Ditulis ${COORDS_PATH} (${valid.length} gunung)`);
+  return true;
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const onlyRegions = args.includes('--only-regions');
@@ -197,6 +251,15 @@ async function main() {
     }
   }
 
+  let coordsOk = false;
+  if (!onlyPvmbg) {
+    try {
+      coordsOk = await refreshVolcanoCoords();
+    } catch (e) {
+      console.error(`[coords] GAGAL: ${e.message}`);
+    }
+  }
+
   if (!onlyPvmbg) {
     try {
       refreshRegions();
@@ -207,7 +270,7 @@ async function main() {
     }
   }
 
-  console.log(`[done] PVMBG: ${pvmbgOk ? 'OK' : 'SKIP/GAGAL'} | Regions: ${regionsOk ? 'OK' : 'SKIP/GAGAL'}`);
+  console.log(`[done] PVMBG: ${pvmbgOk ? 'OK' : 'SKIP/GAGAL'} | Coords: ${coordsOk ? 'OK' : 'SKIP/GAGAL'} | Regions: ${regionsOk ? 'OK' : 'SKIP/GAGAL'}`);
 }
 
 if (require.main === module) {
@@ -217,4 +280,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { fetchPvmbg, refreshRegions };
+module.exports = { fetchPvmbg, refreshRegions, refreshVolcanoCoords };

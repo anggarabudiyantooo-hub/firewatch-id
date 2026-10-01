@@ -254,6 +254,10 @@
 
   var gAir = L.layerGroup();
   var gAsh = L.layerGroup();
+  // Marker status gunung berdiri sendiri; dulu menempel di gAsh sehingga
+  // ikut padam saat lapisan Abu vulkanik dimatikan - padahal data status tetap
+  // relevan dan justru itu yang diminta prototipe (baris 'Letusan gunung api').
+  var gVolcano = L.layerGroup();
   // Lapisan data mulai dalam keadaan mati.
   //
   // Sebelumnya empat lapisan menyala otomatis, sehingga peta langsung
@@ -282,7 +286,7 @@
     wind: null, windKey: null, windOn: false, windBusy: false, particles: null, plumeHour: 0,
     air: null, airKey: null, airOn: false, airBusy: false, airPendingQ: null,
     airMinAqi: 0, airFilteredCount: 0, // Fase 2.5: filter AQI UI friendly
-    ash: null, ashOn: false, ashBusy: false, newsAt: '',
+    ash: null, ashOn: false, volcanoOn: false, ashBusy: false, newsAt: '',
     // Harus cocok dengan <option selected> pada #himaSel (nonaktif),
     // jika tidak, state dan tampilan kontrol saling bertentangan.
     drought: null,
@@ -597,6 +601,7 @@
 
   function drawAsh() {
     gAsh.clearLayers();
+    gVolcano.clearLayers();
     if (!state.ash || !state.ash.active.length) return;
 
     state.ash.active.forEach(function (v) {
@@ -662,7 +667,7 @@
             ? 'Abu terbawa ke ' + v.plumes.map(function (p) { return compass(p.to); }).join(' / ')
             : 'Sebaran abu tidak dimodelkan (belum berstatus Siaga dan tidak dilaporkan erupsi)'
         ], { warn: (o ? o.meaning : null) || (v.activity && v.activity.summary) || null }))
-        .addTo(gAsh);
+        .addTo(gVolcano);
     });
 
     drawAshImpacted();
@@ -720,7 +725,7 @@
   }
 
   function loadAsh() {
-    if (!state.ashOn || state.ashBusy) return Promise.resolve();
+    if ((!state.ashOn && !state.volcanoOn) || state.ashBusy) return Promise.resolve();
     state.ashBusy = true;
     return fetchT('/api/volcano-ash')
       .then(function (r) { if (!r.ok) throw new Error('ash'); return r.json(); })
@@ -2756,7 +2761,7 @@
         // Kota terdampak abu berasal dari overview, sedangkan kerucutnya
         // dari endpoint gunung api. Keduanya tiba terpisah, jadi lapisan
         // abu digambar ulang begitu daftar kotanya siap.
-        if (state.ashOn && state.ash) drawAsh();
+        if ((state.ashOn || state.volcanoOn) && state.ash) drawAsh();
         renderImpactList(); renderAshList(); renderProvList(); renderClusterList();
         // Jumlah klaster titik api pernah tertulis harfiah "504" di markup
         // sementara server menghitungnya sendiri (kini 40). Angka mati pada
@@ -2863,6 +2868,14 @@
       if (!sh.events || !sh.events.length) return 'Tidak ada pengungsian aktif yang dilaporkan BNPB.';
       return nf.format(sh.totalPeople) + ' jiwa mengungsi di '
         + nf.format(sh.events.length) + ' kejadian (BNPB).';
+    },
+    lyVolcano: function () {
+      if (!state.ash) return 'Data gunung api sedang dimuat…';
+      var a = state.ash.active || [];
+      if (!a.length) return 'Tidak ada gunung berstatus Siaga/Awas atau dilaporkan erupsi saat ini.';
+      var oc = state.ash.official && state.ash.official.counts;
+      return nf.format(a.length) + ' gunung aktif dipantau di peta'
+        + (oc ? ' — status PVMBG: ' + oc.Awas + ' Awas, ' + oc.Siaga + ' Siaga, ' + oc.Waspada + ' Waspada.' : '.');
     }
   };
 
@@ -2944,6 +2957,21 @@
     state.ashOn = e.target.checked;
     if (state.ashOn) { map.addLayer(gAsh); loadAsh(); }
     else { map.removeLayer(gAsh); renderAshInfo(); showHint(null); }
+  });
+
+  // Sakelar 'Letusan gunung api' (paritas prototipe v3, baris pertama Lapisan):
+  // marker status gunung hidup sendiri - tidak ikut padam saat Abu vulkanik
+  // OFF, dan kerucut sebaran abu tidak ikut menyala saat Letusan dimatikan.
+  $('lyVolcano').addEventListener('change', function (e) {
+    state.volcanoOn = e.target.checked;
+    if (state.volcanoOn) {
+      map.addLayer(gVolcano);
+      if (state.ash) drawAsh(); else loadAsh();
+      layerHint('lyVolcano');
+    } else {
+      map.removeLayer(gVolcano);
+      showHint(null);
+    }
   });
 
   // Fase 3 UX: collapse kontrol peta untuk optimasi ruang
@@ -4226,13 +4254,19 @@
   // Abu dan angin dikecualikan: keduanya sudah punya pemeriksaan sendiri
   // saat mulai, dan menambahkannya di sini akan memicu muat dua kali.
   (function syncLayers() {
+    var _lv = $('lyVolcano');
+    if (_lv) state.volcanoOn = _lv.checked;
     [['lyFire', gFire], ['lyAir', gAir], ['lyQuake', gQuake],
-     ['lyShelter', gShelter], ['lySmoke', gSmoke], ['lyConc', gConc]
+     ['lyShelter', gShelter], ['lySmoke', gSmoke], ['lyConc', gConc],
+     ['lyVolcano', gVolcano]
     ].forEach(function (t) {
       var el = $(t[0]);
       if (!el || !el.checked) return;
       try { map.addLayer(t[1]); } catch (e) {}
     });
+    // Data gunung dibutuhkan dua sakelar (abu & letusan); muat sekali di awal
+    // bila salah satunya ON - loadAsh punya gerbang ashOn||volcanoOn sendiri.
+    if (state.volcanoOn || state.ashOn) loadAsh();
     setTimeout(function () {
       try { map.invalidateSize(); } catch (e) {}
     }, 260);
