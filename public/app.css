@@ -1236,3 +1236,9 @@ details .body b{color:var(--text-primary);font-weight:600}
 @media(max-width:340px){
   #modeBadge{display:none}
 }
+
+/* Layar penuh: kartu keluar dari kisi yang mengatur tingginya (.map-card
+   45vh pada ponsel). Peramban menaikkannya ke lapisan teratas tetapi tidak
+   mengesampingkan tinggi dari penulis, jadi tinggi ditetapkan ulang. */
+#mapCard:fullscreen{width:100vw;height:100vh;border-radius:0;border:none}
+#mapCard:-webkit-full-screen{width:100vw;height:100vh;border-radius:0;border:none}

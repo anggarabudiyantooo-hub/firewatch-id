@@ -151,7 +151,18 @@
   if (alat.length >= 3) {
     alat[0].addEventListener('click', function () { map.zoomIn(); });
     alat[1].addEventListener('click', function () { map.zoomOut(); });
-    alat[2].addEventListener('click', function () { map.locate({ setView: true, maxZoom: 12 }); });
+    alat[2].addEventListener('click', function () {
+      // Umpan balik wajib saat klik: dialog izin peramban bisa menggantung lama,
+      // dan tanpanya tombol terasa mati. Petunjuk menahan diri sampai ada jawaban.
+      if (!('geolocation' in navigator)) {
+        showHint('Peramban ini tidak menyediakan layanan lokasi.', 6000);
+        return;
+      }
+      showHint('Meminta izin lokasi ke peramban…');
+      // Timeout wajib: bila pertanyaan izin ditutup tanpa dijawab, geolocation
+      // tidak pernah memanggil callback dan tombol tampak mati selamanya.
+      map.locate({ setView: true, maxZoom: 12, timeout: 10000, enableHighAccuracy: false });
+    });
   }
   var tandaLokasi = null;
   map.on('locationfound', function (e) {
@@ -159,12 +170,59 @@
     tandaLokasi = L.circleMarker(e.latlng, {
       radius: 6, color: '#64D2FF', weight: 2, fillColor: '#64D2FF', fillOpacity: 0.3
     }).addTo(map);
-    showHint('Perkiraan posisi Anda ditandai pada peta.', 5000);
+    var akurasi = (typeof e.accuracy === 'number') ? ' (±' + Math.round(e.accuracy) + ' m)' : '';
+    showHint('Perkiraan posisi Anda ditandai pada peta' + akurasi + '.', 5000);
   });
-  map.on('locationerror', function () {
-    showHint('Posisi tidak dapat dibaca: peramban menolak permintaan lokasi, '
-      + 'atau perangkat ini tidak menyediakannya.', 8000);
+  map.on('locationerror', function (e) {
+    // Bedakan penyebabnya; pesan generik membuat pengguna tidak tahu apa yang
+    // harus dilakukan. Kode mengikuti GeolocationPositionError milik peramban.
+    var msg = 'Posisi tidak dapat dibaca.';
+    if (e && e.code === 1) msg = 'Izin lokasi ditolak. Aktifkan izin lokasi untuk situs ini di pengaturan peramban, lalu klik lagi.';
+    else if (e && e.code === 2) msg = 'Perangkat tidak dapat membaca posisi saat ini — cek layanan lokasi (GPS) perangkat.';
+    else if (e && e.code === 3) msg = 'Waktu pembacaan posisi habis. Pastikan pertanyaan izin lokasi dijawab, lalu klik lagi.';
+    else if (e && e.message) msg = 'Posisi tidak dapat dibaca: ' + e.message;
+    showHint(msg, 9000);
   });
+
+  // Layar penuh untuk kartu peta. Kartu yang melebar penuh adalah niat awal
+  // refactor (lihat komentar pada index.html), tetapi tombolnya tidak pernah
+  // dibuat sehingga pengguna tidak punya jalan keluar dari bingkai sempit.
+  var kartuPeta = $('mapCard');
+  var tombolPenuh = $('mapFullBtn');
+  function layarPenuhAktif() {
+    return document.fullscreenElement === kartuPeta || document.webkitFullscreenElement === kartuPeta;
+  }
+  if (kartuPeta && tombolPenuh) {
+    var mintaPenuh = kartuPeta.requestFullscreen || kartuPeta.webkitRequestFullscreen;
+    if (mintaPenuh) {
+      tombolPenuh.addEventListener('click', function () {
+        if (layarPenuhAktif()) {
+          var keluar = document.exitFullscreen || document.webkitExitFullscreen;
+          if (keluar) keluar.call(document);
+          return;
+        }
+        var janji = mintaPenuh.call(kartuPeta);
+        if (janji && janji.catch) {
+          janji.catch(function () {
+            showHint('Peramban menolak tampilan layar penuh untuk halaman ini.', 6000);
+          });
+        }
+      });
+      var saatBerubah = function () {
+        tombolPenuh.setAttribute('aria-label',
+          layarPenuhAktif() ? 'Keluar dari layar penuh' : 'Layar penuh peta');
+        // Leaflet mengunci ukuran kontainernya saat dibuat; tanpa pengukuran
+        // ulang ini peta tetap menggambar pada kotak lama dan sisinya bolong.
+        setTimeout(function () { map.invalidateSize(); }, 60);
+      };
+      document.addEventListener('fullscreenchange', saatBerubah);
+      document.addEventListener('webkitfullscreenchange', saatBerubah);
+    } else {
+      // iOS Safari tidak mengizinkan layar penuh elemen; menyembunyikan tombol
+      // lebih jujur daripada menyisakan kontrol yang mati.
+      tombolPenuh.remove();
+    }
+  }
 
   var AGS = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
   var ATTR = 'Peta dasar &copy; Esri, Maxar, Earthstar Geographics, HERE, Garmin, &copy; OpenStreetMap contributors';
