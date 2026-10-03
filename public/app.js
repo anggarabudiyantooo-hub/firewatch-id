@@ -2883,6 +2883,21 @@
     n.hidden = false; n.textContent = msg;
   }
 
+  /* Stempel "diperbarui" dalam WIB eksplisit. Sebelumnya memakai
+     toLocaleString tanpa label zona: pengguna di luar WIB melihat jam zona
+     perangkat sendiri, dan tak ada jaminan zona. Kini UTC+7 dihitung
+     eksplisit — konvensi yang sama dengan penanggalan lain di halaman. */
+  var NAMA_BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  function stampWIB(iso) {
+    var ms = Date.parse(iso);
+    if (isNaN(ms)) return null;
+    var w = new Date(ms + 7 * 3600000);
+    var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+    return p(w.getUTCDate()) + ' ' + NAMA_BULAN[w.getUTCMonth()] + ' ' +
+      p(w.getUTCHours()) + '.' + p(w.getUTCMinutes()) + ' WIB';
+  }
+
   function loadOverview() {
     var btn = $('refreshBtn');
     btn.disabled = true;
@@ -2901,8 +2916,8 @@
         b.textContent = 'Data langsung';
         b.className = 'badge badge-live';
         buildTicker();
-        $('updated').textContent = 'diperbarui ' + new Date(d.meta.updatedAt)
-          .toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+        var _st = stampWIB(d.meta.updatedAt);
+        $('updated').textContent = _st ? 'diperbarui ' + _st : 'diperbarui —';
         var _sl = $('srcline'); if (_sl) _sl.textContent = 'Sumber titik api: ' + d.meta.source + ' · rentang ' + d.meta.days +
           ' hari · atribusi: ' + d.meta.attribution.join(', ') + '.';
         setNotice(d.meta.notice || '');
@@ -4396,7 +4411,10 @@
   }
   function startIntervals() {
     clearAllIntervals();
-    intervals.push(setInterval(function () { loadOverview(); loadAttribution(); }, 10 * 60 * 1000));
+    // 5 menit, bukan 10: max-age CDN overview 2 menit, jadi pada 5 menit
+    // stempel "diperbarui" di layar tidak pernah tertinggal lebih dari itu.
+    // Tab tersembunyi tetap dijeda oleh clearAllIntervals() — kuota aman.
+    intervals.push(setInterval(function () { loadOverview(); loadAttribution(); }, 5 * 60 * 1000));
     intervals.push(setInterval(loadDrought, 60 * 60 * 1000));
     intervals.push(setInterval(loadNews, 3 * 60 * 1000));
     intervals.push(setInterval(loadHazard, 2 * 60 * 1000));
