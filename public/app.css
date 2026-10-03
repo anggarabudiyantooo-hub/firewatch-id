@@ -1355,3 +1355,18 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
 }
 .clock-skew[hidden]{display:none!important}
 @media(max-width:768px){.clock-skew{display:none!important}}
+
+/* Catatan keselamatan di panel Sumber: nomor darurat, rujukan resmi, dan
+   pernyataan "bukan peringatan resmi" — untuk publik yang membaca angka
+   tanpa membuka panel lain. Tautan digarisbawahi (bukan hanya warna) supaya
+   tetap terbedakan tanpa penglihatan warna. */
+.src-safe{
+  margin-top:8px;padding:7px 9px;border:1px solid var(--hairline);
+  border-radius:8px;background:var(--surface-1);
+  font:400 10.5px/1.55 var(--font-prose);color:var(--text-secondary)
+}
+.src-safe b{color:var(--text-primary)}
+.src-safe-emg{color:var(--status-alert)}
+.src-safe a{color:var(--text-primary);text-decoration:underline;text-underline-offset:2px}
+.src-safe a:hover{color:var(--status-alert)}
+.src-safe a:focus-visible{outline:2px solid var(--status-alert);outline-offset:2px;border-radius:3px}

@@ -505,6 +505,17 @@
             <span class="micro" style="display:block;padding-bottom:6px">Status pembaruan data</span>
             <div class="metric"><div><b id="srcHealthy">—</b><span>sumber aktif</span></div><div><b id="srcQ429">—</b><span>gagal 429 (kuota)</span></div><div><b id="srcQ5xx">—</b><span>galat 5xx</span></div><div><b id="srcRuns">—</b><span>run / gagal</span></div></div>
             <div id="statusBody" class="st-grid"></div>
+            <!-- Keselamatan publik: nomor darurat + rujukan resmi + penyangkalan.
+                 Ditempatkan di panel Sumber (bukan footer yang disembunyikan)
+                 supaya benar-benar terbaca, tanpa mengubah susunan panel yang
+                 sudah diaudit. -->
+            <div class="src-safe" role="note">
+              <b>Bukan peringatan resmi.</b> Untuk keputusan evakuasi, ikuti rujukan resmi:
+              <a href="https://www.bmkg.go.id" target="_blank" rel="noopener noreferrer">BMKG</a> ·
+              <a href="https://bnpb.go.id" target="_blank" rel="noopener noreferrer">BNPB</a> ·
+              <a href="https://magma.esdm.go.id" target="_blank" rel="noopener noreferrer">PVMBG / MAGMA</a>.
+              Keadaan darurat: <b class="src-safe-emg">telepon 112</b>.
+            </div>
             <div class="hr" style="margin:9px 0"></div>
             <span class="micro" style="display:block;padding-bottom:4px">Sumber data &amp; batasan</span>
             <details><summary>Letusan gunung api — PVMBG / MAGMA</summary><div class="body">Laporan Pos Pengamatan Gunung Api, ditulis petugas yang berjaga di lapangan. Memuat waktu erupsi, tinggi kolom abu, arah condong, amplitudo dan durasi seismograf. <b>Inilah acuan yang menentukan apakah sebaran abu digambar di peta.</b> Jendela pantau 24 jam terakhir.</div></details>
@@ -601,7 +612,7 @@
     </div>
     <div id="askOut" class="ask-out"><p class="empty">Ajukan pertanyaan; jawaban disusun dari data langsung di dashboard ini. Contoh: ketik 'siapa perusahaan yang bertanggung jawab?' atau klik chip di atas.</p></div>
   </div>
-  <div class="ai-popup-foot">Data lokal RAG · Sumber: FIRMS, PVMBG, BMKG, BNPB, CAMS · Bukan pengganti sumber resmi</div>
+  <div class="ai-popup-foot">Data lokal RAG · Sumber: FIRMS, PVMBG, BMKG, BNPB, CAMS · <b>Bukan peringatan resmi</b> dan bukan pengganti sumber resmi · Darurat: <b>112</b></div>
 </div>
 
 <script src="/vendor/leaflet.js"></script>
