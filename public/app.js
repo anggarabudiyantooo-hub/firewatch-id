@@ -28,14 +28,24 @@
 
   function noteServerTime(res) {
     try {
-      var d = res.headers && res.headers.get && res.headers.get('date');
+      var h = res.headers;
+      if (!h || !h.get) return;
+      // Balasan yang datang dari cache CDN membawa header Date dari saat
+      // salinan itu dibuat, bukan saat ini — pernah membuat estimasi
+      // meleset 3 menit (persis max-age berita). Sampel seperti itu dibuang.
+      var age = parseInt(h.get('age') || '0', 10);
+      if (!isNaN(age) && age > 2) return;
+      var d = h.get('date');
       if (!d) return;
       var t = Date.parse(d);
       if (isNaN(t)) return;
       skewSamples.push(t - Date.now());
       if (skewSamples.length > 5) skewSamples.shift();
-      var s = skewSamples.slice().sort(function (a, b) { return a - b; });
-      clockSkewMs = s[Math.floor(s.length / 2)];
+      // Semua galat bersifat satu arah: permintaan yang lambat dan salinan
+      // cache hanya membuat sampel LEBIH KECIL dari selisih sebenarnya.
+      // Karena itu nilai terbesar dari beberapa sampel terakhir adalah
+      // taksiran terbaik, bukan nilai tengahnya.
+      clockSkewMs = Math.max.apply(null, skewSamples);
       renderSkewNote();
     } catch (e) { /* header tak terbaca: pertahankan nilai terakhir */ }
   }
