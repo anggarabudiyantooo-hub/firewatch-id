@@ -1748,7 +1748,21 @@
     if (!s || !s.tasks) { panel.hidden = true; return; }
     panel.hidden = false;
     clear(body);
-    if (meta) meta.textContent = s.healthy + '/' + s.total + ' sumber sehat · ' + s.mode;
+    if (meta) meta.textContent = s.healthy + '/' + s.total + ' sumber aktif · ' + s.mode;
+    // Angka kepala & metrik panel dulu tertulis statis di HTML ("9/9", "0",
+    // "1 / 0") dan tak pernah disentuh JS — kini seluruhnya ikut status.
+    function put(id, txt) { var n = $(id); if (n) n.textContent = txt; }
+    var frac = s.total ? s.healthy / s.total : 0;
+    put('srcTxt', s.healthy + '/' + s.total + ' sumber aktif');
+    put('srcHealthy', s.healthy + '/' + s.total);
+    put('srcQ429', s.quota ? String(s.quota['429'] || 0) : '—');
+    put('srcQ5xx', s.quota ? String(s.quota['5xx'] || 0) : '—');
+    put('srcRuns', s.summary ? s.summary.totalRuns + ' / ' + s.summary.totalFails : '—');
+    var chipDot = $('srcDot');
+    if (chipDot) {
+      chipDot.className = 'dot ' + (frac >= 1 ? 'd-nominal' : frac >= .5 ? 'd-caution'
+        : frac > 0 ? 'd-alert' : 'd-danger');
+    }
 
     // Fase 2.2: alert kritis menonjol di atas
     if (s.criticalAlerts && s.criticalAlerts.length) {
@@ -1782,6 +1796,7 @@
     // .st-name, .st-age, .st-every — lima kelas tanpa satu pun aturan CSS —
     // sehingga label dan waktunya menempel menjadi "Gempa bumi (BMKG)1 menit
     // lalu" dan bintang penanda tugas kritis menggantung di ujung teks.
+    var onDemandMode = /penjadwal luar/.test(s.mode || '');
     s.tasks.forEach(function (t) {
       var row = el('div', 'kv');
       // el(tag, cls, text) — argumen kedua adalah KELAS, bukan teks.
@@ -1793,12 +1808,36 @@
       }
       if (!t.healthy) lab.classList.add('st-bad');
       row.appendChild(lab);
-      row.appendChild(el('b', null,
-        t.ageLabel + (t.consecutiveFails ? ' · gagal ' + t.consecutiveFails + '×' : '')));
-      row.title = 'Diperbarui ' + t.everyLabel + ' · run ' + t.runs + '/' + t.fails;
+      // Status ditulis dengan kata yang berarti, bukan sekadar umur:
+      // penguna harus bisa membedakan "hidup", "lambat", "masih cache
+      // terakhir" dan "tidak aktif" — tanpa perlu menebak dari angka.
+      var late = t.ageMs != null && t.everyMs > 0 && t.ageMs > t.everyMs * 2.5;
+      var right;
+      if (!t.hasData && t.runs === 0 && onDemandMode) right = 'ON-DEMAND · belum diminta';
+      else if (!t.hasData) right = 'TIDAK AKTIF';
+      else if (!t.healthy) right = 'CACHE ' + t.ageLabel;
+      else if (late) right = 'TERLAMBAT · ' + t.ageLabel;
+      else right = 'AKTIF · ' + t.ageLabel;
+      if (t.consecutiveFails) right += ' · gagal ' + t.consecutiveFails + '×';
+      var rightEl = el('b', null, right);
+      if (!t.healthy || late) rightEl.classList.add('kv-bad');
+      row.appendChild(rightEl);
+      row.title = t.everyLabel + ' · run ' + t.runs + '/' + t.fails +
+        (t.lastErrorAt ? ' · galat terakhir ' + t.lastErrorAt.slice(11, 19) + ' UTC' : '');
       body.appendChild(row);
       if (t.alert) body.appendChild(el('div', 'st-task-alert', t.alert));
+      if (t.errorNote && (!t.healthy || !t.hasData)) {
+        body.appendChild(el('div', 'st-task-alert',
+          'Penyebab: ' + t.errorNote + ' — angka dari sumber ini belum terverifikasi saat ini.'));
+      }
     });
+    if (onDemandMode) {
+      body.appendChild(el('div', 'st-ondemand',
+        'Tanpa penjadwal internal di host ini, sumber disegarkan saat datanya diminta. ' +
+        '"ON-DEMAND · belum diminta" berarti salinan server ini belum menerima permintaan ' +
+        'untuk sumber itu — bukan bahwa sumbernya mati. Umur pada tiap baris mengacu ke ' +
+        'pengambilan terakhir yang berhasil.'));
+    }
 
     // Fase 2.2: log terstruktur terbaru
     if (s.recentLogs && s.recentLogs.length) {
@@ -4335,6 +4374,22 @@
   // serapat data gempa.
   loadEruptions();
   loadCasualties();
+  // Chip status di kepala dan tautan F6 "SUMBER" dulu tidak melakukan apa
+  // pun (tanpa handler; anchor menunjuk elemen hidden). Keduanya kini benar-
+  // benar membuka tab Sumber di dock bawah.
+  function openSumberTab() {
+    var tb = $('dt-sumber');
+    if (!tb) return;
+    tb.click();
+    tb.scrollIntoView({ block: 'nearest' });
+  }
+  var chipBtn = $('srcChip');
+  if (chipBtn) chipBtn.addEventListener('click', openSumberTab);
+  Array.prototype.forEach.call(
+    document.querySelectorAll('a[href="#sourcePanel"]'),
+    function (a) { a.addEventListener('click', function (e) { e.preventDefault(); openSumberTab(); }); }
+  );
+
   loadStatus();
 
   // Visibility handling

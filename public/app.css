@@ -1071,6 +1071,12 @@ details .body b{color:var(--text-primary);font-weight:600}
 .kv{display:flex;justify-content:space-between;gap:10px;padding:3px 0;
   font:400 11px/1.4 var(--font-prose);color:var(--text-secondary)}
 .kv b{font-family:var(--font-data);color:var(--text-primary);font-weight:600}
+.st-bad{color:var(--status-alert)}
+.st-bad b,.kv b.kv-bad{color:var(--status-alert)}
+.st-task-alert{font-family:var(--font-data);font-size:10px;color:var(--status-alert);line-height:1.35;padding:0 0 4px}
+.st-alert-box{border:1px solid var(--status-alert);padding:6px 8px;margin:0 0 7px;font-size:11px;line-height:1.45}
+.st-quota{font-family:var(--font-data);font-size:10px;color:var(--text-secondary);display:flex;gap:14px;padding:2px 0 6px}
+.st-ondemand{font-size:10px;color:var(--text-secondary);line-height:1.45;padding:6px 0 2px;border-top:1px solid var(--line);margin-top:6px}
 .metric{display:flex;gap:16px;flex-wrap:wrap;padding:2px 0 6px}
 .metric div{display:flex;flex-direction:column;gap:2px}
 .metric b{font:700 15px/1 var(--font-data);color:var(--text-primary)}
