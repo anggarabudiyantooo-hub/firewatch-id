@@ -1797,6 +1797,32 @@
     // sehingga label dan waktunya menempel menjadi "Gempa bumi (BMKG)1 menit
     // lalu" dan bintang penanda tugas kritis menggantung di ujung teks.
     var onDemandMode = /penjadwal luar/.test(s.mode || '');
+    // Kebohongan yang harus dicegah #2: di serverless, /api/status bisa
+    // dijawab salinan server yang belum pernah melayani permintaan data ini,
+    // sementara halaman jelas sedang memakai data segar. Jadi umur DATA YANG
+    // DITAMPILKAN (stempel tiap payload) ikut menentukan status, bukan hanya
+    // umur scheduler salinan server yang menjawab /api/status.
+    function feedStamp(id) {
+      var ov = state.data && state.data.meta && state.data.meta.updatedAt;
+      var hz = state.hazard && state.hazard.updatedAt;
+      var m = {
+        hotspots: ov, volcano: (state.ash && state.ash.updatedAt) || ov,
+        pvmbg: ov, eruption: ov,
+        quake: hz, tsunami: hz, shelter: hz,
+        news: state.news && state.news.fetchedAt,
+        drought: state.droughtAt ? new Date(state.droughtAt).toISOString() : null
+      };
+      var v = m[id];
+      var t0 = v ? Date.parse(v) : NaN;
+      return isNaN(t0) ? null : t0;
+    }
+    function agoLabel(ms) {
+      var sc = Math.round(ms / 1000);
+      if (sc < 90) return sc + ' detik lalu';
+      var mi = Math.round(sc / 60);
+      if (mi < 90) return mi + ' menit lalu';
+      return Math.round(mi / 60) + ' jam lalu';
+    }
     s.tasks.forEach(function (t) {
       var row = el('div', 'kv');
       // el(tag, cls, text) — argumen kedua adalah KELAS, bukan teks.
@@ -1812,8 +1838,12 @@
       // penguna harus bisa membedakan "hidup", "lambat", "masih cache
       // terakhir" dan "tidak aktif" — tanpa perlu menebak dari angka.
       var late = t.ageMs != null && t.everyMs > 0 && t.ageMs > t.everyMs * 2.5;
+      var fAt = feedStamp(t.id);
+      var fAge = fAt != null ? Date.now() - fAt : null;
+      var fedFresh = fAge != null && fAge <= Math.max(t.everyMs * 3, 30 * 60000);
       var right;
-      if (!t.hasData && t.runs === 0 && onDemandMode) right = 'ON-DEMAND · belum diminta';
+      if (fedFresh && !t.hasData) right = 'AKTIF · data di halaman ' + agoLabel(fAge);
+      else if (!t.hasData && t.runs === 0 && onDemandMode) right = 'ON-DEMAND · belum diminta';
       else if (!t.hasData) right = 'TIDAK AKTIF';
       else if (!t.healthy) right = 'CACHE ' + t.ageLabel;
       else if (late) right = 'TERLAMBAT · ' + t.ageLabel;
@@ -1823,6 +1853,7 @@
       if (!t.healthy || late) rightEl.classList.add('kv-bad');
       row.appendChild(rightEl);
       row.title = t.everyLabel + ' · run ' + t.runs + '/' + t.fails +
+        (fAge != null ? ' · data di halaman ' + agoLabel(fAge) : '') +
         (t.lastErrorAt ? ' · galat terakhir ' + t.lastErrorAt.slice(11, 19) + ' UTC' : '');
       body.appendChild(row);
       if (t.alert) body.appendChild(el('div', 'st-task-alert', t.alert));
@@ -1833,10 +1864,10 @@
     });
     if (onDemandMode) {
       body.appendChild(el('div', 'st-ondemand',
-        'Tanpa penjadwal internal di host ini, sumber disegarkan saat datanya diminta. ' +
-        '"ON-DEMAND · belum diminta" berarti salinan server ini belum menerima permintaan ' +
-        'untuk sumber itu — bukan bahwa sumbernya mati. Umur pada tiap baris mengacu ke ' +
-        'pengambilan terakhir yang berhasil.'));
+        'Host ini memakai penjadwal luar: sumber disegarkan saat datanya diminta. ' +
+        'Baris "AKTIF · data di halaman …" diukur dari stempel data yang SEDANG Anda ' +
+        'baca; "ON-DEMAND · belum diminta" berarti salinan server yang menjawab status ' +
+        'belum menerima permintaan itu — bukan bahwa sumbernya mati.'));
     }
 
     // Fase 2.2: log terstruktur terbaru
@@ -1876,6 +1907,7 @@
       .then(function (d) {
         if (!d || d.error) return;
         state.drought = d;
+        state.droughtAt = Date.now();
         renderEvents();
         renderDroughtCard();
         renderDryList();
