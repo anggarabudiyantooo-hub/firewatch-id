@@ -16,6 +16,40 @@
    * jelas — pembaca menyimpulkan "tidak ada bencana" padahal artinya
    * "kami tidak tahu".
    */
+  /* ---------- selisih jam perangkat terhadap server ---------- */
+  // Jam di kepala halaman dihitung dari jam PERANGKAT. Bila jam perangkat
+  // meleset, seluruh halaman ikut meleset — pengguna lalu menyimpulkan
+  // dashboard-nya yang lambat. Setiap balasan API membawa header Date dari
+  // server; selisihnya dicatat (median 5 sampel terakhir) supaya jam yang
+  // ditampilkan mengikuti server dan selisihnya ditulis apa adanya.
+  var clockSkewMs = 0;
+  var skewSamples = [];
+  var SKEW_VISIBLE_MS = 90000;
+
+  function noteServerTime(res) {
+    try {
+      var d = res.headers && res.headers.get && res.headers.get('date');
+      if (!d) return;
+      var t = Date.parse(d);
+      if (isNaN(t)) return;
+      skewSamples.push(t - Date.now());
+      if (skewSamples.length > 5) skewSamples.shift();
+      var s = skewSamples.slice().sort(function (a, b) { return a - b; });
+      clockSkewMs = s[Math.floor(s.length / 2)];
+      renderSkewNote();
+    } catch (e) { /* header tak terbaca: pertahankan nilai terakhir */ }
+  }
+
+  function renderSkewNote() {
+    var n = $('clockSkew');
+    if (!n) return;
+    if (Math.abs(clockSkewMs) < SKEW_VISIBLE_MS) { n.hidden = true; n.textContent = ''; return; }
+    var mnt = Math.round(Math.abs(clockSkewMs) / 60000);
+    n.textContent = 'jam perangkat meleset ' + mnt + ' mnt ' +
+      (clockSkewMs > 0 ? 'lebih lambat' : 'lebih cepat') + ' · jam di sini dari server';
+    n.hidden = false;
+  }
+
   function fetchT(url, opts, ms) {
     ms = ms || 12000;
     var ctl = new AbortController();
@@ -23,7 +57,7 @@
     opts = opts || {};
     opts.signal = ctl.signal;
     return fetch(url, opts).then(
-      function (r) { clearTimeout(timer); return r; },
+      function (r) { clearTimeout(timer); noteServerTime(r); return r; },
       function (e) { clearTimeout(timer); throw e; }
     );
   }
@@ -4162,7 +4196,8 @@
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
   // WIB = UTC+7 dihitung eksplisit agar benar walau zona browser berbeda.
   function tickClock() {
-    var d = new Date();
+    // Waktu server (jam perangkat + selisih terukur) — lihat noteServerTime.
+    var d = new Date(Date.now() + clockSkewMs);
     var wib = new Date(d.getTime() + (7 * 60 + d.getTimezoneOffset()) * 60000);
     var lo = $('clockLocal'), ut = $('clockUtc');
     if (lo) lo.textContent = pad2(wib.getHours()) + ':' + pad2(wib.getMinutes()) + ':' + pad2(wib.getSeconds());

@@ -1343,3 +1343,15 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
   .ai-popup{left:12px;right:12px;width:auto;bottom:14px;max-height:64vh}
 }
 @media print{.ai-fab,.ai-popup,.notice{display:none!important}}
+
+/* Catatan selisih jam perangkat terhadap server. Muncul hanya bila meleset
+   >= 90 detik, dan menyebut arahnya supaya angka di kepala halaman tidak
+   memancing kesimpulan salah ("dashboard-nya lambat"). */
+.clock-skew{
+  margin-left:8px;padding:1px 7px;border-radius:9px;
+  border:1px solid rgba(255,159,10,.32);background:rgba(255,159,10,.10);
+  color:var(--status-alert);font:400 10px/1.5 var(--font-prose);
+  white-space:nowrap
+}
+.clock-skew[hidden]{display:none!important}
+@media(max-width:768px){.clock-skew{display:none!important}}
