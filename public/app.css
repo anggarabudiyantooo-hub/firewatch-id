@@ -1204,7 +1204,7 @@ details .body b{color:var(--text-primary);font-weight:600}
 }
 
 
-.foot,.ai-fab,.ai-popup,.layout-bar,#notice,.hairline-sep{display:none!important}
+.foot,.layout-bar,.hairline-sep{display:none!important}
 
 #main{flex:1 1 auto;min-height:0;padding:var(--gutter);display:flex;flex-direction:column;gap:var(--card-gap)}
 
@@ -1278,3 +1278,68 @@ body.has-fullscreen-map{overflow:hidden}
 }
 .map-card:fullscreen .map-fs-exit,.map-card.is-fullscreen .map-fs-exit{display:block}
 .map-fs-exit:hover{border-color:var(--status-alert);color:var(--status-alert)}
+
+/* === AI ASISTEN + NOTICE — dipulihkan ===
+   Riwayat regresi: gaya .ai-fab/.ai-popup/.ask-* dihapus refactor "Compact
+   Bloombeq refined v2.0.0" (Fase 4.1), lalu sisa markahnya disembunyikan
+   serentak (9f5fe24) demi paritas tangkapan audit — popupnya ikut mati.
+   Kontrol yang sudah ada tidak boleh hilang tanpa pengganti, jadi gayanya
+   dipulihkan di sini sementara footer/layout-bar/hairline tetap seperti
+   pada tangkapan auditan. Semua ukuran teks >=10 px dan warna memakai
+   variabel yang lolos AA terhadap ketiga permukaan. */
+.notice{
+  margin:0;padding:7px 12px;background:var(--surface-2);border-bottom:1px solid var(--hairline);
+  font:400 11px/1.5 var(--font-prose);color:var(--text-secondary)
+}
+.notice[hidden]{display:none!important}
+
+.ai-fab{
+  position:fixed;right:18px;bottom:72px;z-index:60;
+  display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 13px;
+  border-radius:16px;cursor:pointer;
+  font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  letter-spacing:.08em;
+  box-shadow:0 8px 22px rgba(0,0,0,.5)
+}
+.ai-fab:focus-visible{outline:2px solid var(--status-alert);outline-offset:2px}
+.ai-fab-ic{color:var(--status-alert);font-size:12px;line-height:1}
+
+.ai-popup{
+  position:fixed;right:20px;bottom:72px;z-index:80;width:400px;
+  max-width:calc(100vw - 24px);max-height:calc(100vh - 130px);
+  display:flex;flex-direction:column;overflow:hidden
+}
+.ai-popup[hidden]{display:none!important}
+.ai-popup-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;cursor:move;user-select:none}
+.ai-head-left{display:flex;align-items:center;gap:7px;min-width:0}
+.ai-head-left h3{margin:0;font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.07em;color:var(--text-primary);white-space:nowrap}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--status-nominal);flex:0 0 auto}
+.ai-head-sub{font:400 10px/1 var(--font-prose);color:var(--text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ai-head-actions{display:flex;align-items:center;gap:9px}
+.ai-drag-hint{font:400 10px/1 var(--font-prose);color:var(--text-tertiary);white-space:nowrap}
+.ai-close{width:22px;height:22px;display:grid;place-items:center;background:transparent;border:1px solid var(--hairline);border-radius:6px;color:var(--text-secondary);cursor:pointer;font-size:11px}
+.ai-close:hover{border-color:var(--hairline-strong);color:var(--text-primary)}
+.ai-popup-body{display:flex;flex-direction:column;gap:9px;padding:10px 11px;min-height:0;overflow:hidden}
+
+.ask-bar{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface-2);border:1px solid var(--hairline);border-radius:8px}
+.ask-prompt{color:var(--status-alert);font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.ask-bar input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--text-primary);font:400 11.5px/1.4 var(--font-prose)}
+.ask-bar input::placeholder{color:var(--text-tertiary)}
+.ask-chips{display:flex;flex-wrap:wrap;gap:6px}
+.ask-out{overflow-y:auto;max-height:220px;font:400 11px/1.55 var(--font-prose);color:var(--text-secondary)}
+.ask-out .empty{margin:0;color:var(--text-tertiary)}
+.ask-out .ask-line{padding:1px 0}
+.ask-out .ask-head{color:var(--text-primary);font-weight:600}
+.ask-out .ask-note{color:var(--text-tertiary);font-size:10.5px}
+.ask-out .ask-busy{color:var(--status-alert);letter-spacing:.08em}
+.ask-src{display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding-top:7px;border-top:1px solid var(--hairline)}
+.ask-src-lab{font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.06em;color:var(--text-tertiary)}
+.src-pill{font:400 10px/1 var(--font-prose);color:var(--text-secondary);border:1px solid var(--hairline);border-radius:10px;padding:3px 8px;text-decoration:none}
+a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
+.ai-popup-foot{padding:8px 11px;border-top:1px solid var(--hairline);font:400 10px/1.45 var(--font-prose);color:var(--text-tertiary)}
+
+@media(max-width:768px){
+  .ai-fab{bottom:14px;right:12px}
+  .ai-popup{left:12px;right:12px;width:auto;bottom:14px;max-height:64vh}
+}
+@media print{.ai-fab,.ai-popup,.notice{display:none!important}}

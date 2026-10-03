@@ -3256,15 +3256,54 @@
     var footAi = $('footAi');
     if (!fab || !popup || !head) return;
 
+    function placeDefault() {
+      // Letak awal di ATAS dock, bukan menutupinya: panel Sumber dan metrik
+      // dock justru sering dibaca bersamaan dengan jawaban asisten.
+      popup.style.left = '';
+      popup.style.top = '';
+      popup.style.right = '20px';
+      var dk = document.querySelector('.dock');
+      var off = 72;
+      if (dk) {
+        var t = dk.getBoundingClientRect().top;
+        if (t > 0) {
+          off = Math.min(Math.max(72, Math.round(window.innerHeight - t + 10)),
+            Math.round(window.innerHeight * 0.45));
+        }
+      }
+      popup.style.bottom = off + 'px';
+      popup.style.maxHeight = Math.max(220, window.innerHeight - off - 70) + 'px';
+    }
+
+    /**
+     * Jaga popup selalu di dalam layar. Posisi geser disimpan sebagai
+     * left/top, jadi popup yang pernah digeser di jendela besar bisa
+     * mendarat di luar layar ketika jendela menyusut (mis. pindah ke
+     * 390 px) — popup tak terlihat sama saja dengan hilang.
+     */
+    function clampIntoView() {
+      if (popup.hidden) return;
+      var r = popup.getBoundingClientRect();
+      var maxLeft = window.innerWidth - popup.offsetWidth - 4;
+      var maxTop = window.innerHeight - popup.offsetHeight - 4;
+      var off = r.left < 4 || r.top < 4 || r.left > maxLeft || r.top > maxTop;
+      if (!off) return;
+      if (popup.dataset.dragged) {
+        popup.style.left = Math.max(4, Math.min(maxLeft, r.left)) + 'px';
+        popup.style.top = Math.max(4, Math.min(maxTop, r.top)) + 'px';
+        popup.style.right = 'auto';
+        popup.style.bottom = 'auto';
+      } else {
+        placeDefault();
+      }
+    }
+
     function openAi() {
       popup.hidden = false;
-      // Reset posisi ke default jika belum pernah digeser
-      if (!popup.dataset.dragged) {
-        popup.style.left = '';
-        popup.style.top = '';
-        popup.style.right = '20px';
-        popup.style.bottom = '70px';
-      }
+      if (!popup.dataset.dragged) placeDefault();
+      // Ukur setelah browser sempat menata ulang (lebar dock dsb. bisa
+      // berubah karena popup muncul), lalu pastikan tetap di dalam layar.
+      requestAnimationFrame(clampIntoView);
       setTimeout(function () {
         var q = $('askQ');
         if (q) q.focus();
@@ -3360,19 +3399,7 @@
 
     // Reset posisi saat resize agar tidak keluar layar
     window.addEventListener('resize', function () {
-      if (popup.hidden) return;
-      var rect = popup.getBoundingClientRect();
-      var maxLeft = window.innerWidth - popup.offsetWidth - 4;
-      var maxTop = window.innerHeight - popup.offsetHeight - 4;
-      var curLeft = rect.left;
-      var curTop = rect.top;
-      var need = false;
-      if (curLeft > maxLeft) { popup.style.left = Math.max(4, maxLeft) + 'px'; need = true; }
-      if (curTop > maxTop) { popup.style.top = Math.max(4, maxTop) + 'px'; need = true; }
-      if (need) {
-        popup.style.right = 'auto';
-        popup.style.bottom = 'auto';
-      }
+      clampIntoView();
     });
   })();
 
