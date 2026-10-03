@@ -1803,13 +1803,19 @@
     // DITAMPILKAN (stempel tiap payload) ikut menentukan status, bukan hanya
     // umur scheduler salinan server yang menjawab /api/status.
     function feedStamp(id) {
-      var ov = state.data && state.data.meta && state.data.meta.updatedAt;
-      var hz = state.hazard && state.hazard.updatedAt;
+      var d = state.data, hz = state.hazard;
+      var ov = d && d.meta && d.meta.updatedAt;
+      var hzt = hz && hz.updatedAt;
       var m = {
-        hotspots: ov, volcano: (state.ash && state.ash.updatedAt) || ov,
-        pvmbg: ov, eruption: ov,
-        quake: hz, tsunami: hz, shelter: hz,
-        news: state.news && state.news.fetchedAt,
+        hotspots: (d && d.hotspots) ? ov : null,
+        volcano: (state.ash && state.ash.updatedAt) || (d && d.volcano ? ov : null),
+        pvmbg: (d && d.volcano) ? ov : null,
+        // 'eruption' sengaja tanpa pemetaan: tidak ada feed halaman yang
+        // membuktikannya — kalau scheduler gagal, biarkan barisnya jujur.
+        quake: (hz && hz.quakes && hz.quakes.quakes && hz.quakes.quakes.length) ? hzt : null,
+        tsunami: (hz && hz.tsunami) ? hzt : null,
+        shelter: (hz && hz.shelters && hz.shelters.events && hz.shelters.events.length) ? hzt : null,
+        news: state.newsAt || null,
         drought: state.droughtAt ? new Date(state.droughtAt).toISOString() : null
       };
       var v = m[id];
@@ -3003,6 +3009,7 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         state.news = Array.isArray(d.articles) ? d.articles : [];
+        state.newsAt = d.fetchedAt || new Date().toISOString();
         state.newsTopics = Array.isArray(d.topics) ? d.topics : [];
         // Tampilkan kapan DATA-nya ditarik dari sumber, bukan kapan browser
         // memanggil API — keduanya bisa berbeda beberapa menit karena cache.
