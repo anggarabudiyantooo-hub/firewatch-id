@@ -4391,6 +4391,11 @@
   );
 
   loadStatus();
+  // Di host tanpa penjadwal internal, sumber baru disegarkan saat datanya
+  // diminta — jadi status SEBELUM data pertama tiba selalu terlihat mati.
+  // Satu penyegaran status tertunda membuat panel converge ke keadaan
+  // sebenarnya (~setelah data boot masuk) tanpa membebani poll rutin.
+  setTimeout(loadStatus, 15000);
 
   // Visibility handling
   var wasHidden = false;
