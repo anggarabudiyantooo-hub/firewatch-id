@@ -504,22 +504,140 @@
   }
 
 
+  // Zona terdampak digambar sebagai POLIGON area, bukan titik. Bentuknya
+  // buffer melingkar berjari-jari tetap per tingkat paparan — bukan batas
+  // administratif dan bukan data kerusakan; tujuannya pembaca melihat luas
+  // wilayah yang terpapar, bukan sebuah koordinat.
+  var ZONE_RADIUS_KM = { 'Berat': 18, 'Sedang': 12, 'Ringan': 7 };
+  function zoneRingKm(lat, lon, km) {
+    var out = [], n = 56, kLat = 110.57, kLon = 111.32 * Math.cos(lat * Math.PI / 180);
+    for (var i = 0; i <= n; i++) {
+      var a = (i / n) * 2 * Math.PI;
+      out.push([
+        +(lat + (km * Math.cos(a)) / kLat).toFixed(4),
+        +(lon + (km * Math.sin(a)) / kLon).toFixed(4)
+      ]);
+    }
+    return out;
+  }
+  function kmBetween(a, b) {
+    var R = 6371, t = Math.PI / 180;
+    var dLa = (b[0] - a[0]) * t, dLo = (b[1] - a[1]) * t;
+    var h = Math.sin(dLa / 2) * Math.sin(dLa / 2) +
+      Math.cos(a[0] * t) * Math.cos(b[0] * t) * Math.sin(dLo / 2) * Math.sin(dLo / 2);
+    return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+  }
+
+  /** Peristiwa bahaya lain di sekitar sebuah zona, dihitung dari data yang
+   *  SUDAH termuat (overview/hazard/gunung/udara) - tanpa permintaan baru.
+   *  Jendela mengikuti sumbernya masing-masing: 24 jam untuk api & gunung,
+   *  24 jam BMKG untuk gempa. Yang tidak ada dikatakan tidak ada. */
+  function zoneDossier(lat, lon, rKm, skipVolcano) {
+    var here = [lat, lon], kinds = [], rows = [];
+    // 1) titik api: klaster di dalam zona; di luar itu jarak klaster terdekat
+    var cl = (state.data && state.data.clusters) || [];
+    var inside = [], near = Infinity, nearFrp = 0;
+    cl.forEach(function (c) {
+      var d = kmBetween(here, [c.lat, c.lon]);
+      if (d < near) { near = d; nearFrp = c.frp; }
+      if (d <= rKm) inside.push({ d: d, c: c });
+    });
+    if (inside.length) {
+      inside.sort(function (a, b) { return a.d - b.d; });
+      var frpMax = inside.reduce(function (m, x) { return Math.max(m, x.c.frp); }, 0);
+      rows.push('Titik api: ' + nf.format(inside.length) + ' klaster di dalam zona · FRP tertinggi '
+        + nf.format(Math.round(frpMax)) + ' · terdekat ' + nf.format(Math.round(inside[0].d)) + ' km');
+      kinds.push('api');
+    } else if (isFinite(near)) {
+      rows.push('Titik api: tidak ada klaster di dalam zona · terdekat '
+        + nf.format(Math.round(near)) + ' km (FRP ' + nf.format(Math.round(nearFrp)) + ')');
+    }
+    // 2) abu vulkanik (hanya bila data gunung termuat)
+    if (state.ash && state.ash.active) {
+      var vs = state.ash.active
+        .map(function (v) { return { v: v, d: kmBetween(here, [v.lat, v.lon]) }; })
+        .filter(function (x) { return x.d <= 100 && x.v.name !== skipVolcano; })
+        .sort(function (a, b) { return a.d - b.d; })
+        .slice(0, 2);
+      vs.forEach(function (x) {
+        var st = x.v.official ? (x.v.official.level >= 3 ? x.v.official.status : 'status ' + x.v.official.status) : '';
+        rows.push('Gunung ' + x.v.name + (st ? ' — ' + st : '') + ' · ' + nf.format(Math.round(x.d)) + ' km dari zona'
+          + ((x.v.plumes || []).length ? ' · dilaporkan erupsi dengan sebaran abu' : ''));
+        kinds.push('gunung');
+      });
+    }
+    // 3) gempa BMKG 24 jam dalam 200 km
+    var qs = (state.hazard && state.hazard.quakes && state.hazard.quakes.quakes) || [];
+    var qh = qs.map(function (q) { return { q: q, d: kmBetween(here, [q.lat, q.lon]) }; })
+      .filter(function (x) { return x.d <= 200; })
+      .sort(function (a, b) { return a.d - b.d; })
+      .slice(0, 2);
+    qh.forEach(function (x) {
+      rows.push('Gempa M ' + x.q.magnitude + ' · kedalaman ' + x.q.depthKm + ' km · '
+        + nf.format(Math.round(x.d)) + ' km dari zona · ' + (x.q.area || '')
+        + (x.q.felt ? ' · dirasakan' : '') + (x.q.tsunami ? ' · berpotensi tsunami' : ''));
+      kinds.push('gempa');
+    });
+    // 4) pengungsian dalam 3x jari-jari zona
+    var sh = state.hazard && state.hazard.shelters;
+    if (sh && sh.events) {
+      var pts = [];
+      sh.events.forEach(function (ev) {
+        (ev.points || []).forEach(function (p) {
+          var d = kmBetween(here, [p.lat, p.lon]);
+          if (d <= rKm * 3) pts.push({ p: p, d: d, ev: ev });
+        });
+      });
+      pts.sort(function (a, b) { return b.p.jumlah - a.p.jumlah; });
+      if (pts.length) {
+        var tot = pts.reduce(function (m, x) { return m + (x.p.jumlah || 0); }, 0);
+        rows.push('Pengungsian: ' + nf.format(tot) + ' jiwa di ' + nf.format(pts.length)
+          + ' titik terdekat · ' + nf.format(Math.round(pts[0].d)) + ' km dari zona');
+        kinds.push('pengungsi');
+      }
+    }
+    // 5) kualitas udara — hanya bila layer udara sudah dimuat
+    var ap = state.air && state.air.points;
+    if (ap) {
+      var best = null;
+      ap.forEach(function (pt) {
+        var d = kmBetween(here, [pt.lat, pt.lon]);
+        if (d <= 35 && pt.aqi >= 100 && (!best || pt.aqi > best.aqi)) best = pt;
+      });
+      if (best) {
+        rows.push('Kualitas udara: AQI ' + best.aqi + (best.label ? ' · ' + best.label : '') + ' di grid terdekat');
+        kinds.push('udara');
+      }
+    }
+    if (!kinds.length) rows.push('Tidak ada peristiwa bahaya lain yang tercatat di sekitar zona ini (jendela 24 jam).');
+    return { rows: rows, kinds: kinds };
+  }
+
   function drawImpact() {
     gImpact.clearLayers();
     if (!state.data) return;
     state.data.impacted.forEach(function (r) {
       var col = r.level === 'Berat' ? '#f87171' : r.level === 'Sedang' ? '#fbbf24' : '#34d399';
-      L.circleMarker([r.lat, r.lon], {
-        radius: 7 + r.score / 14, color: col, weight: 2, fillColor: col, fillOpacity: 0.15
-      }).bindPopup(popupNode(r.name + ' — ' + r.prov, [
+      var rad = ZONE_RADIUS_KM[r.level] || 10;
+      var dos = zoneDossier(r.lat, r.lon, rad);
+      var head = dos.kinds.length
+        ? 'Peristiwa di lokasi sekitar zona (24 jam)'
+        : 'Peristiwa di lokasi sekitar zona';
+      L.polygon(zoneRingKm(r.lat, r.lon, rad), {
+        color: col, weight: 2, fillColor: col, fillOpacity: 0.16
+      }).bindTooltip(r.name + ' \u00b7 paparan ' + r.level + ' \u00b7 radius ' + rad + ' km', {
+        direction: 'top', className: 'zone-tip'
+      }).bindPopup(popupNode(r.name + ' \u2014 ' + r.prov, [
+        'Zona terdampak = area terpapar dengan radius ' + rad + ' km dari pusat permukiman (bukan batas administratif, bukan data kerusakan).',
         'Tingkat paparan: ' + r.level + ' (indeks ' + r.score + '/100)',
         'Sumber asap terdekat: ' + nf.format(r.nearestKm) + ' km (' + r.proximity + ')',
-        'Asap datang dari arah ' + r.fromDir + ' · angin ' + r.windSpeed + ' m/s',
+        'Asap datang dari arah ' + r.fromDir + ' \u00b7 angin ' + r.windSpeed + ' m/s',
         r.etaText.charAt(0).toUpperCase() + r.etaText.slice(1),
         'Terpapar oleh ' + r.plumes + ' pluma asap',
         'Perkiraan penduduk: ' + nf.format(r.population) + ' jiwa',
-        'Saran: ' + r.advice
-      ], { warn: 'Indeks paparan adalah model perkiraan dari arah angin dan intensitas api, bukan hasil pengukuran ISPU di lapangan.' })).addTo(gImpact);
+        head + ':'
+      ].concat(dos.rows).concat(['Saran: ' + r.advice]),
+        { warn: 'Indeks paparan adalah model perkiraan dari arah angin dan intensitas api, bukan hasil pengukuran ISPU di lapangan.' })).addTo(gImpact);
     });
   }
 
@@ -692,21 +810,29 @@
           : r.etaH < 24 ? 'abu diperkirakan tiba ~' + Math.round(r.etaH) + ' jam lagi'
             : 'abu diperkirakan tiba >1 hari';
 
-      // Lingkaran penanda: ukurannya mengikuti tingkat paparan, bukan
-      // jumlah penduduk, supaya yang menonjol adalah yang paling terdampak.
-      L.circleMarker([r.lat, r.lon], {
-        pane: 'volcanoPane',
-        radius: r.score >= 66 ? 11 : r.score >= 33 ? 9 : 7,
-        color: col, weight: 2, fillColor: col, fillOpacity: 0.28
-      }).bindPopup(popupNode(r.name + ' \u00b7 ' + r.prov, [
-        'Tingkat paparan: ' + r.level + ' (indeks ' + r.score + ' dari 100)',
-        'Sumber abu: Gunung ' + r.volcano + ' \u00b7 ' + nf.format(r.nearestKm) + ' km',
-        eta,
-        'Lapisan ketinggian: ' + r.layers.join(' / ') + ' km',
-        r.population ? 'Penduduk: ' + nf.format(r.population) + ' jiwa' : null,
-        r.officialLevel ? 'Status gunung: ' + r.officialLevel : null
-      ], { warn: 'Perkiraan model dari angin ketinggian, bukan pengukuran sebaran abu.' }))
-        .addTo(gAsh);
+      // Zona digambar poligon (bukan titik) seluas area terpapar; ukuran mengikuti
+        // tingkat paparan, bukan jumlah penduduk, supaya yang menonjol adalah yang
+        // paling terdampak.
+        var aRad = r.score >= 66 ? 18 : r.score >= 33 ? 12 : 7;
+        var aDos = zoneDossier(r.lat, r.lon, aRad, r.volcano);
+        var aHead = aDos.kinds.length
+          ? 'Peristiwa di lokasi sekitar zona (24 jam)'
+          : 'Peristiwa di lokasi sekitar zona';
+        L.polygon(zoneRingKm(r.lat, r.lon, aRad), {
+          pane: 'volcanoPane',
+          color: col, weight: 2, fillColor: col, fillOpacity: 0.22
+        }).bindPopup(popupNode(r.name + ' \u00b7 ' + r.prov, [
+          'Zona terdampak = area terpapar abu dengan radius ' + aRad + ' km dari pusat permukiman (bukan batas administratif).',
+          'Tingkat paparan: ' + r.level + ' (indeks ' + r.score + ' dari 100)',
+          'Sumber abu: Gunung ' + r.volcano + ' \u00b7 ' + nf.format(r.nearestKm) + ' km',
+          eta,
+          'Lapisan ketinggian: ' + r.layers.join(' / ') + ' km',
+          r.population ? 'Penduduk: ' + nf.format(r.population) + ' jiwa' : null,
+          r.officialLevel ? 'Status gunung: ' + r.officialLevel : null,
+          aHead + ':'
+        ].concat(aDos.rows),
+          { warn: 'Perkiraan model dari angin ketinggian, bukan pengukuran sebaran abu.' }))
+          .addTo(gAsh);
 
       // Nama kota ditulis permanen agar terbaca tanpa harus diklik.
       L.marker([r.lat, r.lon], {
@@ -2341,34 +2467,33 @@
   }
 
   function renderImpactList() {
-    var pane = $('paneImpact'); clear(pane);
-    var list = state.data ? state.data.impacted : [];
-    if (!list.length) { pane.appendChild(el('p', 'empty', 'Tidak ada daerah dengan perkiraan paparan asap saat ini.')); return; }
-    // Kepala ringkas mengikuti pola audit (.micro dengan hitungan), lalu
-    // konteks supaya angka indeks tidak disalahartikan sebagai ISPU resmi.
-    var jml = list.length;
-    pane.appendChild(el('div', 'micro',
-      'Daerah terdampak asap · ' + nf.format(jml) + ' kota/kabupaten · '
-      + 'ETA dari arah angin'));
-    pane.appendChild(el('p', 'pane-note',
-      'Perkiraan kota yang berada di jalur sebaran asap, dihitung dari arah angin ' +
-      'dan intensitas api. Indeks 0-100 menandakan seberapa kuat paparan, ' +
-      'bukan angka ISPU resmi.'));
-    // Audit menampilkan sub-panel ini sebagai grid kartu empat kolom, bukan
-    // daftar peringkat: setiap kota berdiri sendiri dengan jarak, arah angin,
-    // dan perkiraan waktu tiba.
-    var grid = el('div', 'grid4');
-    list.slice(0, 60).forEach(function (r) {
-      grid.appendChild(makeCard(
-        r.name, '· ' + r.prov, 't-tertiary',
-        nf.format(r.nearestKm) + ' km · dari ' + r.fromDir,
-        r.etaShort + ' · intensitas ' + r.level,
-        function () { map.setView([r.lat, r.lon], 8); }));
-    });
-    pane.appendChild(grid);
-  }
-
-  function renderAshList() {
+      var pane = $('paneImpact'); clear(pane);
+      var list = state.data ? state.data.impacted : [];
+      if (!list.length) { pane.appendChild(el('p', 'empty', 'Tidak ada zona terdampak saat ini — tidak ada kota/kabupaten yang dijangkau paparan asap atau abu (jendela 24 jam).')); return; }
+      var jml = list.length;
+      pane.appendChild(el('div', 'micro',
+        'Zona terdampak aktif · ' + nf.format(jml) + ' kota/kabupaten · jendela data 24 jam'));
+      pane.appendChild(el('p', 'pane-note',
+        'Wilayah terdampak = kota/kabupaten yang KINI berada di dalam jangkauan paparan: ' +
+        'jalur pluma asap dari titik api dan/atau sebaran abu vulkanik, dihitung dari arah angin ' +
+        'dan intensitas sumbernya. Yang digambar adalah ZONA PAPARAN — poligon buffer berjari-jari ' +
+        '7-18 km sesuai tingkat paparan (bukan batas administratif dan bukan data kerusakan). ' +
+        'Indeks 0-100 menandakan seberapa kuat paparan, bukan angka ISPU resmi. Klik sebuah zona di ' +
+        'peta untuk melihat semua peristiwa bahaya lain yang tercatat di lokasi sekitar zona itu.'));
+      // Satu kartu per zona. Baris bawah memuat badge multi-bahaya: jenis
+      // peristiwa lain yang terhitung ada di sekitar zona (bukan hanya asap).
+      var grid = el('div', 'grid4');
+      list.slice(0, 60).forEach(function (r) {
+        var dos = zoneDossier(r.lat, r.lon, ZONE_RADIUS_KM[r.level] || 10);
+        var badge = dos.kinds.length ? ' · \u26a0 ' + dos.kinds.join('+') : '';
+        grid.appendChild(makeCard(
+          r.name, '· ' + r.prov, 't-tertiary',
+          nf.format(r.nearestKm) + ' km · dari ' + r.fromDir,
+          r.etaShort + ' · intensitas ' + r.level + badge,
+          function () { map.setView([r.lat, r.lon], 8); }));
+      });
+      pane.appendChild(grid);
+        }function renderAshList() {
     var pane = $('paneAsh'); clear(pane);
     var v = state.data && state.data.volcano;
     var list = (state.data && state.data.ashImpacted) || [];
@@ -2853,8 +2978,10 @@
     },
     lyImpact: function () {
       var n = state.data && state.data.impacted ? state.data.impacted.length : 0;
-      return n ? nf.format(n) + ' kota/kabupaten berada di jalur sebaran asap.'
-               : 'Tidak ada daerah yang terdeteksi di jalur asap.';
+      return n
+        ? 'Wilayah terdampak = kota/kabupaten yang KINI berada dalam jangkauan paparan asap/abu hasil hitungan ('
+          + nf.format(n) + ' zona). Poligon = radius tetap per tingkat paparan, bukan batas administratif; klik zona untuk rincian bahaya lain di lokasi itu.'
+        : 'Belum ada kota/kabupaten yang dijangkau paparan asap atau abu (jendela 24 jam).';
     },
     lyQuake: function () {
       var q = state.hazard && state.hazard.quakes;
