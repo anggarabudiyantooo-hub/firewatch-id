@@ -4264,14 +4264,27 @@
     var box = $('askOut');
     clear(box);
     box.appendChild(el('p', 'ask-busy', 'MENCARI…'));
-    $('askMeta').textContent = 'menjalankan';
-    fetchT('/api/ask?q=' + encodeURIComponent(q))
+    // Sumber dingin di serverless bisa butuh belasan detik; hitungan detik
+    // memberi tahu bahwa permintaan masih hidup, bukan menggantung.
+    var t0 = Date.now();
+    $('askMeta').textContent = 'menjalankan · 0 dtk';
+    var tick = setInterval(function () {
+      $('askMeta').textContent = 'menjalankan · ' + Math.round((Date.now() - t0) / 1000) + ' dtk';
+    }, 1000);
+    function stopTick() { clearInterval(tick); }
+    // Batas waktu klien 30 dtk, bukan bawaan 12 dtk: server membatasi
+    // dirinya 20 dtk per sumber saat instance dingin (lihat ASK_SOURCE_
+    // DEADLINE_MS), jadi 12 dtk membuat klien menyerah sebelum jawaban
+    // yang sebenarnya tersedia sempat tiba.
+    fetchT('/api/ask?q=' + encodeURIComponent(q), { headers: { Accept: 'application/json' } }, 30000)
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('ask')); })
       .then(function (d) {
+        stopTick();
         renderAsk(d);
         $('askMeta').textContent = 'intent: ' + d.intent;
       })
       .catch(function () {
+        stopTick();
         clear(box);
         box.appendChild(el('p', 'empty', 'Pencarian sedang tidak tersedia. Coba lagi.'));
         $('askMeta').textContent = 'indeks lokal';

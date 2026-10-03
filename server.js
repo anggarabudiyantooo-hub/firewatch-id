@@ -1782,6 +1782,26 @@ app.get('/api/news', async (_req, res) => {
 });
 
 /* ---------- pencarian & tanya-jawab berbasis data (RAG lokal) ---------- */
+/**
+ * Batas kesabaran satu sumber pada /api/ask.
+ *
+ * Terukur di produksi (3 Okt): overview dingin 10,8 dtk, hazard 8,2 dtk,
+ * news 1,4 dtk — dan bila beberapa sumber dingin sekaligus, /api/ask
+ * melewati batas 60 dtk platform dan jatuh sebagai 504. Pengguna tidak
+ * pernah menerima jawaban apa pun; itu kegagalan yang lebih buruk daripada
+ * jawaban yang mengaku tidak menemukan data pada sumber yang belum tiba.
+ * Dengan batas ini jawaban selalu keluar; kekosongan ditulis apa adanya
+ * oleh ragAnswer, tidak dipalsukan.
+ */
+const ASK_SOURCE_DEADLINE_MS = 20000;
+function withDeadline(p, fallback, ms) {
+  const batas = ms || ASK_SOURCE_DEADLINE_MS;
+  return Promise.race([
+    Promise.resolve(p).catch(() => fallback),
+    new Promise((resolve) => { setTimeout(() => resolve(fallback), batas); })
+  ]);
+}
+
 app.get('/api/ask', async (req, res) => {
   const raw = String(req.query.q || '').trim();
   if (!raw) return res.status(400).json({ error: 'Pertanyaan tidak boleh kosong.' });
@@ -1795,12 +1815,12 @@ app.get('/api/ask', async (req, res) => {
   const q = raw;
   try {
     const [overview, attribution, news, volcano, quakes, shelters] = await Promise.all([
-      buildOverview().catch(() => ({})),
-      buildAttribution().catch(() => ({})),
-      getNews().catch(() => ({ articles: [] })),
-      scheduler.get('volcano').catch(() => ({})),
-      scheduler.get('quake').catch(() => null),
-      scheduler.get('shelter').catch(() => null)
+      withDeadline(buildOverview(), {}),
+      withDeadline(buildAttribution(), {}),
+      withDeadline(getNews(), { articles: [] }),
+      withDeadline(scheduler.get('volcano'), {}),
+      withDeadline(scheduler.get('quake'), null),
+      withDeadline(scheduler.get('shelter'), null)
     ]);
     const hazard = { quakes, shelters };
     const casualties = summarizeCasualties((news && news.articles) || []);
