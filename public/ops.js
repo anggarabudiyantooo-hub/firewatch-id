@@ -10,66 +10,20 @@
 
   var $ = function (id) { return document.getElementById(id); };
 
-  function el(tag, cls, teks) {
-    var e = document.createElement(tag);
-    if (cls) e.className = cls;
-    if (teks !== undefined && teks !== null) e.textContent = teks;
-    return e;
-  }
+  // Inti bersama ada di ops-core.js supaya lembar insiden (/insiden/…) memakai
+  // perilaku yang persis sama: el, toast, ambil, kirim, petugasSaya, waktu, durasi.
+  var el = OpsCore.el, toast = OpsCore.toast, ambil = OpsCore.ambil,
+      kirim = OpsCore.kirim, petugasSaya = OpsCore.petugasSaya,
+      waktu = OpsCore.waktu, durasi = OpsCore.durasi;
 
-  function toast(msg) {
-    var t = $('toast');
-    t.textContent = msg;
-    t.classList.add('on');
-    setTimeout(function () { t.classList.remove('on'); }, 2600);
-  }
-
-  function ambil(url, opts) {
-    return fetch(url, opts).then(function (r) {
-      return r.json().then(function (j) {
-        if (!r.ok) throw new Error(j && j.error ? j.error : ('HTTP ' + r.status));
-        return j;
-      });
-    });
-  }
-
-  function kirim(url, metode, body) {
-    var actor = petugasSaya();
-    return ambil(url, {
-      method: metode,
-      headers: Object.assign({ 'Content-Type': 'application/json' },
-        actor ? { 'x-ops-actor': actor } : {}),
-      body: body ? JSON.stringify(body) : undefined
-    });
-  }
-
-  function petugasSaya() {
-    try { return localStorage.getItem('ops_actor') || ''; } catch (e) { return ''; }
-  }
-
+  // Jam halaman ini: berjalan tiap detik dan ikut koreksi header server.
   function jam() {
     var d = new Date(Date.now() + (window.__skewMs || 0));
     function p(n) { return n < 10 ? '0' + n : '' + n; }
     $('jam').textContent = p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) + ' WIB';
   }
 
-  function waktu(iso) {
-    if (!iso) return '—';
-    var d = new Date(iso);
-    if (isNaN(d.getTime())) return '—';
-    function p(n) { return n < 10 ? '0' + n : '' + n; }
-    return p(d.getDate()) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][d.getMonth()] +
-      ' ' + p(d.getHours()) + '.' + p(d.getMinutes());
-  }
-
-  function durasi(menit) {
-    if (menit === null || menit === undefined) return 'belum ada riwayat';
-    if (menit < 60) return Math.round(menit) + ' mnt';
-    var h = menit / 60;
-    return (h < 48 ? h.toFixed(1) + ' jam' : (h / 24).toFixed(1) + ' hari');
-  }
-
-  var KATEGORI = ['data_source_unavailable', 'data_stale', 'api_performance', 'environmental_event', 'infrastructure', 'lain_lain'];
+  var KATEGORI = OpsCore.KATEGORI;
 
   // ---------------------------------------------------------------- render
   function renderBanner(store) {
@@ -328,6 +282,8 @@
   }
 
   // --------------------------------------------------------- detail insiden
+  // Seluruh isi detail (timeline, tindakan, langkah runbook) dirender oleh
+  // ops-detail.js supaya halaman ini dan /insiden/… tidak pernah berbeda.
   var insidenTerbuka = null;
 
   function bukaInsiden(id, dorongRiwayat) {
@@ -336,147 +292,13 @@
     if (dorongRiwayat !== false) {
       try { history.replaceState(null, '', '/operations?insiden=' + encodeURIComponent(id) + '#detailInsiden'); } catch (e) { /* tautan dalam bersifat tambahan */ }
     }
-    ambil('/api/incidents/' + id).then(function (inc) {
-      insidenTerbuka = inc;
-      var box = $('detailIsi');
-      box.textContent = '';
-      $('detailInsiden').hidden = false;
-
-      var head = el('div');
-      head.appendChild(el('h2', null, inc.incidentId + ' — ' + inc.title));
-      var tags = el('p');
-      tags.appendChild(el('span', 'tag t-' + inc.severity, inc.severity));
-      tags.appendChild(document.createTextNode(' '));
-      tags.appendChild(el('span', 'tag t-' + inc.status, inc.status));
-      tags.appendChild(document.createTextNode(' '));
-      tags.appendChild(el('span', 'tag', 'eskalasi ' + (inc.escalationLevel || 0)));
-      head.appendChild(tags);
-      var ringkas = el('p', 'who',
-        'Kategori ' + inc.category + ' · sumber ' + inc.source + ' · petugas ' + (inc.assignedTo || 'belum ditugaskan') +
-        ' · terdeteksi ' + waktu(inc.detectedAt) + ' · diperbarui ' + waktu(inc.updatedAt));
-      head.appendChild(ringkas);
-      if (inc.description) head.appendChild(el('p', null, inc.description));
-      if (inc.resolution) head.appendChild(el('p', null, 'Penyelesaian: ' + inc.resolution));
-      if (inc.serviceId) head.appendChild(el('p', 'muted', 'Layanan terkait: ' + inc.serviceId));
-      if (inc.runbooks && inc.runbooks.length) {
-        head.appendChild(el('p', 'muted', 'Runbook terkait: ' + inc.runbooks.map(function (r) { return r.id + ' ' + r.title; }).join(' · ')));
-      }
-      var aksi = el('p');
-      var bTautan = el('button', 'btn', 'Salin tautan');
-      bTautan.type = 'button';
-      bTautan.addEventListener('click', function () {
-        var url = location.origin + '/operations?insiden=' + inc.incidentId;
-        var selesai = function () { toast('Tautan disalin: ' + url); };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(url).then(selesai, function () { toast(url); });
-        } else {
-          toast(url); // tanpa izin papan klip, tautannya tetap ditampilkan
-        }
-      });
-      aksi.appendChild(bTautan);
-      head.appendChild(aksi);
-      box.appendChild(head);
-
-      var grid = el('div', 'grid two');
-
-      // timeline
-      var cTl = el('div');
-      cTl.appendChild(el('h2', null, 'Timeline'));
-      var ul = el('ul', 'tl');
-      inc.timeline.forEach(function (t) {
-        var li = el('li', 't-' + t.type);
-        li.appendChild(el('time', null, waktu(t.at)));
-        li.appendChild(el('span', null, t.message + (t.by ? ' (' + t.by + ')' : '')));
-        ul.appendChild(li);
-      });
-      cTl.appendChild(ul);
-      grid.appendChild(cTl);
-
-      // aksi
-      var cA = el('div');
-      cA.appendChild(el('h2', null, 'Actions'));
-
-      var petugas = petugasSaya();
-      var fPetugas = el('div', 'field');
-      fPetugas.appendChild(el('label', 'sr-only', 'Nama Anda'));
-      var iPetugas = el('input');
-      iPetugas.placeholder = 'nama Anda (ikut tercatat di timeline)';
-      iPetugas.value = petugas;
-      iPetugas.maxLength = 60;
-      iPetugas.addEventListener('change', function () {
-        try { localStorage.setItem('ops_actor', iPetugas.value.slice(0, 60)); } catch (e) { /* diabaikan */ }
-        toast('Nama aktivitas disimpan di perangkat ini.');
-      });
-      fPetugas.appendChild(iPetugas);
-      cA.appendChild(fPetugas);
-
-      function aksi(label, path, body, cls) {
-        var b = el('button', 'btn' + (cls ? ' ' + cls : ''), label);
-        b.type = 'button';
-        b.style.marginRight = '6px';
-        b.addEventListener('click', function () {
-          b.disabled = true;
-          kirim('/api/incidents/' + inc.incidentId + path, 'POST', body)
-            .then(function (r) {
-              toast('Tindakan tersimpan: ' + label.toLowerCase() + '.');
-              bukaInsiden(inc.incidentId);
-              muatSemua();
-              return r;
-            })
-            .catch(function (e) { b.disabled = false; toast(e.message); });
-        });
-        return b;
-      }
-
-      var bar = el('div', 'row-actions');
-      var idTugas = el('input');
-      idTugas.placeholder = 'tugaskan ke…';
-      idTugas.maxLength = 60;
-      var bTugas = el('button', 'btn', 'Tugaskan');
-      bTugas.type = 'button';
-      bTugas.addEventListener('click', function () {
-        if (!idTugas.value.trim()) return toast('Isi nama penanggung jawab lebih dulu.');
-        bTugas.disabled = true;
-        kirim('/api/incidents/' + inc.incidentId + '/assign', 'POST', { assignedTo: idTugas.value })
-          .then(function () { toast('Ditugaskan.'); bukaInsiden(inc.incidentId); })
-          .catch(function (e) { bTugas.disabled = false; toast(e.message); });
-      });
-      bar.appendChild(idTugas);
-      bar.appendChild(bTugas);
-      cA.appendChild(bar);
-
-      cA.appendChild(el('div', null, ' '));
-      if (inc.status === 'OPEN') cA.appendChild(aksi('Mulai investigasi', '', { status: 'INVESTIGATING' }, 'btn-primary'));
-      if (inc.status === 'INVESTIGATING' || inc.status === 'PENDING') {
-        cA.appendChild(aksi('Tandai selesai…', '/resolve', { resolution: prompt('Ringkas penyelesaiannya:') || 'Selesai tanpa catatan.' }, 'btn-primary'));
-      }
-      if (inc.status === 'RESOLVED') cA.appendChild(aksi('Tutup insiden', '/close', {}, 'btn-primary'));
-      if (inc.status === 'RESOLVED') cA.appendChild(aksi('Buka lagi', '', { status: 'INVESTIGATING' }));
-      if (inc.status !== 'CLOSED') cA.appendChild(aksi('Eskalasi', '/escalate', { to: prompt('Eskalasi ke siapa?') || 'Tim Operasi' }));
-      if (inc.status === 'INVESTIGATING') cA.appendChild(aksi('Tunda (PENDING)', '', { status: 'PENDING' }));
-      if (inc.status === 'PENDING') cA.appendChild(aksi('Lanjutkan investigasi', '', { status: 'INVESTIGATING' }));
-
-      var fCatatan = el('div', 'field');
-      fCatatan.appendChild(el('label', null, 'Catatan investigasi'));
-      var tCatatan = el('textarea');
-      tCatatan.placeholder = 'mis. diperiksa: hulu mengembalikan 5xx sejak 10:30; kontak operator dihubungi.';
-      fCatatan.appendChild(tCatatan);
-      var bCatatan = el('button', 'btn', 'Tambah catatan');
-      bCatatan.type = 'button';
-      bCatatan.addEventListener('click', function () {
-        if (!tCatatan.value.trim()) return toast('Catatan masih kosong.');
-        bCatatan.disabled = true;
-        kirim('/api/incidents/' + inc.incidentId + '/notes', 'POST', { note: tCatatan.value })
-          .then(function () { toast('Catatan tercatat di timeline.'); bukaInsiden(inc.incidentId); })
-          .catch(function (e) { bCatatan.disabled = false; toast(e.message); });
-      });
-      fCatatan.appendChild(bCatatan);
-      cA.appendChild(fCatatan);
-
-      grid.appendChild(cA);
-      box.appendChild(grid);
-      $('detailInsiden').scrollIntoView({ block: 'nearest' });
-    }).catch(function (e) { toast(e.message); });
+    $('detailInsiden').hidden = false;
+    return OpsDetail.buka(id, {
+      box: $('detailIsi'),
+      gulirKe: $('detailInsiden'),
+      onBerubah: muatSemua,
+      tautan: function (iid) { return '/operations?insiden=' + iid; }
+    }).then(function (inc) { insidenTerbuka = inc; return inc; });
   }
 
   // ------------------------------------------------------------------- muat
@@ -553,14 +375,8 @@
   $('btnNilai').addEventListener('click', nilai);
 
   // Jam: pakai jam server dari header Date bila tersedia, agar halaman ini
-  // tidak ikut meleset ketika jam perangkat salah.
-  fetch('/api/operations/health', { headers: { Accept: 'application/json' } }).then(function (r) {
-    var d = r.headers.get('date');
-    if (d) {
-      var t = Date.parse(d);
-      if (!isNaN(t)) window.__skewMs = t - Date.now();
-    }
-  }).catch(function () { /* tanpa koreksi: jam perangkat dipakai apa adanya */ });
+  // tidak ikut meleset ketika jam perangkat salah (ada di ops-core.js).
+  OpsCore.koreksiJam();
 
   jam();
   setInterval(jam, 1000);

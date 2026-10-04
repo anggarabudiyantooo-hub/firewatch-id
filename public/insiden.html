@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>INSIDEN — SIAGA.ID · Operations Center</title>
+<!-- Lembar insiden: satu insiden, tanpa gangguan panel lain.
+     Dipakai untuk dibagikan (tautan /insiden/INC-…) dan untuk dibaca ulang
+     saat investigasi. Seluruh isinya dirender ops-detail.js — berkas yang
+     sama dengan kartu Incident Detail di /operations, sehingga tidak ada dua
+     perilaku yang bisa berbeda. -->
+<meta name="robots" content="noindex" />
+<link rel="stylesheet" href="/ops.css" />
+</head>
+<body>
+<div class="app">
+
+  <header class="bar">
+    <div class="brand">
+      <span class="word">SIAGA.ID</span>
+      <span class="sub">LEMBAR INSIDEN</span>
+    </div>
+    <div class="bar-right">
+      <a class="back" href="/operations">← Papan operasi</a>
+      <a class="back" href="/">Dashboard pemantauan</a>
+      <span class="clock" id="jam">--:--:-- WIB</span>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <main class="wrap">
+    <section class="card" id="kartuInsiden" aria-labelledby="h-insiden">
+      <h2 id="h-insiden">Insiden</h2>
+      <div id="isiInsiden" class="empty">memuat…</div>
+    </section>
+
+    <p class="notice-inline">
+      Lembar ini menampilkan isi yang tersimpan pada penyimpanan operasional apa adanya.
+      Bila mode penyimpanan bersifat sementara (di luar Upstash/GitHub), insiden ini
+      dapat hilang saat instance didaur ulang — modenya dinyatakan di papan operasi.
+    </p>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/ops-core.js"></script>
+<script src="/ops-detail.js"></script>
+<script src="/insiden.js"></script>
+</body>
+</html>

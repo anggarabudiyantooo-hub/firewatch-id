@@ -179,7 +179,16 @@ yang sama dengan yang menyuplai dashboard.
 | Incidents | siklus OPEN → INVESTIGATING → PENDING → RESOLVED → CLOSED, penugasan, eskalasi, catatan investigasi, timeline, metrik MTTR/SLA dari data nyata | disimpan oleh adaptor penyimpanan (lihat di bawah) |
 | Runbooks | 4 SOP yang langkahnya menunjuk berkas/endpoint nyata di repo ini | `lib/runbooks.js`, ditautkan ke kategori insiden |
 | Audit Log | 200 tindakan terakhir: siapa mengubah apa, kapan — termasuk evaluasi alert otomatis | satu dokumen simpanan yang sama dengan insiden (tidak ada log kedua yang bisa berbeda) |
-| Tautan dalam | `?insiden=INC-…` membuka detail insiden; tombol "Salin tautan" di detail | rute baca yang sama |
+| Tautan dalam | `?insiden=INC-…` membuka detail di papan; tombol "Salin tautan" | rute baca yang sama |
+| Lembar insiden | `/insiden/INC-…` — satu insiden, satu alamat, untuk dibagikan & dibaca ulang; langkah runbook bisa ditandai dikerjakan | `public/insiden.html` + `public/ops-detail.js` (berkas yang sama dengan kartu detail di papan) |
+
+### Langkah runbook: centang yang tidak bisa berbohong
+
+Pada lembar insiden, tiap langkah SOP punya tombol **Tandai dikerjakan**. Yang
+tersimpan bukan centang terpisah, melainkan catatan timeline biasa
+("Langkah RB-001 #3 dikerjakan: …") lengkap dengan nama pelakunya — jadi ikut
+tercatat di log audit dan tidak mungkin berbeda dari riwayat. Keadaan "sudah
+dikerjakan" di layar dibaca ulang dari timeline itu setiap kali halaman dimuat.
 
 ### Cara masuk
 
@@ -239,6 +248,8 @@ cepat 60 detik sekali agar sumber hulu tidak dihujani permintaan.
 `GET /api/operations/metrics` · `GET /api/operations/store` ·
 `GET /api/operations/audit`
 
+Halaman: `/` (dashboard) · `/operations` (papan operasi) · `/insiden/INC-…` (lembar insiden)
+
 Transisi status yang tidak sah ditolak `409`; severity/kategori tak dikenal dan
 judul kosong ditolak `400`. Semua perubahan mencatat nama pelaku bila header
 `x-ops-actor` dikirim.
@@ -280,7 +291,11 @@ public/
   app.css              sistem desain
   wind-particles.js    animasi partikel angin di kanvas
   operations.html      halaman Operations Center
-  ops.js / ops.css     perilaku & gaya papan operasi
+  insiden.html         lembar satu insiden (/insiden/INC-…)
+  ops-core.js          inti bersama (el, toast, ambil, kirim, waktu, koreksi jam)
+  ops-detail.js        render detail insiden + langkah runbook (dipakai dua halaman)
+  ops.js / insiden.js  perilaku tiap halaman
+  ops.css              gaya papan operasi & lembar insiden
 docs/                  PRD, arsitektur, ERD, desain, audit nilai tetap, peta jalan
 docs/OPS-AUDIT.md      audit teknis + rencana upgrade Operations Center
 scripts/test-ops.js    uji modul ops (ikut `npm run check`)

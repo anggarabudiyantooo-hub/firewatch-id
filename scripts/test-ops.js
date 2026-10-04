@@ -227,6 +227,37 @@ console.log('\n== insiden ==');
   await alerts.jalankan({ services: [], clusters: [sel] });
   cek('evaluasi tanpa perubahan tidak menambah log', (await st2.audit(1)).total, sebelumUlang);
 
+  // --- lembar insiden: keadaan "langkah dikerjakan" dibaca dari timeline ---
+  // Karena centangnya TIDAK disimpan terpisah (sengaja: supaya tidak bisa
+  // berbeda dari riwayat), format kunci catatan harus diuji — kalau formatnya
+  // meleset sedikit saja, semua langkah akan tampak belum dikerjakan.
+  const fs = require('fs');
+  const vm = require('vm');
+  const sandbox = { console, OpsCore: { el: () => null, $: () => null } };
+  sandbox.window = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'public', 'ops-detail.js'), 'utf8'), sandbox);
+  const D = sandbox.OpsDetail;
+
+  cek('kunci catatan langkah berformat tetap', D.kunciLangkah('RB-001', 3), 'Langkah RB-001 #3');
+  const tl = [
+    { at: '2026-10-04T01:00:00Z', message: 'Insiden dibuat.', by: 'Rina' },
+    { at: '2026-10-04T02:00:00Z', message: D.kunciLangkah('RB-001', 2) + ' dikerjakan: baca /api/status', by: 'Budi' },
+    { at: '2026-10-04T03:00:00Z', message: D.kunciLangkah('RB-002', 2) + ' dikerjakan: runbook lain', by: 'Budi' },
+    { at: '2026-10-04T04:00:00Z', message: 'Catatan bebas yang menyebut RB-001 tanpa nomor.', by: 'Sari' }
+  ];
+  const peta = D.langkahSelesai(tl, 'RB-001');
+  cek('langkah yang ditandai terbaca dari timeline', Object.keys(peta), ['2']);
+  cek('pelaku langkah tercatat', peta['2'].by, 'Budi');
+  cek('langkah runbook lain tidak ikut tertandai', peta['5'], undefined);
+  cek('catatan tanpa nomor langkah tidak menandai apa pun',
+    Object.keys(D.langkahSelesai([{ at: 'x', message: 'menyebut RB-001 saja' }], 'RB-001')), []);
+  cek('timeline kosong tetap aman', Object.keys(D.langkahSelesai(null, 'RB-001')), []);
+  const dua = D.langkahSelesai(tl.concat([
+    { at: '2026-10-04T05:00:00Z', message: D.kunciLangkah('RB-001', 2) + ' dikerjakan lagi', by: 'Sari' }
+  ]), 'RB-001');
+  cek('penandaan ulang memakai yang terbaru', [dua['2'].by, dua['2'].at], ['Sari', '2026-10-04T05:00:00Z']);
+
   console.log('\n==============================================');
   console.log('  ' + lulus + ' lulus, ' + gagal + ' gagal');
   console.log('==============================================');

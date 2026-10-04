@@ -101,3 +101,24 @@ ol.steps li{margin-bottom:4px}
 .toast.on{opacity:1}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
 @media print{.btn,header.ops{display:none!important}}
+
+/* === Lembar insiden (/insiden/INC-…) ===
+   Satu kartu, satu kolom di ponsel, dua kolom di layar lebar (dari .grid two
+   yang sudah ada). Yang ditambahkan hanya hal khas halaman ini. */
+.app .wrap{max-width:1180px;margin:0 auto;padding:0 14px 40px}
+.bar .brand .sub{font:600 9px/1 var(--font-data);letter-spacing:.14em;color:var(--text-tertiary);text-transform:uppercase}
+.bar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bar .back{font:600 10px/1 var(--font-data);letter-spacing:.04em;color:var(--text-secondary);text-decoration:none}
+.bar .back:hover{color:var(--text-primary);text-decoration:underline}
+.bar .clock{font:600 11px/1 var(--font-data);letter-spacing:.04em;color:var(--text-primary)}
+#kartuInsiden[aria-busy="true"]{opacity:.72}
+
+/* Langkah runbook: keadaan "sudah dikerjakan" harus terbaca tanpa warna,
+   sebab warna saja tidak dapat diandalkan (kontras & pencetakan). */
+.steps li{margin:6px 0}
+.steps .step-do{display:block}
+.steps li.step-done{border-left:2px solid var(--status-nominal);padding-left:8px}
+.step-done-note{font:600 10px/1.4 var(--font-data);color:var(--status-nominal);padding-top:2px}
+@media(max-width:640px){
+  .bar .brand .sub{display:none}
+}
