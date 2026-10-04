@@ -309,3 +309,39 @@ Empat keputusan yang dipegang (`lib/ops-auth.js`):
 
 Peran menentukan *boleh atau tidak*; nama pelaku tetap dari `x-ops-actor` dan
 tetap menentukan *siapa* yang tercatat di timeline serta log audit.
+
+---
+
+## 9. Troubleshooting berbasis bukti (P2)
+
+```
+/api/operations/diagnose?service=|?alert=|?incident=   (atau tanpa sasaran → ringkasan armada)
+        │
+        ├─ ukurBilaPerlu()          → instance dingin mengukur dulu (mekanisme sama seperti rute baca lain)
+        ├─ lib/troubleshoot.js      → aturan tetap atas pengukuran tersimpan
+        └─ balasan: kesimpulan + kejelasan bukti + BUKTI ANGKA + langkah + runbook terkait
+```
+
+Ini **bukan** keluaran model bahasa. Yang menentukan hasil hanya pengukuran yang
+sudah tersimpan: status, waktu respons, jumlah gagal berturut, kesegaran, pesan
+galat tersanitasi, dan alert yang menyala.
+
+Aturan yang dipegang:
+
+| Keadaan | Jawaban modul |
+|---|---|
+| Sehat (tak ada sinyal) | "tidak ada indikasi masalah" + catatan bahwa itu **bukan jaminan**, dan tanpa runbook |
+| Belum pernah diukur | "belum ada pengukuran" — **tidak** disebut rusak |
+| Gagal 1–2× | "kegagalan baru N×, belum menetap" + jenis kegagalan + langkah yang bisa dikerjakan sekarang |
+| Gagal ≥3× tanpa data | "tidak dapat dijangkau berulang" + jenis kegagalan (5xx/timeout/kredensial/kuota/tak terbaca) |
+| Ada data tapi umur > CRITICAL | "nilai lama masih dipakai" |
+| Respons > ambang lambat | "hulu lambat" — dinyatakan sebagai gejala, bukan kegagalan |
+| ≥3 layanan turun bersamaan | "kemungkinan gangguan di sisi kita" + ambangnya disebutkan ("3 dari 9") |
+
+Tingkat "kejelasan bukti" dihitung dari jumlah **kelompok** sinyal yang sejalan
+(1 → rendah, 2–3 → sedang, ≥4 → tinggi) dan disertai field `arti` yang menegaskan
+bahwa itu kejelasan **gejala**, bukan kepastian penyebab.
+
+`kategoriUntuk(svc, alertsAktif)` memilih runbook dengan urutan yang dapat
+diperiksa: alert yang menyala lebih dipercaya daripada bacaan status; layanan
+sehat tidak diberi runbook sama sekali.
