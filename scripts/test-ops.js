@@ -18,12 +18,18 @@
  */
 
 const path = require('path');
+const os = require('os');
 process.env.OPS_STORE_FORCE = 'file'; // pastikan tidak menyentuh layanan luar
+// Berkas simpanan KHUSUS uji ini. Tanpa ini, asersi "N entri baru" bergantung
+// pada isi .data/ops.json yang sudah menumpuk dari putaran sebelumnya.
+const BERKAS_UJI = path.join(os.tmpdir(), 'siaga-ops-uji-' + process.pid + '.json');
+process.env.OPS_STORE_FILE = BERKAS_UJI;
 
 const freshness = require('../lib/freshness');
 const health = require('../lib/service-health');
 const opsRoutes = require('../lib/ops-routes');
 const alerts = require('../lib/alert-engine');
+const auth = require('../lib/ops-auth');
 const incidents = require('../lib/incidents');
 const runbooks = require('../lib/runbooks');
 
@@ -195,7 +201,7 @@ console.log('\n== insiden ==');
   const incA = await incidents.create({ title: 'Uji audit A', severity: 'LOW', category: 'lain_lain' }, 'Rina');
   await incidents.patch(incA.incidentId, { status: 'INVESTIGATING' }, 'Budi');
   const l1 = await st2.audit(5);
-  cek('tindakan insiden tercatat di log audit (2 entri baru)', l1.total, auditSebelum + 2);
+  cek('tindakan insiden tercatat di log audit (2 entri baru)', l1.total, Math.min(auditSebelum + 2, st2.AUDIT_MAX));
   cek('pelaku dicatat sesuai yang mengirim', l1.entries[0].actor, 'Budi');
   cek('log audit menunjuk sasaran tindakan', l1.entries[0].target, incA.incidentId);
   cek('log audit menyebut apa yang berubah', /status → INVESTIGATING/.test(l1.entries[0].detail), true);
@@ -257,6 +263,82 @@ console.log('\n== insiden ==');
     { at: '2026-10-04T05:00:00Z', message: D.kunciLangkah('RB-001', 2) + ' dikerjakan lagi', by: 'Sari' }
   ]), 'RB-001');
   cek('penandaan ulang memakai yang terbaru', [dua['2'].by, dua['2'].at], ['Sari', '2026-10-04T05:00:00Z']);
+
+  // --- RBAC: peran akses (VIEWER < OPERATOR < ADMIN) ---
+  function reqDengan(token) {
+    return { get: (h) => (h.toLowerCase() === 'x-ops-token' ? token : undefined), opsPeran: undefined };
+  }
+  function resPalsu() {
+    const r = { kode: null, badan: null };
+    r.status = (k) => { r.kode = k; return r; };
+    r.json = (b) => { r.badan = b; return r; };
+    return r;
+  }
+  const simpanEnv = {};
+  ['OPS_TOKEN_VIEWER', 'OPS_TOKEN_OPERATOR', 'OPS_TOKEN_ADMIN', 'OPS_WRITE_TOKEN', 'OPS_READ_PROTECTED']
+    .forEach(k => { simpanEnv[k] = process.env[k]; delete process.env[k]; });
+
+  cek('tanpa token apa pun → mode terbuka', auth.konfigurasi().mode, 'terbuka');
+  cek('mode terbuka: tidak ada peran yang dikonfigurasi',
+    auth.konfigurasi().peranDikonfigurasi, { VIEWER: false, OPERATOR: false, ADMIN: false });
+  let lanjut = false;
+  auth.butuh('OPERATOR')(reqDengan(''), resPalsu(), () => { lanjut = true; });
+  cek('mode terbuka: tulis diloloskan (perilaku lama dipertahankan)', lanjut, true);
+
+  process.env.OPS_TOKEN_VIEWER = 'v1';
+  process.env.OPS_TOKEN_OPERATOR = 'o1';
+  process.env.OPS_TOKEN_ADMIN = 'a1';
+  const kTerkunci = auth.konfigurasi();
+  cek('tiga peran terkonfigurasi → mode token', [kTerkunci.mode, kTerkunci.aktif], ['token', true]);
+  cek('baca tetap publik sebagai bawaan', kTerkunci.readProtected, false);
+
+  let r1 = resPalsu(); lanjut = false;
+  auth.butuh('OPERATOR')(reqDengan(''), r1, () => { lanjut = true; });
+  cek('tanpa token → 401', [r1.kode, lanjut], [401, false]);
+  r1 = resPalsu(); auth.butuh('OPERATOR')(reqDengan('salah'), r1, () => {});
+  cek('token tidak dikenal → 401', r1.kode, 401);
+  r1 = resPalsu(); lanjut = false;
+  auth.butuh('OPERATOR')(reqDengan('o1'), r1, () => { lanjut = true; });
+  cek('OPERATOR boleh menangani insiden', [r1.kode, lanjut], [null, true]);
+  r1 = resPalsu(); auth.butuh('ADMIN')(reqDengan('o1'), r1, () => {});
+  cek('OPERATOR tidak boleh memicu evaluasi (butuh ADMIN) → 403', [r1.kode, /tidak cukup/.test(r1.badan.error)], [403, true]);
+  r1 = resPalsu(); lanjut = false;
+  auth.butuh('ADMIN')(reqDengan('a1'), r1, () => { lanjut = true; });
+  cek('ADMIN boleh memicu evaluasi', lanjut, true);
+  r1 = resPalsu(); lanjut = false;
+  auth.butuh('VIEWER')(reqDengan('v1'), r1, () => { lanjut = true; });
+  cek('peran lebih tinggi memenuhi syarat lebih rendah', lanjut, true);
+
+  // Tingkat peran tidak boleh tertukar arah.
+  cek('urutan peran benar', [auth.cukup('ADMIN', 'VIEWER'), auth.cukup('VIEWER', 'ADMIN'), auth.cukup(null, 'VIEWER')],
+    [true, false, false]);
+
+  // OPS_WRITE_TOKEN lama = alias ADMIN (pemasangan lama tidak berubah perilaku).
+  delete process.env.OPS_TOKEN_VIEWER; delete process.env.OPS_TOKEN_OPERATOR; delete process.env.OPS_TOKEN_ADMIN;
+  process.env.OPS_WRITE_TOKEN = 'lama';
+  cek('OPS_WRITE_TOKEN lama dihormati sebagai ADMIN', auth.peranDariToken('lama'), 'ADMIN');
+  r1 = resPalsu(); lanjut = false;
+  auth.butuh('OPERATOR')(reqDengan('lama'), r1, () => { lanjut = true; });
+  cek('token lama tetap bisa menulis', lanjut, true);
+
+  // Baca terkunci hanya bila diminta eksplisit.
+  process.env.OPS_READ_PROTECTED = '1';
+  r1 = resPalsu(); lanjut = false;
+  auth.baca()(reqDengan(''), r1, () => { lanjut = true; });
+  cek('OPS_READ_PROTECTED=1: baca tanpa token → 401', [r1.kode, lanjut], [401, false]);
+  r1 = resPalsu(); lanjut = false;
+  auth.baca()(reqDengan('lama'), r1, () => { lanjut = true; });
+  cek('OPS_READ_PROTECTED=1: baca dengan token sah → lanjut', lanjut, true);
+
+  // Keterangan untuk API/antarmuka tidak boleh memuat tokennya sendiri.
+  const inf = JSON.stringify(auth.info());
+  cek('keterangan akses tidak membocorkan token', ['lama', 'o1', 'a1', 'v1'].some(x => inf.includes(x)), false);
+  cek('keterangan akses menyebut peran Anda', auth.info('VIEWER').peranAnda, 'VIEWER');
+
+  ['OPS_TOKEN_VIEWER', 'OPS_TOKEN_OPERATOR', 'OPS_TOKEN_ADMIN', 'OPS_WRITE_TOKEN', 'OPS_READ_PROTECTED']
+    .forEach(k => { if (simpanEnv[k] === undefined) delete process.env[k]; else process.env[k] = simpanEnv[k]; });
+
+  try { require('fs').unlinkSync(BERKAS_UJI); } catch (e) { /* berkas uji memang sementara */ }
 
   console.log('\n==============================================');
   console.log('  ' + lulus + ' lulus, ' + gagal + ' gagal');

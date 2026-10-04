@@ -69,14 +69,39 @@
     try { localStorage.setItem('ops_actor', String(nama || '').slice(0, 60)); } catch (e) { /* diabaikan */ }
   }
 
-  function kirim(url, metode, body) {
+  /** Token akses (RBAC) bila pemasangan ini memakainya. Disimpan lokal saja. */
+  function tokenSaya() {
+    try { return localStorage.getItem('ops_token') || ''; } catch (e) { return ''; }
+  }
+
+  function simpanToken(tok) {
+    try {
+      if (tok) localStorage.setItem('ops_token', String(tok).trim());
+      else localStorage.removeItem('ops_token');
+    } catch (e) { /* diabaikan */ }
+  }
+
+  /** Header standar untuk API ops: nama pelaku + token akses (bila ada). */
+  function headerOps(tambahan) {
     var actor = petugasSaya();
+    var tok = tokenSaya();
+    return Object.assign({ 'Content-Type': 'application/json' },
+      actor ? { 'x-ops-actor': actor } : {},
+      tok ? { 'x-ops-token': tok } : {},
+      tambahan || {});
+  }
+
+  function kirim(url, metode, body) {
     return ambil(url, {
       method: metode,
-      headers: Object.assign({ 'Content-Type': 'application/json' },
-        actor ? { 'x-ops-actor': actor } : {}),
+      headers: headerOps(),
       body: body ? JSON.stringify(body) : undefined
     });
+  }
+
+  /** Keadaan akses menurut server (mode, peran yang terkonfigurasi, peran kita). */
+  function ambilAkses() {
+    return ambilAman('/api/operations/access', { headers: headerOps() });
   }
 
   /** Waktu ringkas menurut jam perangkat, untuk tanggal yang mudah dibaca. */
@@ -110,7 +135,8 @@
   }
 
   global.OpsCore = {
-    $: $, el: el, toast: toast, ambil: ambil, ambilAman: ambilAman, ambilDenganHeader: ambilDenganHeader, kirim: kirim,
+    $: $, el: el, toast: toast, ambil: ambil, ambilAman: ambilAman, ambilDenganHeader: ambilDenganHeader,
+    kirim: kirim, headerOps: headerOps, tokenSaya: tokenSaya, simpanToken: simpanToken, ambilAkses: ambilAkses,
     petugasSaya: petugasSaya, simpanPetugas: simpanPetugas,
     waktu: waktu, durasi: durasi, koreksiJam: koreksiJam,
     KATEGORI: ['data_source_unavailable', 'data_stale', 'api_performance', 'environmental_event', 'infrastructure', 'lain_lain']

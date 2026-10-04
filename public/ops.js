@@ -225,6 +225,30 @@
     });
   }
 
+  /**
+   * Baris status akses. Yang ditulis HARUS sesuai kenyataan server: mode
+   * terbuka dikatakan terbuka (jangan sampai orang menyangka sudah terkunci),
+   * dan bila terkunci, peran kita disebutkan supaya tombol yang ditolak tidak
+   * terasa seperti kesalahan misterius.
+   */
+  function renderAkses(a) {
+    var peran = a.peranAnda;
+    var teks = a.mode === 'terbuka'
+      ? 'Akses: TERBUKA — belum ada token yang dikonfigurasi, jadi siapa pun yang dapat menjangkau server ini boleh mengubah data operasional.'
+      : 'Akses: token aktif. Peran Anda: ' + (peran || 'belum diisi (hanya membaca)') +
+        '. Menangani insiden butuh ' + a.minTulis + '; memicu evaluasi butuh ' + a.minEvaluasi + '.' +
+        (a.readProtected ? ' Halaman ini pun hanya untuk peran VIEWER ke atas.' : '');
+    $('aksesBaris').textContent = teks;
+    // Isian token hanya relevan bila server memang memakai token. Dan bila
+    // peran kita belum ada, isian itu DIBUKA sendiri: menyembunyikannya hanya
+    // membuat orang buntu (tombol ditolak 401 tanpa tahu harus mengisi apa).
+    var form = $('formToken');
+    if (form) {
+      form.hidden = a.mode === 'terbuka';
+      if (a.mode !== 'terbuka' && !peran) form.open = true;
+    }
+  }
+
   function renderAudit(d) {
     var tb = $('tbAudit');
     tb.textContent = '';
@@ -315,9 +339,10 @@
       ambilAman('/api/incidents'),
       ambilAman('/api/operations/metrics'),
       ambilAman('/api/runbooks'),
-      ambilAman('/api/operations/audit?limit=25')
+      ambilAman('/api/operations/audit?limit=25'),
+      OpsCore.ambilAkses()
     ];
-    var nama = ['Kesehatan layanan', 'Sumber data', 'Alert', 'Insiden', 'Metrik', 'Runbook', 'Log audit'];
+    var nama = ['Kesehatan layanan', 'Sumber data', 'Alert', 'Insiden', 'Metrik', 'Runbook', 'Log audit', 'Status akses'];
 
     // Kesehatan dipakai juga untuk koreksi jam (header Date) — satu permintaan
     // lebih sedikit, dan jam tetap ikut jam server.
@@ -347,6 +372,7 @@
       coba(4, function (d) { renderMetrik(d.metrics, d.storage); });
       coba(5, function (d) { renderRunbook(d.runbooks || []); });
       coba(6, renderAudit);
+      coba(7, renderAkses);
 
       var banner = $('bannerPenyimpanan');
       if (gagal.length) {
@@ -407,6 +433,23 @@
   });
 
   $('btnMuat').addEventListener('click', function () { muatSemua(); toast('Data dimuat ulang.'); });
+
+  // --- token akses ---
+  var iToken = $('iToken');
+  if (iToken) {
+    iToken.value = OpsCore.tokenSaya();
+    $('btnToken').addEventListener('click', function () {
+      OpsCore.simpanToken(iToken.value);
+      toast('Token disimpan di perangkat ini.');
+      muatSemua();
+    });
+    $('btnTokenHapus').addEventListener('click', function () {
+      OpsCore.simpanToken('');
+      iToken.value = '';
+      toast('Token dihapus dari perangkat ini.');
+      muatSemua();
+    });
+  }
   $('btnNilai').addEventListener('click', nilai);
 
   // Jam ikut server tanpa permintaan tambahan: header Date diambil dari balasan

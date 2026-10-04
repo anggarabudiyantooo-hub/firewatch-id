@@ -240,8 +240,35 @@ cepat 60 detik sekali agar sumber hulu tidak dihujani permintaan.
 | `OPS_ALERT_DEDUP_MS` | `1800000` | jendela anti-duplikasi per (aturan, subjek) |
 | `OPS_SLA_CRITICAL_MIN` / `…_HIGH_MIN` / `…_MEDIUM_MIN` / `…_LOW_MIN` | `60` / `240` / `1440` / `4320` | target penyelesaian per severity (menit) |
 | `OPS_WARMUP_MS` | `8000` | di Vercel, instance yang belum pernah mengukur apa pun menjalankan satu kali pengukuran beranggaran ini detik saat rute ops dibuka; `0` mematikannya |
-| `OPS_WRITE_TOKEN` | *(kosong)* | bila diisi, perubahan data ops menuntut header `x-ops-token` |
+| `OPS_TOKEN_VIEWER` / `OPS_TOKEN_OPERATOR` / `OPS_TOKEN_ADMIN` | *(kosong)* | mengaktifkan peran akses (lihat tabel peran di bawah) |
+| `OPS_WRITE_TOKEN` | *(kosong)* | token lama; tetap dihormati sebagai token tingkat **ADMIN** |
+| `OPS_READ_PROTECTED` | *(kosong)* | `1` = pembacaan API ops juga menuntut peran VIEWER ke atas (bawaan: publik) |
+| `OPS_STORE_FILE` | *(kosong)* | menunjuk berkas simpanan lain untuk mode `file` (pengembangan/uji) |
 | `OPS_GITHUB_TOKEN` / `OPS_GITHUB_REPO` | *(kosong)* | mengaktifkan mode penyimpanan `github` |
+
+### Peran akses (RBAC)
+
+| Peran | Boleh |
+|---|---|
+| `VIEWER` | membaca seluruh data operasional (bila `OPS_READ_PROTECTED=1`) |
+| `OPERATOR` | semua di atas + menangani insiden: buat, tugaskan, catatan, eskalasi, selesaikan, tutup, alert → insiden |
+| `ADMIN` | semua di atas + memicu `POST /api/operations/evaluate` (operasi mahal: mengambil data hulu) |
+
+Aturan yang dipegang:
+
+- **Tanpa token apa pun, aplikasi berjalan seperti sebelumnya (mode terbuka)** —
+  dan mode itu ditulis apa adanya di `/api/operations/access` serta di halaman.
+  Mengunci diri sendiri tanpa dikonfigurasi akan membuat orang menyangka sudah
+  aman padahal belum.
+- Pembacaan **publik** sebagai bawaan (papan ini memang untuk dipantau); pasang
+  `OPS_READ_PROTECTED=1` bila pemasangan Anda privat.
+- Token dikirim sebagai header `x-ops-token` dan **tidak pernah dikembalikan**
+  API; `/api/operations/access` hanya menyatakan peran mana yang ada dan peran
+  Anda sendiri. Perbandingan token memakai waktu tetap.
+- `OPS_WRITE_TOKEN` lama diperlakukan sebagai token **ADMIN**, sehingga pemasangan
+  yang sudah ada tidak berubah perilakunya.
+- Nama pelaku tetap dari header `x-ops-actor` (terpisah dari token: peran
+  menentukan *boleh atau tidak*, nama menentukan *siapa* yang tercatat).
 
 ### API operasional
 

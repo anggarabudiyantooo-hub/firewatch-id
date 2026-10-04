@@ -33,6 +33,16 @@
     <h2 id="h-kesehatan">System Health<span class="hint" id="kesehatanWaktu"></span></h2>
     <div class="kpis" id="kpis"><div class="kpi kpi-tunggu" id="kpiTunggu"><span>mengukur sumber hulu…</span></div></div>
     <p class="notice-inline" id="keteranganAplikasi"></p>
+    <p class="notice-inline" id="aksesBaris"></p>
+    <details id="formToken">
+      <summary>Token akses (bila pemasangan ini memakainya)</summary>
+      <div class="body">
+        <div class="field"><label for="iToken">Token</label><input id="iToken" type="password" autocomplete="off" placeholder="tempel token akses Anda" /></div>
+        <button class="btn" id="btnToken" type="button">Simpan di perangkat ini</button>
+        <button class="btn" id="btnTokenHapus" type="button">Hapus</button>
+        <p class="notice-inline">Token hanya disimpan di peramban ini dan dikirim ke server aplikasi yang sama sebagai header <code>x-ops-token</code>. Peran yang berlaku ditampilkan di baris akses di atas.</p>
+      </div>
+    </details>
   </section>
 
   <div class="grid two" style="margin-top:12px">

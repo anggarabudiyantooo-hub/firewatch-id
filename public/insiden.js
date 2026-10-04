@@ -46,6 +46,22 @@
     b.hidden = false;
   }).catch(function () { /* mode penyimpanan hanya keterangan tambahan */ });
 
+  var aksesEl = document.createElement('p');
+  aksesEl.className = 'notice-inline';
+  aksesEl.id = 'aksesBaris';
+  C.$('kartuInsiden').parentNode.insertBefore(aksesEl, C.$('kartuInsiden'));
+  C.ambilAkses().then(function (a) {
+    if (!a.ok) return;
+    var x = a.data;
+    if (x.mode === 'terbuka') {
+      aksesEl.textContent = 'Akses: TERBUKA — belum ada token yang dikonfigurasi; tindakan di halaman ini tercatat, tetapi tidak dibatasi peran.';
+    } else if (!x.peranAnda) {
+      aksesEl.textContent = 'Akses: token aktif, peran Anda belum diisi — halaman ini hanya dapat dibaca. Isi token akses di papan operasi untuk menangani insiden.';
+    } else {
+      aksesEl.textContent = 'Akses: token aktif, peran Anda ' + x.peranAnda + '.';
+    }
+  });
+
   C.$('kartuInsiden').setAttribute('aria-busy', 'true');
   window.OpsDetail.buka(id, {
     box: C.$('isiInsiden'),
