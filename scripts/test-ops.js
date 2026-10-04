@@ -630,6 +630,27 @@ console.log('\n== insiden ==');
   cek('daftar: urutan sama untuk waktu yang sama (pasti, bukan kebetulan)',
     JSON.stringify((await insUrut.list({})).map(i => i.incidentId)), JSON.stringify(urutDeteksi));
 
+  // --- RBAC: keadaan konfigurasi harus bisa DIBUKTIKAN dari luar ---
+  const authUji = require('../lib/ops-auth');
+  const kunci = ['OPS_TOKEN_VIEWER', 'OPS_TOKEN_OPERATOR', 'OPS_TOKEN_ADMIN', 'OPS_WRITE_TOKEN'];
+  const simpan = {};
+  kunci.forEach(k => { simpan[k] = process.env[k]; delete process.env[k]; });
+  const k0 = authUji.konfigurasi();
+  cek('akses: tanpa token → mode terbuka dan mengatakannya', [k0.mode, k0.aktif], ['terbuka', false]);
+  cek('akses: nama variable yang diperiksa disebutkan (untuk diagnosa)',
+    k0.namaDiperiksa.join(','), 'OPS_TOKEN_VIEWER,OPS_TOKEN_OPERATOR,OPS_TOKEN_ADMIN,OPS_WRITE_TOKEN');
+  cek('akses: belum ada yang terlihat saat env kosong', k0.terlihat.length, 0);
+  process.env.OPS_TOKEN_OPERATOR = 'rahasia-jangan-bocor';
+  const k1 = authUji.konfigurasi();
+  cek('akses: satu token OPERATOR → mode token', [k1.mode, k1.peranDikonfigurasi.OPERATOR], ['token', true]);
+  cek('akses: nama yang terlihat disebut, ISI token tidak pernah ikut',
+    [k1.terlihat.join(','), JSON.stringify(k1).includes('rahasia-jangan-bocor')], ['OPS_TOKEN_OPERATOR', false]);
+  delete process.env.OPS_TOKEN_OPERATOR;
+  process.env.OPS_WRITE_TOKEN = 'token-lama';
+  cek('akses: OPS_WRITE_TOKEN lama tetap dihitung sebagai ADMIN',
+    [authUji.konfigurasi().peranDikonfigurasi.ADMIN, JSON.stringify(authUji.konfigurasi()).includes('token-lama')], [true, false]);
+  kunci.forEach(k => { delete process.env[k]; if (simpan[k] !== undefined) process.env[k] = simpan[k]; });
+
   console.log('\n==============================================');
   console.log('  ' + lulus + ' lulus, ' + gagal + ' gagal');
   console.log('==============================================');

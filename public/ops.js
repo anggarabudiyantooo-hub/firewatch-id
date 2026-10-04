@@ -439,8 +439,18 @@
 
   function renderAkses(a) {
     var peran = a.peranAnda;
+    // Ketika masih TERBUKA, sebut NAMA variable yang diperiksa dan mana yang
+    // TERLIHAT pada deployment ini. Bukan hiasan: tanpa itu, "sudah saya pasang
+    // env-nya" dan "deployment ini belum melihatnya" tidak bisa dibedakan dari
+    // halaman — dan itu persis kebuntuan yang terjadi 4 Okt.
+    var NAMA = (a.namaDiperiksa || []).join(', ');
+    var lihat = (a.terlihat || []);
+    var catatanEnv = !NAMA ? '' :
+      ' Diperiksa: ' + NAMA + '.' +
+      (lihat.length ? ' Terlihat di deployment ini: ' + lihat.join(', ') + '.'
+        : ' Tidak satu pun terlihat pada deployment ini — pastikan variabelnya ada untuk lingkungan Production di proyek Vercel yang sama, lalu deploy ulang.');
     var teks = a.mode === 'terbuka'
-      ? 'Akses: TERBUKA — belum ada token yang dikonfigurasi, jadi siapa pun yang dapat menjangkau server ini boleh mengubah data operasional.'
+      ? 'Akses: TERBUKA — belum ada token yang dikonfigurasi, jadi siapa pun yang dapat menjangkau server ini boleh mengubah data operasional.' + catatanEnv
       : 'Akses: token aktif. Peran Anda: ' + (peran || 'belum diisi (hanya membaca)') +
         '. Menangani insiden butuh ' + a.minTulis + '; memicu evaluasi butuh ' + a.minEvaluasi + '.' +
         (a.readProtected ? ' Halaman ini pun hanya untuk peran VIEWER ke atas.' : '');
