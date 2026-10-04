@@ -55,6 +55,10 @@ GET /api/cron
 GET /api/cron?force=1        # abaikan interval, segarkan semua
 ```
 
+Untuk monitor luar ada **`GET /api/alarm`**: `200` bila normal, `503` bila ada
+sumber DOWN (kritis → `tingkat:"kritis"`). Penjadwalan dan mengapa jadwal GitHub
+Actions bisa tertunda berjam-jam dijelaskan di **`docs/PENJADWAL.md`**.
+
 Lindungi dengan `CRON_SECRET` bila endpoint ini dipublikasikan. Rinciannya di
 `PANDUAN-DEPLOY-VERCEL.md`.
 
@@ -73,6 +77,7 @@ Seluruhnya **opsional**.
 | `CDSE_CLIENT_ID` | *(kosong)* | Client ID OAuth Copernicus. Bila kosong, lapisan Sentinel-2 menampilkan keterangan "belum dikonfigurasi" dan seluruh fitur lain tetap berjalan |
 | `CDSE_CLIENT_SECRET` | *(kosong)* | Client secret OAuth Copernicus |
 | `CRON_SECRET` | *(kosong)* | Bila diisi, `/api/cron` menuntut `Authorization: Bearer <secret>` atau `?key=<secret>` |
+| `OPS_SLA_*_MIN` | 60/240/1440/4320 | Target SLA per severity untuk metrik & analitik |
 | `DEBUG_KEY` | *(kosong)* | Membuka endpoint diagnostik |
 
 Pendaftaran kunci FIRMS (gratis): <https://firms.modaps.eosdis.nasa.gov/api/map_key/>

@@ -657,6 +657,20 @@ console.log('\n== insiden ==');
     [authUji.konfigurasi().peranDikonfigurasi.ADMIN, JSON.stringify(authUji.konfigurasi()).includes('token-lama')], [true, false]);
   kunci.forEach(k => { delete process.env[k]; if (simpan[k] !== undefined) process.env[k] = simpan[k]; });
 
+  // --- alarm untuk monitor luar ---
+  const svcAlarm = [
+    { id: 'quake', name: 'Gempa', status: 'HEALTHY', critical: true, freshness: { status: 'FRESH' } },
+    { id: 'shelter', name: 'Pengungsi', status: 'UNKNOWN', critical: false, freshness: { status: 'UNKNOWN' } }
+  ];
+  const aNormal = health.alarm(svcAlarm);
+  cek('alarm: keadaan sehat+belum terukur → tidak gagal (instance baru tidak memicu alarm palsu)',
+    [aNormal.ok, aNormal.tingkat], [true, 'normal']);
+  const aTurun = health.alarm([{ id: 'eruption', name: 'Letusan', status: 'DOWN', critical: true, freshness: { status: 'CRITICAL' } }]);
+  cek('alarm: sumber kritis DOWN → gagal kritis', [aTurun.ok, aTurun.tingkat, aTurun.kejadian[0].id], [false, 'kritis', 'eruption']);
+  const aBiasa = health.alarm([{ id: 'news', name: 'Berita', status: 'DOWN', critical: false, freshness: { status: 'CRITICAL' } }]);
+  cek('alarm: sumber non-kritis DOWN → peringatan (tetap gagal, tingkat lebih rendah)',
+    [aBiasa.ok, aBiasa.tingkat], [false, 'peringatan']);
+
   console.log('\n==============================================');
   console.log('  ' + lulus + ' lulus, ' + gagal + ' gagal');
   console.log('==============================================');
