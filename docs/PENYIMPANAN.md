@@ -124,6 +124,31 @@ curl -s https://firewatch-id.vercel.app/api/operations/store | python3 -m json.t
 - Bila mode tetap `ephemeral` padahal variabel sudah diisi: hampir selalu karena
   **belum redeploy**.
 
+## Terbukti di produksi (4 Okt 2026, 17.3x WIB)
+
+Pemasangan mode `github` diverifikasi ulang sesudah tokennya diperbaiki:
+
+- `GET /api/operations/store?uji=1` → `ok: true, langkah: "baca penuh", issue: 1`
+  ("Keadaan terbaca utuh").
+- `python3 work/verifikasi_penyimpanan.py` → **3/3 LULUS** (baca-saja).
+- `python3 work/verifikasi_penyimpanan.py --tulis` → **8/8 LULUS**: insiden
+  `INC-2026-00001` dibuat (201), terbaca pada **dua permintaan berbeda**
+  (bukti penyimpanan bersama, bukan memori satu instance), lalu diselesaikan
+  dan ditutup; 3 tindakan tercatat di log audit.
+- Isi issue #1 (`[ops] Keadaan operasional SIAGA.ID`, label `ops-state`)
+  memuat `INC-2026-00001 (CLOSED)` + 3 entri audit — jadi riwayat benar-benar
+  terlihat manusia lewat tab History, bukan hanya lewat API.
+- Analitik produksi bergerak jujur mengikuti keadaan: sebelum ada riwayat
+  `kosong: true` + "belum ada riwayat" **tanpa grafik**; sesudah ada satu
+  insiden `kosong: false`, satu batang pada 2026-10-04, MTTR LOW 0 menit,
+  SLA 100% (target 4.320 menit) — apa adanya, sekecil apa pun datanya.
+
+Catatan tindak lanjut: penyimpanan kini MENETAP, dan akses tulis produksi
+masih **terbuka** (`/api/operations/access` → mode terbuka, dan halaman
+mengatakannya). Bila repo ini dipakai bersama orang lain, pasang token peran
+(`OPS_WRITE_TOKEN` atau `OPS_TOKEN_OPERATOR`/`OPS_TOKEN_ADMIN`) supaya tulis
+insiden tidak terbuka bagi siapa pun yang menemukan alamatnya.
+
 ## Bila penyimpanan gagal dibaca (dan cara memeriksanya)
 
 Sejak 4 Okt, kegagalan penyimpanan tidak lagi berubah menjadi "tidak ada
