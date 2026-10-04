@@ -1273,6 +1273,23 @@ async function buildOverview() {
   }
 }
 
+/**
+ * Cache dua lapis untuk endpoint JSON.
+ *
+ * Terukur 4 Okt: /api/overview 10,8 dtk dan /api/hazard 8,2 dtk saat salinan
+ * dingin, dan /api/hazard SELALU dingin karena header hanya memakai max-age —
+ * cache CDN Vercel memakai s-maxage, bukan max-age, sehingga setiap permintaan
+ * menghajar fungsi. stale-while-revalidate membuat tepi CDN menyajikan salinan
+ * lama SEKETIKA sambil menyegarkan di latar belakang, jadi pengunjung tidak
+ * pernah menunggu proses dingin. max-age peramban tetap kecil (<= 60 dtk) agar
+ * tab yang lama terbuka tidak menyajikan data basi.
+ */
+function apiCache(sec, swr) {
+  const s = Math.max(1, Math.round(sec));
+  const w = Math.max(Math.round(swr || 0), s * 3);
+  return `public, max-age=${Math.min(s, 60)}, s-maxage=${s}, stale-while-revalidate=${w}`;
+}
+
 app.get('/api/overview', async (_req, res) => {
   try {
     const d = await buildOverview();
@@ -1280,8 +1297,20 @@ app.get('/api/overview', async (_req, res) => {
     // sehingga ringkasan sementara melaporkan "0 gunung meletus". Balasan
     // seperti itu tidak boleh mengendap di cache CDN selama dua menit dan
     // menampilkan angka yang salah kepada pengguna berikutnya.
-    const incomplete = !d.volcano || d.volcano.eruptionReports === null;
-    res.set('Cache-Control', incomplete ? 'no-store' : `public, max-age=${CONFIG.CACHE_TTL.overview}`);
+    // Salinan PREMATUR hanya boleh lahir bila instance belum pernah mencoba
+    // sama sekali. Sejak MAGMA 500 berkepanjangan, syarat lama
+    // (eruptionReports === null) membuat overview SELALU "no-store", sehingga
+    // setiap pengunjung menanggung 10,8 dtk proses dingin. Bila sumber sudah
+    // dicoba dan gagal, ketiadaan laporan itu JUJUR (antarmuka menulis
+    // "menunggu laporan pos pengamatan"), bukan lagi alasan menolak cache.
+    // Catatan: `runs` hanya bertambah saat SUKSES, jadi tugas yang sudah
+    // dicoba dan gagal tetap ber-runs 0. Percobaan dihitung runs + fails —
+    // tanpa itu, overview akan selamanya "no-store" selama MAGMA mati.
+    const erTask = (scheduler.status().tasks || []).find(t => t.id === 'eruption') || {};
+    const erAttempts = (erTask.runs || 0) + (erTask.fails || 0);
+    const premature = !d.volcano
+      || (d.volcano.eruptionReports === null && erAttempts === 0);
+    res.set('Cache-Control', premature ? 'no-store' : apiCache(CONFIG.CACHE_TTL.overview, 1800));
     res.json(d);
   } catch (e) {
     console.error('[overview]', e.message);
@@ -1313,7 +1342,7 @@ async function buildAttribution() {
 
 app.get('/api/attribution', async (_req, res) => {
   try {
-    res.set('Cache-Control', `public, max-age=${CONFIG.CACHE_TTL.attribution}`);
+    res.set('Cache-Control', apiCache(CONFIG.CACHE_TTL.attribution, 1800));
     res.json(await buildAttribution());
   } catch (e) {
     console.error('[attribution]', e.message);
@@ -1511,7 +1540,7 @@ app.get('/api/wind-field', async (req, res) => {
         30 * 60 * 1000,
         () => aloftWindField(level, box),
         { staleMs: 60 * 60 * 1000, background: true });
-      res.set('Cache-Control', 'public, max-age=1800, stale-while-revalidate=3600');
+      res.set('Cache-Control', apiCache(1800, 3600));
       return res.json({
         updatedAt: new Date().toISOString(),
         dataMode: 'model',
@@ -1520,7 +1549,7 @@ app.get('/api/wind-field', async (req, res) => {
     }
 
     const wf = await windField(step, box);
-    res.set('Cache-Control', 'public, max-age=1800, stale-while-revalidate=3600');
+    res.set('Cache-Control', apiCache(1800, 3600));
     res.json({
       updatedAt: new Date().toISOString(),
       level: '10m',
@@ -1641,7 +1670,7 @@ app.get('/api/air-quality', async (req, res) => {
   try {
     const field = await airQualityField(step, box);
     // Cache-Control dengan stale-while-revalidate — Fase 1.3
-    res.set('Cache-Control', 'public, max-age=900, stale-while-revalidate=1800');
+    res.set('Cache-Control', apiCache(900, 1800));
     res.json({
       updatedAt: new Date().toISOString(),
       source: 'Open-Meteo Air Quality (model CAMS) — skala US AQI',
@@ -1750,7 +1779,7 @@ app.get('/api/concessions', async (req, res) => {
     const { concessionsInBbox } = require('./lib/concession');
     const key = `cc:${w.toFixed(2)},${s.toFixed(2)},${e.toFixed(2)},${n.toFixed(2)}`;
     const fc = await cached(key, 60 * 60 * 1000, () => concessionsInBbox(w, s, e, n));
-    res.set('Cache-Control', 'public, max-age=1800');
+    res.set('Cache-Control', apiCache(1800, 3600));
     res.json(fc);
   } catch (err) {
     console.error('[concessions]', err.message);
@@ -1777,7 +1806,7 @@ app.get('/api/whose-land', async (req, res) => {
 app.get('/api/news', async (_req, res) => {
   // Penjadwal menyegarkan berita tiap 10 menit; cache CDN 60 detik sudah
   // cukup meredam lonjakan tanpa membuat artikel baru tertahan lama.
-  try { res.set('Cache-Control', `public, max-age=${CONFIG.CACHE_TTL.news}`); res.json(await getNews()); }
+  try { res.set('Cache-Control', apiCache(CONFIG.CACHE_TTL.news, 900)); res.json(await getNews()); }
   catch { res.status(502).json({ ok: false, articles: [], message: 'Umpan berita gagal dimuat.' }); }
 });
 
@@ -1944,7 +1973,7 @@ app.get('/api/casualties', async (_req, res) => {
     const news = await getNews();
     const arts = (news && news.articles) || [];
     const out = summarizeCasualties(arts);
-    res.set('Cache-Control', 'public, max-age=300');
+    res.set('Cache-Control', apiCache(300, 900));
     res.json({ updatedAt: new Date().toISOString(), ...out });
   } catch {
     res.status(502).json({ error: 'Ringkasan korban tidak tersedia.' });
@@ -1979,7 +2008,7 @@ app.get('/api/hazard', async (_req, res) => {
     if (!quakes && !tsunami && !shelters) {
       return res.status(502).json({ error: 'Data kebencanaan tidak tersedia.' });
     }
-    res.set('Cache-Control', `public, max-age=${CONFIG.CACHE_TTL.hazard}`);
+    res.set('Cache-Control', apiCache(CONFIG.CACHE_TTL.hazard, 900));
     res.json({ updatedAt: new Date().toISOString(), quakes, tsunami, shelters });
   } catch {
     res.status(502).json({ error: 'Data kebencanaan tidak tersedia.' });
@@ -2010,7 +2039,7 @@ app.get('/api/volcano-ash', async (_req, res) => {
     const d = await scheduler.get('volcano');
     if (d && d.activeCount) ashLast = d;
     // Fase 1.3: satukan TTL dengan /api/eruptions (sebelumnya 900 vs 300) → 600 + SWR 1200
-    res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=1200');
+    res.set('Cache-Control', apiCache(600, 1200));
     res.json(d);
   } catch {
     if (ashLast) {
@@ -2032,7 +2061,7 @@ app.get('/api/eruptions', async (_req, res) => {
   try {
     const d = await scheduler.get('eruption');
     // Fase 1.3: satukan TTL dengan /api/volcano-ash (sebelumnya 300 vs 900) → 600 + SWR 1200
-    res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=1200');
+    res.set('Cache-Control', apiCache(600, 1200));
     res.json(d);
   } catch {
     res.status(502).json({ error: 'Laporan letusan gagal dimuat.' });
@@ -2053,7 +2082,7 @@ function so2Band(v) {
 app.get('/api/drought', async (_req, res) => {
   try {
     const d = await scheduler.get('drought');
-    res.set('Cache-Control', 'public, max-age=1800, stale-while-revalidate=3600');
+    res.set('Cache-Control', apiCache(1800, 3600));
     res.json(d);
   } catch (e) {
     console.error('[drought]', e.message);
@@ -2107,7 +2136,7 @@ app.get('/api/volcano-so2', async (_req, res) => {
         })
       };
     });
-    res.set('Cache-Control', 'public, max-age=900');
+    res.set('Cache-Control', apiCache(900, 1800));
     res.json(out);
   } catch (e) {
     // Kuota harian Open-Meteo bisa habis, dan itu bukan kondisi galat yang
@@ -2180,7 +2209,7 @@ app.get('/api/himawari/meta', async (_req, res) => {
     // Balasan ini menentukan slot mana yang diminta klien, jadi harus
     // menyusul JMA secepat mungkin. stale-while-revalidate membuat CDN
     // tetap menjawab seketika sambil menyegarkan di belakang layar.
-    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    res.set('Cache-Control', apiCache(30, 120));
     res.json({
       time: iso,
       // Daftar slot untuk animasi: tiap entri dapat diminta sebagai petak
@@ -2228,7 +2257,7 @@ app.get('/api/himawari/:product/:z/:x/:y.jpg', async (req, res) => {
     res.set('Content-Type', 'image/jpeg');
     // Petak diberi penanda waktu oleh klien (?t=), jadi isinya tidak pernah
     // berubah untuk URL yang sama dan aman di-cache lama.
-    res.set('Cache-Control', 'public, max-age=600');
+    res.set('Cache-Control', apiCache(600, 1800));
     res.send(buf);
   } catch {
     res.status(204).end();
@@ -2284,7 +2313,7 @@ app.get('/api/sentinel/diag', async (req, res) => {
 
 app.get('/api/sentinel/meta', async (req, res) => {
   if (!sentinel.isConfigured()) {
-    res.set('Cache-Control', 'public, max-age=300');
+    res.set('Cache-Control', apiCache(300, 900));
     return res.json({
       available: false,
       reason: 'Kredensial Copernicus belum dipasang di server.',
@@ -2312,7 +2341,7 @@ app.get('/api/sentinel/meta', async (req, res) => {
 
   if (!Number.isFinite(lat) || !Number.isFinite(lon)
     || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
-    res.set('Cache-Control', 'public, max-age=600');
+    res.set('Cache-Control', apiCache(600, 1800));
     return res.json(base);
   }
 
@@ -2320,7 +2349,7 @@ app.get('/api/sentinel/meta', async (req, res) => {
     const info = await cached(`s2:meta:${lat.toFixed(2)},${lon.toFixed(2)}:${cloud}`,
       30 * 60 * 1000,
       () => sentinel.sceneInfo(fetchWithTimeout, { lat, lon, maxCloud: cloud }));
-    res.set('Cache-Control', 'public, max-age=1800');
+    res.set('Cache-Control', apiCache(1800, 3600));
     res.json({ ...base, ...info });
   } catch (e) {
     console.error('[sentinel:meta]', e.message);
@@ -2487,7 +2516,7 @@ app.use((req, res) => {
   // probe .php atau .env memperoleh seluruh dokumen 30 KB; itu pemborosan
   // pita untuk pemindai dan perayap.
   if (/\.[a-z0-9]{2,5}$/i.test(req.path)) {
-    res.set('Cache-Control', 'public, max-age=300');
+    res.set('Cache-Control', apiCache(300, 900));
     return res.status(404).type('text/plain').send('404 Tidak ditemukan.\n');
   }
   // Dokumen penuh hanya dikirim kepada peramban yang memang sedang
@@ -2496,7 +2525,7 @@ app.use((req, res) => {
   // dan pemanggil API memperoleh balasan ringkas.
   const wantsHtml = String(req.get('accept') || '').indexOf('text/html') !== -1;
   if (!wantsHtml) {
-    res.set('Cache-Control', 'public, max-age=300');
+    res.set('Cache-Control', apiCache(300, 900));
     return res.status(404).type('text/plain').send('404 Tidak ditemukan.\n');
   }
   sendIndex(res, 404);

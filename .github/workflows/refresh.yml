@@ -36,6 +36,15 @@ jobs:
             AUTH=(-H "Authorization: Bearer ${CRON_SECRET}")
           fi
 
+          # Setelah data disegarkan, hangatkan cache CDN untuk halaman yang
+          # benar-benar dibuka pengunjung. Tanpa langkah ini, pengunjung
+          # pertama sesudah cache kedaluwarsa menanggung proses dingin
+          # fungsi (terukur 10,8 dtk untuk /api/overview).
+          for ep in overview hazard news volcano-ash; do
+            code_h=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 45 "${BASE_URL}/api/${ep}") || code_h=000
+            echo "  hangatkan /api/${ep} → ${code_h}"
+          done
+
           echo "Menyegarkan ${BASE_URL}/api/cron"
           code=$(curl -sS -o /tmp/out.json -w '%{http_code}' \
                    --max-time 120 --retry 2 --retry-delay 15 \

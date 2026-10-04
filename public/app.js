@@ -1899,6 +1899,9 @@
       else if (late) right = 'TERLAMBAT · ' + t.ageLabel;
       else right = 'AKTIF · ' + t.ageLabel;
       if (t.consecutiveFails) right += ' · gagal ' + t.consecutiveFails + '×';
+      // Sejak penjadwal menjeda sumber yang terus gagal, lambatnya pembaruan
+      // punya sebab yang harus terbaca — bukan sumber yang diam-diam lupa.
+      if (t.backoff) right += ' · dijeda 30 mnt agar sumber tak dihujani';
       var rightEl = el('b', null, right);
       if (!t.healthy || late) rightEl.classList.add('kv-bad');
       row.appendChild(rightEl);
