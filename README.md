@@ -1,4 +1,4 @@
-# SIAGA ID — Terminal Bencana
+# SIAGA ID — Pemantauan Bencana Real-Time + Operations Center
 
 Pemantauan bencana Indonesia dari sumber resmi dan terbuka: letusan gunung api dan
 sebaran abu, gempa dan tsunami, pengungsi, serta titik api dan asap karhutla.
@@ -165,6 +165,65 @@ Perangkat keselamatan publik harus jujur tentang batas pengetahuannya sendiri:
 
 ---
 
+## Operations Center (`/operations`)
+
+Sejak 4 Okt 2026 aplikasi ini juga punya papan operasi. Bukan papan terpisah
+dengan angka contoh: **semuanya membaca keadaan yang sudah diukur penjadwal**
+yang sama dengan yang menyuplai dashboard.
+
+| Bagian | Isi | Sumber angka |
+|---|---|---|
+| System Health | jumlah layanan dipantau / sehat / peringatan / tidak tersedia / belum diketahui, plus status aplikasi (uptime, Node, mode penjadwal, mode penyimpanan) | `Scheduler.status()` yang sama dengan `/api/status` |
+| Data Sources | per sumber: status, kesegaran (FRESH/STALE/CRITICAL/UNKNOWN), waktu respons terakhir, waktu sukses terakhir, jumlah galat, penjeda backoff, endpoint hulu | diukur saat pengambilan; yang belum terukur ditulis **"belum terukur"** |
+| Alerts | aturan `source_down`, `data_critical`, `api_slow`, `hotspot_cluster` + tombol membuat insiden | evaluasi dijalankan pada `/api/cron` (tiap 10 menit) dan bisa dipicu manual |
+| Incidents | siklus OPEN → INVESTIGATING → PENDING → RESOLVED → CLOSED, penugasan, eskalasi, catatan investigasi, timeline, metrik MTTR/SLA dari data nyata | disimpan oleh adaptor penyimpanan (lihat di bawah) |
+| Runbooks | 4 SOP yang langkahnya menunjuk berkas/endpoint nyata di repo ini | `lib/runbooks.js`, ditautkan ke kategori insiden |
+
+### Penyimpanan operasional — apa adanya
+
+Proyek ini **tidak punya basis data** (lihat `docs/ERD.md`). Di Vercel setiap
+instance punya memori sendiri, jadi insiden butuh penyimpanan bersama. Adaptor
+`lib/ops-store.js` memilih otomatis dan **menyatakan modenya di halaman**:
+
+| Mode | Syarat | Sifat |
+|---|---|---|
+| `upstash` | `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` | penyimpanan bersama, tahan daur ulang instance |
+| `github` | `OPS_GITHUB_TOKEN` + `OPS_GITHUB_REPO` | keadaan disimpan pada satu issue berlabel `ops-state`; riwayat terlihat manusia |
+| `file` | tanpa Vercel (pengembangan lokal) | berkas `.data/ops.json` |
+| `ephemeral` | tidak ada yang dikonfigurasi di Vercel | memori instance; halaman memasang spanduk **PERHATIAN — penyimpanan SEMENTARA** |
+
+Tanpa salah satu dari dua mode pertama, insiden akan hilang saat instance
+didaur ulang — dan itu tertulis di halaman, bukan disembunyikan.
+
+### Ambang yang dapat diatur
+
+| Variabel | Default | Arti |
+|---|---|---|
+| `OPS_FRESH_STALE_MULT` | `1.5` | umur data > 1,5× interval jadwal → STALE |
+| `OPS_FRESH_CRIT_MULT` | `6` | umur data > 6× interval jadwal → CRITICAL |
+| `OPS_SLOW_MS` | `4000` | lama panggilan terakhir di atas ini → alert `api_slow` |
+| `OPS_HOTSPOT_CLUSTER` | `50` | jumlah titik dalam satu sel 0,5° agar dianggap klaster |
+| `OPS_HOTSPOT_MAX` | `5` | maksimal klaster terbesar yang diberi alert per evaluasi |
+| `OPS_ALERT_DEDUP_MS` | `1800000` | jendela anti-duplikasi per (aturan, subjek) |
+| `OPS_SLA_CRITICAL_MIN` / `…_HIGH_MIN` / `…_MEDIUM_MIN` / `…_LOW_MIN` | `60` / `240` / `1440` / `4320` | target penyelesaian per severity (menit) |
+| `OPS_WRITE_TOKEN` | *(kosong)* | bila diisi, perubahan data ops menuntut header `x-ops-token` |
+| `OPS_GITHUB_TOKEN` / `OPS_GITHUB_REPO` | *(kosong)* | mengaktifkan mode penyimpanan `github` |
+
+### API operasional
+
+`GET /api/operations/health` · `GET /api/data-sources` · `GET /api/alerts` ·
+`POST /api/operations/evaluate` · `POST /api/alerts/:id/incident` ·
+`GET|POST /api/incidents` · `GET|PATCH /api/incidents/:id` ·
+`POST /api/incidents/:id/{assign,notes,escalate,resolve,close}` ·
+`GET /api/runbooks` · `GET /api/runbooks/:id` ·
+`GET /api/operations/metrics` · `GET /api/operations/store`
+
+Transisi status yang tidak sah ditolak `409`; severity/kategori tak dikenal dan
+judul kosong ditolak `400`. Semua perubahan mencatat nama pelaku bila header
+`x-ops-actor` dikirim.
+
+---
+
 ## Struktur proyek
 
 ```
@@ -184,13 +243,26 @@ lib/
   casualty.js          ekstraksi angka korban dari judul berita
   rag.js               indeks pencarian lokal untuk /api/ask
   scheduler.js         penjadwal terpusat dengan anggaran waktu
+  scheduler-instance.js satu instance penjadwal untuk seluruh proses
+  service-health.js    model kesehatan layanan (dipakai /operations)
+  freshness.js         ambang FRESH/STALE/CRITICAL yang terdokumentasi
+  alert-engine.js      aturan alert + deduplikasi
+  incidents.js         siklus hidup insiden, timeline, metrik SLA/MTTR
+  runbooks.js          SOP operasional yang menunjuk berkas nyata di repo
+  ops-store.js         adaptor penyimpanan operasional (upstash/github/file/ephemeral)
+  ops-github.js        penyimpanan lewat GitHub Issues (mode github)
+  ops-routes.js        seluruh rute /api/operations, /api/incidents, /api/runbooks
 data/regions.json      226 permukiman GeoNames
 public/
   index.html           satu halaman
   app.js               seluruh logika antarmuka
   app.css              sistem desain
   wind-particles.js    animasi partikel angin di kanvas
+  operations.html      halaman Operations Center
+  ops.js / ops.css     perilaku & gaya papan operasi
 docs/                  PRD, arsitektur, ERD, desain, audit nilai tetap, peta jalan
+docs/OPS-AUDIT.md      audit teknis + rencana upgrade Operations Center
+scripts/test-ops.js    uji modul ops (ikut `npm run check`)
 ```
 
 ---

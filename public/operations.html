@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Operations Center — SIAGA.ID</title>
+<!-- Halaman operasional. Terpisah dari dashboard publik supaya tidak
+     mengubah susunan dashboard yang sudah diaudit (v3-dok). Tidak memuat
+     sumber luar apa pun: CSP aplikasi (default-src 'none'; script-src 'self')
+     tetap berlaku apa adanya. -->
+<meta name="robots" content="noindex" />
+<link rel="stylesheet" href="/ops.css" />
+</head>
+<body>
+<a class="skip" href="#utama">Lompat ke isi utama</a>
+
+<header class="ops">
+  <div class="ops-in">
+    <div class="wordmark">SIAGA.ID<small>Operations Center</small></div>
+    <span class="vsep" aria-hidden="true"></span>
+    <a class="linkback" href="/">← kembali ke dashboard pemantauan</a>
+    <span class="spacer"></span>
+    <span class="mono muted" id="jam" aria-live="off">--:--:-- WIB</span>
+    <button class="btn" id="btnMuat" type="button">Muat ulang</button>
+    <button class="btn btn-primary" id="btnNilai" type="button">Nilai ulang alert</button>
+  </div>
+</header>
+
+<main id="utama">
+  <div id="bannerPenyimpanan" class="banner" hidden></div>
+
+  <section class="card" aria-labelledby="h-kesehatan">
+    <h2 id="h-kesehatan">System Health<span class="hint" id="kesehatanWaktu"></span></h2>
+    <div class="kpis" id="kpis"></div>
+    <p class="notice-inline" id="keteranganAplikasi"></p>
+  </section>
+
+  <div class="grid two" style="margin-top:12px">
+    <section class="card" aria-labelledby="h-sumber">
+      <h2 id="h-sumber">Data Sources<span class="hint" id="ambangKesegaran"></span></h2>
+      <div class="tbl-wrap">
+        <table>
+          <caption class="sr-only">Kesehatan dan kesegaran setiap sumber data</caption>
+          <thead>
+            <tr>
+              <th scope="col">Sumber</th><th scope="col">Status</th><th scope="col">Kesegaran</th>
+              <th scope="col">Respons</th><th scope="col">Sukses terakhir</th><th scope="col">Galat</th>
+            </tr>
+          </thead>
+          <tbody id="tbSumber"><tr><td colspan="6" class="empty">memuat…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="notice-inline">Metrik hanya ditampilkan bila benar-benar terukur. “belum terukur” berarti panggilan itu belum pernah diukur pada instance ini, bukan nol.</p>
+    </section>
+
+    <section class="card" aria-labelledby="h-metrik">
+      <h2 id="h-metrik">Operational Metrics<span class="hint">dihitung dari insiden nyata</span></h2>
+      <div id="metrik" class="empty">memuat…</div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:12px" aria-labelledby="h-alert">
+    <h2 id="h-alert">Alerts<span class="hint" id="alertRingkas"></span></h2>
+    <ul class="list" id="daftarAlert"><li class="empty">memuat…</li></ul>
+  </section>
+
+  <div class="grid two" style="margin-top:12px">
+    <section class="card" aria-labelledby="h-insiden">
+      <h2 id="h-insiden">Incidents</h2>
+      <ul class="list" id="daftarInsiden"><li class="empty">memuat…</li></ul>
+      <details id="formInsiden">
+        <summary>+ Buat insiden manual</summary>
+        <div class="body">
+          <div class="field"><label for="iJudul">Judul</label><input id="iJudul" maxlength="140" placeholder="mis. BNPB API tidak tersedia" /></div>
+          <div class="field"><label for="iDeskripsi">Deskripsi / konteks</label><textarea id="iDeskripsi" maxlength="1200" placeholder="Apa yang teramati, sejak kapan, dampaknya"></textarea></div>
+          <div class="field"><label for="iKategori">Kategori</label><select id="iKategori"></select></div>
+          <div class="field"><label for="iSeverity">Severity</label><select id="iSeverity">
+            <option>CRITICAL</option><option selected>HIGH</option><option>MEDIUM</option><option>LOW</option></select></div>
+          <div class="field"><label for="iPetugas">Ditugaskan kepada</label><input id="iPetugas" maxlength="60" placeholder="mis. Tim Operasi" /></div>
+          <button class="btn btn-primary" id="btnBuat" type="button">Buat insiden</button>
+          <p class="notice-inline">Insiden yang dibuat dari alert membawa bukti terukurnya; yang dibuat manual hanya memuat apa yang Anda tulis.</p>
+        </div>
+      </details>
+    </section>
+
+    <section class="card" aria-labelledby="h-runbook">
+      <h2 id="h-runbook">Runbooks / SOP</h2>
+      <div id="daftarRunbook" class="empty">memuat…</div>
+    </section>
+  </div>
+
+  <section class="card" id="detailInsiden" style="margin-top:12px" hidden aria-labelledby="h-detail">
+    <h2 id="h-detail">Incident Detail</h2>
+    <div id="detailIsi"></div>
+  </section>
+
+  <p class="notice-inline" id="catatanKaki"></p>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/ops.js"></script>
+</body>
+</html>

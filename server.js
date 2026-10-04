@@ -131,6 +131,10 @@ function provinceOf(lat, lon) {
 const app = express();
 app.disable('x-powered-by');
 app.use(compression());
+// Badan JSON untuk modul operasional (insiden/alert). Aplikasi pemantauan
+// sendiri sebelumnya hanya punya endpoint GET, jadi middleware ini belum ada.
+// Batas 32 kB cukup untuk catatan investigasi dan menahan badan besar.
+app.use(express.json({ limit: '32kb' }));
 app.use(helmet({
   contentSecurityPolicy: {
     useDefaults: false,
@@ -1125,6 +1129,12 @@ async function getNews() {
 // ---------- API ----------
 app.get('/api/health', (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
+/* ---------- Operations Center (modul terpisah: lib/ops-routes.js) ----------
+   Rute ops dipasang di sini agar server.js tidak bertambah panjang, dan
+   supaya batas tanggung jawab jelas: modul ops hanya MEMBACA keadaan yang
+   sudah diukur penjadwal — tidak menyentuh logika sumber hulu. */
+require('./lib/ops-routes')(app, { clusterHotspots, getHotspots });
+
 // Dibungkus jadi fungsi agar bisa dipakai ulang oleh mesin pencarian (/api/ask).
 async function buildOverview() {
   {
@@ -1875,7 +1885,7 @@ app.get('/api/ask', async (req, res) => {
  * Interval dipilih mengikuti irama penerbitan sumbernya: tidak ada gunanya
  * menarik GFS tiap menit karena NOAA hanya menerbitkannya 6 jam sekali.
  */
-const scheduler = new Scheduler();
+const scheduler = require('./lib/scheduler-instance');
 
 // Fase 2.1: interval penjadwal dari config terpusat (bisa override via env)
 scheduler
@@ -1883,39 +1893,46 @@ scheduler
     label: 'Gempa bumi (BMKG)',
     everyMs: CONFIG.SCHEDULER_INTERVALS.quake,
     critical: true,
+    endpoint: 'data.bmkg.go.id — gempabumi terkini (M≥5 otomatis)',
     run: () => fetchQuakes(fetchWithRetry)
   })
   .register('tsunami', {
     label: 'Buletin tsunami (NOAA PTWC)',
     everyMs: CONFIG.SCHEDULER_INTERVALS.tsunami,
     critical: true,
+    endpoint: 'tsunami.gov — buletin PTWC',
     run: () => fetchTsunamiBulletins(fetchWithRetry)
   })
   .register('news', {
     label: 'Berita (Google Berita)',
     everyMs: CONFIG.SCHEDULER_INTERVALS.news,
+    endpoint: 'news.google.com RSS — edisi ID & negara tetangga',
     run: () => googleNews().catch(() => gdeltNews())
   })
   .register('hotspots', {
     label: 'Titik api (NASA FIRMS)',
     everyMs: CONFIG.SCHEDULER_INTERVALS.hotspots,
     critical: true,
+    endpoint: 'firms.modaps.eosdis.nasa.gov — VIIRS 24 jam',
     run: () => getHotspotsRaw()
   })
   .register('shelter', {
     label: 'Pengungsi (BNPB)',
     everyMs: CONFIG.SCHEDULER_INTERVALS.shelter,
+    endpoint: 'gis.bnpb.go.id — layanan ArcGIS pengungsian',
     run: () => fetchShelters(fetchWithRetry)
   })
   .register('volcano', {
     label: 'Gunung api & sebaran abu',
     everyMs: CONFIG.SCHEDULER_INTERVALS.volcano,
     critical: true,
+    endpoint: 'NOAA GFS (angin ketinggian) + laporan letusan MAGMA',
     run: () => volcanicAsh(fetchWithRetry, pvmbgStatus, eruptionReports)
   })
   .register('pvmbg', {
     label: 'Status resmi PVMBG (MAGMA)',
     everyMs: CONFIG.SCHEDULER_INTERVALS.pvmbg,
+    endpoint: 'magma.esdm.go.id — tingkat aktivitas gunung api',
     run: () => fetchPvmbgStatus(fetchWithRetry)
   })
   .register('eruption', {
@@ -1925,6 +1942,7 @@ scheduler
     label: 'Laporan letusan pos pengamatan',
     everyMs: CONFIG.SCHEDULER_INTERVALS.eruption,
     critical: true,
+    endpoint: 'magma.esdm.go.id — informasi letusan (PGA)',
     run: () => fetchEruptions(fetchWithRetry)
   })
   .register('drought', {
@@ -1933,6 +1951,7 @@ scheduler
     // sumber tanpa menghasilkan angka yang berbeda.
     label: 'Kekeringan & El Nino',
     everyMs: CONFIG.SCHEDULER_INTERVALS.drought,
+    endpoint: 'NOAA CPC (ONI) + Open-Meteo Archive (ERA5)',
     run: () => fetchDrought(fetchWithRetry, PROVINCE_SITES)
   });
 
@@ -1956,8 +1975,22 @@ app.get('/api/cron', async (req, res) => {
     // Batas fungsi Vercel 60 detik; sisakan ruang untuk menyusun balasan
     // agar cron tidak pernah dibunuh di tengah jalan dan terbaca "gagal".
     const r = await scheduler.tick({ force: req.query.force === '1', budgetMs: CONFIG.TIMEOUTS.cronBudgetMs });
+    // Setelah data disegarkan, nilai alert dari keadaan yang BARU diukur.
+    // Tidak ada permintaan hulu tambahan: modul ops membaca hasil penjadwal
+    // yang sama. Kegagalan di sini tidak boleh menjatuhkan cron.
+    let ops = null;
+    try {
+      const health = require('./lib/service-health');
+      const alertEngine = require('./lib/alert-engine');
+      const services = health.bangun(scheduler.status());
+      let clusters = [];
+      try { clusters = clusterHotspots(((await getHotspots()) || {}).hotspots || []); } catch (e) { clusters = []; }
+      ops = await alertEngine.jalankan({ services, clusters });
+    } catch (e) {
+      ops = { error: 'evaluasi alert gagal' };
+    }
     res.set('Cache-Control', 'no-store');
-    res.json({ ok: true, ...r });
+    res.json({ ok: true, ...r, ops });
   } catch {
     res.status(500).json({ error: 'Penyegaran gagal.' });
   }
