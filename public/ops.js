@@ -109,7 +109,8 @@
     $('keteranganAplikasi').textContent =
       'Aplikasi: ' + a.status + ' · hidup ' + Math.round(a.uptimeSeconds / 60) + ' menit · Node ' + a.nodeVersion +
       ' · penjadwal: ' + a.schedulerMode + ' · penyimpanan: ' + a.storage.mode +
-      (a.storage.persistent ? '' : ' (tidak tetap)') + '.';
+      (a.storage.persistent ? '' : ' (tidak tetap)') +
+      (a.statusReason ? ' — ' + a.statusReason : '') + '.';
   }
 
   function renderSumber(d) {

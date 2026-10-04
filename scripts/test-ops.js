@@ -58,6 +58,19 @@ cek('gagal 1x dengan data segar → WARNING', health.bangun({ tasks: [tugas({ co
 cek('data sangat tua → DOWN', health.bangun({ tasks: [tugas({ ageMs: 13 * 60000 })] })[0].status, 'DOWN');
 cek('belum pernah dicoba → UNKNOWN', health.bangun({ tasks: [tugas({ hasData: false, runs: 0, fails: 0, ageMs: null, healthy: false })] })[0].status, 'UNKNOWN');
 cek('waktu respons tak terukur tetap null', health.bangun({ tasks: [tugas({ responseTimeMs: null })] })[0].responseTime, null);
+
+// Status APLIKASI tidak boleh mengklaim lebih dari yang terukur.
+const stBaru = { total: 9, healthy: 0, summary: { totalFails: 0 } };
+cek('aplikasi belum mengukur apa pun → UNKNOWN, bukan DOWN',
+  health.statusAplikasi(stBaru).status, 'UNKNOWN');
+cek('sebab UNKNOWN disebut apa adanya',
+  /belum ada tugas yang terukur/.test(health.statusAplikasi(stBaru).reason), true);
+cek('aplikasi punya kegagalan nyata → DOWN',
+  health.statusAplikasi({ total: 9, healthy: 0, summary: { totalFails: 4 } }).status, 'DOWN');
+cek('aplikasi sebagian sehat → WARNING',
+  health.statusAplikasi({ total: 9, healthy: 3, summary: { totalFails: 1 } }).status, 'WARNING');
+cek('aplikasi sembilan dari sembilan → HEALTHY',
+  health.statusAplikasi({ total: 9, healthy: 9, summary: { totalFails: 0 } }).status, 'HEALTHY');
 cek('ringkasan menghitung tiap status',
   health.ringkas(health.bangun({ tasks: [tugas(), tugas({ id: 'y', hasData: false, consecutiveFails: 3, healthy: false })] })),
   { total: 2, healthy: 1, warning: 0, down: 1, unknown: 0 });
