@@ -648,9 +648,32 @@
 
     return Promise.all([janjiKesehatan].concat(janji.slice(1))).then(function (r) {
       var gagal = [];
+      // Wadah tiap panel, supaya panel yang GAGAL memuat mengatakannya sendiri.
+      // Sebelumnya ia tetap berbunyi "memuat…" selamanya — terbaca seolah masih
+      // bekerja, padahal permintaannya sudah gagal (ditemukan di produksi
+      // 4 Okt, saat penyimpanan GitHub menolak dengan 401).
+      var WADAH = ['kpis', 'tbSumber', 'daftarAlert', 'daftarInsiden', 'metrik',
+        'daftarRunbook', 'tbAudit', 'aksesBaris', 'analitik', 'infra'];
+      function tandaiGagal(i) {
+        var box = $(WADAH[i]);
+        if (!box) return;
+        var teks = 'Bagian ini tidak dapat dimuat saat ini (' + nama[i] +
+          '). Bagian lain di papan tetap menampilkan pengukuran terakhir.';
+        if (box.tagName === 'TBODY') {
+          box.textContent = '';
+          var tr = el('tr');
+          var td = el('td', 'empty', teks);
+          td.colSpan = 8;
+          tr.appendChild(td);
+          box.appendChild(tr);
+        } else {
+          box.textContent = '';
+          box.appendChild(el('p', 'empty', teks));
+        }
+      }
       function coba(i, fn) {
-        if (r[i] && r[i].ok) { try { fn(r[i].data); } catch (e) { gagal.push(nama[i] + ' (tampilan: ' + e.message + ')'); } }
-        else gagal.push(nama[i]);
+        if (r[i] && r[i].ok) { try { fn(r[i].data); } catch (e) { gagal.push(nama[i] + ' (tampilan: ' + e.message + ')'); tandaiGagal(i); } }
+        else { gagal.push(nama[i]); tandaiGagal(i); }
       }
 
       if (r[4] && r[4].ok) renderBanner(r[4].data.storage);
