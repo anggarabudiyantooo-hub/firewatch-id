@@ -333,7 +333,10 @@
   function mintaDiagnosa(sasaran) {
     var box = $('hasilDiagnosa');
     box.className = 'empty';
-    box.textContent = 'menghitung…';
+    // Di Vercel, permintaan pertama ke instance yang baru hidup menjalankan
+    // pengukuran sumber hulu (beranggaran sampai 8 detik). Diam selama itu
+    // membuat halaman tampak rusak, jadi sebabnya ditulis.
+    box.textContent = 'menghitung… bila instance ini baru hidup, sumber hulu diukur lebih dulu (sampai 8 detik).';
     return ambilAman('/api/operations/diagnose' + (sasaran ? '?' + sasaran : '')).then(function (r) {
       if (!r.ok) {
         box.className = 'empty';
