@@ -13,6 +13,7 @@
   // Inti bersama ada di ops-core.js supaya lembar insiden (/insiden/…) memakai
   // perilaku yang persis sama: el, toast, ambil, kirim, petugasSaya, waktu, durasi.
   var el = OpsCore.el, toast = OpsCore.toast, ambil = OpsCore.ambil,
+      ambilAman = OpsCore.ambilAman, ambilDenganHeader = OpsCore.ambilDenganHeader,
       kirim = OpsCore.kirim, petugasSaya = OpsCore.petugasSaya,
       waktu = OpsCore.waktu, durasi = OpsCore.durasi;
 
@@ -303,30 +304,64 @@
 
   // ------------------------------------------------------------------- muat
   function muatSemua() {
-    return Promise.all([
-      ambil('/api/operations/health'),
-      ambil('/api/data-sources'),
-      ambil('/api/alerts'),
-      ambil('/api/incidents'),
-      ambil('/api/operations/metrics'),
-      ambil('/api/runbooks'),
-      ambil('/api/operations/audit?limit=25')
-    ]).then(function (r) {
-      renderBanner(r[4].storage);
-      renderKesehatan(r[0]);
-      renderSumber(r[1]);
-      renderAlert(r[2].alerts || []);
-      renderInsiden(r[3].incidents || []);
-      renderMetrik(r[4].metrics, r[4].storage);
-      renderRunbook(r[5].runbooks || []);
-      renderAudit(r[6]);
+    // Tiap panel berdiri sendiri. Sebelumnya satu Promise.all: bila satu
+    // endpoint gagal (di Vercel wajar — tiap permintaan bisa mendarat di
+    // instance berbeda), SELURUH papan tampak kosong padahal data lain ada.
+    // Sekarang yang gagal hanya panelnya sendiri, dan disebutkan apa adanya.
+    var janji = [
+      ambilDenganHeader('/api/operations/health'),
+      ambilAman('/api/data-sources'),
+      ambilAman('/api/alerts'),
+      ambilAman('/api/incidents'),
+      ambilAman('/api/operations/metrics'),
+      ambilAman('/api/runbooks'),
+      ambilAman('/api/operations/audit?limit=25')
+    ];
+    var nama = ['Kesehatan layanan', 'Sumber data', 'Alert', 'Insiden', 'Metrik', 'Runbook', 'Log audit'];
+
+    // Kesehatan dipakai juga untuk koreksi jam (header Date) — satu permintaan
+    // lebih sedikit, dan jam tetap ikut jam server.
+    var janjiKesehatan = janji[0].then(
+      function (h) {
+        if (h.date) {
+          var t = Date.parse(h.date);
+          if (!isNaN(t)) window.__skewMs = t - Date.now();
+        }
+        return { ok: true, data: h.data };
+      },
+      function (e) { return { ok: false, error: e, url: '/api/operations/health' }; }
+    );
+
+    return Promise.all([janjiKesehatan].concat(janji.slice(1))).then(function (r) {
+      var gagal = [];
+      function coba(i, fn) {
+        if (r[i] && r[i].ok) { try { fn(r[i].data); } catch (e) { gagal.push(nama[i] + ' (tampilan: ' + e.message + ')'); } }
+        else gagal.push(nama[i]);
+      }
+
+      if (r[4] && r[4].ok) renderBanner(r[4].data.storage);
+      coba(0, renderKesehatan);
+      coba(1, renderSumber);
+      coba(2, function (d) { renderAlert(d.alerts || []); });
+      coba(3, function (d) { renderInsiden(d.incidents || []); });
+      coba(4, function (d) { renderMetrik(d.metrics, d.storage); });
+      coba(5, function (d) { renderRunbook(d.runbooks || []); });
+      coba(6, renderAudit);
+
+      var banner = $('bannerPenyimpanan');
+      if (gagal.length) {
+        // Jujur: sebutkan bagian mana yang tidak termuat, dan jangan biarkan
+        // panel lain tampak seperti angka lengkap bila ada yang bolong.
+        banner.className = 'banner';
+        banner.textContent = 'PERHATIAN — ' + gagal.length + ' dari ' + nama.length +
+          ' bagian tidak dapat dimuat saat ini (' + gagal.join(', ') + '). Bagian lain menampilkan ' +
+          'angka sungguhan dari pengukuran terakhir; muat ulang untuk mencoba lagi.';
+        banner.hidden = false;
+      }
       $('catatanKaki').textContent =
         'Ambang kesegaran & SLA dapat diatur lewat environment variable (OPS_FRESH_STALE_MULT, OPS_FRESH_CRIT_MULT, ' +
         'OPS_SLOW_MS, OPS_HOTSPOT_CLUSTER, OPS_ALERT_DEDUP_MS, OPS_SLA_*_MIN). Nilai yang berlaku ditampilkan di setiap bagian.';
-    }).catch(function (e) {
-      $('bannerPenyimpanan').className = 'banner';
-      $('bannerPenyimpanan').textContent = 'Gagal memuat data operasional: ' + e.message;
-      $('bannerPenyimpanan').hidden = false;
+      return gagal;
     });
   }
 
@@ -374,9 +409,8 @@
   $('btnMuat').addEventListener('click', function () { muatSemua(); toast('Data dimuat ulang.'); });
   $('btnNilai').addEventListener('click', nilai);
 
-  // Jam: pakai jam server dari header Date bila tersedia, agar halaman ini
-  // tidak ikut meleset ketika jam perangkat salah (ada di ops-core.js).
-  OpsCore.koreksiJam();
+  // Jam ikut server tanpa permintaan tambahan: header Date diambil dari balasan
+  // /api/operations/health yang memang sudah dipanggil muatSemua().
 
   jam();
   setInterval(jam, 1000);

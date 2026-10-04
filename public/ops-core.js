@@ -36,6 +36,30 @@
     });
   }
 
+  /**
+   * Ambil yang tidak pernah melempar: hasilnya selalu {ok, data} atau
+   * {ok:false, error}. Dipakai papan operasi supaya satu endpoint yang gagal
+   * tidak mengosongkan seluruh halaman — di Vercel tiap permintaan bisa mendarat
+   * di instance berbeda, jadi "satu panel gagal" adalah keadaan yang wajar.
+   */
+  function ambilAman(url, opts) {
+    return ambil(url, opts).then(
+      function (data) { return { ok: true, data: data }; },
+      function (e) { return { ok: false, error: e, url: url }; }
+    );
+  }
+
+  /** Sama seperti ambil(), tetapi header balasan ikut dibawa (untuk jam server). */
+  function ambilDenganHeader(url, opts) {
+    return fetch(url, opts).then(function (r) {
+      var tanggal = r.headers.get('date');
+      return r.json().then(function (j) {
+        if (!r.ok) throw new Error(j && j.error ? j.error : ('HTTP ' + r.status));
+        return { data: j, date: tanggal };
+      });
+    });
+  }
+
   /** Nama pelaku dari perangkat ini (dipakai untuk header x-ops-actor). */
   function petugasSaya() {
     try { return localStorage.getItem('ops_actor') || ''; } catch (e) { return ''; }
@@ -86,7 +110,7 @@
   }
 
   global.OpsCore = {
-    $: $, el: el, toast: toast, ambil: ambil, kirim: kirim,
+    $: $, el: el, toast: toast, ambil: ambil, ambilAman: ambilAman, ambilDenganHeader: ambilDenganHeader, kirim: kirim,
     petugasSaya: petugasSaya, simpanPetugas: simpanPetugas,
     waktu: waktu, durasi: durasi, koreksiJam: koreksiJam,
     KATEGORI: ['data_source_unavailable', 'data_stale', 'api_performance', 'environmental_event', 'infrastructure', 'lain_lain']
