@@ -369,7 +369,6 @@
         <div class="kv"><span>Klaster titik api</span><b id="sClusters">—</b></div>
         <div class="kv"><span>Titik api di dalam konsesi</span><b id="sConc">—</b><span id="sConcSub" class="kv-sub"></span></div>
         <div class="kv"><span>Provinsi kekeringan</span><b id="sDrought">—</b><span id="sDroughtSub" class="kv-sub"></span></div>
-
       </div>
     </div>
         <div class="tabpanel" id="p-tampilan" role="tabpanel" aria-labelledby="t-tampilan" hidden>
@@ -383,7 +382,6 @@
         <div class="micro grp">LEGENDA</div>
         <div class="row"><span class="rl">Titik api</span><div class="chips"><span class="chip sawit">Tinggi</span><span class="chip hti">Sedang</span><span class="chip hph">Rendah</span><span class="chip">Asap</span></div></div>
         <div class="row"><span class="rl">Kualitas udara</span><div class="cfg-lg" id="airCfgLegend"> <span><i class="dot" style="background:#22c55e"></i>BAIK 0-50</span> <span><i class="dot" style="background:#facc15"></i>SEDANG 51-100</span> <span><i class="dot" style="background:#fb923c"></i>TIDAK SEHAT 101-150</span> <span><i class="dot" style="background:#ef4444"></i>BERBAHAYA 151+</span> </div></div>
-
       </div>
     </div>
 </div><!-- .side-stack -->
@@ -391,7 +389,8 @@
 
   <!-- DOK 7 TAB — cakupan penuh 11 panel asli -->
   <section class="dock" id="dock" aria-label="Dok data">
-    <div class="dock-tabs" role="tablist" aria-label="Pilih panel data">
+    <div class="dock-head">
+      <div class="dock-tabs" role="tablist" aria-label="Pilih panel data">
       <button class="dock-tab" role="tab" aria-selected="true" aria-controls="d-linimasa" id="dt-linimasa" tabindex="0">Linimasa</button>
       <button class="dock-tab" role="tab" aria-selected="false" aria-controls="d-kejadian" id="dt-kejadian" tabindex="-1">Kejadian<span class="cnt" id="cntKejadian">5</span></button>
       <button class="dock-tab" role="tab" aria-selected="false" aria-controls="d-wilayah" id="dt-wilayah" tabindex="-1">Wilayah</button>
@@ -405,6 +404,12 @@
           <svg width="10" height="10" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" fill="none"><path d="M6 9l6 6 6-6"/></svg>
         </button>
       </span>
+      </div>
+      <!-- Pintu ke Operations Center: di JALUR CHROME dock, DI LUAR
+           daftar tab yang bisa digeser, dan di luar role="tablist" —
+           supaya tetap terlihat pada 390 px (topbar sudah 0 px sisa) dan
+           tidak lagi terbaca sebagai bagian dari data panel. -->
+      <a class="dock-ops" id="opsLink" href="/operations" aria-label="Buka Operations Center — halaman terpisah">Operasi <span aria-hidden="true">&rarr;</span></a>
     </div>
     <div class="dock-body" id="dockBody">
 
@@ -498,19 +503,14 @@
         <section class="panel wide" id="so2Panel" hidden></section>
       </div>
 
-      <!-- 06+08+09 Sumber -->
       <div class="dock-panel" id="d-sumber" role="tabpanel" aria-labelledby="dt-sumber" hidden>
         <div class="grid2">
           <div>
             <span class="micro" style="display:block;padding-bottom:6px">Status pembaruan data</span>
             <div class="metric"><div><b id="srcHealthy">—</b><span>sumber aktif</span></div><div><b id="srcQ429">—</b><span>gagal 429 (kuota)</span></div><div><b id="srcQ5xx">—</b><span>galat 5xx</span></div><div><b id="srcRuns">—</b><span>run / gagal</span></div></div>
             <div id="statusBody" class="st-grid"></div>
-            <!-- Pintu masuk Operations Center. Diletakkan di panel Sumber —
-                 tempat orang memeriksa kesehatan data — bukan di topbar yang
-                 sudah terisi penuh pada 390 px (menambah 52 px di sana memotong
-                 tombol REFRESH, lihat riwayat perbaikan topbar mobile). -->
-            <p class="ops-invite"><a id="opsLink" href="/operations">Buka Operations Center <span aria-hidden="true">→</span></a>
-              <span class="ops-invite-note">Kesehatan tiap sumber, kesegaran data, alert, insiden &amp; runbook — dengan angka yang sama seperti di halaman ini.</span></p>
+            <span class="panel-sub" id="statusMeta"></span>
+            
             <!-- Keselamatan publik: nomor darurat + rujukan resmi + penyangkalan.
                  Ditempatkan di panel Sumber (bukan footer yang disembunyikan)
                  supaya benar-benar terbaca, tanpa mengubah susunan panel yang
@@ -522,6 +522,17 @@
               <a href="https://magma.esdm.go.id" target="_blank" rel="noopener noreferrer">PVMBG / MAGMA</a>.
               Keadaan darurat: <b class="src-safe-emg">telepon 112</b>.
             </div>
+            
+          </div>
+          <div>
+            <span class="micro" style="display:block;padding-bottom:6px">Memahami data ini</span>
+            <details><summary>Apa itu titik api (hotspot)?</summary><div class="body"><b>Apa:</b> piksel yang terdeteksi satelit sebagai anomali panas di permukaan bumi. <b>Penting:</b> hotspot <b>bukan</b> berarti pasti kebakaran hutan. <b>FRP:</b> daya radiasi api dalam megawatt.</div></details>
+            <details><summary>Kenapa sebaran asap berbentuk kerucut?</summary><div class="body"><b>Cara baca:</b> ujung sempit adalah sumber api, kerucut melebar mengikuti arah angin. <b>Kenapa melebar:</b> angin tidak pernah bertiup satu arah persis.</div></details>
+            <details><summary>Timeline sebaran (+6 / +12 / +18 jam)</summary><div class="body"><b>Cara pakai:</b> tombol di atas peta menggeser tampilan ke prakiraan beberapa jam ke depan. Kerudung putus-putus biru menandakan prakiraan, bukan kondisi terkini.</div></details>
+            <details><summary>Arti “daerah terdampak”</summary><div class="body">Perkiraan kota yang berada di jalur sebaran asap, dihitung dari arah angin dan intensitas api. Indeks 0–100 menandakan seberapa kuat paparan, <b>bukan angka ISPU resmi.</b></div></details>
+            <details><summary>Angin &amp; kenapa ia menentukan segalanya</summary><div class="body">Layer <b>ketinggian angin</b> memilih level tekanan: permukaan 10 m hingga 300 hPa (~9,2 km).</div></details>
+            <details><summary>Kenapa kepemilikan lahan dipetakan</summary><div class="body">Untuk atribusi awal: titik api yang jatuh di dalam batas konsesi membantu mengarahkan verifikasi, <b>bukan menetapkan kesalahan.</b></div></details>
+            <details><summary>Abu vulkanik — bahaya yang berbeda</summary><div class="body">Abu adalah partikel padat, dipantau terutama untuk <b>keselamatan penerbangan</b>; SO₂ adalah gas tak kasat mata yang bisa terbawa terpisah dari abu.</div></details>
             <div class="hr" style="margin:9px 0"></div>
             <span class="micro" style="display:block;padding-bottom:4px">Sumber data &amp; batasan</span>
             <details><summary>Letusan gunung api — PVMBG / MAGMA</summary><div class="body">Laporan Pos Pengamatan Gunung Api, ditulis petugas yang berjaga di lapangan. Memuat waktu erupsi, tinggi kolom abu, arah condong, amplitudo dan durasi seismograf. <b>Inilah acuan yang menentukan apakah sebaran abu digambar di peta.</b> Jendela pantau 24 jam terakhir.</div></details>
@@ -536,17 +547,6 @@
             <details><summary>Berita — Google Berita</summary><div class="body">Judul dan tautan dari RSS Google Berita (edisi Indonesia dan negara tetangga). Hak atas tulisan tetap milik penerbitnya; judul tidak kami ubah, dan isi berita tidak kami sajikan ulang.</div></details>
             <details><summary>Kekeringan &amp; El Niño — NOAA CPC &amp; ERA5</summary><div class="body">Indeks Oceanic Niño Index dari NOAA Climate Prediction Center untuk fase El Niño/La Niña, dan reanalisis ERA5 (Open-Meteo Archive) untuk hitungan hari tanpa hujan.</div></details>
             <details><summary>Citra satelit — Himawari-9 &amp; Sentinel-2</summary><div class="body">Citra awan dari Himawari-9 (JMA) dan citra optik Sentinel-2 (Copernicus). Keduanya untuk konteks visual, bukan pengukuran presisi: resolusi, tutupan awan, dan waktu perekaman berbeda dari data titik api.</div></details>
-            <span class="panel-sub" id="statusMeta"></span>
-          </div>
-          <div>
-            <span class="micro" style="display:block;padding-bottom:6px">Memahami data ini</span>
-            <details><summary>Apa itu titik api (hotspot)?</summary><div class="body"><b>Apa:</b> piksel yang terdeteksi satelit sebagai anomali panas di permukaan bumi. <b>Penting:</b> hotspot <b>bukan</b> berarti pasti kebakaran hutan. <b>FRP:</b> daya radiasi api dalam megawatt.</div></details>
-            <details><summary>Kenapa sebaran asap berbentuk kerucut?</summary><div class="body"><b>Cara baca:</b> ujung sempit adalah sumber api, kerucut melebar mengikuti arah angin. <b>Kenapa melebar:</b> angin tidak pernah bertiup satu arah persis.</div></details>
-            <details><summary>Timeline sebaran (+6 / +12 / +18 jam)</summary><div class="body"><b>Cara pakai:</b> tombol di atas peta menggeser tampilan ke prakiraan beberapa jam ke depan. Kerudung putus-putus biru menandakan prakiraan, bukan kondisi terkini.</div></details>
-            <details><summary>Arti “daerah terdampak”</summary><div class="body">Perkiraan kota yang berada di jalur sebaran asap, dihitung dari arah angin dan intensitas api. Indeks 0–100 menandakan seberapa kuat paparan, <b>bukan angka ISPU resmi.</b></div></details>
-            <details><summary>Angin &amp; kenapa ia menentukan segalanya</summary><div class="body">Layer <b>ketinggian angin</b> memilih level tekanan: permukaan 10 m hingga 300 hPa (~9,2 km).</div></details>
-            <details><summary>Kenapa kepemilikan lahan dipetakan</summary><div class="body">Untuk atribusi awal: titik api yang jatuh di dalam batas konsesi membantu mengarahkan verifikasi, <b>bukan menetapkan kesalahan.</b></div></details>
-            <details><summary>Abu vulkanik — bahaya yang berbeda</summary><div class="body">Abu adalah partikel padat, dipantau terutama untuk <b>keselamatan penerbangan</b>; SO₂ adalah gas tak kasat mata yang bisa terbawa terpisah dari abu.</div></details>
           </div>
         </div>
         <section class="panel wide" id="statusPanel" hidden></section>

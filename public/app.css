@@ -118,13 +118,21 @@ button,input,select{font-family:var(--font-data)}
   text-transform:uppercase;cursor:pointer;transition:transform var(--dur-state),filter var(--dur-state)}
 .btn-primary:hover{filter:brightness(1.08)} .btn-primary:active{transform:translateY(1px)}
 
-/* Pintu masuk Operations Center di panel Sumber. Gaya teks biasa supaya tidak
-   bersaing dengan kontrol panel, tetapi tetap satu blok yang terbaca. */
-.ops-invite{margin:9px 0 0;padding:8px 10px;border:1px solid var(--hairline);border-radius:var(--radius-field);
-  background:var(--surface-2);display:flex;flex-direction:column;gap:2px}
-.ops-invite a{font:600 11px/1.4 var(--font-ui);color:var(--text-primary);text-decoration:none}
-.ops-invite a:hover{text-decoration:underline}
-.ops-invite-note{font:400 10px/1.45 var(--font-ui);color:var(--text-secondary)}
+/* Pintu masuk Operations Center: tinggal di JALUR CHROME dock, bukan di dalam
+   panel data. Sebelumnya ia kotak berbingkai di tengah panel Sumber, sehingga
+   terbaca seperti bagian dari data (keluhan 4 Okt). Alasan tempatnya di sini —
+   dengan angka, bukan selera:
+     · topbar 390 px sudah 0 px sisa, jadi menaruhnya di sana tidak mungkin;
+     · jalur tab dock bisa digeser (isi ±990 px, terlihat 364 px di 390 px),
+       jadi tautan dibuat STICKY di tepi kanan: tetap terlihat walau digeser;
+     · latarnya pekat supaya tab yang lewat di bawahnya tidak menembus. */
+.dock-ops{flex:0 0 auto;margin-left:8px;
+  display:inline-flex;align-items:center;gap:5px;padding:6px 10px;
+  border:1px solid rgba(255,214,10,.45);border-radius:var(--radius-chip);
+  background:var(--chrome);color:var(--status-caution);text-decoration:none;
+  font:600 10px/1 var(--font-data);letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+.dock-ops:hover{color:var(--text-primary);border-color:var(--text-secondary)}
+.dock-ops:focus-visible{outline:2px solid var(--status-info);outline-offset:2px}
 
 /* === y 0-52 Top Bar — slim, full bleed, #0F1115, 1px hairline beneath === */
 .topbar{
@@ -995,8 +1003,13 @@ a[href]{color:var(--text-primary)}
 /* ── dock — 7 tabs covering 11 panels ── */
 .dock{flex:0 0 auto;background:var(--chrome);border:1px solid var(--hairline);
   border-radius:var(--radius-card);display:flex;flex-direction:column;overflow:hidden;margin-top:var(--card-gap)}
-.dock-tabs{display:flex;align-items:center;gap:2px;padding:5px 8px;border-bottom:1px solid var(--hairline);
-  overflow-x:auto;scrollbar-width:none;flex:0 0 auto}
+/* Jalur chrome dock: daftar tab yang bisa digeser + pintu Operations Center
+   yang TIDAK ikut tergeser. Dipisah begini karena sticky tidak cukup: pada
+   390 px chip sticky baru menempel SETELAH jalur digeser, jadi saat halaman
+   dibuka ia tetap tak terlihat (diukur, bukan diduga). */
+.dock-head{display:flex;align-items:center;padding:5px 8px;border-bottom:1px solid var(--hairline);flex:0 0 auto}
+.dock-tabs{display:flex;align-items:center;gap:2px;min-width:0;flex:1 1 auto;
+  overflow-x:auto;scrollbar-width:none}
 .dock-tabs::-webkit-scrollbar{display:none}
 .dock-tab{background:transparent;border:1px solid transparent;border-radius:var(--radius-chip);
   padding:6px 11px;font:600 10px/1 var(--font-data);letter-spacing:.07em;text-transform:uppercase;
