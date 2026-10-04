@@ -110,7 +110,8 @@
       'Aplikasi: ' + a.status + ' · hidup ' + Math.round(a.uptimeSeconds / 60) + ' menit · Node ' + a.nodeVersion +
       ' · penjadwal: ' + a.schedulerMode + ' · penyimpanan: ' + a.storage.mode +
       (a.storage.persistent ? '' : ' (tidak tetap)') +
-      (a.statusReason ? ' — ' + a.statusReason : '') + '.';
+      (a.statusReason ? ' — ' + a.statusReason : '') +
+      (a.warmup ? ' Diukur saat halaman ini diminta (' + Math.round(a.warmup.ms / 1000) + ' dtk).' : '') + '.';
   }
 
   function renderSumber(d) {

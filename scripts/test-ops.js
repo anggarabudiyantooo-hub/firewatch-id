@@ -22,6 +22,7 @@ process.env.OPS_STORE_FORCE = 'file'; // pastikan tidak menyentuh layanan luar
 
 const freshness = require('../lib/freshness');
 const health = require('../lib/service-health');
+const opsRoutes = require('../lib/ops-routes');
 const alerts = require('../lib/alert-engine');
 const incidents = require('../lib/incidents');
 const runbooks = require('../lib/runbooks');
@@ -153,6 +154,40 @@ console.log('\n== insiden ==');
   const mt2 = incidents.metrik([{ severity: 'HIGH', status: 'CLOSED', detectedAt: new Date(now - 3 * 3600e3).toISOString(), resolvedAt: new Date(now).toISOString() }]);
   cek('MTTR dihitung dari insiden nyata', mt2.mttrMenit, 180);
   cek('SLA dihitung dari target severity', [mt2.slaPersen, mt2.slaTotal], [100, 1]);
+
+  // --- pengukuran saat diminta (instance serverless yang baru hidup) ---
+  // Di Vercel memori per instance; tanpa ini pengunjung melihat sembilan
+  // sumber "belum diketahui" padahal yang kurang cuma pengukuran.
+  const sched = require('../lib/scheduler-instance');
+  const asliStatus = sched.status;
+  const asliTick = sched.tick;
+  let tickDipanggil = 0;
+  sched.status = () => ({ summary: { totalRuns: 0 }, tasks: [], healthy: 0, total: 9 });
+  sched.tick = async () => { tickDipanggil++; return { refreshed: ['hotspots'], pending: ['eruption'], timedOut: true, ms: 5 }; };
+  process.env.OPS_WARMUP_MS = '5000';
+
+  delete process.env.VERCEL;
+  cek('lokal: pengukuran saat diminta tidak dijalankan', await opsRoutes.ukurBilaPerlu(), null);
+
+  process.env.VERCEL = '1';
+  const duaPermintaan = await Promise.all([opsRoutes.ukurBilaPerlu(), opsRoutes.ukurBilaPerlu()]);
+  cek('instance dingin diukur satu kali saja walau diminta serentak', tickDipanggil, 1);
+  cek('anggaran waktu dilaporkan apa adanya',
+    [duaPermintaan[0].ran, duaPermintaan[0].budgetMs, duaPermintaan[0].diukur, duaPermintaan[0].pending], [true, 5000, 1, 1]);
+
+  sched.status = () => ({ summary: { totalRuns: 3 }, tasks: [], healthy: 2, total: 9 });
+  cek('instance yang sudah terukur tidak diukur ulang', await opsRoutes.ukurBilaPerlu(), null);
+
+  sched.status = () => ({ summary: { totalRuns: 0 }, tasks: [], healthy: 0, total: 9 });
+  cek('percobaan beruntun ditahan jeda 60 detik', await opsRoutes.ukurBilaPerlu(), null);
+
+  process.env.OPS_WARMUP_MS = '0';
+  cek('OPS_WARMUP_MS=0 mematikan pengukuran', await opsRoutes.ukurBilaPerlu(), null);
+
+  delete process.env.OPS_WARMUP_MS;
+  delete process.env.VERCEL;
+  sched.status = asliStatus;
+  sched.tick = asliTick;
 
   console.log('\n==============================================');
   console.log('  ' + lulus + ' lulus, ' + gagal + ' gagal');

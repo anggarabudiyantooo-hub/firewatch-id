@@ -195,6 +195,16 @@ instance punya memori sendiri, jadi insiden butuh penyimpanan bersama. Adaptor
 Tanpa salah satu dari dua mode pertama, insiden akan hilang saat instance
 didaur ulang — dan itu tertulis di halaman, bukan disembunyikan.
 
+Hal serupa berlaku untuk **pengukuran**: di Vercel setiap instance punya memori
+sendiri dan tugas penjadwal hanya berjalan saat `/api/cron` memanggilnya (tiap
+10 menit, dari GitHub Actions). Instance yang baru hidup karena itu belum
+mengukur apa pun — halaman akan menulis "belum diketahui" beserta sebabnya.
+Supaya tidak berhenti di situ, rute ops menjalankan **satu kali pengukuran
+beranggaran terbatas** (`OPS_WARMUP_MS`, bawaan 8 detik) pada permintaan
+pertama, lalu melaporkan hasil pengukuran yang sungguhan. Setelah instance itu
+punya hasil, pengukuran tidak diulang; bila percobaan gagal, diulang paling
+cepat 60 detik sekali agar sumber hulu tidak dihujani permintaan.
+
 ### Ambang yang dapat diatur
 
 | Variabel | Default | Arti |
@@ -206,6 +216,7 @@ didaur ulang — dan itu tertulis di halaman, bukan disembunyikan.
 | `OPS_HOTSPOT_MAX` | `5` | maksimal klaster terbesar yang diberi alert per evaluasi |
 | `OPS_ALERT_DEDUP_MS` | `1800000` | jendela anti-duplikasi per (aturan, subjek) |
 | `OPS_SLA_CRITICAL_MIN` / `…_HIGH_MIN` / `…_MEDIUM_MIN` / `…_LOW_MIN` | `60` / `240` / `1440` / `4320` | target penyelesaian per severity (menit) |
+| `OPS_WARMUP_MS` | `8000` | di Vercel, instance yang belum pernah mengukur apa pun menjalankan satu kali pengukuran beranggaran ini detik saat rute ops dibuka; `0` mematikannya |
 | `OPS_WRITE_TOKEN` | *(kosong)* | bila diisi, perubahan data ops menuntut header `x-ops-token` |
 | `OPS_GITHUB_TOKEN` / `OPS_GITHUB_REPO` | *(kosong)* | mengaktifkan mode penyimpanan `github` |
 
