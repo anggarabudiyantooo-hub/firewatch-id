@@ -182,6 +182,11 @@ yang sama dengan yang menyuplai dashboard.
 | Tautan dalam | `?insiden=INC-…` membuka detail di papan; tombol "Salin tautan" | rute baca yang sama |
 | Lembar insiden | `/insiden/INC-…` — satu insiden, satu alamat, untuk dibagikan & dibaca ulang; langkah runbook bisa ditandai dikerjakan | `public/insiden.html` + `public/ops-detail.js` (berkas yang sama dengan kartu detail di papan) |
 
+Setiap bagian papan dimuat sendiri-sendiri. Bila satu endpoint gagal (di Vercel
+tiap permintaan bisa mendarat di instance berbeda, jadi ini wajar), bagian lain
+tetap menampilkan angka sungguhan dan spanduk menyebut bagian mana yang tidak
+termuat — papan tidak pernah tampak kosong tanpa keterangan.
+
 ### Langkah runbook: centang yang tidak bisa berbohong
 
 Pada lembar insiden, tiap langkah SOP punya tombol **Tandai dikerjakan**. Yang
