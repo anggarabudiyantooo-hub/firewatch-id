@@ -176,7 +176,7 @@ yang sama dengan yang menyuplai dashboard.
 | System Health | jumlah layanan dipantau / sehat / peringatan / tidak tersedia / belum diketahui, plus status aplikasi (uptime, Node, mode penjadwal, mode penyimpanan) | `Scheduler.status()` yang sama dengan `/api/status` |
 | Data Sources | per sumber: status, kesegaran (FRESH/STALE/CRITICAL/UNKNOWN), waktu respons terakhir, waktu sukses terakhir, jumlah galat, penjeda backoff, endpoint hulu | diukur saat pengambilan; yang belum terukur ditulis **"belum terukur"** |
 | Alerts | aturan `source_down`, `data_critical`, `api_slow`, `hotspot_cluster` + tombol membuat insiden | evaluasi dijalankan pada `/api/cron` (tiap 10 menit) dan bisa dipicu manual |
-| Incidents | siklus OPEN → INVESTIGATING → PENDING → RESOLVED → CLOSED, penugasan, eskalasi, catatan investigasi, timeline, metrik MTTR/SLA dari data nyata | disimpan oleh adaptor penyimpanan (lihat di bawah) |
+| Incidents | siklus OPEN → INVESTIGATING → PENDING → RESOLVED → CLOSED, penugasan, eskalasi, catatan investigasi, timeline, metrik MTTR/SLA dari data nyata; daftar di papan diurutkan menurut **aktivitas terbaru** supaya insiden yang baru dibuat dari alert lama tidak "hilang" | disimpan oleh adaptor penyimpanan (lihat di bawah) |
 | Runbooks | 4 SOP yang langkahnya menunjuk berkas/endpoint nyata di repo ini | `lib/runbooks.js`, ditautkan ke kategori insiden |
 | Audit Log | 200 tindakan terakhir: siapa mengubah apa, kapan — termasuk evaluasi alert otomatis | satu dokumen simpanan yang sama dengan insiden (tidak ada log kedua yang bisa berbeda) |
 | Troubleshooting | dugaan + **bukti angka** + langkah pemeriksaan untuk satu sumber, satu alert, atau satu insiden; plus ringkasan armada | aturan tetap atas pengukuran tersimpan (`lib/troubleshoot.js`) — **bukan keluaran model bahasa** |
@@ -302,6 +302,10 @@ Aturan yang dipegang:
 `GET /api/operations/metrics` · `GET /api/operations/store` ·
 `GET /api/operations/audit` · `GET /api/operations/analytics?hari=14` ·
 `GET /api/operations/infra`
+
+Penyimpanan: `GET /api/operations/store` (tambahkan `?uji=1` untuk memanggil
+penyimpanan sekarang juga dan melihat langkah yang gagal beserta kode statusnya).
+Insiden: `GET /api/incidents?sort=activity` untuk urutan aktivitas terbaru.
 
 Diagnosa: `GET /api/operations/diagnose` (`?service=`, `?alert=`, `?incident=`, atau kosong untuk ringkasan armada)
 

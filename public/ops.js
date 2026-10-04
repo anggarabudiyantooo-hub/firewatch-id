@@ -37,7 +37,15 @@
       b.className = 'banner';
       b.textContent = 'PERHATIAN — penyimpanan SEMENTARA (' + store.mode + '). ' + store.note;
     }
-    if (store.lastError) b.textContent += ' Galat penyimpanan terakhir: ' + store.lastError;
+    if (store.lastError) {
+      // Penyimpanan gagal ≠ tidak ada insiden. Spanduk menyebut sebabnya dan
+      // menyatakan bahwa angka di papan tidak lengkap — bukan menyembunyikannya.
+      b.className = 'banner';
+      b.textContent = 'Penyimpanan ' + store.mode + ' GAGAL DIBACA: ' + store.lastError +
+        (store.lastErrorAt ? ' (pada ' + store.lastErrorAt + ')' : '') +
+        '. Selama pembacaan gagal, kartu Insiden/Alert/Audit di papan ini tidak dapat dipercaya sebagai keadaan penuh. ' +
+        store.note;
+    }
     b.hidden = false;
   }
 
@@ -615,7 +623,7 @@
       ambilDenganHeader('/api/operations/health'),
       ambilAman('/api/data-sources'),
       ambilAman('/api/alerts'),
-      ambilAman('/api/incidents'),
+      ambilAman('/api/incidents?sort=activity'),
       ambilAman('/api/operations/metrics'),
       ambilAman('/api/runbooks'),
       ambilAman('/api/operations/audit?limit=25'),

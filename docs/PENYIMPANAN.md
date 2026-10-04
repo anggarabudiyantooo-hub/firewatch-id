@@ -123,3 +123,34 @@ curl -s https://firewatch-id.vercel.app/api/operations/store | python3 -m json.t
   repo itu (repo ini privat).
 - Bila mode tetap `ephemeral` padahal variabel sudah diisi: hampir selalu karena
   **belum redeploy**.
+
+## Bila penyimpanan gagal dibaca (dan cara memeriksanya)
+
+Sejak 4 Okt, kegagalan penyimpanan tidak lagi berubah menjadi "tidak ada
+insiden". Yang terjadi sekarang:
+
+- `/api/operations/store?uji=1` memanggil penyimpanan **saat itu juga** dan
+  melaporkan langkah mana yang gagal beserta kode status hulunya, mis.
+  `{"ok": false, "langkah": "daftar issue berlabel", "status": 401,
+  "alasan": "Token ditolak GitHub (bad credentials) — periksa OPS_GITHUB_TOKEN."}`
+  Token tidak pernah ikut ditampilkan.
+- Panel yang gagal memuat (Insiden, Alert, Audit, Metrik) menuliskan kegagalan
+  itu apa adanya, dan spanduk penyimpanan menyebutkan sebabnya + waktunya.
+- Balasan galat `500` kini menyertakan kunci `penyimpanan` berisi
+  `{mode, persistent, note, lastError, lastErrorAt}` — tanpa rahasia.
+
+Arti kode yang paling sering muncul: **401** token salah/kadaluarsa,
+**403** token tidak punya izin *Issues: Read and write* pada repo itu,
+**404** nama repo salah atau token tidak diberi akses ke repo itu.
+
+## Batas yang diketahui (jangan dibaca sebagai jaminan)
+
+- Kunci tulis (`store.kunci`) berlaku **di dalam satu proses**. Dua instance
+  serverless yang menulis pada saat yang sama masih mungkin saling menimpa
+  berkas keadaan. Sebagian halauan: nomor insiden tidak boleh memakai ID yang
+  sudah ada, sehingga insiden tidak bisa tertimpa oleh ID kembar; tetapi satu
+  penulisan yang kalah tetap bisa hilang. Untuk menghilangkannya sepenuhnya
+  diperlukan penyimpanan yang punya transaksi (mis. Postgres/Neon) — belum
+  diperlukan sekarang, dan bila nanti diperlukan, mode baru tinggal ditambahkan.
+- Badan issue GitHub dibatasi; keadaan yang membesar dipangkas dengan catatan
+  `truncatedCount`/`truncatedAt` (tidak hilang diam-diam).

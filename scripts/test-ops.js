@@ -33,6 +33,7 @@ const auth = require('../lib/ops-auth');
 const triage = require('../lib/troubleshoot');
 const analitik = require('../lib/analytics');
 const infraSim = require('../lib/infra-sim');
+const ghStore = require('../lib/ops-github');
 const incidents = require('../lib/incidents');
 const runbooks = require('../lib/runbooks');
 
@@ -549,6 +550,85 @@ console.log('\n== insiden ==');
     /cisco|fortinet|juniper|palo alto|bgp|ospf/i.test(JSON.stringify(G)), false);
   cek('infra: keterangan menyatakan keterbatasan apa adanya',
     /Tidak ada perangkat jaringan fisik/.test(G.catatan), true);
+
+  // --- penyimpanan bersama: kegagalan harus terbaca sebabnya (P2) ---
+  // Ditemukan di produksi 4 Okt: begitu OPS_GITHUB_* dipasang, SETIAP pembacaan
+  // yang lewat penyimpanan menjawab 500 "kesalahan internal" tanpa sebab.
+  // Penyebabnya: jalur read() mode github tidak pernah menangkap galat (jalur
+  // upstash ada), sehingga kode status hulu hilang di perjalanan.
+  const uji = require('../lib/ops-store');
+  const galatBad = Object.assign(new Error('github_401_...'), { status: 401, githubMessage: 'Token ditolak GitHub (bad credentials) — periksa OPS_GITHUB_TOKEN.' });
+  const galat404 = Object.assign(new Error('github_404_...'), { status: 404, githubMessage: 'Repo atau issue tidak ditemukan — periksa OPS_GITHUB_REPO dan akses token ke repo itu.' });
+  const galat403 = Object.assign(new Error('github_403_...'), { status: 403, githubMessage: 'Token tidak punya izin yang cukup — butuh izin Issues: Read and write pada repo itu.' });
+
+  cek('penyimpanan: galat 401 diterjemahkan menjadi kalimat yang bisa ditindaklanjuti',
+    [ghStore.ringkasGalat(galatBad).status, /OPS_GITHUB_TOKEN/.test(ghStore.ringkasGalat(galatBad).alasan)], [401, true]);
+  cek('penyimpanan: galat 404 menunjuk repo/akses',
+    /OPS_GITHUB_REPO/.test(ghStore.ringkasGalat(galat404).alasan), true);
+  cek('penyimpanan: galat 403 menunjuk izin Issues',
+    /Issues: Read and write/.test(ghStore.ringkasGalat(galat403).alasan), true);
+  cek('penyimpanan: ringkasan galat tidak pernah memuat token',
+    /ghp_|Bearer |token=/i.test(JSON.stringify(ghStore.ringkasGalat(galatBad))), false);
+
+  // Bila pembacaan gagal, store harus MENCATAT sebabnya dan MENERUSKAN galat
+  // (bukan mengembalikan keadaan kosong yang terbaca sebagai "tidak ada insiden").
+  const modeAsli = uji.mode;
+  const ghAsli = uji._github;
+  uji.mode = 'github';
+  uji._github = Object.assign({}, ghAsli, {
+    read: async () => { throw galatBad; },
+    ringkasGalat: ghStore.ringkasGalat
+  });
+  uji.lastError = null;
+  let tertangkap = null;
+  await uji.read().catch(e => { tertangkap = e; });
+  cek('penyimpanan: pembacaan gagal tidak diam-diam menjadi keadaan kosong (' +
+    String(tertangkap && tertangkap.message).slice(0, 30) + ')', tertangkap !== null, true);
+  cek('penyimpanan: galat pembacaan ditandai sebagai kegagalan penyimpanan', !!(tertangkap && tertangkap.gagalPenyimpanan), true);
+  cek('penyimpanan: sebab kegagalan tercatat di info() untuk papan',
+    [uji.info().lastError.includes('bad credentials'), uji.info().lastError.includes('HTTP 401'), uji.info().persistent],
+    [true, true, true]);
+  cek('penyimpanan: info() menyertakan waktu kegagalan', typeof uji.info().lastErrorAt, 'string');
+  uji.lastError = null;
+  uji.lastErrorAt = null;
+  uji.mode = modeAsli;
+  uji._github = ghAsli;
+
+  // --- rebutan penulisan (ditemukan lewat kegagalan uji UI 4 Okt) ---
+  // Insiden baru dibuat oleh POST operator DAN oleh mesin alert secara
+  // bersamaan. Keduanya membaca dokumen yang sama, menaikkan counter dari
+  // angka yang sama, lalu menulis — yang menulis terakhir menimpa yang lain.
+  // Akibatnya satu insiden HILANG dan dua pemanggil menerima ID yang SAMA.
+  const insMod = require('../lib/incidents');
+  const sebelum = (await uji.read()).incidents.length;
+  const hasilSerentak = await Promise.all(Array.from({ length: 15 }, (_, i) =>
+    insMod.create({ title: 'Uji rebutan ' + i, severity: 'LOW' }, 'uji-rebut')));
+  const sesudah = await uji.read();
+  const idSerentak = hasilSerentak.map(x => x.incidentId);
+  const unik = new Set(idSerentak).size;
+  const tersimpan = idSerentak.filter(x => sesudah.incidents.some(i => i.incidentId === x)).length;
+  cek('insiden rebutan: 15 pembuatan serentak menghasilkan ID yang unik', unik, 15);
+  cek('insiden rebutan: tidak ada insiden yang hilang tertimpa',
+    sesudah.incidents.length - sebelum, 15);
+  cek('insiden rebutan: semua ID yang dikembalikan benar-benar tersimpan', tersimpan, 15);
+
+  // --- urutan daftar: insiden baru dari alert LAMA harus tetap terlihat ---
+  const insUrut = require('../lib/incidents');
+  const srt = await uji.read();
+  srt.incidents = [
+    { incidentId: 'INC-2026-09001', title: 'terdeteksi lebih baru, tidak disentuh', status: 'CLOSED', severity: 'LOW',
+      detectedAt: '2026-10-03T00:00:00.000Z', updatedAt: '2026-10-03T00:00:00.000Z' },
+    { incidentId: 'INC-2026-09002', title: 'dibuat dari alert berumur 3 hari', status: 'OPEN', severity: 'HIGH',
+      detectedAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-04T09:00:00.000Z' }
+  ];
+  await uji.write(srt);
+  const urutDeteksi = (await insUrut.list({})).map(i => i.incidentId);
+  const urutAktivitas = (await insUrut.list({ sort: 'activity' })).map(i => i.incidentId);
+  cek('daftar: urutan bawaan memakai waktu terdeteksi', urutDeteksi[0], 'INC-2026-09001');
+  cek('daftar: sort=activity menaruh insiden yang baru dibuat/ diperbarui di atas',
+    urutAktivitas[0], 'INC-2026-09002');
+  cek('daftar: urutan sama untuk waktu yang sama (pasti, bukan kebetulan)',
+    JSON.stringify((await insUrut.list({})).map(i => i.incidentId)), JSON.stringify(urutDeteksi));
 
   console.log('\n==============================================');
   console.log('  ' + lulus + ' lulus, ' + gagal + ' gagal');
