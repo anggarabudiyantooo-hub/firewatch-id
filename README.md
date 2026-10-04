@@ -289,6 +289,13 @@ Aturan yang dipegang:
   Anda sendiri. Perbandingan token memakai waktu tetap.
 - `OPS_WRITE_TOKEN` lama diperlakukan sebagai token **ADMIN**, sehingga pemasangan
   yang sudah ada tidak berubah perilakunya.
+- Bila masih mode terbuka padahal variabel sudah dipasang, `/api/operations/access`
+  menyebut **nama variable yang diperiksa** (`namaDiperiksa`) dan mana yang
+  **benar-benar terlihat pada deployment ini** (`terlihat`) — nama saja, isinya
+  tidak pernah. Hanya nama yang terlihat itu yang membuktikan pemasangan sudah
+  sampai ke runtime. `GET /api/operations/health` memuat `application.build`
+  (7 huruf commit yang sedang melayani) supaya "sudah deploy belum" bisa
+  dibuktikan, bukan disimpulkan.
 - Nama pelaku tetap dari header `x-ops-actor` (terpisah dari token: peran
   menentukan *boleh atau tidak*, nama menentukan *siapa* yang tercatat).
 
