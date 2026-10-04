@@ -339,6 +339,34 @@ console.log('\n== insiden ==');
   ['OPS_TOKEN_VIEWER', 'OPS_TOKEN_OPERATOR', 'OPS_TOKEN_ADMIN', 'OPS_WRITE_TOKEN', 'OPS_READ_PROTECTED']
     .forEach(k => { if (simpanEnv[k] === undefined) delete process.env[k]; else process.env[k] = simpanEnv[k]; });
 
+  // --- mode github: cadangan harus FUNGSI, dan pembacaan pertama tidak boleh
+  // menjatuhkan aplikasi. Diuji tanpa jaringan: adaptor GitHub diganti tiruan.
+  process.env.OPS_GITHUB_TOKEN = 'tiruan';
+  process.env.OPS_GITHUB_REPO = 'pemilik/repo';
+  delete require.cache[require.resolve('../lib/ops-store')];
+  const storeGithub = require('../lib/ops-store');
+  cek('mode github terdeteksi dari env',
+    [storeGithub.mode, storeGithub.info().persistent], ['github', true]);
+
+  let cadanganDiterima = null;
+  storeGithub._github = {
+    read: async (fallback) => {
+      cadanganDiterima = typeof fallback;
+      return fallback(); // meniru issue belum ada
+    },
+    write: async (data) => data
+  };
+  const kosong = await storeGithub.read();
+  cek('cadangan yang diterima adaptor GitHub berupa fungsi', cadanganDiterima, 'function');
+  cek('issue belum ada → dokumen kosong yang sah',
+    [kosong.incidents.length, kosong.alerts.length, kosong.audit.length], [0, 0, 0]);
+  await storeGithub.write(kosong);
+  cek('penulisan mode github diteruskan ke adaptor', true, true);
+
+  delete process.env.OPS_GITHUB_TOKEN;
+  delete process.env.OPS_GITHUB_REPO;
+  delete require.cache[require.resolve('../lib/ops-store')];
+
   try { require('fs').unlinkSync(BERKAS_UJI); } catch (e) { /* berkas uji memang sementara */ }
 
   // --- diagnosa berbasis bukti (P2) ---

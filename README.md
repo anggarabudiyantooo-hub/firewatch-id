@@ -233,6 +233,11 @@ instance punya memori sendiri, jadi insiden butuh penyimpanan bersama. Adaptor
 Tanpa salah satu dari dua mode pertama, insiden akan hilang saat instance
 didaur ulang — dan itu tertulis di halaman, bukan disembunyikan.
 
+**Cara memasangnya** (langkah rinci, termasuk mengapa tidak perlu basis data
+seperti Neon): [`docs/PENYIMPANAN.md`](docs/PENYIMPANAN.md). Verifikasi setelah
+dipasang: `python3 work/verifikasi_penyimpanan.py` (baca-saja), tambahkan
+`--tulis` untuk membuktikan insiden benar-benar bertahan.
+
 Hal serupa berlaku untuk **pengukuran**: di Vercel setiap instance punya memori
 sendiri dan tugas penjadwal hanya berjalan saat `/api/cron` memanggilnya (tiap
 10 menit, dari GitHub Actions). Instance yang baru hidup karena itu belum
