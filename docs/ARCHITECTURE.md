@@ -218,3 +218,64 @@ lihat peta jalan.
 - **Tanpa koordinasi antar-tab.** Tiap tab menjalankan penjadwalnya sendiri.
 - **`maxDuration` 60 detik** membatasi pekerjaan berat seperti titik-dalam-poligon
   penuh.
+
+---
+
+## 7. Operations Center (ditambahkan 4 Okt 2026)
+
+Papan operasi di `/operations` tidak berdiri sendiri: seluruh angkanya dibaca
+dari penjadwal yang sama dengan dashboard, sehingga tidak ada "angka contoh"
+yang bisa berbeda dari kenyataan.
+
+### 7.1 Modul
+
+| Modul | Tanggung jawab |
+|---|---|
+| `lib/scheduler-instance.js` | satu instance `Scheduler` untuk seluruh proses (dulu `server.js` membuat instance sendiri sehingga modul lain membaca penjadwal kosong) |
+| `lib/service-health.js` | menerjemahkan keadaan penjadwal menjadi status layanan `HEALTHY/WARNING/DOWN/UNKNOWN` + ringkasan + status aplikasi |
+| `lib/freshness.js` | ambang kesegaran `FRESH ≤ 1,5×` / `STALE ≤ 6×` / `CRITICAL > 6×` interval jadwal (dapat diatur lewat env) |
+| `lib/alert-engine.js` | empat aturan (`source_down`, `data_critical`, `api_slow`, `hotspot_cluster`), dedup per (aturan, subjek), penutupan alert yang kondisinya hilang |
+| `lib/incidents.js` | siklus hidup insiden, timeline ber-aktor, metrik MTTR/SLA dari data nyata |
+| `lib/runbooks.js` | RB-001…RB-004; tiap langkah menunjuk berkas atau endpoint nyata di repo |
+| `lib/ops-store.js` | adaptor penyimpanan: `upstash` → `github` → `file` → `ephemeral`, dengan catatan mode yang ditampilkan di halaman |
+| `lib/ops-github.js` | mode `github`: keadaan disimpan pada satu issue berlabel `ops-state` |
+| `lib/ops-routes.js` | 20 rute `/api/operations`, `/api/incidents`, `/api/runbooks` (naik dari 28 menjadi 42 rute total) |
+
+### 7.2 Alur evaluasi
+
+```
+/api/cron  ──►  scheduler.tick()          (mengukur sumber hulu)
+                   │
+                   ├─► service-health.bangun(status)   → 9 layanan
+                   ├─► freshness                         → FRESH/STALE/CRITICAL
+                   └─► alert-engine.jalankan({services, clusters})
+                            └─► ops-store  →  alert, insiden, metrik
+```
+
+Rute baca (`/api/operations/health`, `/api/data-sources`, `/api/alerts`, …)
+hanya menyusun balasan dari keadaan itu; tidak ada permintaan hulu tambahan.
+
+### 7.3 Keputusan: instance dingin mengukur, bukan menampilkan "belum diketahui"
+
+Di Vercel setiap instance punya memori sendiri dan tugas penjadwal hanya berjalan
+saat `/api/cron` dipanggil (GitHub Actions, tiap 10 menit). Instance yang baru
+hidup karena itu belum mengukur apa pun. Pilihan yang ditolak: mengarang angka,
+atau membiarkan halaman berkata "belum diketahui" sampai cron kebetulan menyentuh
+instance itu.
+
+Yang dipakai: satu kali pengukuran beranggaran terbatas (`OPS_WARMUP_MS`, bawaan
+8000 ms) pada permintaan pertama rute ops, hasilnya dilaporkan apa adanya
+(`application.warmup = {ran, budgetMs, ms, diukur, pending}`), tidak diulang
+setelah instance itu punya hasil, dan dijeda 60 detik bila percobaan gagal.
+Status aplikasi pun tidak lagi menyebut `DOWN` hanya karena belum ada pengukuran:
+keadaan itu dilaporkan sebagai `UNKNOWN` beserta sebabnya.
+
+### 7.4 Batas yang diketahui
+
+- Tanpa Upstash/GitHub, penyimpanan insiden bersifat sementara (per instance) dan
+  halaman memasang spanduk yang mengatakannya.
+- Pengukuran hanya terbukti untuk instance yang melayani permintaan; dua instance
+  yang hidup bersamaan dapat melaporkan angka yang berbeda selama rentang 10
+  menit antar-cron. Itu keterbatasan arsitektur serverless tanpa penyimpanan
+  bersama, bukan angka yang dipalsukan.
+- Rute ops selalu `no-store` agar keadaan lama tidak pernah tersaji sebagai baru.

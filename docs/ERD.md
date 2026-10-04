@@ -213,3 +213,83 @@ keadaan klien ada di memori dan hilang saat halaman dimuat ulang.
 
 Konsekuensinya: preferensi lapisan, peta dasar, dan filter tidak bertahan. Imbalannya:
 tidak ada permukaan privasi di sisi klien sama sekali. Ini pertukaran yang disengaja.
+
+---
+
+## 5. Entitas operasional (Operations Center, 4 Okt 2026)
+
+Entitas di bawah ini tidak berasal dari sumber hulu; ia muncul dari pengukuran
+dan tindakan operator. Semuanya disimpan lewat `lib/ops-store.js` (bukan basis
+data — lihat bagian 6) sehingga bentuknya ditulis sebagai dokumen JSON.
+
+### SERVICE_MEASUREMENT
+Satu baris per tugas penjadwal, hasil pengukuran nyata. Tidak ada angka contoh.
+
+| Medan | Tipe | Keterangan |
+|---|---|---|
+| `id` | string | `quake`, `tsunami`, `eruption`, `hotspots`, `news`, … |
+| `status` | string | `HEALTHY` / `WARNING` / `DOWN` / `UNKNOWN` |
+| `responseTime` | number \| null | ms; **null** bila belum pernah terukur |
+| `lastCheckedAt`, `lastSuccessfulAt` | string \| null | ISO 8601 UTC |
+| `errorCount`, `consecutiveFails`, `backoff` | number, number, boolean | penghitung galat & penjeda |
+| `freshness` | object | `{ status: FRESH/STALE/CRITICAL/UNKNOWN, reason }` |
+| `endpoint`, `errorNote` | string \| null | penunjuk hulu & sebab singkat yang aman dipublikasikan |
+
+### ALERT
+
+| Medan | Tipe | Keterangan |
+|---|---|---|
+| `id` | string | `ALR-YYYYMMDD-NNNNN`, berurutan dari `data.counters.alert` |
+| `ruleId` | string | `source_down` / `data_critical` / `api_slow` / `hotspot_cluster` |
+| `subject` | string | kunci dedup (layanan atau sel klaster) |
+| `severity` | string | `CRITICAL` / `HIGH` / `MEDIUM` / `LOW` |
+| `status` | string | `OPEN` / `RESOLVED` |
+| `detectedAt`, `resolvedAt` | string \| null | ISO 8601 UTC |
+| `evidence` | object | angka yang memicu aturan (mis. `responseTimeMs`, `count`) |
+
+Aturan: satu alert per (rule, subject) dalam jendela `OPS_ALERT_DEDUP_MS`;
+alert yang kondisinya hilang ditutup (`RESOLVED`), tidak dihapus.
+
+### INCIDENT
+
+| Medan | Tipe | Keterangan |
+|---|---|---|
+| `incidentId` | string | `INC-YYYY-NNNNN` |
+| `status` | string | `OPEN` → `INVESTIGATING` → `PENDING` → `RESOLVED` → `CLOSED` (+ `RESOLVED` → `INVESTIGATING`); transisi lain ditolak `409` |
+| `severity`, `category` | string | kategori: `data_source_unavailable`, `data_stale`, `api_performance`, `environmental_event`, `infrastructure`, `lain_lain` |
+| `source` | string | `alert-engine` (membawa `alertId` + bukti) atau `manual` |
+| `assignedTo`, `escalatedTo` | string \| null | diambil dari header `x-ops-actor`/isi permintaan |
+| `detectedAt`, `resolvedAt`, `closedAt` | string \| null | dasar hitung MTTR |
+| `resolution` | string \| null | diisi saat `RESOLVED` |
+| `events[]` | array | `INCIDENT_EVENT` di bawah |
+
+### INCIDENT_EVENT
+`{ at, actor, type, note }` — satu langkah riwayat. `actor` adalah nama yang
+dikirim operator; kosong berarti tindakan tanpa nama dan ditulis begitu.
+
+### RUNBOOK / RUNBOOK_STEP
+`{ id: 'RB-001', title, category, steps[] }` dan
+`{ order, action, check, reference }` di mana `reference` menunjuk berkas nyata
+di repo ini (mis. `lib/scheduler.js`, `/api/status`).
+
+### STORE_MODE
+`{ mode: 'upstash'|'github'|'file'|'ephemeral', persistent, note, lastError }` —
+dibaca dari `/api/operations/store` dan **ditampilkan di halaman**, supaya tidak
+ada yang menyangka insidennya tersimpan padahal hanya ada di memori instance.
+
+### Metrik
+`GET /api/operations/metrics` menghitung dari insiden yang ada: `total`,
+`terbuka`, `mttrMenit`, `slaPersen`. Tanpa riwayat, nilainya `null` dengan
+catatan `"belum ada riwayat"` — bukan `0` yang bisa disalahartikan sebagai nol menit.
+
+---
+
+## 6. Mengapa tidak ada basis data
+
+Insiden butuh penyimpanan bersama, tetapi proyek ini sengaja tidak menambah
+basis data: satu-satunya kebutuhan state kecil (daftar alert + insiden) dan
+anggaran operasinya nol. Karena itu `lib/ops-store.js` mencoba berurutan
+`UPSTASH_REDIS_REST_*` (Redis REST), lalu satu issue GitHub berlabel
+`ops-state`, lalu berkas `.data/ops.json` saat dikembangkan lokal, dan terakhir
+memori instance dengan spanduk peringatan di halaman. Bila salah satu mode tetap
+dikonfigurasi, seluruh fitur operasional bekerja tanpa perubahan kode lain.
