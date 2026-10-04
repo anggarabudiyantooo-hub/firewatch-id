@@ -279,3 +279,33 @@ keadaan itu dilaporkan sebagai `UNKNOWN` beserta sebabnya.
   menit antar-cron. Itu keterbatasan arsitektur serverless tanpa penyimpanan
   bersama, bukan angka yang dipalsukan.
 - Rute ops selalu `no-store` agar keadaan lama tidak pernah tersaji sebagai baru.
+
+---
+
+## 8. Peran akses (RBAC) — ditambahkan 4 Okt 2026
+
+```
+permintaan ──► x-ops-token?  ──► peran (VIEWER < OPERATOR < ADMIN)
+                    │                     │
+                    │                     ├─ GET  ops   → BACA   (publik, kecuali OPS_READ_PROTECTED=1)
+                    │                     ├─ tulis ops   → OPERATOR
+                    │                     └─ evaluate    → ADMIN (mahal: memanggil sumber hulu)
+                    ▼
+              tanpa token terkonfigurasi → mode TERBUKA, dikatakan di /api/operations/access
+```
+
+Empat keputusan yang dipegang (`lib/ops-auth.js`):
+
+1. **Mode terbuka dinyatakan terbuka.** Tanpa token yang dikonfigurasi,
+   aplikasi tidak berpura-pura terkunci; `/api/operations/access` dan halaman
+   menuliskannya apa adanya.
+2. **Baca publik sebagai bawaan.** Papan ini memang dipakai untuk memantau;
+   `OPS_READ_PROTECTED=1` menguncinya untuk pemasangan privat.
+3. **Pemasangan lama tidak berubah.** `OPS_WRITE_TOKEN` diperlakukan sebagai
+   token ADMIN, jadi perilaku sebelum RBAC tetap berlaku.
+4. **Token tidak pernah keluar dari server.** `/api/operations/access` hanya
+   menyatakan peran mana yang terkonfigurasi dan peran pemanggil; perbandingan
+   memakai `crypto.timingSafeEqual`.
+
+Peran menentukan *boleh atau tidak*; nama pelaku tetap dari `x-ops-actor` dan
+tetap menentukan *siapa* yang tercatat di timeline serta log audit.
