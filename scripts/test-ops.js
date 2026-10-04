@@ -640,6 +640,12 @@ console.log('\n== insiden ==');
   cek('akses: nama variable yang diperiksa disebutkan (untuk diagnosa)',
     k0.namaDiperiksa.join(','), 'OPS_TOKEN_VIEWER,OPS_TOKEN_OPERATOR,OPS_TOKEN_ADMIN,OPS_WRITE_TOKEN');
   cek('akses: belum ada yang terlihat saat env kosong', k0.terlihat.length, 0);
+  cek('akses: balasan /access memuat nama yang diperiksa (bukan hanya nama di kode)',
+    [authUji.info(null).namaDiperiksa.length > 0, 'terlihat' in authUji.info(null)], [true, true]);
+  const ket = authUji.info(null).keterangan;
+  cek('akses: keterangan menyebut nama yang diperiksa + yang terlihat (mode terbuka)',
+    ket.includes('Diperiksa: ') && ket.includes('tidak satu pun'), true);
+
   process.env.OPS_TOKEN_OPERATOR = 'rahasia-jangan-bocor';
   const k1 = authUji.konfigurasi();
   cek('akses: satu token OPERATOR → mode token', [k1.mode, k1.peranDikonfigurasi.OPERATOR], ['token', true]);
