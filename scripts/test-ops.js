@@ -189,6 +189,44 @@ console.log('\n== insiden ==');
   sched.status = asliStatus;
   sched.tick = asliTick;
 
+  // --- log audit: dicatat dari tindakan yang benar-benar tersimpan ---
+  const st2 = require('../lib/ops-store');
+  const auditSebelum = (await st2.audit(5)).total;
+  const incA = await incidents.create({ title: 'Uji audit A', severity: 'LOW', category: 'lain_lain' }, 'Rina');
+  await incidents.patch(incA.incidentId, { status: 'INVESTIGATING' }, 'Budi');
+  const l1 = await st2.audit(5);
+  cek('tindakan insiden tercatat di log audit (2 entri baru)', l1.total, auditSebelum + 2);
+  cek('pelaku dicatat sesuai yang mengirim', l1.entries[0].actor, 'Budi');
+  cek('log audit menunjuk sasaran tindakan', l1.entries[0].target, incA.incidentId);
+  cek('log audit menyebut apa yang berubah', /status → INVESTIGATING/.test(l1.entries[0].detail), true);
+  cek('urut dari yang terbaru', l1.entries[0].at >= l1.entries[1].at, true);
+
+  const incTanpaNama = await incidents.create({ title: 'Uji audit tanpa nama', severity: 'LOW', category: 'lain_lain' }, null);
+  const l2 = await st2.audit(3);
+  cek('tanpa nama pengirim ditulis apa adanya', l2.entries[0].actor, 'tanpa nama');
+
+  // Batas log: entri lama dibuang, bukan tumbuh tanpa ujung.
+  const dok = { audit: [] };
+  for (let i = 0; i < st2.AUDIT_MAX + 25; i++) st2.catatAudit(dok, { action: 'uji_' + i, actor: 'sistem' });
+  cek('log audit dibatasi ' + st2.AUDIT_MAX + ' entri', dok.audit.length, st2.AUDIT_MAX);
+  cek('yang dibuang adalah yang paling lama', dok.audit[0].action, 'uji_' + (st2.AUDIT_MAX + 24));
+
+  // Jalur otomatis (evaluasi alert) mencatat dirinya sebagai sistem, dan
+  // hanya bila ada yang benar-benar berubah.
+  // Sel klaster dibuat acak supaya uji ini tidak bergantung pada isi berkas
+  // simpanan dari putaran sebelumnya (alert yang sudah ada akan ter-dedup,
+  // sehingga evaluasi memang tidak mengubah apa pun — itu perilaku benar).
+  const sel = { lat: 3 + Math.random() * 5, lon: 95 + Math.random() * 20, count: 60, frp: 900 };
+  const sebelumAuto = (await st2.audit(1)).total;
+  await alerts.jalankan({ services: [], clusters: [sel] });
+  const l3 = await st2.audit(3);
+  cek('evaluasi yang mengubah alert tercatat sebagai sistem',
+    [l3.entries[0].actor, l3.entries[0].action], ['sistem', 'alert_dievaluasi']);
+  cek('log evaluasi menyebut id alert barunya', /ALR-\d{8}-\d{5}/.test(l3.entries[0].detail), true);
+  const sebelumUlang = (await st2.audit(1)).total;
+  await alerts.jalankan({ services: [], clusters: [sel] });
+  cek('evaluasi tanpa perubahan tidak menambah log', (await st2.audit(1)).total, sebelumUlang);
+
   console.log('\n==============================================');
   console.log('  ' + lulus + ' lulus, ' + gagal + ' gagal');
   console.log('==============================================');

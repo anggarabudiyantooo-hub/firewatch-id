@@ -505,6 +505,12 @@
             <span class="micro" style="display:block;padding-bottom:6px">Status pembaruan data</span>
             <div class="metric"><div><b id="srcHealthy">—</b><span>sumber aktif</span></div><div><b id="srcQ429">—</b><span>gagal 429 (kuota)</span></div><div><b id="srcQ5xx">—</b><span>galat 5xx</span></div><div><b id="srcRuns">—</b><span>run / gagal</span></div></div>
             <div id="statusBody" class="st-grid"></div>
+            <!-- Pintu masuk Operations Center. Diletakkan di panel Sumber —
+                 tempat orang memeriksa kesehatan data — bukan di topbar yang
+                 sudah terisi penuh pada 390 px (menambah 52 px di sana memotong
+                 tombol REFRESH, lihat riwayat perbaikan topbar mobile). -->
+            <p class="ops-invite"><a id="opsLink" href="/operations">Buka Operations Center <span aria-hidden="true">→</span></a>
+              <span class="ops-invite-note">Kesehatan tiap sumber, kesegaran data, alert, insiden &amp; runbook — dengan angka yang sama seperti di halaman ini.</span></p>
             <!-- Keselamatan publik: nomor darurat + rujukan resmi + penyangkalan.
                  Ditempatkan di panel Sumber (bukan footer yang disembunyikan)
                  supaya benar-benar terbaca, tanpa mengubah susunan panel yang

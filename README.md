@@ -178,6 +178,14 @@ yang sama dengan yang menyuplai dashboard.
 | Alerts | aturan `source_down`, `data_critical`, `api_slow`, `hotspot_cluster` + tombol membuat insiden | evaluasi dijalankan pada `/api/cron` (tiap 10 menit) dan bisa dipicu manual |
 | Incidents | siklus OPEN → INVESTIGATING → PENDING → RESOLVED → CLOSED, penugasan, eskalasi, catatan investigasi, timeline, metrik MTTR/SLA dari data nyata | disimpan oleh adaptor penyimpanan (lihat di bawah) |
 | Runbooks | 4 SOP yang langkahnya menunjuk berkas/endpoint nyata di repo ini | `lib/runbooks.js`, ditautkan ke kategori insiden |
+| Audit Log | 200 tindakan terakhir: siapa mengubah apa, kapan — termasuk evaluasi alert otomatis | satu dokumen simpanan yang sama dengan insiden (tidak ada log kedua yang bisa berbeda) |
+
+### Cara masuk
+
+Dari dashboard: panel **Sumber** (chip status di topbar, atau kunci F6) memuat
+tautan **Buka Operations Center**. Halaman ops juga bisa dibuka langsung di
+`/operations`, dan tiap insiden punya tautan sendiri:
+`/operations?insiden=INC-2026-00001` membuka detail insiden itu.
 
 ### Penyimpanan operasional — apa adanya
 
@@ -227,7 +235,8 @@ cepat 60 detik sekali agar sumber hulu tidak dihujani permintaan.
 `GET|POST /api/incidents` · `GET|PATCH /api/incidents/:id` ·
 `POST /api/incidents/:id/{assign,notes,escalate,resolve,close}` ·
 `GET /api/runbooks` · `GET /api/runbooks/:id` ·
-`GET /api/operations/metrics` · `GET /api/operations/store`
+`GET /api/operations/metrics` · `GET /api/operations/store` ·
+`GET /api/operations/audit`
 
 Transisi status yang tidak sah ditolak `409`; severity/kategori tak dikenal dan
 judul kosong ditolak `400`. Semua perubahan mencatat nama pelaku bila header

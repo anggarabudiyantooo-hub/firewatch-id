@@ -270,6 +270,31 @@
     });
   }
 
+  function renderAudit(d) {
+    var tb = $('tbAudit');
+    tb.textContent = '';
+    $('auditRingkas').textContent = d.total ? d.total + ' tindakan tercatat (ditampilkan ' + d.entries.length + ' terbaru, batas ' + d.max + ')' : 'belum ada tindakan tercatat';
+    if (!d.entries.length) {
+      var tr0 = el('tr');
+      var td0 = el('td', 'empty', 'Belum ada tindakan operasional yang tercatat. Log muncul sendiri setelah alert dievaluasi atau insiden diubah.');
+      td0.colSpan = 5;
+      tr0.appendChild(td0);
+      tb.appendChild(tr0);
+      return;
+    }
+    d.entries.forEach(function (e) {
+      var tr = el('tr');
+      var td1 = el('td', null, waktu(e.at));
+      var td2 = el('td');
+      td2.appendChild(el('span', 'tag', e.actor));
+      var td3 = el('td', null, e.action);
+      var td4 = el('td', null, e.target || '—');
+      var td5 = el('td', 'muted', e.detail || '—');
+      [td1, td2, td3, td4, td5].forEach(function (td) { tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+  }
+
   function renderRunbook(list) {
     var box = $('daftarRunbook');
     box.textContent = '';
@@ -305,7 +330,12 @@
   // --------------------------------------------------------- detail insiden
   var insidenTerbuka = null;
 
-  function bukaInsiden(id) {
+  function bukaInsiden(id, dorongRiwayat) {
+    // Tautan dalam: /operations?insiden=INC-… membuka detail yang sama, supaya
+    // tautan bisa dikirim ke rekan (bukan hanya keadaan di layar satu orang).
+    if (dorongRiwayat !== false) {
+      try { history.replaceState(null, '', '/operations?insiden=' + encodeURIComponent(id) + '#detailInsiden'); } catch (e) { /* tautan dalam bersifat tambahan */ }
+    }
     ambil('/api/incidents/' + id).then(function (inc) {
       insidenTerbuka = inc;
       var box = $('detailIsi');
@@ -331,6 +361,20 @@
       if (inc.runbooks && inc.runbooks.length) {
         head.appendChild(el('p', 'muted', 'Runbook terkait: ' + inc.runbooks.map(function (r) { return r.id + ' ' + r.title; }).join(' · ')));
       }
+      var aksi = el('p');
+      var bTautan = el('button', 'btn', 'Salin tautan');
+      bTautan.type = 'button';
+      bTautan.addEventListener('click', function () {
+        var url = location.origin + '/operations?insiden=' + inc.incidentId;
+        var selesai = function () { toast('Tautan disalin: ' + url); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(selesai, function () { toast(url); });
+        } else {
+          toast(url); // tanpa izin papan klip, tautannya tetap ditampilkan
+        }
+      });
+      aksi.appendChild(bTautan);
+      head.appendChild(aksi);
       box.appendChild(head);
 
       var grid = el('div', 'grid two');
@@ -437,13 +481,14 @@
 
   // ------------------------------------------------------------------- muat
   function muatSemua() {
-    Promise.all([
+    return Promise.all([
       ambil('/api/operations/health'),
       ambil('/api/data-sources'),
       ambil('/api/alerts'),
       ambil('/api/incidents'),
       ambil('/api/operations/metrics'),
-      ambil('/api/runbooks')
+      ambil('/api/runbooks'),
+      ambil('/api/operations/audit?limit=25')
     ]).then(function (r) {
       renderBanner(r[4].storage);
       renderKesehatan(r[0]);
@@ -452,6 +497,7 @@
       renderInsiden(r[3].incidents || []);
       renderMetrik(r[4].metrics, r[4].storage);
       renderRunbook(r[5].runbooks || []);
+      renderAudit(r[6]);
       $('catatanKaki').textContent =
         'Ambang kesegaran & SLA dapat diatur lewat environment variable (OPS_FRESH_STALE_MULT, OPS_FRESH_CRIT_MULT, ' +
         'OPS_SLOW_MS, OPS_HOTSPOT_CLUSTER, OPS_ALERT_DEDUP_MS, OPS_SLA_*_MIN). Nilai yang berlaku ditampilkan di setiap bagian.';
@@ -518,6 +564,12 @@
 
   jam();
   setInterval(jam, 1000);
-  muatSemua();
+
+  // Bila URL membawa ?insiden=…, buka detail itu setelah daftar selesai dimuat,
+  // supaya urutan tampilannya masuk akal ketika insiden itu ada di daftar.
+  var diminta = null;
+  try { diminta = new URLSearchParams(location.search).get('insiden'); } catch (e) { diminta = null; }
+
+  muatSemua().then(function () { if (diminta) bukaInsiden(diminta, false); });
   setInterval(muatSemua, 60000);
 })();
