@@ -1,5 +1,7 @@
 # SIAGA ID: Pemantauan Bencana Real-Time + Operations Center
 
+[![Gerbang uji](https://github.com/anggarabudiyantooo-hub/firewatch-id/actions/workflows/ci.yml/badge.svg)](https://github.com/anggarabudiyantooo-hub/firewatch-id/actions/workflows/ci.yml)
+
 Pemantauan bencana Indonesia dari sumber resmi dan terbuka: letusan gunung api dan
 sebaran abu, gempa dan tsunami, pengungsi, serta titik api dan asap karhutla.
 
@@ -419,9 +421,12 @@ Rincian lengkap beserta urutan pengerjaan ada di [`docs/ROADMAP.md`](docs/ROADMA
 
 ## Lisensi dan atribusi
 
-Kode: [MIT](LICENSE). Data milik penerbitnya masing-masing dan tunduk pada
-ketentuan mereka. GeoNames berlisensi CC BY 4.0. Peta dasar © Esri, Maxar,
-Earthstar Geographics, HERE, Garmin, dan kontributor OpenStreetMap.
+Kode di repositori ini memakai lisensi [MIT](LICENSE); lisensi itu hanya
+mencakup kode. Data yang ditampilkan berasal dari pihak ketiga dan tetap tunduk
+pada ketentuan masing-masing penyedia: BMKG, BNPB/BPBD, PVMBG/MAGMA, NASA FIRMS,
+NOAA, Copernicus, Global Forest Watch, dan GeoNames (CC BY 4.0). Peta dasar
+© Esri, Maxar, Earthstar Geographics, HERE, Garmin, dan kontributor
+OpenStreetMap.
 
 ## Ikut mengembangkan
 
