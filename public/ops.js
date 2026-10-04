@@ -69,6 +69,23 @@
       (a.warmup ? ' Diukur saat halaman ini diminta (' + Math.round(a.warmup.ms / 1000) + ' dtk).' : '') + '.';
   }
 
+  function isiPilihanDiagnosa(sources) {
+    var sel = $('selDiagnosa');
+    if (!sel) return;
+    var sebelum = sel.value;
+    sel.textContent = '';
+    var tanda = { DOWN: '▼', WARNING: '!', UNKNOWN: '?' };
+    sources.forEach(function (s) {
+      var o = el('option', null, (tanda[s.status] ? tanda[s.status] + ' ' : '') + s.name + ' (' + s.id + ')');
+      o.value = s.id;
+      o.className = 'opt-' + s.status;
+      sel.appendChild(o);
+    });
+    // Yang perlu perhatian lebih dulu supaya tidak tersembunyi di daftar panjang.
+    var prioritas = sources.filter(function (s) { return s.status === 'DOWN' || s.status === 'WARNING'; })[0];
+    sel.value = sebelum || (prioritas ? prioritas.id : (sources[0] ? sources[0].id : ''));
+  }
+
   function renderSumber(d) {
     var tb = $('tbSumber');
     tb.textContent = '';
@@ -249,6 +266,84 @@
     }
   }
 
+  /**
+   * Hasil diagnosa. Aturan tampilannya: kesimpulan dulu, lalu KEYAKINAN beserta
+   * artinya, lalu bukti angka, baru langkah. Pembaca harus bisa membantah
+   * kesimpulannya dari bukti yang ditampilkan di halaman yang sama.
+   */
+  function renderDiagnosa(d) {
+    var box = $('hasilDiagnosa');
+    box.textContent = '';
+    box.className = '';
+
+    if (d.mode === 'armada') {
+      box.appendChild(el('p', null, 'Ringkasan armada: ' + d.ringkas.total + ' layanan dipantau · ' +
+        d.ringkas.turun + ' turun · ' + d.ringkas.peringatan + ' peringatan · ' +
+        d.ringkas.belumTerukur + ' belum terukur · ' + d.ringkas.alertAktif + ' alert aktif.'));
+      if (d.prioritas.length) {
+        box.appendChild(el('p', null, 'Perlu dilihat lebih dulu: ' + d.prioritas.join(', ') + '.'));
+      } else {
+        box.appendChild(el('p', 'muted', 'Tidak ada layanan yang perlu diprioritaskan menurut pengukuran saat ini.'));
+      }
+      if (d.armada) {
+        box.appendChild(el('h3', null, d.armada.judul));
+        box.appendChild(el('p', null, d.armada.sebab));
+        var ulA = el('ul', 'list');
+        d.armada.bukti.forEach(function (b) { ulA.appendChild(el('li', null, b)); });
+        box.appendChild(ulA);
+        var olA = el('ol', 'steps');
+        d.armada.langkah.forEach(function (l) { olA.appendChild(el('li', null, l)); });
+        box.appendChild(olA);
+      }
+      box.appendChild(el('p', 'muted', d.catatan));
+      return;
+    }
+
+    box.appendChild(el('p', 'who', 'Sasaran: ' + (d.sasaran.nama || d.sasaran.id) + ' (' + d.sasaran.id + ')' +
+      (d.sasaran.kritis ? ' ★ tugas kritis' : '')));
+    box.appendChild(el('h3', null, d.kesimpulan));
+    box.appendChild(el('p', null, 'Kejelasan bukti: ' + d.keyakinan.tingkat + ' — ' + d.keyakinan.alasan + '. ' + d.keyakinan.arti));
+
+    box.appendChild(el('h3', null, 'Bukti yang dipakai'));
+    var ulB = el('ul', 'list');
+    d.bukti.forEach(function (b) { ulB.appendChild(el('li', null, b)); });
+    box.appendChild(ulB);
+
+    if (d.alertTerkait && d.alertTerkait.length) {
+      box.appendChild(el('p', 'muted', 'Alert aktif untuk layanan ini: ' + d.alertTerkait.join(', ') + '.'));
+    }
+    if (d.insidenTerbuka && d.insidenTerbuka.length) {
+      box.appendChild(el('p', 'muted', 'Insiden terbuka: ' + d.insidenTerbuka.join(', ') + '.'));
+    }
+
+    d.dugaan.forEach(function (g) {
+      box.appendChild(el('h3', null, g.judul));
+      box.appendChild(el('p', null, g.sebab));
+      var ol = el('ol', 'steps');
+      g.langkah.forEach(function (l) { ol.appendChild(el('li', null, l)); });
+      box.appendChild(ol);
+    });
+
+    if (d.runbook && d.runbook.length) {
+      box.appendChild(el('p', 'muted', 'SOP terkait: ' + d.runbook.join(' · ') + '. Buka langkah lengkapnya di lembar insiden (tombol "Tandai dikerjakan" mencatat ke timeline).'));
+    }
+    box.appendChild(el('p', 'muted', d.dasar || 'Dihitung dari pengukuran yang tersimpan memakai aturan tetap.'));
+  }
+
+  function mintaDiagnosa(sasaran) {
+    var box = $('hasilDiagnosa');
+    box.className = 'empty';
+    box.textContent = 'menghitung…';
+    return ambilAman('/api/operations/diagnose' + (sasaran ? '?' + sasaran : '')).then(function (r) {
+      if (!r.ok) {
+        box.className = 'empty';
+        box.textContent = 'Diagnosa gagal dimuat: ' + r.error.message;
+        return;
+      }
+      renderDiagnosa(r.data);
+    });
+  }
+
   function renderAudit(d) {
     var tb = $('tbAudit');
     tb.textContent = '';
@@ -366,7 +461,7 @@
 
       if (r[4] && r[4].ok) renderBanner(r[4].data.storage);
       coba(0, renderKesehatan);
-      coba(1, renderSumber);
+      coba(1, function (d) { isiPilihanDiagnosa(d.sources || []); renderSumber(d); });
       coba(2, function (d) { renderAlert(d.alerts || []); });
       coba(3, function (d) { renderInsiden(d.incidents || []); });
       coba(4, function (d) { renderMetrik(d.metrics, d.storage); });
@@ -433,6 +528,16 @@
   });
 
   $('btnMuat').addEventListener('click', function () { muatSemua(); toast('Data dimuat ulang.'); });
+
+  // --- troubleshooting berbasis bukti ---
+  if ($('btnDiagnosa')) {
+    $('btnDiagnosa').addEventListener('click', function () { mintaDiagnosa('service=' + encodeURIComponent($('selDiagnosa').value)); });
+    $('btnDiagnosaArmada').addEventListener('click', function () { mintaDiagnosa(''); });
+    $('selDiagnosa').addEventListener('change', function () {
+      if ($('hasilDiagnosa').textContent.indexOf('Pilih satu sumber') === 0) return;
+      mintaDiagnosa('service=' + encodeURIComponent($('selDiagnosa').value));
+    });
+  }
 
   // --- token akses ---
   var iToken = $('iToken');

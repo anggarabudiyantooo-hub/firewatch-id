@@ -30,6 +30,7 @@ const health = require('../lib/service-health');
 const opsRoutes = require('../lib/ops-routes');
 const alerts = require('../lib/alert-engine');
 const auth = require('../lib/ops-auth');
+const triage = require('../lib/troubleshoot');
 const incidents = require('../lib/incidents');
 const runbooks = require('../lib/runbooks');
 
@@ -339,6 +340,102 @@ console.log('\n== insiden ==');
     .forEach(k => { if (simpanEnv[k] === undefined) delete process.env[k]; else process.env[k] = simpanEnv[k]; });
 
   try { require('fs').unlinkSync(BERKAS_UJI); } catch (e) { /* berkas uji memang sementara */ }
+
+  // --- diagnosa berbasis bukti (P2) ---
+  // Modul ini tidak boleh menyimpulkan tanpa bukti. Ujinya karena itu menekan
+  // dua hal: pemetaan gejala → dugaan, dan LARANGAN menyimpulkan saat bersih.
+  const svcDown = {
+    id: 'eruption', name: 'Laporan letusan pos pengamatan', status: 'DOWN', hasData: false,
+    consecutiveFails: 3, errorCount: 5, backoff: true, critical: true, responseTime: null,
+    lastCheckedAt: '2026-10-04T08:00:00Z', lastSuccessfulAt: null,
+    endpoint: 'magma.esdm.go.id — informasi letusan', errorNote: 'magma 500',
+    freshness: { status: 'UNKNOWN', reason: 'belum pernah berhasil ditarik' }
+  };
+  const svcSehat = {
+    id: 'quake', name: 'Gempa bumi (BMKG)', status: 'HEALTHY', hasData: true,
+    consecutiveFails: 0, errorCount: 0, backoff: false, critical: true, responseTime: 220,
+    lastCheckedAt: '2026-10-04T08:00:00Z', lastSuccessfulAt: '2026-10-04T08:00:00Z',
+    endpoint: 'data.bmkg.go.id', errorNote: null,
+    freshness: { status: 'FRESH', reason: 'umur data di dalam ambang' }
+  };
+
+  cek('jenis kegagalan 5xx dikenali', triage.jenisKegagalan('magma 500').kode, 'hulu-5xx');
+  cek('jenis kegagalan timeout dikenali', triage.jenisKegagalan('ETIMEDOUT saat menghubungi hulu').kode, 'timeout');
+  cek('jenis kegagalan kredensial dikenali', triage.jenisKegagalan('401 Unauthorized dari hulu').kode, 'kredensial');
+  cek('jenis kegagalan kuota dikenali', triage.jenisKegagalan('hulu menolak: 429 rate limit').kode, 'kuota');
+  cek('pesan kosong tidak dipaksakan jadi jenis', triage.jenisKegagalan(null), null);
+
+  cek('keyakinan 1 kelompok → rendah', triage.hitungKeyakinan(['basi']).tingkat, 'rendah');
+  cek('keyakinan 2 kelompok → sedang', triage.hitungKeyakinan(['basi', 'lambat']).tingkat, 'sedang');
+  cek('keyakinan 4 kelompok → tinggi', triage.hitungKeyakinan(['basi', 'lambat', 'dijeda', 'gagal-berulang']).tingkat, 'tinggi');
+  cek('arti keyakinan menyatakan ia bukan kepastian penyebab',
+    /BUKAN kepastian penyebab/.test(triage.hitungKeyakinan(['basi', 'lambat']).arti), true);
+
+  const dDown = triage.diagnosaLayanan(svcDown, { slowMs: 4000, runbook: ['RB-001 Sumber data tidak tersedia (API hulu gagal)'] });
+  cek('sumber gagal berulang → dugaan menyebut jenis kegagalannya',
+    /tidak dapat dijangkau berulang/.test(dDown.kesimpulan) && /5xx/.test(dDown.kesimpulan), true);
+  cek('setiap diagnosa membawa bukti angka', dDown.bukti.some(b => /kegagalan berturut=3/.test(b)), true);
+  cek('bukti menyebut hulu yang harus diperiksa', dDown.bukti.some(b => /magma\.esdm\.go\.id/.test(b)), true);
+  cek('dugaan menyertakan langkah pemeriksaan', dDown.dugaan[0].langkah.length >= 3, true);
+  cek('runbook kategori dikaitkan', dDown.runbook, ['RB-001 Sumber data tidak tersedia (API hulu gagal)']);
+
+  // LARANGAN inti: layanan sehat tidak boleh dikarang-karang punya masalah.
+  const dSehat = triage.diagnosaLayanan(svcSehat, {});
+  cek('layanan sehat → tidak ada indikasi masalah',
+    /Tidak ada indikasi masalah/.test(dSehat.kesimpulan), true);
+  cek('layanan sehat tidak diberi keyakinan palsu', dSehat.keyakinan.alasan, 'tidak ada sinyal masalah');
+  cek('layanan sehat tidak diberi runbook yang seolah perlu dikerjakan', dSehat.runbook, []);
+  cek('sehat tetap mengingatkan batasnya (bukan jaminan)', /BUKAN jaminan/.test(dSehat.dugaan[0].sebab), true);
+
+  // Belum terukur tidak boleh disamakan dengan rusak.
+  const svcUnknown = Object.assign({}, svcSehat, { status: 'UNKNOWN', hasData: false, responseTime: null, lastSuccessfulAt: null, freshness: { status: 'UNKNOWN', reason: 'belum pernah berhasil ditarik' } });
+  const dUnknown = triage.diagnosaLayanan(svcUnknown, {});
+  cek('belum terukur → tidak disebut rusak', /Belum ada pengukuran/.test(dUnknown.kesimpulan), true);
+
+  // Data lama yang masih disajikan adalah dugaan tersendiri.
+  const svcBasi = Object.assign({}, svcSehat, { status: 'WARNING', consecutiveFails: 2, freshness: { status: 'CRITICAL', reason: 'umur 7× interval' } });
+  cek('data kedaluwarsa tetapi ada → dugaan "nilai lama masih dipakai"',
+    /kedaluwarsa/.test(triage.diagnosaLayanan(svcBasi, {}).kesimpulan), true);
+  const svcLambat = Object.assign({}, svcSehat, { responseTime: 9500 });
+  cek('respons lambat → dugaan lambat, bukan kegagalan',
+    /lambat/.test(triage.diagnosaLayanan(svcLambat, { slowMs: 4000 }).kesimpulan), true);
+
+  // Korelasi armada.
+  cek('dua layanan turun belum cukup menyimpulkan gangguan sisi kita',
+    triage.diagnosaArmada([svcDown, Object.assign({}, svcDown, { id: 'x' })]), null);
+  const armada = triage.diagnosaArmada([
+    svcDown, Object.assign({}, svcDown, { id: 'shelter' }), Object.assign({}, svcDown, { id: 'news' }),
+    svcSehat
+  ]);
+  cek('tiga layanan turun → dugaan gangguan sisi kita', /sisi kita/.test(armada.judul), true);
+  cek('korelasi menyebut ambangnya supaya bisa dibantah', /3 dari 4/.test(armada.sebab), true);
+  cek('korelasi mendaftar bukti per layanan', armada.bukti.length, 3);
+
+  // Kegagalan BARU (1×) tetap harus berguna, tanpa dibuat terdengar menetap.
+  const svcBaru = Object.assign({}, svcDown, { consecutiveFails: 1, errorCount: 1, backoff: false, errorNote: 'laporan letusan tidak terbaca' });
+  const dBaru = triage.diagnosaLayanan(svcBaru, {});
+  cek('kegagalan baru disebut apa adanya (belum menetap)',
+    /kegagalan baru 1×/.test(dBaru.kesimpulan) && /belum menetap/.test(dBaru.kesimpulan), true);
+  cek('kegagalan baru tetap menyebut jenisnya',
+    /tidak dapat dibaca/.test(dBaru.kesimpulan), true);
+  cek('kegagalan baru punya langkah tindak lanjut', dBaru.dugaan[0].langkah.length >= 3, true);
+
+  // Pemetaan kategori → runbook.
+  cek('alert yang menyala menang atas bacaan status',
+    triage.kategoriUntuk({ id: 'x', status: 'HEALTHY', hasData: true }, [{ id: 'a', serviceId: 'x', ruleId: 'api_slow' }]),
+    'api_performance');
+  cek('layanan turun tanpa alert → kategori sumber tidak tersedia',
+    triage.kategoriUntuk(svcDown, []), 'data_source_unavailable');
+  cek('data kedaluwarsa → kategori data basi',
+    triage.kategoriUntuk({ id: 'y', status: 'WARNING', hasData: true, freshness: { status: 'CRITICAL' } }, []), 'data_stale');
+  cek('layanan sehat → tanpa kategori (tidak ada SOP yang perlu dikerjakan)',
+    triage.kategoriUntuk({ id: 'z', status: 'HEALTHY', hasData: true, freshness: { status: 'FRESH' } }, []), null);
+  cek('pemanggil keliru (bukan larik) tidak menjatuhkan fungsi',
+    triage.kategoriUntuk({ id: 'q', status: 'HEALTHY', hasData: true }, { bukan: 'larik' }), null);
+
+  const ring = triage.ringkas([svcDown, svcSehat], [{ status: 'ACTIVE' }], {});
+  cek('ringkasan menghitung layanan turun & alert aktif', [ring.ringkas.turun, ring.ringkas.alertAktif], [1, 1]);
+  cek('ringkasan menyatakan dasarnya aturan, bukan model bahasa', /aturan tetap/.test(ring.catatan), true);
 
   console.log('\n==============================================');
   console.log('  ' + lulus + ' lulus, ' + gagal + ' gagal');

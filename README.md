@@ -179,6 +179,7 @@ yang sama dengan yang menyuplai dashboard.
 | Incidents | siklus OPEN → INVESTIGATING → PENDING → RESOLVED → CLOSED, penugasan, eskalasi, catatan investigasi, timeline, metrik MTTR/SLA dari data nyata | disimpan oleh adaptor penyimpanan (lihat di bawah) |
 | Runbooks | 4 SOP yang langkahnya menunjuk berkas/endpoint nyata di repo ini | `lib/runbooks.js`, ditautkan ke kategori insiden |
 | Audit Log | 200 tindakan terakhir: siapa mengubah apa, kapan — termasuk evaluasi alert otomatis | satu dokumen simpanan yang sama dengan insiden (tidak ada log kedua yang bisa berbeda) |
+| Troubleshooting | dugaan + **bukti angka** + langkah pemeriksaan untuk satu sumber, satu alert, atau satu insiden; plus ringkasan armada | aturan tetap atas pengukuran tersimpan (`lib/troubleshoot.js`) — **bukan keluaran model bahasa** |
 | Tautan dalam | `?insiden=INC-…` membuka detail di papan; tombol "Salin tautan" | rute baca yang sama |
 | Lembar insiden | `/insiden/INC-…` — satu insiden, satu alamat, untuk dibagikan & dibaca ulang; langkah runbook bisa ditandai dikerjakan | `public/insiden.html` + `public/ops-detail.js` (berkas yang sama dengan kartu detail di papan) |
 
@@ -186,6 +187,20 @@ Setiap bagian papan dimuat sendiri-sendiri. Bila satu endpoint gagal (di Vercel
 tiap permintaan bisa mendarat di instance berbeda, jadi ini wajar), bagian lain
 tetap menampilkan angka sungguhan dan spanduk menyebut bagian mana yang tidak
 termuat — papan tidak pernah tampak kosong tanpa keterangan.
+
+### Troubleshooting: bukan teks karangan
+
+`GET /api/operations/diagnose` menurunkan dugaan dari pengukuran yang sudah
+tersimpan — status, waktu respons, jumlah gagal berturut, kesegaran, pesan galat
+tersanitasi, dan alert yang menyala — memakai aturan yang dapat diperiksa satu
+per satu. Setiap dugaan **wajib** menyertakan buktinya, dan tingkat "kejelasan
+bukti" hanya naik bila ada lebih dari satu kelompok sinyal yang sejalan.
+
+Yang penting sama: bila tidak ada bukti, modul ini **tidak menyimpulkan apa pun**.
+Layanan yang sehat dijawab "tidak ada indikasi masalah" (bukan daftar masalah
+karangan), layanan yang belum pernah diukur dijawab "belum ada pengukuran"
+(bukan "rusak"), dan tingkat keyakinan menyatakan kejelasan **gejala**, bukan
+kepastian penyebab.
 
 ### Langkah runbook: centang yang tidak bisa berbohong
 
@@ -279,6 +294,8 @@ Aturan yang dipegang:
 `GET /api/runbooks` · `GET /api/runbooks/:id` ·
 `GET /api/operations/metrics` · `GET /api/operations/store` ·
 `GET /api/operations/audit`
+
+Diagnosa: `GET /api/operations/diagnose` (`?service=`, `?alert=`, `?incident=`, atau kosong untuk ringkasan armada)
 
 Halaman: `/` (dashboard) · `/operations` (papan operasi) · `/insiden/INC-…` (lembar insiden)
 

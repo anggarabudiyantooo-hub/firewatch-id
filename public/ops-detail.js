@@ -81,7 +81,32 @@
         }
       });
       aksiAtas.appendChild(bTautan);
+      var bDiag = el('button', 'btn', 'Diagnosa insiden ini');
+      bDiag.type = 'button';
+      var boxDiag = el('div');
+      bDiag.addEventListener('click', function () {
+        bDiag.disabled = true;
+        boxDiag.textContent = 'menghitung…';
+        C.ambilAman('/api/operations/diagnose?incident=' + encodeURIComponent(inc.incidentId), { headers: C.headerOps() })
+          .then(function (r) {
+            bDiag.disabled = false;
+            boxDiag.textContent = '';
+            if (!r.ok) { boxDiag.textContent = 'Diagnosa gagal dimuat: ' + r.error.message; return; }
+            var d = r.data;
+            boxDiag.appendChild(el('p', 'who', 'Kejelasan bukti: ' + d.keyakinan.tingkat + ' — ' + d.keyakinan.alasan));
+            boxDiag.appendChild(el('h3', null, d.kesimpulan));
+            (d.dugaan || []).forEach(function (g) { boxDiag.appendChild(el('p', null, g.judul + ' — ' + g.sebab)); });
+            if (d.bukti) {
+              var ul = el('ul', 'list');
+              d.bukti.forEach(function (b) { ul.appendChild(el('li', null, b)); });
+              boxDiag.appendChild(ul);
+            }
+            boxDiag.appendChild(el('p', 'muted', d.dasar || ''));
+          });
+      });
+      aksiAtas.appendChild(bDiag);
       head.appendChild(aksiAtas);
+      head.appendChild(boxDiag);
       box.appendChild(head);
 
       var grid = el('div', 'grid two');

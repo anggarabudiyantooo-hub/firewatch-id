@@ -74,6 +74,17 @@
     <ul class="list" id="daftarAlert"><li class="empty">memuat…</li></ul>
   </section>
 
+  <section class="card" style="margin-top:12px" aria-labelledby="h-diag">
+    <h2 id="h-diag">Troubleshooting<span class="hint">berbasis bukti — aturan tetap atas pengukuran, bukan model bahasa</span></h2>
+    <div class="row-actions">
+      <label class="sr-only" for="selDiagnosa">Pilih sasaran diagnosa</label>
+      <select id="selDiagnosa"></select>
+      <button class="btn btn-primary" id="btnDiagnosa" type="button">Diagnosa</button>
+      <button class="btn" id="btnDiagnosaArmada" type="button">Ringkasan armada</button>
+    </div>
+    <div id="hasilDiagnosa" class="empty">Pilih satu sumber data (atau ringkasan armada), lalu tekan Diagnosa. Setiap dugaan akan menyertakan bukti angkanya.</div>
+  </section>
+
   <div class="grid two" style="margin-top:12px">
     <section class="card" aria-labelledby="h-insiden">
       <h2 id="h-insiden">Incidents</h2>
