@@ -248,6 +248,187 @@
    * dan bila terkunci, peran kita disebutkan supaya tombol yang ditolak tidak
    * terasa seperti kesalahan misterius.
    */
+  /** Grafik batang sederhana dari SVG (tanpa pustaka, sesuai CSP 'self'). */
+  function grafikSeri(titik) {
+    var W = 560, H = 120, P = 18, n = titik.length || 1;
+    var maks = Math.max(1, Math.max.apply(null, titik.map(function (t) { return Math.max(t.insiden, t.alert); })));
+    var lebar = (W - P * 2) / n;
+    var NS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('class', 'grafik');
+    svg.setAttribute('aria-label', 'Insiden dan alert per hari');
+    for (var i = 0; i < n; i++) {
+      var t = titik[i];
+      var tinggiI = Math.round((H - P * 2) * (t.insiden / maks));
+      var tinggiA = Math.round((H - P * 2) * (t.alert / maks));
+      var rI = document.createElementNS(NS, 'rect');
+      rI.setAttribute('x', (P + i * lebar + 1).toFixed(1));
+      rI.setAttribute('width', (lebar / 2 - 2).toFixed(1));
+      rI.setAttribute('y', (H - P - tinggiI).toFixed(1));
+      rI.setAttribute('height', tinggiI);
+      rI.setAttribute('class', 'b-insiden');
+      var judul = document.createElementNS(NS, 'title');
+      judul.textContent = t.tanggal + ': ' + t.insiden + ' insiden, ' + t.alert + ' alert';
+      rI.appendChild(judul);
+      svg.appendChild(rI);
+      var rA = document.createElementNS(NS, 'rect');
+      rA.setAttribute('x', (P + i * lebar + lebar / 2).toFixed(1));
+      rA.setAttribute('width', (lebar / 2 - 2).toFixed(1));
+      rA.setAttribute('y', (H - P - tinggiA).toFixed(1));
+      rA.setAttribute('height', tinggiA);
+      rA.setAttribute('class', 'b-alert');
+      svg.appendChild(rA);
+    }
+    var garis = document.createElementNS(NS, 'line');
+    garis.setAttribute('x1', P); garis.setAttribute('x2', W - P);
+    garis.setAttribute('y1', H - P); garis.setAttribute('y2', H - P);
+    garis.setAttribute('class', 'garis');
+    svg.appendChild(garis);
+    return svg;
+  }
+
+  function barisTabel(kepala, baris) {
+    var wrap = el('div', 'tbl-wrap');
+    var t = el('table');
+    var thead = el('thead');
+    var trh = el('tr');
+    kepala.forEach(function (k) { trh.appendChild(el('th', null, k)); });
+    thead.appendChild(trh);
+    t.appendChild(thead);
+    var tb = el('tbody');
+    baris.forEach(function (r) {
+      var tr = el('tr');
+      r.forEach(function (c, i) {
+        var td = el('td', i === 0 ? null : 'num', c === null || c === undefined ? '—' : String(c));
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb);
+    wrap.appendChild(t);
+    return wrap;
+  }
+
+  /**
+   * Analitik. Aturan tampilan: bila BELUM ADA RIWAYAT sama sekali, jangan
+   * menggambar grafik nol yang tampak seperti "semuanya aman" — tulis saja
+   * bahwa belum ada riwayat. Nol yang sah hanya muncul bila memang ada riwayat.
+   */
+  function renderAnalitik(a) {
+    var box = $('analitik');
+    box.textContent = '';
+    box.className = '';
+    $('analitikJendela').textContent = 'jendela ' + a.jendela.hari + ' hari (' + a.jendela.dari + ' → ' + a.jendela.sampai + ', ' + a.jendela.zona + ')';
+
+    var j = a.jumlah;
+    box.appendChild(el('p', 'who',
+      'Insiden ' + j.insiden + ' (' + j.insidenTerbuka + ' terbuka · ' + j.insidenTertutup + ' tertutup) · ' +
+      'alert ' + j.alert + ' (' + j.alertAktif + ' aktif) · ' + j.aksiTercatat + ' tindakan tercatat di log audit.'));
+
+    if (a.kosong) {
+      box.appendChild(el('p', 'empty', a.catatan));
+      box.appendChild(el('p', 'muted',
+        'Grafik sengaja tidak digambar: deretan nol akan terbaca sebagai "tidak ada masalah", padahal yang benar ' +
+        'adalah "belum ada yang tercatat". Ia akan muncul sendiri setelah ada insiden atau alert yang tersimpan.'));
+      return;
+    }
+
+    box.appendChild(el('h3', null, 'Insiden & alert per hari'));
+    box.appendChild(grafikSeri(a.seri));
+    var legenda = el('p', 'muted');
+    legenda.appendChild(el('span', 'kotak b-insiden'));
+    legenda.appendChild(document.createTextNode(' insiden · '));
+    legenda.appendChild(el('span', 'kotak b-alert'));
+    legenda.appendChild(document.createTextNode(' alert baru · maksimum harian pada grafik: ' +
+      Math.max(1, Math.max.apply(null, a.seri.map(function (t) { return Math.max(t.insiden, t.alert); }))) + '.'));
+    box.appendChild(legenda);
+    if (a.luarJendela.insiden || a.luarJendela.alert) {
+      box.appendChild(el('p', 'muted', 'Di luar jendela ini: ' + a.luarJendela.insiden + ' insiden dan ' +
+        a.luarJendela.alert + ' alert yang lebih lama (tidak ikut dihitung di grafik).'));
+    }
+
+    box.appendChild(el('h3', null, 'Per severity'));
+    box.appendChild(barisTabel(['Severity', 'Total', 'Selesai', 'MTTR', 'SLA (target)', 'Catatan'],
+      a.perSeverity.map(function (r) {
+        return [r.severity, r.total, r.selesai, durasi(r.mttrMenit),
+          r.slaPersen === null ? null : r.slaPersen + '% (' + r.targetMenit + ' mnt)', r.catatan || '—'];
+      })));
+
+    box.appendChild(el('h3', null, 'Per kategori'));
+    box.appendChild(barisTabel(['Kategori', 'Total'], a.perKategori.map(function (r) { return [r.category, r.total]; })));
+
+    box.appendChild(el('h3', null, 'Per aturan alert'));
+    box.appendChild(barisTabel(['Aturan', 'Total', 'Aktif'],
+      a.perAturan.map(function (r) { return [r.label + ' (' + r.ruleId + ')', r.total, r.aktif]; })));
+
+    box.appendChild(el('h3', null, 'Sumber paling sering muncul'));
+    if (!a.sumberTersibuk.length) {
+      box.appendChild(el('p', 'muted', 'Belum ada alert/insiden yang menunjuk layanan tertentu.'));
+    } else {
+      box.appendChild(barisTabel(['Layanan', 'Alert', 'Aktif', 'Insiden', 'Terbuka'],
+        a.sumberTersibuk.map(function (r) { return [r.serviceId, r.alert, r.alertAktif, r.insiden, r.insidenTerbuka]; })));
+    }
+    box.appendChild(el('p', 'muted', a.catatan));
+  }
+
+  /**
+   * Infrastruktur. Setiap nilai membawa penanda `real`, dan nilai simulasi
+   * selalu dicetak bersama lencana SIMULATED supaya tidak pernah terbaca
+   * sebagai pengukuran.
+   */
+  function renderInfra(g) {
+    var box = $('infra');
+    box.textContent = '';
+    box.className = '';
+    box.appendChild(el('p', 'who', 'Simpul ' + g.ringkas.simpul + ' (' + g.ringkas.simpulNyata + ' memuat angka NYATA) · ' +
+      'tautan ' + g.ringkas.tautanSimulasi + ' (semuanya SIMULATED) · hulu turun: ' + g.ringkas.huluTurun + '.'));
+    box.appendChild(el('p', null, g.dasarTopologi));
+    box.appendChild(el('p', 'muted', g.catatan));
+
+    box.appendChild(el('h3', null, 'Simpul'));
+    var wrap = el('div', 'tbl-wrap');
+    var t = el('table');
+    var thead = el('thead');
+    var trh = el('tr');
+    ['Simpul', 'Jenis', 'Data', 'Nilai'].forEach(function (k) { trh.appendChild(el('th', null, k)); });
+    thead.appendChild(trh); t.appendChild(thead);
+    var tb = el('tbody');
+    g.simpul.forEach(function (s) {
+      var tr = el('tr');
+      var td1 = el('td');
+      td1.appendChild(el('div', null, s.nama));
+      td1.appendChild(el('div', 'muted', s.id));
+      tr.appendChild(td1);
+      tr.appendChild(el('td', null, s.jenis));
+      var td3 = el('td');
+      td3.appendChild(el('span', 'lencana ' + (s.real ? 'lencana-nyata' : 'lencana-sim'), s.real ? 'NYATA' : 'SIMULATED'));
+      tr.appendChild(td3);
+      var td4 = el('td');
+      s.nilai.forEach(function (n) {
+        var baris = el('div');
+        baris.appendChild(el('span', 'muted', n.label + ': '));
+        baris.appendChild(el('span', null, n.nilai === null || n.nilai === undefined ? 'tidak tersedia' : String(n.nilai) + (n.satuan || '')));
+        if (!n.real) baris.appendChild(el('span', 'lencana lencana-sim', 'SIMULATED'));
+        td4.appendChild(baris);
+      });
+      if (s.keterangan) td4.appendChild(el('div', 'muted', s.keterangan));
+      tr.appendChild(td4);
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb); wrap.appendChild(t); box.appendChild(wrap);
+
+    box.appendChild(el('h3', null, 'Tautan (SIMULATED)'));
+    box.appendChild(barisTabel(['Dari → ke', 'Jenis', 'RTT perkiraan', 'Dasar (terukur)', 'Catatan'],
+      g.tautan.map(function (l) {
+        return [l.dari + ' → ' + l.ke, l.jenis,
+          l.rttPerkiraanMs === null ? 'tidak dapat dihitung' : l.rttPerkiraanMs + ' ms',
+          l.dasarMs === null ? 'belum terukur' : l.dasarMs + ' ms', l.catatan];
+      })));
+    box.appendChild(el('p', 'muted', 'Model: ' + g.model.id + ' — ' + g.model.catatan));
+  }
+
   function renderAkses(a) {
     var peran = a.peranAnda;
     var teks = a.mode === 'terbuka'
@@ -438,9 +619,11 @@
       ambilAman('/api/operations/metrics'),
       ambilAman('/api/runbooks'),
       ambilAman('/api/operations/audit?limit=25'),
-      OpsCore.ambilAkses()
+      OpsCore.ambilAkses(),
+      ambilAman('/api/operations/analytics?hari=14'),
+      ambilAman('/api/operations/infra')
     ];
-    var nama = ['Kesehatan layanan', 'Sumber data', 'Alert', 'Insiden', 'Metrik', 'Runbook', 'Log audit', 'Status akses'];
+    var nama = ['Kesehatan layanan', 'Sumber data', 'Alert', 'Insiden', 'Metrik', 'Runbook', 'Log audit', 'Status akses', 'Analitik', 'Infrastruktur'];
 
     // Kesehatan dipakai juga untuk koreksi jam (header Date) — satu permintaan
     // lebih sedikit, dan jam tetap ikut jam server.
@@ -471,6 +654,8 @@
       coba(5, function (d) { renderRunbook(d.runbooks || []); });
       coba(6, renderAudit);
       coba(7, renderAkses);
+      coba(8, renderAnalitik);
+      coba(9, renderInfra);
 
       var banner = $('bannerPenyimpanan');
       if (gagal.length) {

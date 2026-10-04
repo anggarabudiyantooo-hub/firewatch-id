@@ -182,6 +182,8 @@ yang sama dengan yang menyuplai dashboard.
 | Troubleshooting | dugaan + **bukti angka** + langkah pemeriksaan untuk satu sumber, satu alert, atau satu insiden; plus ringkasan armada | aturan tetap atas pengukuran tersimpan (`lib/troubleshoot.js`) — **bukan keluaran model bahasa** |
 | Tautan dalam | `?insiden=INC-…` membuka detail di papan; tombol "Salin tautan" | rute baca yang sama |
 | Lembar insiden | `/insiden/INC-…` — satu insiden, satu alamat, untuk dibagikan & dibaca ulang; langkah runbook bisa ditandai dikerjakan | `public/insiden.html` + `public/ops-detail.js` (berkas yang sama dengan kartu detail di papan) |
+| Analytics | 14 hari terakhir (bisa `?hari=1..90`): insiden & alert baru per hari, MTTR/SLA per severity, per kategori, per aturan, sumber paling sering muncul | dihitung ulang dari riwayat tersimpan (`lib/analytics.js`) — **tidak ada deret nol yang menggantikan "belum ada riwayat"** |
+| Infrastructure | 1 simpul per sumber yang benar-benar dipantau + klien/edge/fungsi/penjadwal; setiap nilai membawa penanda NYATA atau SIMULATED | angka hulu diambil apa adanya dari pengukuran; angka tautan = **SIMULATED** dan ditulis begitu (`lib/infra-sim.js`) |
 
 Setiap bagian papan dimuat sendiri-sendiri. Bila satu endpoint gagal (di Vercel
 tiap permintaan bisa mendarat di instance berbeda, jadi ini wajar), bagian lain
@@ -298,11 +300,37 @@ Aturan yang dipegang:
 `POST /api/incidents/:id/{assign,notes,escalate,resolve,close}` ·
 `GET /api/runbooks` · `GET /api/runbooks/:id` ·
 `GET /api/operations/metrics` · `GET /api/operations/store` ·
-`GET /api/operations/audit`
+`GET /api/operations/audit` · `GET /api/operations/analytics?hari=14` ·
+`GET /api/operations/infra`
 
 Diagnosa: `GET /api/operations/diagnose` (`?service=`, `?alert=`, `?incident=`, atau kosong untuk ringkasan armada)
 
 Halaman: `/` (dashboard) · `/operations` (papan operasi) · `/insiden/INC-…` (lembar insiden)
+
+### Analitik dan panel infrastruktur (P2)
+
+**Analitik.** Semua angka dihitung ulang dari riwayat insiden/alert/audit yang
+tersimpan saat halaman dibuka — tidak ada tabel terpisah yang bisa melenceng.
+Bila belum ada riwayat sama sekali, kartu menulis *belum ada riwayat* dan
+**sengaja tidak menggambar grafik**: deretan batang nol akan terbaca sebagai
+"tidak ada masalah", padahal artinya "belum ada yang tercatat". MTTR dan SLA
+bernilai `null` (ditampilkan sebagai *belum ada riwayat*) selama severity itu
+belum punya insiden yang selesai. Hari mengikuti zona WIB (UTC+7), sama dengan
+stempel waktu di seluruh papan. Target SLA per severity diatur lewat env
+`OPS_SLA_CRITICAL_MIN` / `OPS_SLA_HIGH_MIN` / `OPS_SLA_MEDIUM_MIN` /
+`OPS_SLA_LOW_MIN` (bawaan 60 / 240 / 1440 / 4320 menit).
+
+**Infrastruktur (SIMULATED).** Aplikasi ini tidak mengoperasikan perangkat
+jaringan, jadi panel ini **tidak** menampilkan router/switch/vendor apa pun.
+Yang ada: rantai nyata cara aplikasi ini di-deploy (klien → edge → fungsi →
+penjadwal → tiap sumber hulu yang dipantau). Nilai hulu (status, waktu respons,
+gagal berturut, kesegaran) adalah pengukuran nyata dan ditandai **NYATA**;
+nilai yang belum terukur ditulis *tidak tersedia*. Angka yang **tidak mungkin
+diukur** dari dalam fungsi serverless — misalnya latensi jaringan dan rasio
+cache di tepi — hanya muncul sebagai **perkiraan berlabel SIMULATED**, dengan
+model terbuka (`rtt-perkiraan-v1`: 40% dari waktu respons hulu yang terukur) dan
+`null` bila belum ada dasar pengukuran. Tidak ada angka yang dikarang untuk
+mengisi kekosongan.
 
 Transisi status yang tidak sah ditolak `409`; severity/kategori tak dikenal dan
 judul kosong ditolak `400`. Semua perubahan mencatat nama pelaku bila header

@@ -108,7 +108,13 @@ public/* — satu halaman; stempel waktu dari server; panel Sumber membaca /api/
 
 **Fase P1:** `/incidents` (daftar + detail `INC-YYYY-NNNNN` dengan timeline & tindakan), `/runbooks` (2 SOP awal yang benar-benar terkait kategori insiden nyata di sistem ini), metrik (MTTR/SLA dari data nyata), logging audit operasional, integrasi `uptime.yml`.
 
-**Fase P2:** mode diagnosa AI (memisahkan **fakta terukur / dugaan / rekomendasi**, memakai `/api/ask` yang sudah ada), RBAC sederhana berbasis token peran, analitik riwayat, panel infrastruktur — **semua yang tidak nyata diberi label SIMULATED atau tidak dibuat sama sekali**.
+**Status 4 Okt 2026: P0, P1, dan P2 SELESAI.** P2 diwujudkan sebagai:
+diagnosa berbasis bukti angka (`lib/troubleshoot.js`; **aturan tetap, bukan model
+bahasa** — supaya tiap kalimat bisa ditelusuri ke pengukuran), RBAC token peran
+VIEWER/OPERATOR/ADMIN (`lib/ops-auth.js`), analitik riwayat (`lib/analytics.js`,
+nol ≠ "belum ada riwayat"), dan panel infrastruktur berlabel SIMULATED
+(`lib/infra-sim.js`, tanpa perangkat/vendor/protokol fiktif). **Fase P2 (arsip,
+rencana awal):** mode diagnosa AI (memisahkan **fakta terukur / dugaan / rekomendasi**, memakai `/api/ask` yang sudah ada), RBAC sederhana berbasis token peran, analitik riwayat, panel infrastruktur — **semua yang tidak nyata diberi label SIMULATED atau tidak dibuat sama sekali**.
 
 **Urutan verifikasi tiap fase:** `npm run check` (termasuk `test-ops.js` baru) → uji Playwright baru untuk halaman → uji regresi 8 skrip `/home/user/work/` → tangkapan bukti → commit + deploy + uji terhadap produksi.
 

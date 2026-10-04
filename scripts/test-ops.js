@@ -31,6 +31,8 @@ const opsRoutes = require('../lib/ops-routes');
 const alerts = require('../lib/alert-engine');
 const auth = require('../lib/ops-auth');
 const triage = require('../lib/troubleshoot');
+const analitik = require('../lib/analytics');
+const infraSim = require('../lib/infra-sim');
 const incidents = require('../lib/incidents');
 const runbooks = require('../lib/runbooks');
 
@@ -464,6 +466,89 @@ console.log('\n== insiden ==');
   const ring = triage.ringkas([svcDown, svcSehat], [{ status: 'ACTIVE' }], {});
   cek('ringkasan menghitung layanan turun & alert aktif', [ring.ringkas.turun, ring.ringkas.alertAktif], [1, 1]);
   cek('ringkasan menyatakan dasarnya aturan, bukan model bahasa', /aturan tetap/.test(ring.catatan), true);
+
+  // --- analitik (P2) ---
+  const TK = Date.parse('2026-10-04T09:00:00Z');
+  const insAnalitik = [
+    { incidentId: 'INC-A', severity: 'HIGH', category: 'data_source_unavailable', status: 'CLOSED', serviceId: 'eruption',
+      detectedAt: '2026-10-02T01:00:00Z', resolvedAt: '2026-10-02T04:00:00Z' },
+    { incidentId: 'INC-B', severity: 'MEDIUM', category: 'environmental_event', status: 'OPEN', serviceId: null,
+      detectedAt: '2026-10-04T02:00:00Z' },
+    { incidentId: 'INC-C', severity: 'HIGH', category: 'data_source_unavailable', status: 'RESOLVED', serviceId: 'eruption',
+      detectedAt: '2026-09-20T01:00:00Z', resolvedAt: '2026-10-02T02:00:00Z' }
+  ];
+  const alAnalitik = [
+    { id: 'ALR-A', ruleId: 'source_down', status: 'ACTIVE', serviceId: 'eruption', detectedAt: '2026-10-04T02:00:00Z' },
+    { id: 'ALR-B', ruleId: 'api_slow', status: 'RESOLVED', serviceId: 'news', detectedAt: '2026-10-03T02:00:00Z' }
+  ];
+  const A = analitik.laporan(insAnalitik, alAnalitik, { sekarangMs: TK, hari: 7, audit: [{}, {}], target: { HIGH: 240 } });
+
+  cek('analitik: jendela menyebut rentang & zona',
+    [A.jendela.hari, A.jendela.dari, A.jendela.sampai, A.jendela.zona], [7, '2026-09-28', '2026-10-04', 'WIB (UTC+7)']);
+  cek('analitik: seri harian menghitung kejadian nyata',
+    A.seri.filter(x => x.insiden).map(x => x.tanggal + ':' + x.insiden), ['2026-10-02:1', '2026-10-04:1']);
+  cek('analitik: kejadian di luar jendela dilaporkan terpisah',
+    A.luarJendela.insiden, 1);
+  cek('analitik: hari tanpa kejadian bernilai nol yang sah (karena ada riwayat)',
+    A.seri.filter(x => x.insiden === 0).length, 5);
+
+  const sevH = A.perSeverity.find(x => x.severity === 'HIGH');
+  // MTTR = rata-rata durasi SEMUA insiden HIGH yang pernah selesai, termasuk
+  // yang selesai 12 hari kemudian (INC-C: 2026-09-20 → 2026-10-02 = 17.460 mnt).
+  // (180 + 17460) / 2 = 8820 — dihitung terbuka di sini, bukan angka hafalan.
+  const harapMttr = Math.round(((180 + (Date.parse('2026-10-02T02:00:00Z') - Date.parse('2026-09-20T01:00:00Z')) / 60000) / 2) * 10) / 10;
+  cek('analitik: MTTR per severity dari insiden nyata', sevH.mttrMenit, harapMttr);
+  const sevC = A.perSeverity.find(x => x.severity === 'CRITICAL');
+  cek('analitik: severity tanpa riwayat → null, bukan 0',
+    [sevC.mttrMenit, sevC.slaPersen, sevC.catatan], [null, null, 'belum ada riwayat']);
+  cek('analitik: SLA memakai target per severity', sevH.targetMenit, 240);
+  cek('analitik: sumber tersibuk mengurutkan dari insiden terbanyak',
+    A.sumberTersibuk[0].serviceId, 'eruption');
+  cek('analitik: alert tanpa layanan tidak dipaksakan masuk hitungan',
+    A.sumberTersibuk.some(x => x.serviceId === null), false);
+  cek('analitik: rekap per aturan memuat keempat aturan', A.perAturan.length, 4);
+  cek('analitik: rekap per aturan menghitung yang aktif',
+    A.perAturan.find(r => r.ruleId === 'source_down').aktif, 1);
+
+  const K = analitik.laporan([], [], { sekarangMs: TK, hari: 3 });
+  cek('analitik: tanpa riwayat ditandai kosong', K.kosong, true);
+  cek('analitik: tanpa riwayat catatannya berbunyi belum ada riwayat', /belum ada riwayat/.test(K.catatan), true);
+  cek('analitik: tanpa riwayat tetap tidak mengarang angka', [K.jumlah.insiden, K.jumlah.alert], [0, 0]);
+  cek('analitik: batas jendela dijaga 1..90',
+    [analitik.laporan([], [], { sekarangMs: TK, hari: 500 }).jendela.hari,
+     analitik.laporan([], [], { sekarangMs: TK, hari: 0 }).jendela.hari], [90, 14]);
+
+  // --- infrastruktur SIMULATED (P2) ---
+  const svcInfra = [
+    { id: 'eruption', name: 'Laporan letusan', status: 'DOWN', responseTime: null, consecutiveFails: 3, critical: true,
+      freshness: { status: 'UNKNOWN' }, endpoint: 'magma.esdm.go.id' },
+    { id: 'quake', name: 'Gempa bumi', status: 'HEALTHY', responseTime: 220, consecutiveFails: 0, critical: true,
+      freshness: { status: 'FRESH' }, endpoint: 'data.bmkg.go.id' }
+  ];
+  const G = infraSim.gambaran(svcInfra, { uptimeSeconds: 120, nodeVersion: 'v22', storageMode: 'github', serverless: true, schedulerMode: 'timer internal' });
+
+  cek('infra: seluruh gambaran berlabel SIMULATED', G.label, 'SIMULATED');
+  cek('infra: satu simpul per layanan nyata + empat simpul tetap',
+    G.simpul.filter(s => s.jenis === 'hulu').length, 2);
+  cek('infra: simpul hulu memuat angka NYATA', G.simpul.filter(s => s.jenis === 'hulu').every(s => s.real === true), true);
+  cek('infra: nilai hulu diambil apa adanya dari pengukuran',
+    G.simpul.find(s => s.id === 'hulu-quake').nilai.find(n => n.label === 'Respons terakhir').nilai, 220);
+  cek('infra: nilai yang tidak terukur tetap null (bukan dikarang)',
+    G.simpul.find(s => s.id === 'hulu-eruption').nilai.find(n => n.label === 'Respons terakhir').nilai, null);
+  cek('infra: setiap tautan ditandai simulasi', G.tautan.every(l => l.simulated === true), true);
+  // Tiga tautan tetap (klien→edge, edge→fungsi, fungsi→penjadwal) memang tidak
+  // punya dasar pengukuran, ditambah tautan ke hulu yang waktu responsnya belum
+  // terukur (eruption) = 4. Yang penting: TIDAK ADA yang diisi angka karangan.
+  cek('infra: tautan tanpa dasar pengukuran tidak dihitung',
+    G.tautan.filter(l => l.rttPerkiraanMs === null).length, 4);
+  cek('infra: jumlah tautan = tiga tetap + satu per hulu',
+    G.tautan.length, 3 + svcInfra.length);
+  cek('infra: tautan berhitung memakai model yang dinyatakan terbuka',
+    [G.tautan.find(l => l.ke === 'hulu-quake').rttPerkiraanMs, infraSim.MODEL.faktorJaringan], [88, 0.4]);
+  cek('infra: tidak ada nama vendor perangkat atau protokol routing yang dikarang',
+    /cisco|fortinet|juniper|palo alto|bgp|ospf/i.test(JSON.stringify(G)), false);
+  cek('infra: keterangan menyatakan keterbatasan apa adanya',
+    /Tidak ada perangkat jaringan fisik/.test(G.catatan), true);
 
   console.log('\n==============================================');
   console.log('  ' + lulus + ' lulus, ' + gagal + ' gagal');
