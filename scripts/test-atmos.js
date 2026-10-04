@@ -4,7 +4,7 @@
  *
  * Dijalankan tanpa jaringan supaya dapat dipakai sebagai penjaga regresi
  * di CI. Menguji hal-hal yang bila salah tidak menimbulkan galat apa pun,
- * hanya menghasilkan arah abu yang keliru — jenis kekeliruan yang paling
+ * hanya menghasilkan arah abu yang keliru, jenis kekeliruan yang paling
  * sulit terlihat.
  */
 

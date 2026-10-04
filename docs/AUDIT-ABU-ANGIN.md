@@ -1,4 +1,4 @@
-# Root Cause Analysis — Arah Angin vs Sebaran Abu Vulkanik
+# Root Cause Analysis: Arah Angin vs Sebaran Abu Vulkanik
 
 Tanggal audit: 10 September 2026
 Ruang lingkup: seluruh jalur data angin dan abu, dari sumber sampai render.
@@ -15,14 +15,14 @@ menghasilkan kesalahan fisik yang nyata.
 | # | Temuan | Tingkat |
 |---|---|---|
 | 1 | Tinggi kolom abu "di atas puncak" diperlakukan sebagai AMSL | **Kritis** |
-| 2 | Layer "Aliran angin" memakai angin 10 m, abu memakai 3–10 km, tanpa keterangan | **Tinggi** |
+| 2 | Layer "Aliran angin" memakai angin 10 m, abu memakai 3-10 km, tanpa keterangan | **Tinggi** |
 | 3 | Satu nilai angin di titik puncak dipakai untuk seluruh jangkauan pluma | Sedang |
 | 4 | Tidak ada penanda observed / forecast / model di antarmuka | Sedang |
 | 5 | Pemilihan lapisan tekanan memakai tabel statis, bukan geopotential height | Rendah |
 
 ---
 
-## Temuan 1 — Tinggi kolom above-summit diperlakukan sebagai AMSL
+## Temuan 1: Tinggi kolom above-summit diperlakukan sebagai AMSL
 
 **Tingkat:** Kritis
 **Berkas:** `lib/volcano.js` baris ~349
@@ -42,7 +42,7 @@ text.match(/tinggi\s+kolom\s+abu[^.]*?±?\s*([\d.,]+)\s*m\s+di\s+atas\s+puncak/i
 ```
 
 Nilai itu lalu dipakai langsung sebagai ketinggian absolut untuk memilih lapisan
-tekanan. Elevasi gunung (`elevM`, tersedia dari GVP) tidak pernah dijumlahkan —
+tekanan. Elevasi gunung (`elevM`, tersedia dari GVP) tidak pernah dijumlahkan,
 kata kunci `elevM` hanya muncul satu kali di seluruh `lib/volcano.js`, yaitu saat
 diambil dari sumber.
 
@@ -66,14 +66,14 @@ Untuk Semeru, abu yang sebenarnya berada di ~4,7 km dimodelkan memakai angin
 geser angin vertikal, dua lapisan itu dapat bertiup ke arah berlawanan.
 
 Gunung rendah seperti Anak Krakatau (285 m) dan Ibu (1.357 m) nyaris tidak
-terpengaruh — itulah sebabnya kekeliruan ini tidak selalu terlihat.
+terpengaruh, itulah sebabnya kekeliruan ini tidak selalu terlihat.
 
 ---
 
-## Temuan 2 — Layer angin permukaan disandingkan dengan abu ketinggian
+## Temuan 2: Layer angin permukaan disandingkan dengan abu ketinggian
 
 **Tingkat:** Tinggi
-**Berkas:** `lib/wind-gfs.js` baris 58–83, `lib/volcano.js` `ASH_LEVELS`
+**Berkas:** `lib/wind-gfs.js` baris 58-83, `lib/volcano.js` `ASH_LEVELS`
 
 ### Perilaku sekarang
 
@@ -84,7 +84,7 @@ lev_10_m_above_ground=on&var_UGRD=on&var_VGRD=on
 ```
 
 Yaitu **angin 10 meter di atas permukaan**. Sementara pluma abu memakai
-`wind_direction_700hPa`, `500hPa`, dan `250hPa` — yakni ~3, ~5,5, dan ~10 km.
+`wind_direction_700hPa`, `500hPa`, dan `250hPa`, yakni ~3, ~5,5, dan ~10 km.
 
 ### Mengapa ini masalah
 
@@ -93,12 +93,12 @@ benar adanya. Masalahnya ada di antarmuka: pengguna melihat satu layer bernama
 "ALIRAN ANGIN" tanpa keterangan ketinggian, lalu membandingkannya dengan kerucut
 abu. Perbedaan yang benar secara fisika terbaca sebagai kesalahan aplikasi.
 
-Ini bukan bug perhitungan, melainkan bug penyajian — dan akibatnya sama:
+Ini bukan bug perhitungan, melainkan bug penyajian, dan akibatnya sama:
 pengguna kehilangan kepercayaan pada data yang sebenarnya benar.
 
 ---
 
-## Temuan 3 — Satu nilai angin untuk seluruh jangkauan pluma
+## Temuan 3: Satu nilai angin untuk seluruh jangkauan pluma
 
 **Tingkat:** Sedang
 **Berkas:** `lib/volcano.js` `fetchAloftWind` dan `ashPlume`
@@ -110,7 +110,7 @@ berbeda. Ini keterbatasan model, bukan kekeliruan kode, tetapi harus dinyatakan.
 
 ---
 
-## Temuan 4 — Tidak ada pembeda observed / forecast / model
+## Temuan 4: Tidak ada pembeda observed / forecast / model
 
 **Tingkat:** Sedang
 **Berkas:** `lib/volcano.js`, `public/app.js`
@@ -125,7 +125,7 @@ sejak perbaikan sebelumnya, tetapi:
 
 ---
 
-## Temuan 5 — Tabel ketinggian statis
+## Temuan 5: Tabel ketinggian statis
 
 **Tingkat:** Rendah
 **Berkas:** `lib/volcano.js` `ASH_LEVELS`
@@ -138,10 +138,10 @@ lintang; Open-Meteo menyediakan `geopotential_height_[level]` yang lebih tepat.
 
 ## Yang diperiksa dan ternyata BENAR
 
-Bagian ini sama pentingnya — agar tidak ada perbaikan yang merusak hal yang
+Bagian ini sama pentingnya, agar tidak ada perbaikan yang merusak hal yang
 sudah benar.
 
-### Konvensi arah meteorologi — benar
+### Konvensi arah meteorologi: benar
 
 `lib/wind-gfs.js` baris 148:
 
@@ -161,17 +161,17 @@ Diuji terhadap empat arah kardinal:
 **4/4 benar.** Tidak ada pembalikan 180°, tidak ada tukar lat/lon, tidak ada
 kekeliruan radian/derajat.
 
-### Pemisahan from/to — benar
+### Pemisahan from/to: benar
 
-`lib/wind-gfs.js` baris 185–186 memisahkan `from` dan `to` secara eksplisit, dan
+`lib/wind-gfs.js` baris 185-186 memisahkan `from` dan `to` secara eksplisit, dan
 `ashPlume` memakai `to` untuk arah perpindahan, bukan `from`.
 
-### Gerbang pluma — benar
+### Gerbang pluma: benar
 
 Pluma hanya digambar bila ada laporan letusan pos pengamatan dalam 24 jam.
 Status Siaga saja tidak cukup. Ini sudah benar dan tidak boleh diubah.
 
-### Prioritas observasi di atas model — sebagian benar
+### Prioritas observasi di atas model: sebagian benar
 
 Arah condong kolom hasil pengamatan visual petugas (`bearingDeg`) sudah
 mengalahkan model, tetapi hanya pada lapisan terendah. Itu keputusan yang tepat:
@@ -179,7 +179,7 @@ petugas di darat hanya dapat melihat bagian bawah kolom.
 
 ---
 
-## VAAC Darwin — tidak dapat diintegrasikan saat ini
+## VAAC Darwin: tidak dapat diintegrasikan saat ini
 
 Instruksi meminta integrasi Volcanic Ash Advisory dari Bureau of Meteorology
 Australia. Hasil pemeriksaan pada 10 September 2026:
@@ -198,7 +198,7 @@ diakses tanpa izin khusus. Ini konsisten dengan temuan sesi-sesi sebelumnya
 
 **Keputusan:** parser VAAC **tetap dibangun dan diuji** sesuai spesifikasi, tetapi
 sumbernya dibiarkan kosong sampai jalur akses yang sah tersedia. Membangun
-parser tanpa sumber lebih baik daripada mengarang data — dan begitu BoM
+parser tanpa sumber lebih baik daripada mengarang data, dan begitu BoM
 membuka akses, tinggal memasang URL-nya.
 
 Alternatif yang perlu ditelusuri lebih lanjut (di luar lingkup audit ini):

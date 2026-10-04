@@ -1,4 +1,4 @@
-/* SIAGA ID — frontend.
+/* SIAGA ID, frontend.
    Semua data eksternal dirender lewat textContent / createElement (tidak ada innerHTML). */
 (function () {
   'use strict';
@@ -11,14 +11,14 @@
    * Tanpa ini, permintaan yang menggantung (khas cold start serverless)
    * tidak pernah resolve maupun reject, sehingga .catch() dan .then()
    * penutup tidak pernah berjalan: kartu tetap memperlihatkan kerangka
-   * "—" selamanya, pesan galat tidak muncul, dan tombol REFRESH terkunci.
+   * "-" selamanya, pesan galat tidak muncul, dan tombol REFRESH terkunci.
    * Kegagalan yang tak terlihat lebih berbahaya daripada kegagalan yang
-   * jelas — pembaca menyimpulkan "tidak ada bencana" padahal artinya
+   * jelas, pembaca menyimpulkan "tidak ada bencana" padahal artinya
    * "kami tidak tahu".
    */
   /* ---------- selisih jam perangkat terhadap server ---------- */
   // Jam di kepala halaman dihitung dari jam PERANGKAT. Bila jam perangkat
-  // meleset, seluruh halaman ikut meleset — pengguna lalu menyimpulkan
+  // meleset, seluruh halaman ikut meleset, pengguna lalu menyimpulkan
   // dashboard-nya yang lambat. Setiap balasan API membawa header Date dari
   // server; selisihnya dicatat (median 5 sampel terakhir) supaya jam yang
   // ditampilkan mengikuti server dan selisihnya ditulis apa adanya.
@@ -31,7 +31,7 @@
       var h = res.headers;
       if (!h || !h.get) return;
       // Balasan yang datang dari cache CDN membawa header Date dari saat
-      // salinan itu dibuat, bukan saat ini — pernah membuat estimasi
+      // salinan itu dibuat, bukan saat ini, pernah membuat estimasi
       // meleset 3 menit (persis max-age berita). Sampel seperti itu dibuang.
       var age = parseInt(h.get('age') || '0', 10);
       if (!isNaN(age) && age > 2) return;
@@ -96,10 +96,10 @@
       if (!n) return;
       // Kerangka dilepas supaya kegagalan terbaca berbeda dari "sedang memuat".
       n.classList.remove('skel');
-      if (n.textContent === '' || n.textContent === '—') n.textContent = 'gagal';
+      if (n.textContent === '' || n.textContent === '-') n.textContent = 'gagal';
 
       // Sub-teks ikut dibereskan. Tanpa ini kartu dapat berbunyi
-      // "gagal" di atas "memuat…" — dua keadaan yang bertentangan
+      // "gagal" di atas "memuat…", dua keadaan yang bertentangan
       // dalam satu kartu, dan pembaca tidak tahu mana yang berlaku.
       var sub = $(id + 'Sub');
       if (sub && /memuat/i.test(sub.textContent)) {
@@ -152,7 +152,7 @@
 
   // Leaflet menyimpan ukuran petanya saat inisialisasi dan tidak
   // memperbaruinya sendiri. Bila tinggi wadah berubah karena media query
-  // — misalnya perangkat diputar dari potret ke lanskap — peta tetap
+  //, misalnya perangkat diputar dari potret ke lanskap, peta tetap
   // memakai ukuran lama dan hanya memuat sebagian ubin. Pemberitahuan
   // ini dijeda agar tidak dihitung ulang pada tiap piksel saat jendela
   // diseret.
@@ -225,7 +225,7 @@
     // harus dilakukan. Kode mengikuti GeolocationPositionError milik peramban.
     var msg = 'Posisi tidak dapat dibaca.';
     if (e && e.code === 1) msg = 'Izin lokasi ditolak. Aktifkan izin lokasi untuk situs ini di pengaturan peramban, lalu klik lagi.';
-    else if (e && e.code === 2) msg = 'Perangkat tidak dapat membaca posisi saat ini — cek layanan lokasi (GPS) perangkat.';
+    else if (e && e.code === 2) msg = 'Perangkat tidak dapat membaca posisi saat ini, cek layanan lokasi (GPS) perangkat.';
     else if (e && e.code === 3) msg = 'Waktu pembacaan posisi habis. Pastikan pertanyaan izin lokasi dijawab, lalu klik lagi.';
     else if (e && e.message) msg = 'Posisi tidak dapat dibaca: ' + e.message;
     showHint(msg + pusatKeKejadianTerpanas(), 10000);
@@ -248,7 +248,7 @@
   var AGS = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
   var ATTR = 'Peta dasar &copy; Esri, Maxar, Earthstar Geographics, HERE, Garmin, &copy; OpenStreetMap contributors';
 
-  // Basemap: gelap (default), citra satelit, dan relief — mengikuti pilihan SiPongi.
+  // Basemap: gelap (default), citra satelit, dan relief, mengikuti pilihan SiPongi.
   var BASEMAPS = {
     gelap: L.layerGroup([
       L.tileLayer(AGS + 'Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12, attribution: ATTR }),
@@ -393,7 +393,7 @@
     });
     // Sublabel harus menjawab tiga hal sekaligus: berapa yang tampil dari
     // berapa total, mengapa selisihnya ada, dan seberapa tua datanya.
-    // Nol karena filter dan nol karena sumber kosong ditulis berbeda —
+    // Nol karena filter dan nol karena sumber kosong ditulis berbeda -
     // pada dasbor bencana keduanya berkonsekuensi sangat berbeda.
     // Angka pembanding harus TOTAL sebenarnya, bukan panjang array yang
     // sudah dipotong server. Kalau memakai panjang array, "semua titik"
@@ -528,7 +528,7 @@
         lines.push('Prakiraan +' + h + ' jam' + (f.run ? ' · siklus GFS ' + f.run : ''));
       }
       var info = popupNode(h === 0 ? 'Perkiraan sebaran asap' : 'Prakiraan sebaran +' + h + ' jam', lines,
-        { warn: 'Model perkiraan berbasis angin — bukan model dispersi atmosfer maupun pengukuran kualitas udara.' });
+        { warn: 'Model perkiraan berbasis angin, bukan model dispersi atmosfer maupun pengukuran kualitas udara.' });
 
       L.polygon(f.polygon, {
         color: h > 0 ? '#8ab4d8' : '#e2b184', weight: 1.2, opacity: 0.75,
@@ -549,7 +549,7 @@
 
 
   // Zona terdampak digambar sebagai POLIGON area, bukan titik. Bentuknya
-  // buffer melingkar berjari-jari tetap per tingkat paparan — bukan batas
+  // buffer melingkar berjari-jari tetap per tingkat paparan, bukan batas
   // administratif dan bukan data kerusakan; tujuannya pembaca melihat luas
   // wilayah yang terpapar, bukan sebuah koordinat.
   var ZONE_RADIUS_KM = { 'Berat': 18, 'Sedang': 12, 'Ringan': 7 };
@@ -605,7 +605,7 @@
         .slice(0, 2);
       vs.forEach(function (x) {
         var st = x.v.official ? (x.v.official.level >= 3 ? x.v.official.status : 'status ' + x.v.official.status) : '';
-        rows.push('Gunung ' + x.v.name + (st ? ' — ' + st : '') + ' · ' + nf.format(Math.round(x.d)) + ' km dari zona'
+        rows.push('Gunung ' + x.v.name + (st ? ', ' + st : '') + ' · ' + nf.format(Math.round(x.d)) + ' km dari zona'
           + ((x.v.plumes || []).length ? ' · dilaporkan erupsi dengan sebaran abu' : ''));
         kinds.push('gunung');
       });
@@ -640,7 +640,7 @@
         kinds.push('pengungsi');
       }
     }
-    // 5) kualitas udara — hanya bila layer udara sudah dimuat
+    // 5) kualitas udara, hanya bila layer udara sudah dimuat
     var ap = state.air && state.air.points;
     if (ap) {
       var best = null;
@@ -704,7 +704,7 @@
 
     filtered.forEach(function (p) {
       var bounds = [[p.lat - half, p.lon - half], [p.lat + half, p.lon + half]];
-      // Opacity ditingkatkan agar lebih terlihat — sebelumnya 0.09-0.3 terlalu tipis
+      // Opacity ditingkatkan agar lebih terlihat, sebelumnya 0.09-0.3 terlalu tipis
       var op = p.aqi >= 300 ? 0.55 : p.aqi >= 200 ? 0.45 : p.aqi >= 150 ? 0.38 : p.aqi >= 100 ? 0.32 : p.aqi >= 50 ? 0.24 : 0.18;
       var borderOp = p.aqi >= 100 ? 0.35 : 0.18;
       L.rectangle(bounds, {
@@ -715,7 +715,7 @@
         fillColor: p.color,
         fillOpacity: op,
         interactive: true
-      }).bindPopup(popupNode('Kualitas udara — US AQI ' + nf.format(p.aqi), [
+      }).bindPopup(popupNode('Kualitas udara, US AQI ' + nf.format(p.aqi), [
         'Kategori: ' + p.label,
         p.pm25 !== null ? 'PM2,5: ' + p.pm25 + ' µg/m³' : null,
         p.pm10 !== null ? 'PM10: ' + p.pm10 + ' µg/m³' : null,
@@ -735,7 +735,7 @@
     var confBox = $('confSummary');
     if (confBox && state.airOn && state.air) {
       // Jangan timpa confSummary bila sedang menampilkan hotspot summary
-      // confSummary dipakai bersama — hanya update jika air layer aktif dan tidak ada hotspot filter aktif
+      // confSummary dipakai bersama, hanya update jika air layer aktif dan tidak ada hotspot filter aktif
     }
   }
 
@@ -779,7 +779,7 @@
           fillColor: p.color,
           fillOpacity: p.dataMode === 'observed' ? 0.16 : 0.1,
           dashArray: p.dataMode === 'observed' ? null : '5,4'
-        }).bindPopup(popupNode('Sebaran abu ' + v.name + ' — ' + p.levelLabel, [
+        }).bindPopup(popupNode('Sebaran abu ' + v.name + ', ' + p.levelLabel, [
           (p.dataMode === 'observed' ? 'STATUS: OBSERVASI LAPANGAN' : 'STATUS: MODEL ATMOSFER'),
           'Arah sebaran: ' + compass(p.to) + ' (' + p.to + '\u00b0)',
           v.ash && v.ash.summitElevM ? 'Tinggi puncak: ' + nf.format(v.ash.summitElevM) + ' m AMSL' : null,
@@ -817,7 +817,7 @@
       var o = v.official;
       L.marker([v.lat, v.lon], { icon: volcanoIcon(v), pane: 'volcanoPane' })
         .bindPopup(popupNode('Gunung ' + v.name, [
-          o ? 'Status resmi PVMBG: Level ' + o.roman + ' — ' + o.status : 'Status resmi PVMBG: tidak tercatat',
+          o ? 'Status resmi PVMBG: Level ' + o.roman + ', ' + o.status : 'Status resmi PVMBG: tidak tercatat',
           o && o.province ? 'Wilayah administratif: ' + o.province : null,
           v.activity
             ? 'Laporan GVP: erupsi ' + v.activity.status + (v.activity.period ? ' · ' + v.activity.period : '')
@@ -954,7 +954,7 @@
   /**
    * Pemilih citra satelit menampung dua sumber yang sangat berbeda sifatnya.
    *
-   * Himawari-9 menyegar tiap 10 menit tetapi resolusinya ~2 km — bagus
+   * Himawari-9 menyegar tiap 10 menit tetapi resolusinya ~2 km, bagus
    * untuk melihat awan dan pergerakan abu, tidak untuk melihat kawah.
    * Sentinel-2 beresolusi 10 m sehingga bekas aliran lava terlihat, tetapi
    * satelitnya hanya melintas tiap 5 hari dan sering tertutup awan.
@@ -1170,7 +1170,7 @@
     box.appendChild(el('span', 'hi-sat', 'Himawari-9'));
     box.appendChild(el('span', 'hi-mode', label));
     // Saat animasi berjalan, yang ditampilkan adalah waktu bingkai yang
-    // sedang diputar — bukan waktu slot terbaru.
+    // sedang diputar, bukan waktu slot terbaru.
     var shown = state.himaFrame ? new Date(state.himaFrame) : t;
     if (shown) {
       // toLocaleTimeString memakai zona perangkat, sehingga label "WIB" bisa
@@ -1218,7 +1218,7 @@
         if (state.hima && state.hima.time === m.time) { renderHimaInfo(); return; }
         state.hima = m;
         // Saat sedang memutar animasi, jangan lompat ke slot terbaru di
-        // tengah pemutaran — daftar slotnya saja yang diperbarui.
+        // tengah pemutaran, daftar slotnya saja yang diperbarui.
         if (!state.himaPlaying && state.himaLayer) {
           state.himaFrame = null;
           state.himaLayer.setUrl('/api/himawari/' + state.himaProduct +
@@ -1234,7 +1234,7 @@
    *
    * Satu citra diam tidak memperlihatkan apa pun tentang pergerakan awan,
    * sehingga mudah disangka beku. JMA menyimpan riwayat slot per 10 menit;
-   * memutarnya berurutan membuat arah dan kecepatan gerak awan terlihat —
+   * memutarnya berurutan membuat arah dan kecepatan gerak awan terlihat -
    * dan itulah yang sebenarnya ingin diketahui saat memantau sebaran abu.
    */
   function himaUrl(t) {
@@ -1271,7 +1271,7 @@
    *
    * Pendekatan sebelumnya memakai setUrl() pada satu lapisan. Leaflet
    * membuang seluruh petak lama sebelum petak baru selesai diunduh,
-   * sehingga peta dasar tersingkap sesaat pada setiap pergantian —
+   * sehingga peta dasar tersingkap sesaat pada setiap pergantian -
    * inilah yang membuat animasi tampak patah-patah dan sulit dibaca.
    *
    * Sekarang tiap bingkai mendapat lapisannya sendiri yang dimuat lebih
@@ -1291,7 +1291,7 @@
 
     // Enam bingkai, bukan dua belas. Setiap bingkai menuntut 18-30 petak,
     // sehingga memuat semuanya serentak mengirim ratusan permintaan dalam
-    // sekejap — cukup untuk memicu pembatasan laju dan justru membuat
+    // sekejap, cukup untuk memicu pembatasan laju dan justru membuat
     // animasi tersendat. Enam slot mencakup satu jam terakhir, rentang
     // yang sudah memperlihatkan arah gerak awan dengan jelas.
     var pick = f.slice(-6);
@@ -1371,7 +1371,7 @@
     if ($('sQuake')) {
       $('sQuake').classList.remove('skel');
       var qc = (q && q.counts) || null;
-      $('sQuake').textContent = qc ? nf.format(qc.total) : '—';
+      $('sQuake').textContent = qc ? nf.format(qc.total) : '-';
       if (q && q.latest && q.latest.magnitude !== null) {
         $('sQuakeSub').textContent = 'terkini M ' + q.latest.magnitude
           + ' · ' + String(q.latest.area || '').slice(0, 34);
@@ -1412,7 +1412,7 @@
         + (state.hazardAt ? ' · ' + state.hazardAt : '');
     }
 
-    // Kontrol lapisan pengungsian dimatikan saat tidak ada posko aktif —
+    // Kontrol lapisan pengungsian dimatikan saat tidak ada posko aktif -
     // mencentangnya hanya akan memberi peta kosong tanpa penjelasan.
     // Begitu BNPB melaporkan pengungsi lagi, kontrolnya hidup sendiri.
     var shBox = $('lyShelter');
@@ -1447,7 +1447,7 @@
         var gt = el('span', 't');
         gt.style.cssText = 'font-size:15px;display:block;margin-top:4px';
         gt.appendChild(document.createTextNode(
-          'M ' + (L.magnitude !== null && L.magnitude !== undefined ? L.magnitude : '—') + ' '));
+          'M ' + (L.magnitude !== null && L.magnitude !== undefined ? L.magnitude : '-') + ' '));
         if (L.severityLabel) {
           var gsev = el('span', 't-tertiary', L.severityLabel);
           gsev.style.cssText = 'font-weight:400;font-size:11px';
@@ -1532,7 +1532,7 @@
       });
     } else if (sh) {
       // Tidak ada pengungsian aktif. Blok ini tetap ditampilkan agar
-      // pembaca tahu datanya memang kosong — bukan gagal dimuat — dan
+      // pembaca tahu datanya memang kosong, bukan gagal dimuat, dan
       // kapan terakhir kali ada pengungsi.
       var nb = el('div', 'hz-block');
       var nh = el('div', 'hz-head');
@@ -1618,7 +1618,7 @@
         ev.push({
           kind: 'Gempa', tone: 'quake',
           severity: 40 + q.magnitude * 8 + (q.tsunami ? 40 : 0),
-          title: 'M ' + q.magnitude + ' — ' + (q.area || 'wilayah tidak disebut'),
+          title: 'M ' + q.magnitude + ', ' + (q.area || 'wilayah tidak disebut'),
           detail: 'kedalaman ' + (q.depthKm !== undefined && q.depthKm !== null ? q.depthKm + ' km' : '-')
             + (q.felt ? ' · dirasakan ' + String(q.felt).slice(0, 60) : ''),
           at: q.time,
@@ -1794,14 +1794,14 @@
     clear(body);
     if (meta) meta.textContent = s.healthy + '/' + s.total + ' sumber aktif · ' + s.mode;
     // Angka kepala & metrik panel dulu tertulis statis di HTML ("9/9", "0",
-    // "1 / 0") dan tak pernah disentuh JS — kini seluruhnya ikut status.
+    // "1 / 0") dan tak pernah disentuh JS, kini seluruhnya ikut status.
     function put(id, txt) { var n = $(id); if (n) n.textContent = txt; }
     var frac = s.total ? s.healthy / s.total : 0;
     put('srcTxt', s.healthy + '/' + s.total + ' sumber aktif');
     put('srcHealthy', s.healthy + '/' + s.total);
-    put('srcQ429', s.quota ? String(s.quota['429'] || 0) : '—');
-    put('srcQ5xx', s.quota ? String(s.quota['5xx'] || 0) : '—');
-    put('srcRuns', s.summary ? s.summary.totalRuns + ' / ' + s.summary.totalFails : '—');
+    put('srcQ429', s.quota ? String(s.quota['429'] || 0) : '-');
+    put('srcQ5xx', s.quota ? String(s.quota['5xx'] || 0) : '-');
+    put('srcRuns', s.summary ? s.summary.totalRuns + ' / ' + s.summary.totalFails : '-');
     var chipDot = $('srcDot');
     if (chipDot) {
       chipDot.className = 'dot ' + (frac >= 1 ? 'd-nominal' : frac >= .5 ? 'd-caution'
@@ -1837,7 +1837,7 @@
     // Baris per sumber mengikuti bentuk audit: .kv dengan label di kiri dan
     // waktu di kanan (justify-content:space-between sudah ada di app.css).
     // Sebelumnya tiap sumber dibungkus kartu .st-card berisi .st-top, .st-dot,
-    // .st-name, .st-age, .st-every — lima kelas tanpa satu pun aturan CSS —
+    // .st-name, .st-age, .st-every, lima kelas tanpa satu pun aturan CSS -
     // sehingga label dan waktunya menempel menjadi "Gempa bumi (BMKG)1 menit
     // lalu" dan bintang penanda tugas kritis menggantung di ujung teks.
     var onDemandMode = /penjadwal luar/.test(s.mode || '');
@@ -1855,7 +1855,7 @@
         volcano: (state.ash && state.ash.updatedAt) || (d && d.volcano ? ov : null),
         pvmbg: (d && d.volcano) ? ov : null,
         // 'eruption' sengaja tanpa pemetaan: tidak ada feed halaman yang
-        // membuktikannya — kalau scheduler gagal, biarkan barisnya jujur.
+        // membuktikannya, kalau scheduler gagal, biarkan barisnya jujur.
         quake: (hz && hz.quakes && hz.quakes.quakes && hz.quakes.quakes.length) ? hzt : null,
         tsunami: (hz && hz.tsunami) ? hzt : null,
         shelter: (hz && hz.shelters && hz.shelters.events && hz.shelters.events.length) ? hzt : null,
@@ -1875,7 +1875,7 @@
     }
     s.tasks.forEach(function (t) {
       var row = el('div', 'kv');
-      // el(tag, cls, text) — argumen kedua adalah KELAS, bukan teks.
+      // el(tag, cls, text), argumen kedua adalah KELAS, bukan teks.
       var lab = el('span', null, t.label);
       if (t.critical) {
         var star = el('b', 't-alert', ' ★');
@@ -1886,7 +1886,7 @@
       row.appendChild(lab);
       // Status ditulis dengan kata yang berarti, bukan sekadar umur:
       // penguna harus bisa membedakan "hidup", "lambat", "masih cache
-      // terakhir" dan "tidak aktif" — tanpa perlu menebak dari angka.
+      // terakhir" dan "tidak aktif", tanpa perlu menebak dari angka.
       var late = t.ageMs != null && t.everyMs > 0 && t.ageMs > t.everyMs * 2.5;
       var fAt = feedStamp(t.id);
       var fAge = fAt != null ? Date.now() - fAt : null;
@@ -1900,7 +1900,7 @@
       else right = 'AKTIF · ' + t.ageLabel;
       if (t.consecutiveFails) right += ' · gagal ' + t.consecutiveFails + '×';
       // Sejak penjadwal menjeda sumber yang terus gagal, lambatnya pembaruan
-      // punya sebab yang harus terbaca — bukan sumber yang diam-diam lupa.
+      // punya sebab yang harus terbaca, bukan sumber yang diam-diam lupa.
       if (t.backoff) right += ' · dijeda 30 mnt agar sumber tak dihujani';
       var rightEl = el('b', null, right);
       if (!t.healthy || late) rightEl.classList.add('kv-bad');
@@ -1912,7 +1912,7 @@
       if (t.alert) body.appendChild(el('div', 'st-task-alert', t.alert));
       if (t.errorNote && (!t.healthy || !t.hasData)) {
         body.appendChild(el('div', 'st-task-alert',
-          'Penyebab: ' + t.errorNote + ' — angka dari sumber ini belum terverifikasi saat ini.'));
+          'Penyebab: ' + t.errorNote + ', angka dari sumber ini belum terverifikasi saat ini.'));
       }
     });
     if (onDemandMode) {
@@ -1920,7 +1920,7 @@
         'Host ini memakai penjadwal luar: sumber disegarkan saat datanya diminta. ' +
         'Baris "AKTIF · data di halaman …" diukur dari stempel data yang SEDANG Anda ' +
         'baca; "ON-DEMAND · belum diminta" berarti salinan server yang menjawab status ' +
-        'belum menerima permintaan itu — bukan bahwa sumbernya mati.'));
+        'belum menerima permintaan itu, bukan bahwa sumbernya mati.'));
     }
 
     // Fase 2.2: log terstruktur terbaru
@@ -1975,7 +1975,7 @@
     if (!val || !sub) return;
     val.classList.remove('skel');
 
-    if (!d) { val.textContent = '—'; return; }
+    if (!d) { val.textContent = '-'; return; }
 
     val.textContent = nf.format(d.affectedCount || 0);
 
@@ -2106,7 +2106,7 @@
       q += '&west=' + b.getWest().toFixed(2) + '&south=' + b.getSouth().toFixed(2) +
            '&east=' + b.getEast().toFixed(2) + '&north=' + b.getNorth().toFixed(2);
     }
-    // Fase 2.5: jika key sama, tetap redraw karena filter AQI mungkin berubah — jangan skip renderAirLegend
+    // Fase 2.5: jika key sama, tetap redraw karena filter AQI mungkin berubah, jangan skip renderAirLegend
     if (state.airKey === q) {
       drawAir();
       renderAirLegend();
@@ -2156,7 +2156,7 @@
         if (state.airPendingQ && state.airPendingQ !== state.airKey) {
           var pending = state.airPendingQ;
           state.airPendingQ = null;
-          // Panggil ulang — akan cek key lagi
+          // Panggil ulang, akan cek key lagi
           if (state.airOn) loadAir();
         } else {
           state.airPendingQ = null;
@@ -2164,7 +2164,7 @@
       });
   }
 
-  // Legenda AQI muncul hanya saat lapisan aktif — Fase 2.5 UI friendly + filter interaktif
+  // Legenda AQI muncul hanya saat lapisan aktif, Fase 2.5 UI friendly + filter interaktif
   function renderAirLegend() {
     var box = $('airLegend');
     if (!box) return;
@@ -2202,7 +2202,7 @@
         if (sel) sel.value = '0';
         drawAir();
         renderAirLegend();
-        showHint('Filter AQI direset — menampilkan semua ' + nf.format(total) + ' sel.', 3000);
+        showHint('Filter AQI direset, menampilkan semua ' + nf.format(total) + ' sel.', 3000);
       });
       filterInfo.appendChild(clearBtn);
       box.appendChild(filterInfo);
@@ -2219,7 +2219,7 @@
 
     state.air.legend.forEach(function (b, i) {
       var prev = i ? state.air.legend[i - 1].upto : -1;
-      var range = b.upto === null ? '> ' + prev : (prev + 1) + '–' + b.upto;
+      var range = b.upto === null ? '> ' + prev : (prev + 1) + '-' + b.upto;
       var row = el('div', 'cs-row');
       row.style.cssText = 'cursor:pointer;padding:2px 4px;border-radius:5px;transition:background 0.15s';
       // Highlight jika row ini sesuai filter aktif
@@ -2255,7 +2255,7 @@
         }
         drawAir();
         renderAirLegend();
-        showHint('Filter AQI ≥ ' + state.airMinAqi + ' — ' + nf.format(state.airFilteredCount) + ' sel ditampilkan. Klik Reset untuk tampil semua.', 4000);
+        showHint('Filter AQI ≥ ' + state.airMinAqi + ', ' + nf.format(state.airFilteredCount) + ' sel ditampilkan. Klik Reset untuk tampil semua.', 4000);
       });
 
       box.appendChild(row);
@@ -2282,7 +2282,7 @@
     return s >= 8 ? '#f87171' : s >= 5 ? '#fb923c' : s >= 3 ? '#fbbf24' : s >= 1.5 ? '#5eead4' : '#7dd3fc';
   }
   function windLabel(s) {
-    return s >= 8 ? 'kencang' : s >= 5 ? 'sedang–kencang' : s >= 3 ? 'sedang' : s >= 1.5 ? 'lemah' : 'tenang';
+    return s >= 8 ? 'kencang' : s >= 5 ? 'sedang-kencang' : s >= 3 ? 'sedang' : s >= 1.5 ? 'lemah' : 'tenang';
   }
   function compass(deg) {
     var a = ['utara', 'timur laut', 'timur', 'tenggara', 'selatan', 'barat daya', 'barat', 'barat laut'];
@@ -2321,7 +2321,7 @@
    * Badge ketinggian angin di atas peta.
    *
    * Tanpa ini, pengguna tidak punya cara mengetahui bahwa panah angin
-   * menggambarkan lapisan atmosfer yang berbeda dari abu — dan menyimpulkan
+   * menggambarkan lapisan atmosfer yang berbeda dari abu, dan menyimpulkan
    * aplikasinya keliru padahal keduanya benar.
    */
   function renderWindBadge() {
@@ -2384,7 +2384,7 @@
            '&east=' + b.getEast().toFixed(2) + '&north=' + b.getNorth().toFixed(2);
     }
     if (state.windKey === q) {
-      // Data yang sama masih tersimpan, jadi tidak perlu diambil ulang —
+      // Data yang sama masih tersimpan, jadi tidak perlu diambil ulang -
       // tetapi pengguna baru saja menyalakan lapisan dan tetap berhak
       // memperoleh konfirmasi bahwa ada sesuatu yang tergambar.
       drawWind();
@@ -2458,7 +2458,7 @@
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('x')); })
       .then(function (fc) {
         gConc.clearLayers();
-        if (fc.tooWide) { showHint('Area terlalu luas — perbesar peta untuk melihat batas konsesi.'); return; }
+        if (fc.tooWide) { showHint('Area terlalu luas, perbesar peta untuk melihat batas konsesi.'); return; }
         if (!fc.features || !fc.features.length) { showHint('Tidak ada batas konsesi terdata pada area ini.'); return; }
         fc.features.forEach(function (f) {
           var p = f.properties;
@@ -2523,7 +2523,7 @@
             if (u.areaHa) det.push(nf.format(u.areaHa) + ' ha');
             if (det.length) box.appendChild(el('div', 'pp-r', '· ' + det.join(' · ')));
           });
-          box.appendChild(el('div', 'pp-warn', 'Indikasi awal dari kompilasi peta konsesi GFW — bukan bukti hukum.'));
+          box.appendChild(el('div', 'pp-warn', 'Indikasi awal dari kompilasi peta konsesi GFW, bukan bukti hukum.'));
         }
         var airLine = el('div', 'pp-r pp-load', 'Memeriksa kualitas udara…');
         box.appendChild(airLine);
@@ -2553,7 +2553,7 @@
   // Baris peringkat, mengikuti struktur prototipe audit apa adanya:
   //   .listrow.rank  →  .no (01)  .nm (nama)  .val (angka)  .a-ago (satuan)
   // Sebelumnya di sini dibuat .row, .row-rank, .row-main, .row-t, .row-s,
-  // .bar, dan .pill — tujuh kelas yang tidak punya satu pun aturan CSS di
+  // .bar, dan .pill, tujuh kelas yang tidak punya satu pun aturan CSS di
   // app.css maupun di prototipe, sehingga seluruh daftar yang memakainya
   // tampil tanpa tata letak. Empat kolomnya sudah ada di audit
   // (.rank{grid-template-columns:18px 1fr auto auto}).
@@ -2593,14 +2593,14 @@
   function renderImpactList() {
       var pane = $('paneImpact'); clear(pane);
       var list = state.data ? state.data.impacted : [];
-      if (!list.length) { pane.appendChild(el('p', 'empty', 'Tidak ada zona terdampak saat ini — tidak ada kota/kabupaten yang dijangkau paparan asap atau abu (jendela 24 jam).')); return; }
+      if (!list.length) { pane.appendChild(el('p', 'empty', 'Tidak ada zona terdampak saat ini, tidak ada kota/kabupaten yang dijangkau paparan asap atau abu (jendela 24 jam).')); return; }
       var jml = list.length;
       pane.appendChild(el('div', 'micro',
         'Zona terdampak aktif · ' + nf.format(jml) + ' kota/kabupaten · jendela data 24 jam'));
       pane.appendChild(el('p', 'pane-note',
         'Wilayah terdampak = kota/kabupaten yang KINI berada di dalam jangkauan paparan: ' +
         'jalur pluma asap dari titik api dan/atau sebaran abu vulkanik, dihitung dari arah angin ' +
-        'dan intensitas sumbernya. Yang digambar adalah ZONA PAPARAN — poligon buffer berjari-jari ' +
+        'dan intensitas sumbernya. Yang digambar adalah ZONA PAPARAN, poligon buffer berjari-jari ' +
         '7-18 km sesuai tingkat paparan (bukan batas administratif dan bukan data kerusakan). ' +
         'Indeks 0-100 menandakan seberapa kuat paparan, bukan angka ISPU resmi. Klik sebuah zona di ' +
         'peta untuk melihat semua peristiwa bahaya lain yang tercatat di lokasi sekitar zona itu.'));
@@ -2685,7 +2685,7 @@
    * Angka hari tanpa hujan menjawab "seberapa kering", tetapi tidak
    * menjawab "seperti apa keadaannya di lapangan". Tombol di tiap baris
    * memindahkan peta ke provinsi itu sekaligus menyalakan lapisan citra
-   * yang sesuai, sehingga jaraknya satu klik — bukan mencari sendiri
+   * yang sesuai, sehingga jaraknya satu klik, bukan mencari sendiri
    * koordinatnya lalu memilih produk yang tepat.
    */
   function renderDryList() {
@@ -2698,7 +2698,7 @@
       pane.appendChild(el('p', 'pane-note',
         'Status iklim: ' + e.phase + ' (ONI ' + e.oni.toFixed(1) + ', ' + e.season + ' '
         + e.year + (e.trend ? ', ' + e.trend : '') + '). '
-        + 'El Niño meningkatkan peluang kemarau panjang tetapi tidak menentukannya — '
+        + 'El Niño meningkatkan peluang kemarau panjang tetapi tidak menentukannya, '
         + 'status tiap provinsi di bawah dihitung dari curah hujan yang benar-benar '
         + 'terukur, bukan dari indeks ini.'));
     }
@@ -2737,7 +2737,7 @@
     var sel = $('himaSel');
     if (sel) { sel.value = 's2:' + produk; }
     setHimawari('s2:' + produk);
-    showHint('Memuat citra Sentinel-2 — satelit melintas tiap 5 hari, '
+    showHint('Memuat citra Sentinel-2, satelit melintas tiap 5 hari, '
       + 'jadi ini bukan citra hari ini. Tanggal perekaman tampil di panel citra.', 8000);
   }
 
@@ -2793,7 +2793,7 @@
       //   .listrow.whois → [.nm + .h] [.chips > .chip] [.val] [.a-ago]
       // Empat kolomnya (1fr 92px 80px 70px) sudah ada di app.css. Sebelumnya
       // di sini dibangun .unit, .unit-row, .unit-top, .unit-left, .unit-name,
-      // .unit-group, .unit-right, .tag, .unit-count, .unit-detail — sepuluh
+      // .unit-group, .unit-right, .tag, .unit-count, .unit-detail, sepuluh
       // kelas yang tidak punya satu pun aturan CSS, sehingga nama perusahaan,
       // lencana, jumlah titik, dan rincian lisensi saling menumpuk.
       d.units.forEach(function (u) {
@@ -2875,7 +2875,7 @@
       link.appendChild(src);
       link.appendChild(el('span', 'hl', a.title || '(tanpa judul)'));
 
-      // Waktu terbit ditampilkan lengkap dengan jam WIB dan usia relatif —
+      // Waktu terbit ditampilkan lengkap dengan jam WIB dan usia relatif -
       // pada pemantauan bencana, "2 jam lalu" jauh lebih berarti daripada
       // sekadar tanggal. Berita dari media negara tetangga ditandai jelas
       // supaya pembaca tahu itu sudut pandang luar, bukan laporan otoritas.
@@ -2892,7 +2892,7 @@
       }
       // Hanya negara asal yang ikut di kolom waktu. Label kategori tidak
       // diulang di sini karena chip di atas sudah menyatakan kategori yang
-      // sedang aktif — pada audit kolomnya cukup "usia · jam".
+      // sedang aktif, pada audit kolomnya cukup "usia · jam".
       if (a.foreign && a.country) bagian.push(a.country);
       meta.textContent = bagian.join(' · ');
       link.appendChild(meta);
@@ -2933,7 +2933,7 @@
   /* Stempel "diperbarui" dalam WIB eksplisit. Sebelumnya memakai
      toLocaleString tanpa label zona: pengguna di luar WIB melihat jam zona
      perangkat sendiri, dan tak ada jaminan zona. Kini UTC+7 dihitung
-     eksplisit — konvensi yang sama dengan penanggalan lain di halaman. */
+     eksplisit, konvensi yang sama dengan penanggalan lain di halaman. */
   var NAMA_BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
     'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
   function stampWIB(iso) {
@@ -2964,7 +2964,7 @@
         b.className = 'badge badge-live';
         buildTicker();
         var _st = stampWIB(d.meta.updatedAt);
-        $('updated').textContent = _st ? 'diperbarui ' + _st : 'diperbarui —';
+        $('updated').textContent = _st ? 'diperbarui ' + _st : 'diperbarui -';
         var _sl = $('srcline'); if (_sl) _sl.textContent = 'Sumber titik api: ' + d.meta.source + ' · rentang ' + d.meta.days +
           ' hari · atribusi: ' + d.meta.attribution.join(', ') + '.';
         setNotice(d.meta.notice || '');
@@ -2988,7 +2988,7 @@
           // Itu BUKAN sama dengan "tidak ada letusan", jadi jangan pernah
           // menampilkannya sebagai angka nol yang meyakinkan.
           if (vs.eruptionReports === null || vs.eruptionReports === undefined) {
-            $('sErupt').textContent = '—';
+            $('sErupt').textContent = '-';
             $('sEruptSub').textContent = 'menunggu laporan pos pengamatan…';
             // Coba lagi sebentar lagi; penyegaran latar biasanya sudah selesai.
             if (!state.eruptRetry) {
@@ -3008,8 +3008,8 @@
           $('sVolLvlSub').textContent = 'Awas ' + (c.Awas || 0) + ' · Siaga ' + (c.Siaga || 0)
             + ' · Waspada ' + (c.Waspada || 0);
         } else {
-          $('sErupt').textContent = '—';
-          $('sVolLvl').textContent = '—';
+          $('sErupt').textContent = '-';
+          $('sVolLvl').textContent = '-';
         }
         var wa = d.worstAir;
         $('sAir').classList.remove('skel');
@@ -3018,7 +3018,7 @@
           $('sAir').style.color = wa.color;
           $('sAirSub').textContent = wa.label + (wa.province ? ' · ' + wa.province : '');
         } else {
-          $('sAir').textContent = '—';
+          $('sAir').textContent = '-';
           $('sAirSub').textContent = 'data tidak tersedia';
         }
         drawFires(); drawSmoke(); drawImpact();
@@ -3060,7 +3060,7 @@
         renderAttribution();
       })
       .catch(function () {
-        $('sConc').textContent = '—';
+        $('sConc').textContent = '-';
         clear($('paneUnit'));
         $('paneUnit').appendChild(el('p', 'empty', 'Analisis atribusi lahan sedang tidak tersedia. Coba muat ulang.'));
       });
@@ -3074,7 +3074,7 @@
         state.newsAt = d.fetchedAt || new Date().toISOString();
         state.newsTopics = Array.isArray(d.topics) ? d.topics : [];
         // Tampilkan kapan DATA-nya ditarik dari sumber, bukan kapan browser
-        // memanggil API — keduanya bisa berbeda beberapa menit karena cache.
+        // memanggil API, keduanya bisa berbeda beberapa menit karena cache.
         state.newsFetchedAt = d.fetchedAt || null;
         state.newsAt = d.fetchedAt
           ? fmtJamWib(Date.parse(d.fetchedAt))
@@ -3142,7 +3142,7 @@
       if (!a.length) return 'Tidak ada gunung berstatus Siaga/Awas atau dilaporkan erupsi saat ini.';
       var oc = state.ash.official && state.ash.official.counts;
       return nf.format(a.length) + ' gunung aktif dipantau di peta'
-        + (oc ? ' — status PVMBG: ' + oc.Awas + ' Awas, ' + oc.Siaga + ' Siaga, ' + oc.Waspada + ' Waspada.' : '.');
+        + (oc ? ', status PVMBG: ' + oc.Awas + ' Awas, ' + oc.Siaga + ' Siaga, ' + oc.Waspada + ' Waspada.' : '.');
     }
   };
 
@@ -3178,7 +3178,7 @@
     }
   });
 
-  // Fase 2.5: filter AQI — UI friendly
+  // Fase 2.5: filter AQI, UI friendly
   function updateAirCfg() {
     var cntEl = $('airCfgCount');
     if (!cntEl) return;
@@ -3212,8 +3212,8 @@
         updateAirCfg();
         showHint(
           v === 0
-            ? 'Filter AQI direset — menampilkan semua ' + nf.format(state.air.count || 0) + ' sel.'
-            : 'Filter AQI ≥ ' + v + ' — ' + nf.format(state.airFilteredCount) + ' dari ' + nf.format(state.air.count || 0) + ' sel ditampilkan.',
+            ? 'Filter AQI direset, menampilkan semua ' + nf.format(state.air.count || 0) + ' sel.'
+            : 'Filter AQI ≥ ' + v + ', ' + nf.format(state.airFilteredCount) + ' dari ' + nf.format(state.air.count || 0) + ' sel ditampilkan.',
           4000
         );
       }
@@ -3262,11 +3262,11 @@
       try { localStorage.setItem(key, collapsed ? '1' : '0'); } catch (e) {}
       // Resize map agar tidak ada gap kosong setelah collapse
       setTimeout(function () { if (map && map.invalidateSize) map.invalidateSize(); }, 220);
-      showHint(collapsed ? 'Kontrol disembunyikan — hemat ruang. Klik lagi untuk tampil.' : 'Kontrol ditampilkan.', 2500);
+      showHint(collapsed ? 'Kontrol disembunyikan, hemat ruang. Klik lagi untuk tampil.' : 'Kontrol ditampilkan.', 2500);
     });
   })();
 
-  // Fase 3.5 Bloomberg single design — user request: hapus tombol BLM COMPACT, jadikan satu desain permanen
+  // Fase 3.5 Bloomberg single design, user request: hapus tombol BLM COMPACT, jadikan satu desain permanen
   // Normal = compact, tidak ada toggle lagi
   (function () {
     try { document.body.classList.add('bloomberg'); } catch (e) {}
@@ -3294,7 +3294,7 @@
     setTimeout(fixMap, 1500);
   })();
 
-  // Fase 3.6 AI Asisten popup draggable — gantikan panel Kueri data, Berita scroll terbatas
+  // Fase 3.6 AI Asisten popup draggable, gantikan panel Kueri data, Berita scroll terbatas
   (function () {
     var fab = $('aiFab');
     var popup = $('aiPopup');
@@ -3326,7 +3326,7 @@
      * Jaga popup selalu di dalam layar. Posisi geser disimpan sebagai
      * left/top, jadi popup yang pernah digeser di jendela besar bisa
      * mendarat di luar layar ketika jendela menyusut (mis. pindah ke
-     * 390 px) — popup tak terlihat sama saja dengan hilang.
+     * 390 px), popup tak terlihat sama saja dengan hilang.
      */
     function clampIntoView() {
       if (popup.hidden) return;
@@ -3355,7 +3355,7 @@
         var q = $('askQ');
         if (q) q.focus();
       }, 100);
-      showHint('AI Asisten dibuka — drag header ⋮⋮ untuk geser posisi, ketik pertanyaan tentang data bencana.', 3500);
+      showHint('AI Asisten dibuka, drag header ⋮⋮ untuk geser posisi, ketik pertanyaan tentang data bencana.', 3500);
     }
     function closeAi() {
       popup.hidden = true;
@@ -3531,7 +3531,7 @@
         main.style.minHeight = (maxBottom + 20) + 'px';
       }
 
-      showHint('Mode atur layout aktif — drag header ⋮⋮ untuk geser, drag sudut kanan-bawah untuk resize. Font auto-scale ikut ukuran panel. Klik SIMPAN LOKAL jika sudah pas.', 5000);
+      showHint('Mode atur layout aktif, drag header ⋮⋮ untuk geser, drag sudut kanan-bawah untuk resize. Font auto-scale ikut ukuran panel. Klik SIMPAN LOKAL jika sudah pas.', 5000);
     }
 
     function exitEdit() {
@@ -3547,7 +3547,7 @@
       if (hasSaved) {
         document.body.classList.add('layout-free');
       }
-      showHint('Mode atur selesai — layout tetap free floating. Klik ATUR LAYOUT lagi untuk edit, atau SIMPAN LOKAL untuk patenkan.', 4000);
+      showHint('Mode atur selesai, layout tetap free floating. Klik ATUR LAYOUT lagi untuk edit, atau SIMPAN LOKAL untuk patenkan.', 4000);
     }
 
     function toggleEdit() {
@@ -3686,13 +3686,13 @@
       data.mode = mode;
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        showHint('Layout ' + mode + ' disimpan lokal — ' + layout.length + ' panel. Export JSON untuk dipatenkan jadi default semua user.', 4000);
+        showHint('Layout ' + mode + ' disimpan lokal, ' + layout.length + ' panel. Export JSON untuk dipatenkan jadi default semua user.', 4000);
       } catch(e){
-        showHint('Gagal simpan — localStorage penuh atau blocked', 3000);
+        showHint('Gagal simpan, localStorage penuh atau blocked', 3000);
       }
     }
 
-    // Load layout — cek localStorage dulu, jika tidak ada pakai default paten dari /layout-default.json
+    // Load layout, cek localStorage dulu, jika tidak ada pakai default paten dari /layout-default.json
     function applyLayoutData(data) {
       var mode = isMobileView() ? 'mobile' : 'desktop';
       var layout = data[mode] && data[mode].length ? data[mode] : data.desktop;
@@ -3750,7 +3750,7 @@
           if (!data) return;
           if (applyLayoutData(data)) {
             console.log('[layout] loaded from /layout-default.json (patented default)');
-            showHint('Layout default paten dimuat — klik ATUR LAYOUT untuk edit lagi', 3500);
+            showHint('Layout default paten dimuat, klik ATUR LAYOUT untuk edit lagi', 3500);
           }
         })
         .catch(function(){});
@@ -3784,7 +3784,7 @@
       // Try clipboard
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(raw).then(function(){
-          showHint('JSON layout disalin ke clipboard — paste ke docs/layout-default.json untuk dipatenkan', 4000);
+          showHint('JSON layout disalin ke clipboard, paste ke docs/layout-default.json untuk dipatenkan', 4000);
         }).catch(function(){
           prompt('Copy JSON layout ini untuk dipatenkan sebagai default:', raw);
         });
@@ -3820,7 +3820,7 @@
       isEdit = false;
       toggleBtn.textContent = '✦ ATUR LAYOUT';
       toggleBtn.classList.remove('active');
-      showHint('Layout direset ke default grid — reload halaman', 3000);
+      showHint('Layout direset ke default grid, reload halaman', 3000);
       setTimeout(function(){ location.reload(); }, 800);
     }
 
@@ -3864,7 +3864,7 @@
     });
   })();
 
-  // Fase 3.9 Panel toggle collapsible — hemat ruang, jika tidak muat pakai toggle
+  // Fase 3.9 Panel toggle collapsible, hemat ruang, jika tidak muat pakai toggle
   (function () {
     var STORAGE_KEY = 'siaga_panel_collapsed_v1';
     var collapsed = {};
@@ -3935,7 +3935,7 @@
       }
     }
 
-    // Berita topics toggle khusus — banyak chip
+    // Berita topics toggle khusus, banyak chip
     function initNewsTopicsToggle() {
       var topicsBox = $('newsTopics');
       var newsPanel = $('newsPanel');
@@ -3978,7 +3978,7 @@
       }
     }, 2000);
 
-    // Global toggle all — tekan T untuk toggle semua panel yang tidak muat
+    // Global toggle all, tekan T untuk toggle semua panel yang tidak muat
     document.addEventListener('keydown', function(e){
       if (e.key && e.key.toLowerCase() === 't' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         var ae = document.activeElement;
@@ -3994,7 +3994,7 @@
           if (p.id === 'mapCard' || p.id === 'statsPanel') continue;
           togglePanel(p, !anyCollapsed);
         }
-        showHint(anyCollapsed ? 'Semua panel ditampilkan' : 'Panel disembunyikan hemat ruang — tekan T lagi untuk tampilkan', 3000);
+        showHint(anyCollapsed ? 'Semua panel ditampilkan' : 'Panel disembunyikan hemat ruang, tekan T lagi untuk tampilkan', 3000);
       }
     });
   })();
@@ -4107,7 +4107,7 @@
   });
   $('newsQ').addEventListener('input', renderNews);
 
-  /* ---------- fullscreen peta — dapat dikeluarkan ke layar penuh ---------- */
+  /* ---------- fullscreen peta, dapat dikeluarkan ke layar penuh ---------- */
   // Tujuan: analisis butuh ruang, terutama saat koordinasi darurat atau layar kecil.
   // Menggunakan Fullscreen API native, fallback ke class .is-fullscreen bila tidak tersedia.
   // Keluar via ESC, tombol ✕, atau tombol FULL lagi.
@@ -4127,7 +4127,7 @@
       btn.setAttribute('aria-pressed', fs ? 'true' : 'false');
       var txt = btn.querySelector('.fs-txt');
       if (txt) txt.textContent = fs ? 'EXIT' : 'FULL';
-      btn.title = fs ? 'Keluar layar penuh (ESC)' : 'Layar penuh (F) — ESC untuk keluar';
+      btn.title = fs ? 'Keluar layar penuh (ESC)' : 'Layar penuh (F), ESC untuk keluar';
       if (exitBtn) exitBtn.hidden = !fs;
       document.body.classList.toggle('has-fullscreen-map', fs);
       // Leaflet perlu tahu ukurannya berubah, kalau tidak ubinnya berantakan
@@ -4165,7 +4165,7 @@
     btn.addEventListener('click', toggleFs);
     if (exitBtn) exitBtn.addEventListener('click', exitFs);
 
-    // ESC dan F sebagai shortcut — F untuk masuk, ESC untuk keluar
+    // ESC dan F sebagai shortcut, F untuk masuk, ESC untuk keluar
     document.addEventListener('keydown', function (e) {
       // Jangan ganggu saat sedang mengetik di input
       var tag = (e.target && e.target.tagName || '').toLowerCase();
@@ -4189,7 +4189,7 @@
     document.addEventListener('fullscreenchange', function () {
       // Jika keluar fullscreen native tapi class fallback masih ada, bersihkan
       if (!document.fullscreenElement && card.classList.contains('is-fullscreen') && !card.matches(':fullscreen')) {
-        // Biarkan, karena is-fullscreen adalah fallback yang sengaja — tapi jika fullscreenElement null dan kita tidak dalam fallback mode yang diminta, bersihkan
+        // Biarkan, karena is-fullscreen adalah fallback yang sengaja, tapi jika fullscreenElement null dan kita tidak dalam fallback mode yang diminta, bersihkan
         // Untuk membedakan, cek apakah kita baru saja exitFs via fallback
       }
       // Jika document.fullscreenElement bukan card, berarti sudah keluar
@@ -4209,7 +4209,7 @@
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
   // WIB = UTC+7 dihitung eksplisit agar benar walau zona browser berbeda.
   function tickClock() {
-    // Waktu server (jam perangkat + selisih terukur) — lihat noteServerTime.
+    // Waktu server (jam perangkat + selisih terukur), lihat noteServerTime.
     var d = new Date(Date.now() + clockSkewMs);
     var wib = new Date(d.getTime() + (7 * 60 + d.getTimezoneOffset()) * 60000);
     var lo = $('clockLocal'), ut = $('clockUtc');
@@ -4408,7 +4408,7 @@
   });
 
 // Linimasa sebaran: 0 = kondisi sekarang, >0 = prakiraan angin ke depan.
-  // Idiomnya select .field seperti baris lain panel — grup tombol lamanya bekerja
+  // Idiomnya select .field seperti baris lain panel, grup tombol lamanya bekerja
   // tetapi tidak pernah diberi gaya, sehingga muncul sebagai tombol bawaan
   // peramban yang menabrak gelapnya panel (laporan: "ada yang tidak sesuai").
   var _tlSel = $('tlSel');
@@ -4441,7 +4441,7 @@
           card.appendChild(hd);
 
           var val = el('div', 'so2val');
-          val.appendChild(el('b', null, v.so2 === null ? '—' : String(v.so2)));
+          val.appendChild(el('b', null, v.so2 === null ? '-' : String(v.so2)));
           val.appendChild(el('span', null, ' µg/m³'));
           card.appendChild(val);
 
@@ -4485,7 +4485,7 @@
   loadAttribution();
   loadDrought();
 
-  // Fase 2.4: Page Visibility API — hentikan polling saat tab tersembunyi
+  // Fase 2.4: Page Visibility API, hentikan polling saat tab tersembunyi
   // 5 tab terbuka = 5x beban hulu. Saat hidden, pause semua interval kecuali jam.
   var intervals = [];
   function addInterval(fn, ms) {
@@ -4501,7 +4501,7 @@
     clearAllIntervals();
     // 5 menit, bukan 10: max-age CDN overview 2 menit, jadi pada 5 menit
     // stempel "diperbarui" di layar tidak pernah tertinggal lebih dari itu.
-    // Tab tersembunyi tetap dijeda oleh clearAllIntervals() — kuota aman.
+    // Tab tersembunyi tetap dijeda oleh clearAllIntervals(), kuota aman.
     intervals.push(setInterval(function () { loadOverview(); loadAttribution(); }, 5 * 60 * 1000));
     intervals.push(setInterval(loadDrought, 60 * 60 * 1000));
     intervals.push(setInterval(loadNews, 3 * 60 * 1000));
@@ -4537,7 +4537,7 @@
 
   loadStatus();
   // Di host tanpa penjadwal internal, sumber baru disegarkan saat datanya
-  // diminta — jadi status SEBELUM data pertama tiba selalu terlihat mati.
+  // diminta, jadi status SEBELUM data pertama tiba selalu terlihat mati.
   // Satu penyegaran status tertunda membuat panel converge ke keadaan
   // sebenarnya (~setelah data boot masuk) tanpa membebani poll rutin.
   setTimeout(loadStatus, 15000);
@@ -4551,7 +4551,7 @@
       // Hentikan animasi ticker dan partikel angin juga untuk hemat CPU
       if (ticker) ticker.paused = true;
       if (state.particles) state.particles.stop();
-      showHint('Tab tersembunyi — polling dijeda untuk hemat kuota.', 4000);
+      showHint('Tab tersembunyi, polling dijeda untuk hemat kuota.', 4000);
     } else {
       if (wasHidden) {
         wasHidden = false;
@@ -4562,7 +4562,7 @@
         loadHazard();
         loadStatus();
         startIntervals();
-        showHint('Tab aktif kembali — data disegarkan.', 4000);
+        showHint('Tab aktif kembali, data disegarkan.', 4000);
       }
     }
   });
@@ -4572,13 +4572,13 @@
 
   // Lapisan peta harus mengikuti keadaan kotak centang saat halaman dibuka.
   // Sebelum ini setiap map.addLayer() hanya hidup di dalam change handler,
-  // jadi lapisan yang sudah tercentang di markup — termasuk titik api yang
-  // menjadi inti produk — tidak pernah muncul sampai seseorang mengklik
+  // jadi lapisan yang sudah tercentang di markup, termasuk titik api yang
+  // menjadi inti produk, tidak pernah muncul sampai seseorang mengklik
   // sakelarnya dua kali. Diukur: 0 titik di peta, menjadi 2.000 setelah
   // satu toggle.
   //
   // Penambahan layer group hampir tanpa biaya dan tetap aman meski panel
-  // Lapisan sedang tersembunyi — justru itu keadaan normal saat halaman
+  // Lapisan sedang tersembunyi, justru itu keadaan normal saat halaman
   // dibuka, jadi tab tersembunyi sengaja TIDAK dijadikan penjaga. Data
   // titik api sendiri sudah dimuat dan digambar oleh alur yang ada
   // (drawFires dipanggil begitu /api/overview tiba), sehingga yang perlu

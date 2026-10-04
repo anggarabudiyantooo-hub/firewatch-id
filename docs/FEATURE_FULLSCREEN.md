@@ -28,7 +28,7 @@ Saat fullscreen aktif:
     <h2>...</h2>
     <span class="panel-sub">EPSG:4326 ...</span>
     <button id="mapFullscreenBtn" class="btn-fullscreen" type="button" 
-            aria-label="Peta layar penuh" title="Layar penuh (F) — ESC untuk keluar">
+            aria-label="Peta layar penuh" title="Layar penuh (F), ESC untuk keluar">
       <span class="fs-ic">⛶</span>
       <span class="fs-txt">FULL</span>
     </button>
@@ -63,22 +63,22 @@ body.has-fullscreen-map{ overflow:hidden; }
 
 ### JS (`public/app.js`)
 ```js
-- Gunakan Fullscreen API native: card.requestFullscreen() / document.exitFullscreen()
-- Fallback ke class .is-fullscreen jika API tidak tersedia atau ditolak
+// Gunakan Fullscreen API native: card.requestFullscreen() / document.exitFullscreen()
+// Fallback ke class .is-fullscreen jika API tidak tersedia atau ditolak
 - isFullscreen() cek document.fullscreenElement === card || classList.contains('is-fullscreen')
 - updateBtn() toggle aria-pressed, text FULL/EXIT, class is-active, hidden exitBtn, body class
 - setTimeout invalidateSize 120ms & 400ms setelah toggle
-- Shortcut F dan ESC, ignore saat typing di input/textarea/select
+// Shortcut F dan ESC, ignore saat typing di input/textarea/select
 - Listener fullscreenchange untuk sync saat ESC native
 ```
 
-## Aksesibilitas & Anti-Slop
+## Aksesibilitas & Gaya Visual
 
 - **Fungsional, bukan dekorasi:** tombol ada karena butuh ruang analisis, bukan karena "keren"
 - **Keyboard:** F untuk masuk, ESC untuk keluar, fokus visible 2px biru
 - **ARIA:** aria-label, aria-pressed, title, hidden untuk exit button
 - **Target sentuh:** min-height 24px
-- **No slop:** gaya terminal konsisten (monospace, sudut tajam, border 1px), tidak ada gradient biru-ungu, glow, atau glassmorphism berlebihan
+- **Gaya visual:** gaya terminal konsisten (monospace, sudut tajam, border 1px), tidak ada gradient biru-ungu, glow, atau glassmorphism berlebihan
 - **Resilience:** fallback class jika Fullscreen API tidak support, double invalidateSize
 
 ## Testing

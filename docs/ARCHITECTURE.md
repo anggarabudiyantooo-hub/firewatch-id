@@ -1,4 +1,4 @@
-# Arsitektur — SIAGA ID
+# Arsitektur: SIAGA ID
 
 Versi 2.0 · 8 September 2026
 
@@ -36,7 +36,7 @@ tersimpan di memori proses dan hilang saat instance didaur ulang.
                                                    │ JSON
                                                    ▼
                     ┌──────────────────────────────────────────┐
-                    │      public/ — satu halaman, ES5         │
+                    │      public/, satu halaman, ES5         │
                     │  app.js · app.css · wind-particles.js    │
                     │  Leaflet 1.9.4 (vendored)                │
                     └──────────────────────────────────────────┘
@@ -58,7 +58,7 @@ dinormalkan. Tidak ada modul yang menyentuh Express.
 | `hazard.js` | BMKG, NOAA PTWC, BNPB GIS | Katalog BNPB dipindai otomatis; ambang kesegaran 10 hari |
 | `concession.js` | GFW vector tiles | Titik-dalam-poligon, sampel 220 titik ber-FRP tertinggi |
 | `wind-gfs.js` + `grib2.js` | NOAA GFS | Pembacaan GRIB2 sendiri |
-| `relevance.js` | turunan | Gerbang relevansi, skor 0–10, kategori berita |
+| `relevance.js` | turunan | Gerbang relevansi, skor 0-10, kategori berita |
 | `drought.js` | NOAA CPC + Open-Meteo | ONI dan curah hujan dipisah tegas; kegagalan salah satu tidak menjatuhkan keduanya |
 | `sentinel.js` | Copernicus CDSE | OAuth2 client_credentials; evalscript disimpan di server sebagai allowlist |
 | `casualty.js` | turunan | Ekstraksi angka korban dari judul; ditandai tidak resmi |
@@ -85,7 +85,7 @@ menit.
 Interval mengikuti irama penerbitan sumbernya: menarik GFS tiap menit sia-sia karena
 NOAA hanya menerbitkannya enam jam sekali.
 
-**Anggaran waktu.** `tick({ budgetMs: 45000 })` — batas fungsi Vercel 60 detik, dan
+**Anggaran waktu.** `tick({ budgetMs: 45000 })`, batas fungsi Vercel 60 detik, dan
 menyisakan 15 detik mencegah cron terbunuh di tengah jalan lalu terbaca "gagal".
 
 **`peek()` bukan `get()`.** Endpoint pembaca memakai `peek()` yang mengembalikan
@@ -93,43 +93,43 @@ salinan terakhir tanpa memicu pengambilan. Memakai `get()` di dalam `buildOvervi
 pernah menyebabkan 504 karena satu permintaan pengguna menunggu seluruh rantai hulu.
 
 **`null` bukan `0`.** `peek()` mengembalikan `null` bila tugas belum pernah berhasil.
-Perbedaan ini dijaga sampai ke antarmuka: `null` ditampilkan `—`, dan balasannya
+Perbedaan ini dijaga sampai ke antarmuka: `null` ditampilkan `-`, dan balasannya
 memakai `no-store` agar keadaan "belum tahu" tidak ikut ter-cache.
 
 ### 2.3 Endpoint (21)
 
 | Endpoint | Cache | Keterangan |
 |---|---|---|
-| `/api/health` | — | Uji hidup |
+| `/api/health` | - | Uji hidup |
 | `/api/overview` | 120 dtk | Payload terbesar (~1,5 MB) |
-| `/api/attribution` | — | Atribusi konsesi |
+| `/api/attribution` | - | Atribusi konsesi |
 | `/api/hazard` | 60 dtk | Gempa, tsunami, pengungsi |
 | `/api/eruptions` | 300 dtk | Laporan letusan |
 | `/api/volcano-ash` | 900 dtk | Model sebaran abu |
-| `/api/volcano-so2` | — | SO₂ dari CAMS |
+| `/api/volcano-so2` | - | SO₂ dari CAMS |
 | `/api/news` | 60 dtk | 13 topik |
-| `/api/casualties` | — | Angka korban dari berita |
+| `/api/casualties` | - | Angka korban dari berita |
 | `/api/status` | no-store | Umur tiap sumber |
 | `/api/wind-field` | 1800 dtk | Medan angin |
-| `/api/air-quality` | — | Grid AQI |
-| `/api/air-point` | — | AQI satu titik |
-| `/api/place` | — | Wilayah administratif |
-| `/api/whose-land` | — | Status lahan satu titik |
-| `/api/concessions` | — | Poligon konsesi per bbox |
-| `/api/ask` | — | Kueri indeks lokal (**GET**) |
+| `/api/air-quality` | - | Grid AQI |
+| `/api/air-point` | - | AQI satu titik |
+| `/api/place` | - | Wilayah administratif |
+| `/api/whose-land` | - | Status lahan satu titik |
+| `/api/concessions` | - | Poligon konsesi per bbox |
+| `/api/ask` | - | Kueri indeks lokal (**GET**) |
 | `/api/cron` | no-store | Pemicu penyegaran |
-| `/api/himawari/meta` | — | Metadata citra |
-| `/api/himawari/:p/:z/:x/:y.jpg` | — | Proksi ubin, dengan allowlist |
+| `/api/himawari/meta` | - | Metadata citra |
+| `/api/himawari/:p/:z/:x/:y.jpg` | - | Proksi ubin, dengan allowlist |
 | `/api/drought` | 1800 dtk | ONI + kekeringan 38 provinsi |
 | `/api/sentinel/meta` | 1800 dtk | Tanggal perekaman & tutupan awan |
-| `/api/sentinel/:p/:z/:x/:y.jpg` | 21600 dtk | Proksi ubin Sentinel-2, allowlist produk, zoom 8–16 |
+| `/api/sentinel/:p/:z/:x/:y.jpg` | 21600 dtk | Proksi ubin Sentinel-2, allowlist produk, zoom 8-16 |
 | `/` | no-store | Halaman, menyuntik hash aset |
 
 ### 2.4 Frontend
 
 Satu berkas `app.js` bergaya ES5 (`var`, ekspresi fungsi), tanpa langkah build.
 Alasannya: berkas dilayani apa adanya dan harus jalan di peramban lama yang lazim
-pada perangkat murah — justru perangkat yang dipakai di daerah terdampak.
+pada perangkat murah, justru perangkat yang dipakai di daerah terdampak.
 
 **Kebijakan nol `innerHTML`.** Seluruh data eksternal dirender lewat `textContent`
 dan `createElement`. Ini yang membuat percobaan XSS pada audit gagal total, dan
@@ -139,7 +139,7 @@ simpul DOM, bukan string.
 **Semua `fetch` berbatas waktu.** Pembungkus `fetchT()` memakai `AbortController`.
 Tanpa itu, permintaan menggantung membuat kartu kosong selamanya tanpa pesan apa pun.
 
-## 3. Alur data — contoh titik api
+## 3. Alur data: contoh titik api
 
 ```
 GitHub Actions ──GET /api/cron──▶ scheduler.tick()
@@ -205,7 +205,7 @@ Seluruh API hanya-baca dan hanya menerima GET. Tidak ada autentikasi karena tida
 data per-pengguna. Endpoint berkoordinat memvalidasi rentang dan membalas 400.
 Proksi Himawari memakai allowlist produk serta validasi zoom dan ubin.
 
-**Belum ada:** rate limiting per-IP. Ini risiko penghabisan kuota hulu yang nyata —
+**Belum ada:** rate limiting per-IP. Ini risiko penghabisan kuota hulu yang nyata,
 lihat peta jalan.
 
 ## 6. Batasan yang diketahui
@@ -282,7 +282,7 @@ keadaan itu dilaporkan sebagai `UNKNOWN` beserta sebabnya.
 
 ---
 
-## 8. Peran akses (RBAC) — ditambahkan 4 Okt 2026
+## 8. Peran akses (RBAC): ditambahkan 4 Okt 2026
 
 ```
 permintaan ──► x-ops-token?  ──► peran (VIEWER < OPERATOR < ADMIN)
@@ -331,15 +331,15 @@ Aturan yang dipegang:
 | Keadaan | Jawaban modul |
 |---|---|
 | Sehat (tak ada sinyal) | "tidak ada indikasi masalah" + catatan bahwa itu **bukan jaminan**, dan tanpa runbook |
-| Belum pernah diukur | "belum ada pengukuran" — **tidak** disebut rusak |
-| Gagal 1–2× | "kegagalan baru N×, belum menetap" + jenis kegagalan + langkah yang bisa dikerjakan sekarang |
+| Belum pernah diukur | "belum ada pengukuran", **tidak** disebut rusak |
+| Gagal 1-2× | "kegagalan baru N×, belum menetap" + jenis kegagalan + langkah yang bisa dikerjakan sekarang |
 | Gagal ≥3× tanpa data | "tidak dapat dijangkau berulang" + jenis kegagalan (5xx/timeout/kredensial/kuota/tak terbaca) |
 | Ada data tapi umur > CRITICAL | "nilai lama masih dipakai" |
-| Respons > ambang lambat | "hulu lambat" — dinyatakan sebagai gejala, bukan kegagalan |
+| Respons > ambang lambat | "hulu lambat", dinyatakan sebagai gejala, bukan kegagalan |
 | ≥3 layanan turun bersamaan | "kemungkinan gangguan di sisi kita" + ambangnya disebutkan ("3 dari 9") |
 
 Tingkat "kejelasan bukti" dihitung dari jumlah **kelompok** sinyal yang sejalan
-(1 → rendah, 2–3 → sedang, ≥4 → tinggi) dan disertai field `arti` yang menegaskan
+(1 → rendah, 2-3 → sedang, ≥4 → tinggi) dan disertai field `arti` yang menegaskan
 bahwa itu kejelasan **gejala**, bukan kepastian penyebab.
 
 `kategoriUntuk(svc, alertsAktif)` memilih runbook dengan urutan yang dapat

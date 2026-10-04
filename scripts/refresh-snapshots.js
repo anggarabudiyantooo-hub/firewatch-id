@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Fase 2.3 — Refresh snapshot PVMBG & data/regions.json otomatis
+ * Fase 2.3, Refresh snapshot PVMBG & data/regions.json otomatis
  *
  * - Mengambil status PVMBG terbaru dari https://magma.esdm.go.id/v1/gunung-api/tingkat-aktivitas
  * - Menulis ulang lib/pvmbg-snapshot.js sebagai cadangan bila MAGMA 502/timeout
@@ -104,7 +104,7 @@ async function fetchPvmbg() {
     });
   }
 
-  if (!out.length) throw new Error('Tabel PVMBG tidak terbaca — struktur HTML mungkin berubah');
+  if (!out.length) throw new Error('Tabel PVMBG tidak terbaca, struktur HTML mungkin berubah');
 
   out.sort((a, b) => LEVELS[a.status].order - LEVELS[b.status].order || a.name.localeCompare(b.name, 'id'));
 
@@ -117,7 +117,7 @@ async function fetchPvmbg() {
     sourceUrl: PVMBG_URL
   };
 
-  console.log(`[snapshot] Sukses: ${result.total} gunung — Awas:${counts.Awas} Siaga:${counts.Siaga} Waspada:${counts.Waspada} Normal:${counts.Normal}`);
+  console.log(`[snapshot] Sukses: ${result.total} gunung, Awas:${counts.Awas} Siaga:${counts.Siaga} Waspada:${counts.Waspada} Normal:${counts.Normal}`);
   return result;
 }
 
@@ -245,7 +245,7 @@ async function main() {
       pvmbgOk = true;
     } catch (e) {
       console.error(`[snapshot] GAGAL: ${e.message}`);
-      // jangan hapus snapshot lama — biarkan cadangan tetap ada
+      // jangan hapus snapshot lama, biarkan cadangan tetap ada
       if (!fs.existsSync(SNAPSHOT_PATH)) throw e;
       console.warn('[snapshot] Menggunakan snapshot lama sebagai cadangan');
     }

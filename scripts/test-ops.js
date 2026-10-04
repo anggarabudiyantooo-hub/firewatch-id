@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Uji modul Operations Center — dijalankan di `npm run check` bersama uji lain.
+ * Uji modul Operations Center, dijalankan di `npm run check` bersama uji lain.
  *
  * Semua uji di sini TANPA jaringan: modul ops dirancang menerima data sebagai
  * argumen sehingga perilakunya bisa dibuktikan tanpa bergantung pada sumber
  * hulu yang sedang hidup atau mati.
  *
  * Cakupan (sesuai daftar pengujian yang diminta):
- *   kesegaran  — FRESH / STALE / CRITICAL / UNKNOWN + ambang dapat diatur
- *   kesehatan  — layanan sehat, gagal, timeout (belum ada respons), data tua
- *   alert      — aturan menyala, tidak menyala saat wajar, anti-duplikasi,
+ *   kesegaran , FRESH / STALE / CRITICAL / UNKNOWN + ambang dapat diatur
+ *   kesehatan , layanan sehat, gagal, timeout (belum ada respons), data tua
+ *   alert     , aturan menyala, tidak menyala saat wajar, anti-duplikasi,
  *                alert yang kondisinya hilang ditutup (bukan dihapus)
- *   insiden    — buat/ubah/tugaskan/eskalasi/selesaikan/tutup + transisi
+ *   insiden   , buat/ubah/tugaskan/eskalasi/selesaikan/tutup + transisi
  *                yang tidak sah ditolak + timeline tercatat + metrik kosong
  *                melaporkan null ("belum ada riwayat"), bukan angka karangan
  */
@@ -225,7 +225,7 @@ console.log('\n== insiden ==');
   // hanya bila ada yang benar-benar berubah.
   // Sel klaster dibuat acak supaya uji ini tidak bergantung pada isi berkas
   // simpanan dari putaran sebelumnya (alert yang sudah ada akan ter-dedup,
-  // sehingga evaluasi memang tidak mengubah apa pun — itu perilaku benar).
+  // sehingga evaluasi memang tidak mengubah apa pun, itu perilaku benar).
   const sel = { lat: 3 + Math.random() * 5, lon: 95 + Math.random() * 20, count: 60, frp: 900 };
   const sebelumAuto = (await st2.audit(1)).total;
   await alerts.jalankan({ services: [], clusters: [sel] });
@@ -239,7 +239,7 @@ console.log('\n== insiden ==');
 
   // --- lembar insiden: keadaan "langkah dikerjakan" dibaca dari timeline ---
   // Karena centangnya TIDAK disimpan terpisah (sengaja: supaya tidak bisa
-  // berbeda dari riwayat), format kunci catatan harus diuji — kalau formatnya
+  // berbeda dari riwayat), format kunci catatan harus diuji, kalau formatnya
   // meleset sedikit saja, semua langkah akan tampak belum dikerjakan.
   const fs = require('fs');
   const vm = require('vm');
@@ -379,7 +379,7 @@ console.log('\n== insiden ==');
     id: 'eruption', name: 'Laporan letusan pos pengamatan', status: 'DOWN', hasData: false,
     consecutiveFails: 3, errorCount: 5, backoff: true, critical: true, responseTime: null,
     lastCheckedAt: '2026-10-04T08:00:00Z', lastSuccessfulAt: null,
-    endpoint: 'magma.esdm.go.id — informasi letusan', errorNote: 'magma 500',
+    endpoint: 'magma.esdm.go.id, informasi letusan', errorNote: 'magma 500',
     freshness: { status: 'UNKNOWN', reason: 'belum pernah berhasil ditarik' }
   };
   const svcSehat = {
@@ -496,7 +496,7 @@ console.log('\n== insiden ==');
   const sevH = A.perSeverity.find(x => x.severity === 'HIGH');
   // MTTR = rata-rata durasi SEMUA insiden HIGH yang pernah selesai, termasuk
   // yang selesai 12 hari kemudian (INC-C: 2026-09-20 → 2026-10-02 = 17.460 mnt).
-  // (180 + 17460) / 2 = 8820 — dihitung terbuka di sini, bukan angka hafalan.
+  // (180 + 17460) / 2 = 8820, dihitung terbuka di sini, bukan angka hafalan.
   const harapMttr = Math.round(((180 + (Date.parse('2026-10-02T02:00:00Z') - Date.parse('2026-09-20T01:00:00Z')) / 60000) / 2) * 10) / 10;
   cek('analitik: MTTR per severity dari insiden nyata', sevH.mttrMenit, harapMttr);
   const sevC = A.perSeverity.find(x => x.severity === 'CRITICAL');
@@ -557,9 +557,9 @@ console.log('\n== insiden ==');
   // Penyebabnya: jalur read() mode github tidak pernah menangkap galat (jalur
   // upstash ada), sehingga kode status hulu hilang di perjalanan.
   const uji = require('../lib/ops-store');
-  const galatBad = Object.assign(new Error('github_401_...'), { status: 401, githubMessage: 'Token ditolak GitHub (bad credentials) — periksa OPS_GITHUB_TOKEN.' });
-  const galat404 = Object.assign(new Error('github_404_...'), { status: 404, githubMessage: 'Repo atau issue tidak ditemukan — periksa OPS_GITHUB_REPO dan akses token ke repo itu.' });
-  const galat403 = Object.assign(new Error('github_403_...'), { status: 403, githubMessage: 'Token tidak punya izin yang cukup — butuh izin Issues: Read and write pada repo itu.' });
+  const galatBad = Object.assign(new Error('github_401_...'), { status: 401, githubMessage: 'Token ditolak GitHub (bad credentials), periksa OPS_GITHUB_TOKEN.' });
+  const galat404 = Object.assign(new Error('github_404_...'), { status: 404, githubMessage: 'Repo atau issue tidak ditemukan, periksa OPS_GITHUB_REPO dan akses token ke repo itu.' });
+  const galat403 = Object.assign(new Error('github_403_...'), { status: 403, githubMessage: 'Token tidak punya izin yang cukup, butuh izin Issues: Read and write pada repo itu.' });
 
   cek('penyimpanan: galat 401 diterjemahkan menjadi kalimat yang bisa ditindaklanjuti',
     [ghStore.ringkasGalat(galatBad).status, /OPS_GITHUB_TOKEN/.test(ghStore.ringkasGalat(galatBad).alasan)], [401, true]);
@@ -597,7 +597,7 @@ console.log('\n== insiden ==');
   // --- rebutan penulisan (ditemukan lewat kegagalan uji UI 4 Okt) ---
   // Insiden baru dibuat oleh POST operator DAN oleh mesin alert secara
   // bersamaan. Keduanya membaca dokumen yang sama, menaikkan counter dari
-  // angka yang sama, lalu menulis — yang menulis terakhir menimpa yang lain.
+  // angka yang sama, lalu menulis, yang menulis terakhir menimpa yang lain.
   // Akibatnya satu insiden HILANG dan dua pemanggil menerima ID yang SAMA.
   const insMod = require('../lib/incidents');
   const sebelum = (await uji.read()).incidents.length;

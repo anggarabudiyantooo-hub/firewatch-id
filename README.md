@@ -1,4 +1,4 @@
-# SIAGA ID — Pemantauan Bencana Real-Time + Operations Center
+# SIAGA ID: Pemantauan Bencana Real-Time + Operations Center
 
 Pemantauan bencana Indonesia dari sumber resmi dan terbuka: letusan gunung api dan
 sebaran abu, gempa dan tsunami, pengungsi, serta titik api dan asap karhutla.
@@ -73,7 +73,7 @@ Seluruhnya **opsional**.
 | `PORT` | `3000` | Porta server lokal |
 | `FIRMS_MAP_KEY` | *(kosong)* | Kunci NASA FIRMS. Bila ada, endpoint area dipakai lebih dulu; bila balasannya kosong, otomatis jatuh ke arsip terbuka |
 | `FIRMS_SOURCE` | `VIIRS_SNPP_NRT` | Satelit untuk jalur MAP_KEY. Pilihan: `VIIRS_SNPP_NRT`, `VIIRS_NOAA20_NRT`, `VIIRS_NOAA21_NRT`, `MODIS_NRT` |
-| `FIRMS_DAYS` | `1` | Rentang hari jalur MAP_KEY (1–10). Hasilnya tetap disaring ke jendela 24 jam |
+| `FIRMS_DAYS` | `1` | Rentang hari jalur MAP_KEY (1-10). Hasilnya tetap disaring ke jendela 24 jam |
 | `CDSE_CLIENT_ID` | *(kosong)* | Client ID OAuth Copernicus. Bila kosong, lapisan Sentinel-2 menampilkan keterangan "belum dikonfigurasi" dan seluruh fitur lain tetap berjalan |
 | `CDSE_CLIENT_SECRET` | *(kosong)* | Client secret OAuth Copernicus |
 | `CRON_SECRET` | *(kosong)* | Bila diisi, `/api/cron` menuntut `Authorization: Bearer <secret>` atau `?key=<secret>` |
@@ -113,7 +113,7 @@ hanya diminta mulai zoom 8, sehingga pemakaian kuota tetap rendah.
 | **Copernicus Sentinel-1 GRD** | Radar menembus awan untuk memetakan genangan banjir | ya, gratis |
 | **Google Berita RSS** | 13 topik berita, termasuk 5 edisi negara tetangga | tidak |
 | **Smithsonian GVP** | Katalog dan ringkasan aktivitas gunung api | tidak |
-| **NOAA CPC** | Indeks ONI — status El Niño / La Niña | tidak |
+| **NOAA CPC** | Indeks ONI, status El Niño / La Niña | tidak |
 | **Open-Meteo Archive** | Curah hujan harian per provinsi (ERA5) | tidak |
 
 ---
@@ -127,8 +127,8 @@ Tiga peta dasar, delapan produk citra satelit, dan linimasa prakiraan asap +6/+1
 **Enam produk citra untuk keperluan berbeda.** Selain warna alami dan
 inframerah, tersedia kelembapan tanaman (NDMI) untuk melihat tekanan
 kekeringan sebelum daun menguning, genangan air (MNDWI) yang tidak salah
-menandai atap logam sebagai air, dan **radar Sentinel-1** yang menembus awan
-— satu-satunya cara memotret banjir saat kejadian, karena banjir justru
+menandai atap logam sebagai air, dan **radar Sentinel-1** yang menembus awan,
+ satu-satunya cara memotret banjir saat kejadian, karena banjir justru
 terjadi ketika langit tertutup mendung.
 
 Tab **Kekeringan** pada panel Analisis Wilayah memberi jalan pintas: klik
@@ -136,7 +136,7 @@ sebuah provinsi, peta langsung berpindah ke sana dengan lapisan citra yang
 sesuai sudah menyala.
 
 **Dua sumber citra dengan sifat berbeda.** Himawari-9 menyegar tiap 10 menit pada
-resolusi ~2 km — untuk mengikuti pergerakan awan dan abu. Sentinel-2 beresolusi 10 m
+resolusi ~2 km, untuk mengikuti pergerakan awan dan abu. Sentinel-2 beresolusi 10 m
 sehingga bekas aliran lava dan endapan abu di lereng terlihat, tetapi satelitnya hanya
 melintas tiap 5 hari dan Indonesia sering tertutup awan. Sentinel-2 **bukan citra
 langsung**, dan tanggal perekaman tiap petak selalu ditampilkan agar tidak
@@ -153,9 +153,9 @@ Perangkat keselamatan publik harus jujur tentang batas pengetahuannya sendiri:
 
 - **Korelasi bukan sebab.** El Niño meningkatkan peluang kemarau panjang,
   tetapi status kekeringan tiap provinsi dihitung dari curah hujan yang
-  benar-benar terukur — bukan diturunkan dari indeks ONI.
+  benar-benar terukur, bukan diturunkan dari indeks ONI.
 - **Nol tidak sama dengan tidak tahu.** Bila sebuah sumber belum pernah berhasil
-  dimuat, antarmuka menampilkan `—`, bukan `0`.
+  dimuat, antarmuka menampilkan `-`, bukan `0`.
 - **Status bukan kejadian.** Gunung berstatus Siaga tidak digambar berpluma abu;
   sebaran abu hanya muncul bila pos pengamatan melaporkan letusan dalam 24 jam.
 - **Model bukan pengukuran.** Sebaran asap adalah model kerucut geometrik, bukan
@@ -183,23 +183,23 @@ yang sama dengan yang menyuplai dashboard.
 | Alerts | aturan `source_down`, `data_critical`, `api_slow`, `hotspot_cluster` + tombol membuat insiden | evaluasi dijalankan pada `/api/cron` (tiap 10 menit) dan bisa dipicu manual |
 | Incidents | siklus OPEN → INVESTIGATING → PENDING → RESOLVED → CLOSED, penugasan, eskalasi, catatan investigasi, timeline, metrik MTTR/SLA dari data nyata; daftar di papan diurutkan menurut **aktivitas terbaru** supaya insiden yang baru dibuat dari alert lama tidak "hilang" | disimpan oleh adaptor penyimpanan (lihat di bawah) |
 | Runbooks | 4 SOP yang langkahnya menunjuk berkas/endpoint nyata di repo ini | `lib/runbooks.js`, ditautkan ke kategori insiden |
-| Audit Log | 200 tindakan terakhir: siapa mengubah apa, kapan — termasuk evaluasi alert otomatis | satu dokumen simpanan yang sama dengan insiden (tidak ada log kedua yang bisa berbeda) |
-| Troubleshooting | dugaan + **bukti angka** + langkah pemeriksaan untuk satu sumber, satu alert, atau satu insiden; plus ringkasan armada | aturan tetap atas pengukuran tersimpan (`lib/troubleshoot.js`) — **bukan keluaran model bahasa** |
+| Audit Log | 200 tindakan terakhir: siapa mengubah apa, kapan, termasuk evaluasi alert otomatis | satu dokumen simpanan yang sama dengan insiden (tidak ada log kedua yang bisa berbeda) |
+| Troubleshooting | dugaan + **bukti angka** + langkah pemeriksaan untuk satu sumber, satu alert, atau satu insiden; plus ringkasan armada | aturan tetap atas pengukuran tersimpan (`lib/troubleshoot.js`), **bukan keluaran model bahasa** |
 | Tautan dalam | `?insiden=INC-…` membuka detail di papan; tombol "Salin tautan" | rute baca yang sama |
-| Lembar insiden | `/insiden/INC-…` — satu insiden, satu alamat, untuk dibagikan & dibaca ulang; langkah runbook bisa ditandai dikerjakan | `public/insiden.html` + `public/ops-detail.js` (berkas yang sama dengan kartu detail di papan) |
-| Analytics | 14 hari terakhir (bisa `?hari=1..90`): insiden & alert baru per hari, MTTR/SLA per severity, per kategori, per aturan, sumber paling sering muncul | dihitung ulang dari riwayat tersimpan (`lib/analytics.js`) — **tidak ada deret nol yang menggantikan "belum ada riwayat"** |
+| Lembar insiden | `/insiden/INC-…`, satu insiden, satu alamat, untuk dibagikan & dibaca ulang; langkah runbook bisa ditandai dikerjakan | `public/insiden.html` + `public/ops-detail.js` (berkas yang sama dengan kartu detail di papan) |
+| Analytics | 14 hari terakhir (bisa `?hari=1..90`): insiden & alert baru per hari, MTTR/SLA per severity, per kategori, per aturan, sumber paling sering muncul | dihitung ulang dari riwayat tersimpan (`lib/analytics.js`), **tidak ada deret nol yang menggantikan "belum ada riwayat"** |
 | Infrastructure | 1 simpul per sumber yang benar-benar dipantau + klien/edge/fungsi/penjadwal; setiap nilai membawa penanda NYATA atau SIMULATED | angka hulu diambil apa adanya dari pengukuran; angka tautan = **SIMULATED** dan ditulis begitu (`lib/infra-sim.js`) |
 
 Setiap bagian papan dimuat sendiri-sendiri. Bila satu endpoint gagal (di Vercel
 tiap permintaan bisa mendarat di instance berbeda, jadi ini wajar), bagian lain
 tetap menampilkan angka sungguhan dan spanduk menyebut bagian mana yang tidak
-termuat — papan tidak pernah tampak kosong tanpa keterangan.
+termuat, papan tidak pernah tampak kosong tanpa keterangan.
 
 ### Troubleshooting: bukan teks karangan
 
 `GET /api/operations/diagnose` menurunkan dugaan dari pengukuran yang sudah
-tersimpan — status, waktu respons, jumlah gagal berturut, kesegaran, pesan galat
-tersanitasi, dan alert yang menyala — memakai aturan yang dapat diperiksa satu
+tersimpan, status, waktu respons, jumlah gagal berturut, kesegaran, pesan galat
+tersanitasi, dan alert yang menyala, memakai aturan yang dapat diperiksa satu
 per satu. Setiap dugaan **wajib** menyertakan buktinya, dan tingkat "kejelasan
 bukti" hanya naik bila ada lebih dari satu kelompok sinyal yang sejalan.
 
@@ -213,7 +213,7 @@ kepastian penyebab.
 
 Pada lembar insiden, tiap langkah SOP punya tombol **Tandai dikerjakan**. Yang
 tersimpan bukan centang terpisah, melainkan catatan timeline biasa
-("Langkah RB-001 #3 dikerjakan: …") lengkap dengan nama pelakunya — jadi ikut
+("Langkah RB-001 #3 dikerjakan: …") lengkap dengan nama pelakunya, jadi ikut
 tercatat di log audit dan tidak mungkin berbeda dari riwayat. Keadaan "sudah
 dikerjakan" di layar dibaca ulang dari timeline itu setiap kali halaman dimuat.
 
@@ -224,7 +224,7 @@ tautan **Buka Operations Center**. Halaman ops juga bisa dibuka langsung di
 `/operations`, dan tiap insiden punya tautan sendiri:
 `/operations?insiden=INC-2026-00001` membuka detail insiden itu.
 
-### Penyimpanan operasional — apa adanya
+### Penyimpanan operasional: apa adanya
 
 Proyek ini **tidak punya basis data** (lihat `docs/ERD.md`). Di Vercel setiap
 instance punya memori sendiri, jadi insiden butuh penyimpanan bersama. Adaptor
@@ -235,20 +235,20 @@ instance punya memori sendiri, jadi insiden butuh penyimpanan bersama. Adaptor
 | `upstash` | `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` | penyimpanan bersama, tahan daur ulang instance |
 | `github` | `OPS_GITHUB_TOKEN` + `OPS_GITHUB_REPO` | keadaan disimpan pada satu issue berlabel `ops-state`; riwayat terlihat manusia |
 | `file` | tanpa Vercel (pengembangan lokal) | berkas `.data/ops.json` |
-| `ephemeral` | tidak ada yang dikonfigurasi di Vercel | memori instance; halaman memasang spanduk **PERHATIAN — penyimpanan SEMENTARA** |
+| `ephemeral` | tidak ada yang dikonfigurasi di Vercel | memori instance; halaman memasang spanduk **PERHATIAN, penyimpanan SEMENTARA** |
 
 Tanpa salah satu dari dua mode pertama, insiden akan hilang saat instance
-didaur ulang — dan itu tertulis di halaman, bukan disembunyikan.
+didaur ulang, dan itu tertulis di halaman, bukan disembunyikan.
 
 **Cara memasangnya** (langkah rinci, termasuk mengapa tidak perlu basis data
 seperti Neon): [`docs/PENYIMPANAN.md`](docs/PENYIMPANAN.md). Verifikasi setelah
-dipasang: `python3 work/verifikasi_penyimpanan.py` (baca-saja), tambahkan
-`--tulis` untuk membuktikan insiden benar-benar bertahan.
+dipasang: `python3 scripts/verify-store.py` (baca-saja), tambahkan `--tulis`
+untuk membuktikan insiden benar-benar bertahan.
 
 Hal serupa berlaku untuk **pengukuran**: di Vercel setiap instance punya memori
 sendiri dan tugas penjadwal hanya berjalan saat `/api/cron` memanggilnya (tiap
 10 menit, dari GitHub Actions). Instance yang baru hidup karena itu belum
-mengukur apa pun — halaman akan menulis "belum diketahui" beserta sebabnya.
+mengukur apa pun, halaman akan menulis "belum diketahui" beserta sebabnya.
 Supaya tidak berhenti di situ, rute ops menjalankan **satu kali pengukuran
 beranggaran terbatas** (`OPS_WARMUP_MS`, bawaan 8 detik) pada permintaan
 pertama, lalu melaporkan hasil pengukuran yang sungguhan. Setelah instance itu
@@ -283,7 +283,7 @@ cepat 60 detik sekali agar sumber hulu tidak dihujani permintaan.
 
 Aturan yang dipegang:
 
-- **Tanpa token apa pun, aplikasi berjalan seperti sebelumnya (mode terbuka)** —
+- **Tanpa token apa pun, aplikasi berjalan seperti sebelumnya (mode terbuka)**,
   dan mode itu ditulis apa adanya di `/api/operations/access` serta di halaman.
   Mengunci diri sendiri tanpa dikonfigurasi akan membuat orang menyangka sudah
   aman padahal belum.
@@ -296,7 +296,7 @@ Aturan yang dipegang:
   yang sudah ada tidak berubah perilakunya.
 - Bila masih mode terbuka padahal variabel sudah dipasang, `/api/operations/access`
   menyebut **nama variable yang diperiksa** (`namaDiperiksa`) dan mana yang
-  **benar-benar terlihat pada deployment ini** (`terlihat`) — nama saja, isinya
+  **benar-benar terlihat pada deployment ini** (`terlihat`), nama saja, isinya
   tidak pernah. Hanya nama yang terlihat itu yang membuktikan pemasangan sudah
   sampai ke runtime. `GET /api/operations/health` memuat `application.build`
   (7 huruf commit yang sedang melayani) supaya "sudah deploy belum" bisa
@@ -326,7 +326,7 @@ Halaman: `/` (dashboard) · `/operations` (papan operasi) · `/insiden/INC-…` 
 ### Analitik dan panel infrastruktur (P2)
 
 **Analitik.** Semua angka dihitung ulang dari riwayat insiden/alert/audit yang
-tersimpan saat halaman dibuka — tidak ada tabel terpisah yang bisa melenceng.
+tersimpan saat halaman dibuka, tidak ada tabel terpisah yang bisa melenceng.
 Bila belum ada riwayat sama sekali, kartu menulis *belum ada riwayat* dan
 **sengaja tidak menggambar grafik**: deretan batang nol akan terbaca sebagai
 "tidak ada masalah", padahal artinya "belum ada yang tercatat". MTTR dan SLA
@@ -342,8 +342,8 @@ Yang ada: rantai nyata cara aplikasi ini di-deploy (klien → edge → fungsi �
 penjadwal → tiap sumber hulu yang dipantau). Nilai hulu (status, waktu respons,
 gagal berturut, kesegaran) adalah pengukuran nyata dan ditandai **NYATA**;
 nilai yang belum terukur ditulis *tidak tersedia*. Angka yang **tidak mungkin
-diukur** dari dalam fungsi serverless — misalnya latensi jaringan dan rasio
-cache di tepi — hanya muncul sebagai **perkiraan berlabel SIMULATED**, dengan
+diukur** dari dalam fungsi serverless, misalnya latensi jaringan dan rasio
+cache di tepi, hanya muncul sebagai **perkiraan berlabel SIMULATED**, dengan
 model terbuka (`rtt-perkiraan-v1`: 40% dari waktu respons hulu yang terukur) dan
 `null` bila belum ada dasar pengukuran. Tidak ada angka yang dikarang untuk
 mengisi kekosongan.
@@ -396,6 +396,11 @@ public/
   ops.css              gaya papan operasi & lembar insiden
 docs/                  PRD, arsitektur, ERD, desain, audit nilai tetap, peta jalan
 docs/OPS-AUDIT.md      audit teknis + rencana upgrade Operations Center
+docs/PENYIMPANAN.md    pilihan penyimpanan operasional + cara memasangnya
+docs/PENJADWAL.md      mengapa jadwal GitHub bisa tertunda + /api/alarm
+scripts/verify-store.py  membuktikan penyimpanan benar-benar bertahan
+scripts/check-style.js   gerbang gaya naskah: menolak tanda pisah panjang
+.github/workflows/     penjadwal (refresh, uptime, snapshot) + gerbang uji (ci)
 scripts/test-ops.js    uji modul ops (ikut `npm run check`)
 ```
 
@@ -404,7 +409,7 @@ scripts/test-ops.js    uji modul ops (ikut `npm run check`)
 ## Status kesiapan
 
 Tiga putaran audit black-box menyeluruh telah dilakukan: **59 → 78 → 89/100**.
-Putaran-3 menyatakan aplikasi **layak rilis** — tidak ada temuan Critical maupun
+Putaran-3 menyatakan aplikasi **layak rilis**, tidak ada temuan Critical maupun
 High yang tersisa. Sisa temuan Low pada putaran itu juga sudah ditangani.
 
 Payload `/api/overview` turun dari 3,64 MB menjadi **328 KB** (52,7 KB
@@ -414,6 +419,15 @@ Rincian lengkap beserta urutan pengerjaan ada di [`docs/ROADMAP.md`](docs/ROADMA
 
 ## Lisensi dan atribusi
 
-Data milik penerbitnya masing-masing dan tunduk pada ketentuan mereka. GeoNames
-berlisensi CC BY 4.0. Peta dasar © Esri, Maxar, Earthstar Geographics, HERE, Garmin,
-dan kontributor OpenStreetMap.
+Kode: [MIT](LICENSE). Data milik penerbitnya masing-masing dan tunduk pada
+ketentuan mereka. GeoNames berlisensi CC BY 4.0. Peta dasar © Esri, Maxar,
+Earthstar Geographics, HERE, Garmin, dan kontributor OpenStreetMap.
+
+## Ikut mengembangkan
+
+- Aturan dan alur perubahan: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Melaporkan kerentanan: [SECURITY.md](SECURITY.md)
+- Riwayat perubahan: [CHANGELOG.md](CHANGELOG.md)
+- Gerbang wajib: `npm run check`; CI menjalankannya di setiap push dan pull request.
+- Aturan gaya naskah ditegakkan mesin, bukan hanya disepakati: lihat
+  `scripts/check-style.js`.

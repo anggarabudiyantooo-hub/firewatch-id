@@ -33,7 +33,7 @@ for (const dep of deps) {
   // Jangan pakai require.resolve: paket ESM-only sering memblokir resolusi
   // './package.json', sehingga dependensi bermasalah justru terlewat diam-diam.
   const pkgPath = path.join(ROOT, 'node_modules', dep, 'package.json');
-  if (!fs.existsSync(pkgPath)) { bad(`${dep} — tidak terpasang di node_modules`); continue; }
+  if (!fs.existsSync(pkgPath)) { bad(`${dep}, tidak terpasang di node_modules`); continue; }
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
   const hasRequireCondition = (function scan(x) {
     if (!x || typeof x !== 'object') return false;
@@ -42,7 +42,7 @@ for (const dep of deps) {
   })(pkg.exports);
   const isEsmOnly = pkg.type === 'module' && !hasRequireCondition;
 
-  if (!isEsmOnly) { ok(`${dep}@${pkg.version} — CommonJS`); continue; }
+  if (!isEsmOnly) { ok(`${dep}@${pkg.version}, CommonJS`); continue; }
 
   // ESM-only hanya aman bila memang tidak pernah di-require dari kode kita.
   const used = ['server.js', 'lib', 'api']
@@ -54,8 +54,8 @@ for (const dep of deps) {
     .some(f => new RegExp(`require\\(['"]${dep.replace(/[/\\^$*+?.()|[\]{}]/g, '\\$&')}['"]\\)`)
       .test(fs.readFileSync(f, 'utf8')));
 
-  if (used) bad(`${dep}@${pkg.version} — ESM-only tapi di-require() → ERR_REQUIRE_ESM di Vercel`);
-  else ok(`${dep}@${pkg.version} — ESM-only, tidak di-require()`);
+  if (used) bad(`${dep}@${pkg.version}, ESM-only tapi di-require() → ERR_REQUIRE_ESM di Vercel`);
+  else ok(`${dep}@${pkg.version}, ESM-only, tidak di-require()`);
 }
 
 /* --- 2. Tidak boleh membaca berkas data lewat fs saat modul dimuat --- */
@@ -64,7 +64,7 @@ for (const f of ['server.js', ...fs.readdirSync(path.join(ROOT, 'lib')).map(x =>
   if (!f.endsWith('.js')) continue;
   const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
   const hit = /readFileSync\([^)]*(json|geojson|csv)/i.test(src);
-  if (hit) bad(`${f} — membaca berkas data via fs; pakai require() agar ikut ter-bundle`);
+  if (hit) bad(`${f}, membaca berkas data via fs; pakai require() agar ikut ter-bundle`);
   else ok(`${f}`);
 }
 
@@ -89,7 +89,7 @@ if (typeof app === 'function') {
       try {
         const r = await fetch(`http://127.0.0.1:${port}${p}`);
         if (r.status === 200) ok(`${r.status} ${p}`); else bad(`${r.status} ${p}`);
-      } catch (e) { bad(`${p} — ${e.message}`); }
+      } catch (e) { bad(`${p}, ${e.message}`); }
     }
     srv.close();
     console.log(failed ? `\nGAGAL: ${failed} masalah ditemukan.\n` : '\nSemua pemeriksaan lolos.\n');

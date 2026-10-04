@@ -13,7 +13,7 @@
 // padahal ada permukiman di bawah kolom abu.
 //
 // Cakupan: pusat administratif (provinsi, kabupaten, kecamatan) dalam 250 km
-// dari gunung mana pun, ditambah desa/kelurahan dalam 60 km — jarak yang
+// dari gunung mana pun, ditambah desa/kelurahan dalam 60 km, jarak yang
 // masih masuk akal terdampak jatuhan abu.
 //
 // Format: array paralel agar hemat; koordinat disimpan sebagai bilangan

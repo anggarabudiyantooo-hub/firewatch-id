@@ -1,4 +1,4 @@
-/* Operations Center — perilaku halaman.
+/* Operations Center, perilaku halaman.
  *
  * Ditulis gaya ES5 seperti dashboard (tanpa pembangun, tanpa kerangka kerja)
  * dan sengaja sederhana: satu berkas, tanpa ketergantungan jaringan selain
@@ -35,11 +35,11 @@
       b.textContent = 'Penyimpanan operasional: ' + store.mode + '. ' + store.note;
     } else {
       b.className = 'banner';
-      b.textContent = 'PERHATIAN — penyimpanan SEMENTARA (' + store.mode + '). ' + store.note;
+      b.textContent = 'PERHATIAN, penyimpanan SEMENTARA (' + store.mode + '). ' + store.note;
     }
     if (store.lastError) {
       // Penyimpanan gagal ≠ tidak ada insiden. Spanduk menyebut sebabnya dan
-      // menyatakan bahwa angka di papan tidak lengkap — bukan menyembunyikannya.
+      // menyatakan bahwa angka di papan tidak lengkap, bukan menyembunyikannya.
       b.className = 'banner';
       b.textContent = 'Penyimpanan ' + store.mode + ' GAGAL DIBACA: ' + store.lastError +
         (store.lastErrorAt ? ' (pada ' + store.lastErrorAt + ')' : '') +
@@ -73,7 +73,7 @@
       'Aplikasi: ' + a.status + ' · hidup ' + Math.round(a.uptimeSeconds / 60) + ' menit · Node ' + a.nodeVersion +
       ' · penjadwal: ' + a.schedulerMode + ' · penyimpanan: ' + a.storage.mode +
       (a.storage.persistent ? '' : ' (tidak tetap)') +
-      (a.statusReason ? ' — ' + a.statusReason : '') +
+      (a.statusReason ? ', ' + a.statusReason : '') +
       (a.warmup ? ' Diukur saat halaman ini diminta (' + Math.round(a.warmup.ms / 1000) + ' dtk).' : '') + '.';
   }
 
@@ -141,7 +141,7 @@
     box.textContent = '';
     if (!m.total) {
       box.className = 'empty';
-      box.textContent = 'Belum ada riwayat insiden. Metrik (MTTR, SLA) akan muncul setelah ada insiden nyata — sistem tidak menampilkan angka contoh.';
+      box.textContent = 'Belum ada riwayat insiden. Metrik (MTTR, SLA) akan muncul setelah ada insiden nyata, sistem tidak menampilkan angka contoh.';
       return;
     }
     box.className = '';
@@ -236,7 +236,7 @@
       jdl.appendChild(document.createTextNode(' '));
       jdl.appendChild(el('span', 'tag t-' + i.status, i.status));
       jdl.appendChild(document.createTextNode(' '));
-      jdl.appendChild(el('b', null, i.incidentId + ' — ' + i.title));
+      jdl.appendChild(el('b', null, i.incidentId + ', ' + i.title));
       kiri.appendChild(jdl);
       kiri.appendChild(el('div', 'muted', 'kategori ' + i.category + ' · sumber ' + i.source +
         (i.assignedTo ? ' · petugas ' + i.assignedTo : ' · belum ditugaskan') +
@@ -309,7 +309,7 @@
     baris.forEach(function (r) {
       var tr = el('tr');
       r.forEach(function (c, i) {
-        var td = el('td', i === 0 ? null : 'num', c === null || c === undefined ? '—' : String(c));
+        var td = el('td', i === 0 ? null : 'num', c === null || c === undefined ? '-' : String(c));
         tr.appendChild(td);
       });
       tb.appendChild(tr);
@@ -321,7 +321,7 @@
 
   /**
    * Analitik. Aturan tampilan: bila BELUM ADA RIWAYAT sama sekali, jangan
-   * menggambar grafik nol yang tampak seperti "semuanya aman" — tulis saja
+   * menggambar grafik nol yang tampak seperti "semuanya aman", tulis saja
    * bahwa belum ada riwayat. Nol yang sah hanya muncul bila memang ada riwayat.
    */
   function renderAnalitik(a) {
@@ -361,7 +361,7 @@
     box.appendChild(barisTabel(['Severity', 'Total', 'Selesai', 'MTTR', 'SLA (target)', 'Catatan'],
       a.perSeverity.map(function (r) {
         return [r.severity, r.total, r.selesai, durasi(r.mttrMenit),
-          r.slaPersen === null ? null : r.slaPersen + '% (' + r.targetMenit + ' mnt)', r.catatan || '—'];
+          r.slaPersen === null ? null : r.slaPersen + '% (' + r.targetMenit + ' mnt)', r.catatan || '-'];
       })));
 
     box.appendChild(el('h3', null, 'Per kategori'));
@@ -434,7 +434,7 @@
           l.rttPerkiraanMs === null ? 'tidak dapat dihitung' : l.rttPerkiraanMs + ' ms',
           l.dasarMs === null ? 'belum terukur' : l.dasarMs + ' ms', l.catatan];
       })));
-    box.appendChild(el('p', 'muted', 'Model: ' + g.model.id + ' — ' + g.model.catatan));
+    box.appendChild(el('p', 'muted', 'Model: ' + g.model.id + ', ' + g.model.catatan));
   }
 
   function renderAkses(a) {
@@ -442,15 +442,15 @@
     // Ketika masih TERBUKA, sebut NAMA variable yang diperiksa dan mana yang
     // TERLIHAT pada deployment ini. Bukan hiasan: tanpa itu, "sudah saya pasang
     // env-nya" dan "deployment ini belum melihatnya" tidak bisa dibedakan dari
-    // halaman — dan itu persis kebuntuan yang terjadi 4 Okt.
+    // halaman, dan itu persis kebuntuan yang terjadi 4 Okt.
     var NAMA = (a.namaDiperiksa || []).join(', ');
     var lihat = (a.terlihat || []);
     var catatanEnv = !NAMA ? '' :
       ' Diperiksa: ' + NAMA + '.' +
       (lihat.length ? ' Terlihat di deployment ini: ' + lihat.join(', ') + '.'
-        : ' Tidak satu pun terlihat pada deployment ini — pastikan variabelnya ada untuk lingkungan Production di proyek Vercel yang sama, lalu deploy ulang.');
+        : ' Tidak satu pun terlihat pada deployment ini, pastikan variabelnya ada untuk lingkungan Production di proyek Vercel yang sama, lalu deploy ulang.');
     var teks = a.mode === 'terbuka'
-      ? 'Akses: TERBUKA — belum ada token yang dikonfigurasi, jadi siapa pun yang dapat menjangkau server ini boleh mengubah data operasional.' + catatanEnv
+      ? 'Akses: TERBUKA, belum ada token yang dikonfigurasi, jadi siapa pun yang dapat menjangkau server ini boleh mengubah data operasional.' + catatanEnv
       : 'Akses: token aktif. Peran Anda: ' + (peran || 'belum diisi (hanya membaca)') +
         '. Menangani insiden butuh ' + a.minTulis + '; memicu evaluasi butuh ' + a.minEvaluasi + '.' +
         (a.readProtected ? ' Halaman ini pun hanya untuk peran VIEWER ke atas.' : '');
@@ -501,7 +501,7 @@
     box.appendChild(el('p', 'who', 'Sasaran: ' + (d.sasaran.nama || d.sasaran.id) + ' (' + d.sasaran.id + ')' +
       (d.sasaran.kritis ? ' ★ tugas kritis' : '')));
     box.appendChild(el('h3', null, d.kesimpulan));
-    box.appendChild(el('p', null, 'Kejelasan bukti: ' + d.keyakinan.tingkat + ' — ' + d.keyakinan.alasan + '. ' + d.keyakinan.arti));
+    box.appendChild(el('p', null, 'Kejelasan bukti: ' + d.keyakinan.tingkat + ', ' + d.keyakinan.alasan + '. ' + d.keyakinan.arti));
 
     box.appendChild(el('h3', null, 'Bukti yang dipakai'));
     var ulB = el('ul', 'list');
@@ -564,8 +564,8 @@
       var td2 = el('td');
       td2.appendChild(el('span', 'tag', e.actor));
       var td3 = el('td', null, e.action);
-      var td4 = el('td', null, e.target || '—');
-      var td5 = el('td', 'muted', e.detail || '—');
+      var td4 = el('td', null, e.target || '-');
+      var td5 = el('td', 'muted', e.detail || '-');
       [td1, td2, td3, td4, td5].forEach(function (td) { tr.appendChild(td); });
       tb.appendChild(tr);
     });
@@ -577,7 +577,7 @@
     box.className = '';
     list.forEach(function (r) {
       var d = el('details');
-      var s = el('summary', null, r.id + ' — ' + r.title);
+      var s = el('summary', null, r.id + ', ' + r.title);
       d.appendChild(s);
       var body = el('div', 'body');
       body.appendChild(el('p', null, r.summary));
@@ -626,7 +626,7 @@
   // ------------------------------------------------------------------- muat
   function muatSemua() {
     // Tiap panel berdiri sendiri. Sebelumnya satu Promise.all: bila satu
-    // endpoint gagal (di Vercel wajar — tiap permintaan bisa mendarat di
+    // endpoint gagal (di Vercel wajar, tiap permintaan bisa mendarat di
     // instance berbeda), SELURUH papan tampak kosong padahal data lain ada.
     // Sekarang yang gagal hanya panelnya sendiri, dan disebutkan apa adanya.
     var janji = [
@@ -643,7 +643,7 @@
     ];
     var nama = ['Kesehatan layanan', 'Sumber data', 'Alert', 'Insiden', 'Metrik', 'Runbook', 'Log audit', 'Status akses', 'Analitik', 'Infrastruktur'];
 
-    // Kesehatan dipakai juga untuk koreksi jam (header Date) — satu permintaan
+    // Kesehatan dipakai juga untuk koreksi jam (header Date), satu permintaan
     // lebih sedikit, dan jam tetap ikut jam server.
     var janjiKesehatan = janji[0].then(
       function (h) {
@@ -659,7 +659,7 @@
     return Promise.all([janjiKesehatan].concat(janji.slice(1))).then(function (r) {
       var gagal = [];
       // Wadah tiap panel, supaya panel yang GAGAL memuat mengatakannya sendiri.
-      // Sebelumnya ia tetap berbunyi "memuat…" selamanya — terbaca seolah masih
+      // Sebelumnya ia tetap berbunyi "memuat…" selamanya, terbaca seolah masih
       // bekerja, padahal permintaannya sudah gagal (ditemukan di produksi
       // 4 Okt, saat penyimpanan GitHub menolak dengan 401).
       var WADAH = ['kpis', 'tbSumber', 'daftarAlert', 'daftarInsiden', 'metrik',
@@ -703,7 +703,7 @@
         // Jujur: sebutkan bagian mana yang tidak termuat, dan jangan biarkan
         // panel lain tampak seperti angka lengkap bila ada yang bolong.
         banner.className = 'banner';
-        banner.textContent = 'PERHATIAN — ' + gagal.length + ' dari ' + nama.length +
+        banner.textContent = 'PERHATIAN, ' + gagal.length + ' dari ' + nama.length +
           ' bagian tidak dapat dimuat saat ini (' + gagal.join(', ') + '). Bagian lain menampilkan ' +
           'angka sungguhan dari pengukuran terakhir; muat ulang untuk mencoba lagi.';
         banner.hidden = false;

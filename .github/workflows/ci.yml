@@ -1,0 +1,23 @@
+name: Gerbang uji
+
+# Gerbang wajib untuk setiap perubahan: satu perintah, tanpa jaringan.
+# Uji halaman (Playwright) dijalankan terpisah dan tidak ikut di sini supaya
+# gerbang ini tetap cepat dan tidak bergantung pada sumber hulu yang sedang mati.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm run check

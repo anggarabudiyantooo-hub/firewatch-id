@@ -29,7 +29,7 @@ const FIRMS_DAYS = Math.min(10, Math.max(1, Number(process.env.FIRMS_DAYS || 1))
 
 // Fase 2.1: konfigurasi terpusat
 const CONFIG = require('./lib/config');
-const BBOX = CONFIG.BBOX; // Indonesia — dari config terpusat
+const BBOX = CONFIG.BBOX; // Indonesia, dari config terpusat
 const BBOX_CORNERS = CONFIG.bboxCorners(BBOX);
 
 // Pakai require() (bukan fs.readFileSync) supaya bundler serverless seperti Vercel
@@ -170,7 +170,7 @@ app.use(helmet({
  * dijawab dari cache memori, sedangkan endpoint "mahal" meneruskan
  * panggilan ke pihak ketiga berkuota (NASA FIRMS, Open-Meteo, NOAA).
  * Menghabiskan kuota itu membuat dasbor gelap bagi SEMUA orang, tepat
- * ketika paling dibutuhkan — jadi kelas mahal diberi jatah lebih ketat.
+ * ketika paling dibutuhkan, jadi kelas mahal diberi jatah lebih ketat.
  *
  * Ambangnya sengaja longgar: operator seluler Indonesia banyak memakai
  * CGNAT, sehingga satu alamat IP bisa mewakili ribuan pengguna sah.
@@ -194,8 +194,8 @@ const RL_NORMAL = CONFIG.RATE_LIMIT.normal;
  */
 const RL_TILE_PATHS = /^\/(himawari|sentinel)\//;
 const RL_TILE = 1200;
-// Satu sesi pemakaian aktif — memuat halaman, menyalakan empat lapisan,
-// lalu memperbesar dan memperkecil peta berkali-kali — terukur hanya
+// Satu sesi pemakaian aktif, memuat halaman, menyalakan empat lapisan,
+// lalu memperbesar dan memperkecil peta berkali-kali, terukur hanya
 // menghasilkan 4 permintaan kelas mahal per menit. Ambang 90 memberi
 // ruang lebih dari dua puluh kali lipat, penting karena operator seluler
 // Indonesia banyak memakai CGNAT sehingga satu alamat IP dapat mewakili
@@ -253,7 +253,7 @@ async function fetchWithTimeout(url, opts = {}, ms = 12000) {
   finally { clearTimeout(t); }
 }
 
-// Retry dengan backoff eksponensial + jitter (3 percobaan) — Fase 1.3
+// Retry dengan backoff eksponensial + jitter (3 percobaan), Fase 1.3
 // 429 dan 5xx dianggap retryable, 4xx lain tidak.
 async function fetchWithRetry(url, opts = {}, ms = 12000, retries = 3) {
   let lastErr = null;
@@ -293,7 +293,7 @@ async function fetchWithRetry(url, opts = {}, ms = 12000, retries = 3) {
   throw lastErr || new Error('fetch_retry_failed');
 }
 
-// cache in-memory dengan stale-while-revalidate — Fase 1.3
+// cache in-memory dengan stale-while-revalidate, Fase 1.3
 // - Jika hit fresh (age < ttl) → return langsung
 // - Jika hit stale tapi masih dalam jendela stale (age < ttl + staleMs) → return stale segera, revalidasi di background
 // - Jika fetch gagal dan ada stale → return stale (jangan 502)
@@ -394,7 +394,7 @@ async function getHotspotsRaw() {
         // Endpoint MAP_KEY hanya melayani SATU satelit per permintaan dan
         // kerap membalas 200 dengan tabel kosong (slot NRT belum terbit, atau
         // satelit yang dipilih memang tidak melintas). Balasan kosong bukan
-        // berarti Indonesia tidak punya titik api — arsip terbuka menggabung
+        // berarti Indonesia tidak punya titik api, arsip terbuka menggabung
         // tiga satelit dan biasanya tetap berisi. Jangan pernah menyajikan
         // nol palsu; jatuh ke arsip terbuka.
         // Jendela disaring di sini juga: endpoint berkunci pun mengembalikan
@@ -483,7 +483,7 @@ async function getHotspotsRaw() {
 
       return {
         mode: 'live',
-        source: `NASA FIRMS VIIRS ${r.windowHours} jam — ${r.satellites.join(', ')} (arsip terbuka)`,
+        source: `NASA FIRMS VIIRS ${r.windowHours} jam, ${r.satellites.join(', ')} (arsip terbuka)`,
         days: 1,
         hotspots: r.hotspots,
         windowHours: r.windowHours,
@@ -498,7 +498,7 @@ async function getHotspotsRaw() {
       // masih lebih berguna daripada peta kosong, asalkan keterbatasan
       // liputannya disebutkan pada sumber data.
       if (thinKeyResult) {
-        console.error('[firms:open]', e.message, '— memakai hasil MAP_KEY sebagian');
+        console.error('[firms:open]', e.message, 'memakai hasil MAP_KEY sebagian');
         return thinKeyResult;
       }
       throw e;
@@ -712,7 +712,7 @@ function ashImpactedRegions(volcanoes) {
 
   // Dipindai terhadap permukiman rapat, bukan 226 kota besar. Abu vulkanik
   // jatuh dalam radius puluhan kilometer, dan pada radius itu yang ada
-  // umumnya desa dan pusat kecamatan — bukan kota berpenduduk ratusan ribu.
+  // umumnya desa dan pusat kecamatan, bukan kota berpenduduk ratusan ribu.
   for (const reg of SETTLEMENTS) {
     let score = 0;
     const hits = [];
@@ -780,7 +780,7 @@ function ashImpactedRegions(volcanoes) {
   }
 
   // Diurutkan menurut tingkat paparan; yang terdekat dan paling terpapar
-  // muncul lebih dulu. Batas 120 dipilih supaya peta tetap terbaca —
+  // muncul lebih dulu. Batas 120 dipilih supaya peta tetap terbaca -
   // menggambar ribuan penanda justru menyembunyikan yang penting.
   out.sort((a, b) => b.score - a.score || a.nearestKm - b.nearestKm);
   const ASH_IMPACT_CAP = 120;
@@ -832,7 +832,7 @@ function impactedRegions(plumes) {
       windSpeed: +nearest.windSpeed.toFixed(1),
       fromDir: nearest.from,
       etaHours: etaH === null ? null : +etaH.toFixed(1),
-      etaText: etaH === null ? 'angin nyaris diam — asap cenderung mengendap di sekitar sumber'
+      etaText: etaH === null ? 'angin nyaris diam, asap cenderung mengendap di sekitar sumber'
         : etaH < 1 ? 'asap bisa tiba di bawah 1 jam'
         : etaH < 24 ? 'asap diperkirakan tiba ~' + Math.round(etaH) + ' jam lagi'
         : 'asap diperkirakan tiba lebih dari sehari',
@@ -875,7 +875,7 @@ function toSeendate(d) {
  *
  * Kenapa per negara, bukan satu kueri "internasional": media Singapura,
  * Malaysia, Australia, dan Jepang meliput bencana Indonesia dari sudut yang
- * berbeda dan lebih cepat untuk hal yang menyangkut mereka langsung —
+ * berbeda dan lebih cepat untuk hal yang menyangkut mereka langsung -
  * penutupan bandara, pembatalan penerbangan, kabut asap lintas batas,
  * peringatan tsunami regional. Satu kueri global cenderung dikuasai satu-dua
  * kantor berita besar saja.
@@ -889,7 +889,7 @@ const NEIGHBOUR_EDITIONS = [
   { id: 'au', country: 'Australia', hl: 'en-AU', gl: 'AU', ceid: 'AU:en' },
   // Edisi bahasa Inggris untuk Jepang (JP:en) justru mengembalikan media
   // Amerika, jadi dipakai edisi bahasa Jepang: hasilnya Reuters Japan, NHK,
-  // TBS, Yomiuri — yang memang meliput dampaknya bagi warga Jepang.
+  // TBS, Yomiuri, yang memang meliput dampaknya bagi warga Jepang.
   { id: 'jp', country: 'Jepang', hl: 'ja', gl: 'JP', ceid: 'JP:ja', lang: 'ja' },
   { id: 'ph', country: 'Filipina', hl: 'en-PH', gl: 'PH', ceid: 'PH:en' }
 ];
@@ -1095,7 +1095,7 @@ async function googleNews() {
   for (const t of NEWS_TOPICS) counts[t.id] = picked.filter(a => a.topic === t.id).length;
   return {
     ok: true,
-    source: 'Google Berita — edisi Indonesia + edisi negara tetangga',
+    source: 'Google Berita, edisi Indonesia + edisi negara tetangga',
     fetchedAt: new Date().toISOString(),
     topics: NEWS_TOPICS.map(t => ({
       id: t.id, label: t.label, count: counts[t.id],
@@ -1132,7 +1132,7 @@ app.get('/api/health', (_req, res) => res.json({ ok: true, time: new Date().toIS
 /* ---------- Operations Center (modul terpisah: lib/ops-routes.js) ----------
    Rute ops dipasang di sini agar server.js tidak bertambah panjang, dan
    supaya batas tanggung jawab jelas: modul ops hanya MEMBACA keadaan yang
-   sudah diukur penjadwal — tidak menyentuh logika sumber hulu. */
+   sudah diukur penjadwal, tidak menyentuh logika sumber hulu. */
 require('./lib/ops-routes')(app, { clusterHotspots, getHotspots });
 
 // Dibungkus jadi fungsi agar bisa dipakai ulang oleh mesin pencarian (/api/ask).
@@ -1197,7 +1197,7 @@ async function buildOverview() {
       console.error('[overview:ash]', e.message);
     }
 
-    // titik AQI terburuk secara nasional (opsional — jangan gagalkan overview)
+    // titik AQI terburuk secara nasional (opsional, jangan gagalkan overview)
     let worstAir = null;
     try {
       const field = await airQualityField(1.5);
@@ -1214,7 +1214,7 @@ async function buildOverview() {
     // Saat kemarau memuncak, jumlah titik melonjak dari ratusan menjadi
     // ribuan; pada satu pengukuran, 7.172 titik menghasilkan 1,16 MB
     // sementara antarmuka hanya menggambar 998 di antaranya. Sisanya
-    // tetap harus diurai peramban — beban nyata pada perangkat murah,
+    // tetap harus diurai peramban, beban nyata pada perangkat murah,
     // justru perangkat yang banyak dipakai di daerah terdampak.
     //
     // Yang dipertahankan adalah titik ber-FRP tertinggi, karena itulah
@@ -1287,7 +1287,7 @@ async function buildOverview() {
  * Cache dua lapis untuk endpoint JSON.
  *
  * Terukur 4 Okt: /api/overview 10,8 dtk dan /api/hazard 8,2 dtk saat salinan
- * dingin, dan /api/hazard SELALU dingin karena header hanya memakai max-age —
+ * dingin, dan /api/hazard SELALU dingin karena header hanya memakai max-age -
  * cache CDN Vercel memakai s-maxage, bukan max-age, sehingga setiap permintaan
  * menghajar fungsi. stale-while-revalidate membuat tepi CDN menyajikan salinan
  * lama SEKETIKA sambil menyegarkan di latar belakang, jadi pengunjung tidak
@@ -1314,7 +1314,7 @@ app.get('/api/overview', async (_req, res) => {
     // dicoba dan gagal, ketiadaan laporan itu JUJUR (antarmuka menulis
     // "menunggu laporan pos pengamatan"), bukan lagi alasan menolak cache.
     // Catatan: `runs` hanya bertambah saat SUKSES, jadi tugas yang sudah
-    // dicoba dan gagal tetap ber-runs 0. Percobaan dihitung runs + fails —
+    // dicoba dan gagal tetap ber-runs 0. Percobaan dihitung runs + fails -
     // tanpa itu, overview akan selamanya "no-store" selama MAGMA mati.
     const erTask = (scheduler.status().tasks || []).find(t => t.id === 'eruption') || {};
     const erAttempts = (erTask.runs || 0) + (erTask.fails || 0);
@@ -1342,7 +1342,7 @@ async function buildAttribution() {
         disclaimer:
           'Data batas konsesi adalah kompilasi Global Forest Watch dari sumber pemerintah (KLHK, ESDM) dan RSPO. ' +
           'Ini BUKAN sertifikat HGU resmi ATR/BPN, yang tidak dipublikasikan terbuka. ' +
-          'Titik api di dalam batas konsesi TIDAK otomatis berarti perusahaan tersebut membakar — ' +
+          'Titik api di dalam batas konsesi TIDAK otomatis berarti perusahaan tersebut membakar, ' +
           'api dapat merambat dari luar. Gunakan sebagai indikasi awal, bukan bukti hukum.'
       },
       ...result
@@ -1427,7 +1427,7 @@ const AQ_STEPS = [0.25, 0.5, 1, 1.5];
  * Menyediakan hanya angin 10 m adalah sebab utama keluhan bahwa arah
  * angin dan sebaran abu "tidak konsisten": abu dimodelkan pada 3-10 km,
  * sedangkan panah angin menggambarkan permukaan. Keduanya memang boleh
- * berbeda — itu geser angin vertikal — tetapi pengguna tidak punya cara
+ * berbeda, itu geser angin vertikal, tetapi pengguna tidak punya cara
  * mengetahuinya karena layernya tidak menyebut ketinggian sama sekali.
  */
 const WIND_ALOFT_LEVELS = {
@@ -1506,7 +1506,7 @@ async function aloftWindField(level, box) {
     heightM: lv.heightM,
     hPa: lv.hPa,
     modelTime,
-    source: `Open-Meteo (GFS/ECMWF) — angin ${lv.hPa} hPa`
+    source: `Open-Meteo (GFS/ECMWF), angin ${lv.hPa} hPa`
   };
 }
 
@@ -1567,7 +1567,7 @@ app.get('/api/wind-field', async (req, res) => {
       heightM: 10,
       hPa: null,
       dataMode: 'model',
-      source: `NOAA GFS 1° (siklus ${wf.run}) — angin permukaan 10 m`,
+      source: `NOAA GFS 1° (siklus ${wf.run}), angin permukaan 10 m`,
       ...wf
     });
   } catch (e) {
@@ -1612,7 +1612,7 @@ async function airQualityField(stepDeg, box) {
   const key = box
     ? `aq:${step}:${b.west.toFixed(1)},${b.south.toFixed(1)},${b.east.toFixed(1)},${b.north.toFixed(1)}`
     : `aq:${step}`;
-  // TTL 30 menit, stale 60 menit (SWR) — Fase 1.3
+  // TTL 30 menit, stale 60 menit (SWR), Fase 1.3
   return cached(key, 30 * 60 * 1000, async () => {
     const lats = [], lons = [];
     for (let la = b.south + step / 2; la <= b.north && lats.length < 400; la += step) {
@@ -1679,11 +1679,11 @@ app.get('/api/air-quality', async (req, res) => {
   }
   try {
     const field = await airQualityField(step, box);
-    // Cache-Control dengan stale-while-revalidate — Fase 1.3
+    // Cache-Control dengan stale-while-revalidate, Fase 1.3
     res.set('Cache-Control', apiCache(900, 1800));
     res.json({
       updatedAt: new Date().toISOString(),
-      source: 'Open-Meteo Air Quality (model CAMS) — skala US AQI',
+      source: 'Open-Meteo Air Quality (model CAMS), skala US AQI',
       legend: AQI_BANDS.map(b => ({
         upto: b.max === Infinity ? null : b.max, label: b.label, color: b.color, advice: b.advice
       })),
@@ -1697,12 +1697,12 @@ app.get('/api/air-quality', async (req, res) => {
       res.set('Cache-Control', 'no-store');
       return res.status(429).json({ error: 'Kuota layanan kualitas udara tercapai, coba lagi dalam 1 menit.', retryAfter: 60 });
     }
-    // Jika ada cache stale, cached() sudah return stale di atas — jadi 502 hanya bila benar-benar belum pernah berhasil
+    // Jika ada cache stale, cached() sudah return stale di atas, jadi 502 hanya bila benar-benar belum pernah berhasil
     res.status(502).json({ error: 'Data kualitas udara sedang tidak tersedia.' });
   }
 });
 
-// AQI pada satu koordinat (dipakai popup "cek titik") — Fase 1.3: retry + stale
+// AQI pada satu koordinat (dipakai popup "cek titik"), Fase 1.3: retry + stale
 app.get('/api/air-point', async (req, res) => {
   const lat = Number(req.query.lat), lon = Number(req.query.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
@@ -1732,7 +1732,7 @@ app.get('/api/air-point', async (req, res) => {
     }, { staleMs: 60 * 60 * 1000, background: true });
     res.json({ lat, lon, air: out });
   } catch (err) {
-    // Jika 429, tetap balas null tapi jangan 502 — popup akan tampil "tidak tersedia" bukan error
+    // Jika 429, tetap balas null tapi jangan 502, popup akan tampil "tidak tersedia" bukan error
     if (/429|limit/i.test(err.message)) {
       res.set('Cache-Control', 'no-store');
       return res.json({ lat, lon, air: null, quota: true });
@@ -1825,7 +1825,7 @@ app.get('/api/news', async (_req, res) => {
  * Batas kesabaran satu sumber pada /api/ask.
  *
  * Terukur di produksi (3 Okt): overview dingin 10,8 dtk, hazard 8,2 dtk,
- * news 1,4 dtk — dan bila beberapa sumber dingin sekaligus, /api/ask
+ * news 1,4 dtk, dan bila beberapa sumber dingin sekaligus, /api/ask
  * melewati batas 60 dtk platform dan jatuh sebagai 504. Pengguna tidak
  * pernah menerima jawaban apa pun; itu kegagalan yang lebih buruk daripada
  * jawaban yang mengaku tidak menemukan data pada sumber yang belum tiba.
@@ -1893,33 +1893,33 @@ scheduler
     label: 'Gempa bumi (BMKG)',
     everyMs: CONFIG.SCHEDULER_INTERVALS.quake,
     critical: true,
-    endpoint: 'data.bmkg.go.id — gempabumi terkini (M≥5 otomatis)',
+    endpoint: 'data.bmkg.go.id, gempabumi terkini (M≥5 otomatis)',
     run: () => fetchQuakes(fetchWithRetry)
   })
   .register('tsunami', {
     label: 'Buletin tsunami (NOAA PTWC)',
     everyMs: CONFIG.SCHEDULER_INTERVALS.tsunami,
     critical: true,
-    endpoint: 'tsunami.gov — buletin PTWC',
+    endpoint: 'tsunami.gov, buletin PTWC',
     run: () => fetchTsunamiBulletins(fetchWithRetry)
   })
   .register('news', {
     label: 'Berita (Google Berita)',
     everyMs: CONFIG.SCHEDULER_INTERVALS.news,
-    endpoint: 'news.google.com RSS — edisi ID & negara tetangga',
+    endpoint: 'news.google.com RSS, edisi ID & negara tetangga',
     run: () => googleNews().catch(() => gdeltNews())
   })
   .register('hotspots', {
     label: 'Titik api (NASA FIRMS)',
     everyMs: CONFIG.SCHEDULER_INTERVALS.hotspots,
     critical: true,
-    endpoint: 'firms.modaps.eosdis.nasa.gov — VIIRS 24 jam',
+    endpoint: 'firms.modaps.eosdis.nasa.gov, VIIRS 24 jam',
     run: () => getHotspotsRaw()
   })
   .register('shelter', {
     label: 'Pengungsi (BNPB)',
     everyMs: CONFIG.SCHEDULER_INTERVALS.shelter,
-    endpoint: 'gis.bnpb.go.id — layanan ArcGIS pengungsian',
+    endpoint: 'gis.bnpb.go.id, layanan ArcGIS pengungsian',
     run: () => fetchShelters(fetchWithRetry)
   })
   .register('volcano', {
@@ -1932,7 +1932,7 @@ scheduler
   .register('pvmbg', {
     label: 'Status resmi PVMBG (MAGMA)',
     everyMs: CONFIG.SCHEDULER_INTERVALS.pvmbg,
-    endpoint: 'magma.esdm.go.id — tingkat aktivitas gunung api',
+    endpoint: 'magma.esdm.go.id, tingkat aktivitas gunung api',
     run: () => fetchPvmbgStatus(fetchWithRetry)
   })
   .register('eruption', {
@@ -1942,7 +1942,7 @@ scheduler
     label: 'Laporan letusan pos pengamatan',
     everyMs: CONFIG.SCHEDULER_INTERVALS.eruption,
     critical: true,
-    endpoint: 'magma.esdm.go.id — informasi letusan (PGA)',
+    endpoint: 'magma.esdm.go.id, informasi letusan (PGA)',
     run: () => fetchEruptions(fetchWithRetry)
   })
   .register('drought', {
@@ -2013,7 +2013,7 @@ app.get('/api/casualties', async (_req, res) => {
   }
 });
 
-/** Status tiap sumber data — dipakai panel "Status data" di antarmuka. */
+/** Status tiap sumber data, dipakai panel "Status data" di antarmuka. */
 app.get('/api/status', (_req, res) => {
   res.set('Cache-Control', 'no-store');
   res.json(scheduler.status());
@@ -2024,7 +2024,7 @@ app.get('/api/status', (_req, res) => {
 app.get('/api/hazard', async (_req, res) => {
   try {
     // Fase 3.1: shelter BNPB sering lambat (60s+), jangan block quake & tsunami yang kritis
-    // Quake & tsunami harus tetap tampil meski shelter timeout — prinsip Bloomberg: data kritis tidak boleh tertahan data lambat
+    // Quake & tsunami harus tetap tampil meski shelter timeout, prinsip Bloomberg: data kritis tidak boleh tertahan data lambat
     const withTimeout = (p, ms, fallback = null) => {
       let timer;
       const timeout = new Promise(resolve => {
@@ -2208,7 +2208,7 @@ const HIMAWARI_PRODUCTS = {
 async function himawariLatest() {
   // JMA menerbitkan slot baru tiap 10 menit. Cache 60 detik sebelumnya
   // menumpuk dengan cache CDN 120 detik dan interval klien 60 detik,
-  // sehingga citra bisa tertinggal sampai empat menit dari slot terbaru —
+  // sehingga citra bisa tertinggal sampai empat menit dari slot terbaru -
   // cukup lama untuk membuat awan tampak diam. Daftar waktunya sendiri
   // hanya beberapa kilobita, jadi murah diambil lebih sering.
   return cached('hima:times', 25 * 1000, async () => {
@@ -2221,7 +2221,7 @@ async function himawariLatest() {
     }
     // Beberapa slot terakhir ikut dikembalikan supaya antarmuka dapat
     // memutar animasi. Satu citra diam tidak memperlihatkan pergerakan
-    // awan sama sekali — yang membuat orang mengira citranya beku.
+    // awan sama sekali, yang membuat orang mengira citranya beku.
     const recent = j.slice(-12)
       .filter(x => /^\d{14}$/.test(String(x.basetime)) && /^\d{14}$/.test(String(x.validtime)))
       .map(x => ({ basetime: String(x.basetime), validtime: String(x.validtime) }));
@@ -2272,7 +2272,7 @@ app.get('/api/himawari/:product/:z/:x/:y.jpg', async (req, res) => {
 
     // Klien dapat meminta slot tertentu lewat ?t=<ISO> untuk memutar
     // animasi. Nilainya divalidasi terhadap daftar slot yang benar-benar
-    // diterbitkan JMA, bukan dipercaya begitu saja — tanpa itu parameter
+    // diterbitkan JMA, bukan dipercaya begitu saja, tanpa itu parameter
     // ini menjadi jalan menyusun URL sembarang ke server JMA.
     let basetime = t.basetime;
     let validtime = t.validtime;
@@ -2305,13 +2305,13 @@ app.get('/api/himawari/:product/:z/:x/:y.jpg', async (req, res) => {
  * Berbeda dari Himawari yang menyegar tiap 10 menit, Sentinel-2 melintas
  * tiap 5 hari dan sering tertutup awan. Endpoint meta di bawah melaporkan
  * tanggal perekaman apa adanya supaya pengguna tahu citra yang dilihatnya
- * berasal dari kapan — citra tiga minggu lalu yang disajikan tanpa
+ * berasal dari kapan, citra tiga minggu lalu yang disajikan tanpa
  * keterangan lebih menyesatkan daripada tidak ada citra sama sekali.
  */
 const SENTINEL_MAX_CLOUD = [10, 20, 30, 50, 80];
 
 /**
- * Diagnostik Sentinel — hanya terbuka bila DEBUG_KEY dipasang dan cocok.
+ * Diagnostik Sentinel, hanya terbuka bila DEBUG_KEY dipasang dan cocok.
  *
  * Pesan galat hulu sengaja tidak dikirim ke klien biasa: isinya dapat
  * memuat potongan permintaan beserta petunjuk konfigurasi internal.
@@ -2406,7 +2406,7 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
   // cukup untuk melihat satu provinsi sekaligus, dan pengukuran
   // menunjukkan waktu ambilnya tetap di bawah dua detik. Lebih jauh dari
   // itu Himawari sudah melayani tampilan seluas apa pun tanpa memakan
-  // kuota Copernicus. Batas atas 16 mengikuti resolusi asli 10 m —
+  // kuota Copernicus. Batas atas 16 mengikuti resolusi asli 10 m -
   // memperbesar lebih jauh hanya memperbesar piksel.
   if (!Number.isInteger(z) || z < 7 || z > 17) return res.status(404).end();
   const n = 2 ** z;
@@ -2430,7 +2430,7 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
     const buf = await cached(key, ttl,
       () => sentinel.fetchTile(fetchWithTimeout, { product: prod, z, x, y, maxCloud: cloud }));
 
-    // Tidak ada adegan bebas awan di petak ini — biarkan peta dasar terlihat.
+    // Tidak ada adegan bebas awan di petak ini, biarkan peta dasar terlihat.
     if (!buf) { res.set('Cache-Control', 'public, max-age=3600'); return res.status(204).end(); }
 
     res.set('Content-Type', 'image/jpeg');
@@ -2445,7 +2445,7 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
 /**
  * Versi aset: hash isi app.js/app.css/wind-particles.js.
  * Ditempelkan ke URL aset di index.html sehingga setiap penerapan baru
- * menghasilkan URL baru — peramban pengguna tidak akan lagi memakai
+ * menghasilkan URL baru, peramban pengguna tidak akan lagi memakai
  * berkas lama dari cache tanpa perlu hard-refresh manual.
  */
 const ASSET_FILES = ['app.js', 'app.css', 'wind-particles.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css'];

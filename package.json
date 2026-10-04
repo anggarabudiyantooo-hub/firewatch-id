@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "check": "node scripts/check-bundle.js && node scripts/test-atmos.js && node scripts/test-ops.js",
+    "check": "node scripts/check-style.js && node scripts/check-bundle.js && node scripts/test-atmos.js && node scripts/test-ops.js",
     "test": "node scripts/test-atmos.js",
     "refresh:snapshots": "node scripts/refresh-snapshots.js",
     "refresh:pvmbg": "node scripts/refresh-snapshots.js --only-pvmbg",
@@ -20,9 +20,9 @@
     "open-data",
     "himawari"
   ],
-  "author": "",
+  "author": "anggarabudiyantooo-hub",
   "license": "MIT",
-  "description": "Pemantauan karhutla Indonesia: titik api, sebaran asap, kualitas udara, abu vulkanik, dan atribusi tanggung jawab lahan — dari data terbuka.",
+  "description": "Pemantauan karhutla Indonesia: titik api, sebaran asap, kualitas udara, abu vulkanik, dan atribusi tanggung jawab lahan, dari data terbuka.",
   "dependencies": {
     "@mapbox/vector-tile": "1.3.1",
     "compression": "^1.8.1",
@@ -38,5 +38,13 @@
   },
   "devDependencies": {
     "playwright": "^1.47.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anggarabudiyantooo-hub/firewatch-id.git"
+  },
+  "homepage": "https://firewatch-id.vercel.app",
+  "bugs": {
+    "url": "https://github.com/anggarabudiyantooo-hub/firewatch-id/issues"
   }
 }

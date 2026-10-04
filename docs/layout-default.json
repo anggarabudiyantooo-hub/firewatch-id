@@ -102,5 +102,5 @@
   "savedAt": "2026-09-30T07:00:00.000Z",
   "mode": "desktop",
   "patented": true,
-  "note": "Fase 3.8.2 full width — stats 100%, ctlRow 100%, map 100% full dari peta hingga bawah, hazard+status row 12%+87.5% = 100%, events/news/analysis row 20.5%+41%+37.5% = 100%, attr 100%, so2+edu 44.7%+54.8% = 100%, source 100%, no blank padding bawah — footer langsung setelah source, main minHeight = maxBottom + 20px saja"
+  "note": "Fase 3.8.2 full width, stats 100%, ctlRow 100%, map 100% full dari peta hingga bawah, hazard+status row 12%+87.5% = 100%, events/news/analysis row 20.5%+41%+37.5% = 100%, attr 100%, so2+edu 44.7%+54.8% = 100%, source 100%, no blank padding bawah, footer langsung setelah source, main minHeight = maxBottom + 20px saja"
 }

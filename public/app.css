@@ -1,5 +1,5 @@
-/* SIAGA.ID — Compact Bloombeq refined v2.0.0 — Fase 4.1 */
-/* Derived from SIAGA-ID-refactor-Fase1.png — Elias Thorne spec locked */
+/* SIAGA.ID, Compact Bloombeq refined v2.0.0, Fase 4.1 */
+/* Derived from SIAGA-ID-refactor-Fase1.png, Elias Thorne spec locked */
 :root{
   --ground:#0B0C0E;
   --surface-1:#14161A;
@@ -120,7 +120,7 @@ button,input,select{font-family:var(--font-data)}
 
 /* Pintu masuk Operations Center: tinggal di JALUR CHROME dock, bukan di dalam
    panel data. Sebelumnya ia kotak berbingkai di tengah panel Sumber, sehingga
-   terbaca seperti bagian dari data (keluhan 4 Okt). Alasan tempatnya di sini —
+   terbaca seperti bagian dari data (keluhan 4 Okt). Alasan tempatnya di sini -
    dengan angka, bukan selera:
      · topbar 390 px sudah 0 px sisa, jadi menaruhnya di sana tidak mungkin;
      · jalur tab dock bisa digeser (isi ±990 px, terlihat 364 px di 390 px),
@@ -134,7 +134,7 @@ button,input,select{font-family:var(--font-data)}
 .dock-ops:hover{color:var(--text-primary);border-color:var(--text-secondary)}
 .dock-ops:focus-visible{outline:2px solid var(--status-info);outline-offset:2px}
 
-/* === y 0-52 Top Bar — slim, full bleed, #0F1115, 1px hairline beneath === */
+/* === y 0-52 Top Bar, slim, full bleed, #0F1115, 1px hairline beneath === */
 .topbar{
   height:var(--topbar-h);
   background:#0F1115;
@@ -252,7 +252,7 @@ button,input,select{font-family:var(--font-data)}
 .btn-ghost{background:transparent}
 .btn-ghost.active{background:var(--surface-3);color:var(--text-primary);border-color:var(--hairline-strong)}
 
-/* Exactly one filled button — REFRESH only */
+/* Exactly one filled button, REFRESH only */
 #refreshBtn{ /* the ONE filled button */}
 /* REFRESH hanya setinggi 36 px sedangkan topbar tempatnya 44 px. Area kliknya
    ditinggikan jadi 44 px tanpa mengubah tinggi tombolnya; perluasan mendatar
@@ -270,7 +270,7 @@ button,input,select{font-family:var(--font-data)}
 /* y 52-59 Hairline separator */
 .hairline-sep{height:1px;background:var(--hairline);flex-shrink:0}
 
-/* === y 64-168 KPI Rail — 6 equal cards, 104px tall, 12px gutter, 8px gaps === */
+/* === y 64-168 KPI Rail, 6 equal cards, 104px tall, 12px gutter, 8px gaps === */
 .stats{
   display:grid;
   grid-template-columns:repeat(6,1fr);
@@ -336,10 +336,10 @@ button,input,select{font-family:var(--font-data)}
   text-overflow:ellipsis;
 }
 .stat:nth-child(6) .stat-sub{color:var(--status-danger)}
-/* Hide extra stats beyond 6 to match spec — 92% neutral, no duplicated figures */
+/* Hide extra stats beyond 6 to match spec, 92% neutral, no duplicated figures */
 .stats .stat:nth-child(n+7){display:none}
 
-/* === Dashboard body — map + inspector === */
+/* === Dashboard body, map + inspector === */
 main{
   display:grid;
   grid-template-rows:auto 1fr;
@@ -412,7 +412,7 @@ main{
   background:var(--map-ocean);
 }
 #map{width:100%;height:100%;background:var(--map-ocean)}
-/* Map HUD — L2 frosted, single allowed glassmorphism */
+/* Map HUD, L2 frosted, single allowed glassmorphism */
 .conf-summary{
   position:absolute;
   left:16px;top:16px;
@@ -461,7 +461,7 @@ main{
 }
 .legend-tip{margin-left:auto;font-style:normal;color:var(--text-tertiary)}
 
-/* === Right Inspector — 320px, y 64-996 === */
+/* === Right Inspector, 320px, y 64-996 === */
 .side-stack{
   width:320px;
   background:var(--surface-1);
@@ -503,7 +503,7 @@ main{
   color:var(--text-tertiary);
 }
 .panel-sub{font-size:10px;color:var(--text-tertiary);margin-left:auto}
-/* Segmented control — Lapisan/Data/Analisis 30px tall track #1A1D22 6px radius */
+/* Segmented control, Lapisan/Data/Analisis 30px tall track #1A1D22 6px radius */
 .tabs{
   display:flex;
   gap:0;
@@ -535,7 +535,7 @@ main{
 .pane{padding:8px 12px;overflow-y:auto;flex:1;min-height:0}
 .ev-body{max-height:320px;overflow-y:auto}
 
-/* Inspector toggles — 36px rows, label 11px #9BA1B0, toggle 32x18 9px radius */
+/* Inspector toggles, 36px rows, label 11px #9BA1B0, toggle 32x18 9px radius */
 .ctlrow{
   display:flex;
   flex-direction:column;
@@ -613,7 +613,7 @@ main{
   box-shadow:0 0 0 6px rgba(48,209,88,0.15);
 }
 
-/* Alert list PERLU PERHATIAN — 52px rows, severity-first */
+/* Alert list PERLU PERHATIAN, 52px rows, severity-first */
 #eventsPanel .panel-head{
   font-size:10px;
   letter-spacing:0.10em;
@@ -664,7 +664,7 @@ main{
   position:relative;
 }
 
-/* === Bottom Timeline Band — 172px tall, #0F1115, hairline above === */
+/* === Bottom Timeline Band, 172px tall, #0F1115, hairline above === */
 .timeline-band{
   height:172px;
   background:#0F1115;
@@ -765,14 +765,14 @@ main{
 }
 .scrub-tick{font-size:10px;color:var(--text-tertiary);font-family:var(--font-data)}
 
-/* === Forbidden — enforce === */
+/* === Forbidden, enforce === */
 .ticker{display:none !important} /* no scrolling marquee */
 .news-item{border-radius:8px !important;max-width:100%}
 button{border-radius:8px;max-radius:12px}
 .foot{display:none} /* timeline replaces footer in refined spec, footer is contentinfo but hidden in main view */
 #attrSection,#statusPanel,#so2Panel,#eduPanel,#sourcePanel{display:none} /* hide extra panels to keep 92% neutral and 6 KPI only */
 
-/* === Panel toggle — keep but refined === */
+/* === Panel toggle, keep but refined === */
 .panel-toggle{
   width:20px;height:20px;
   border:1px solid var(--hairline);
@@ -786,7 +786,7 @@ button{border-radius:8px;max-radius:12px}
 .panel.is-collapsed .ev-body,.panel.is-collapsed .pane,.panel.is-collapsed .searchbar,.panel.is-collapsed .tabs{display:none !important}
 .panel.is-collapsed{min-height:auto !important;height:auto !important}
 
-/* === AI & Layout — make ghost, not filled === */
+/* === AI & Layout, make ghost, not filled === */
 .layout-bar{
   background:var(--surface-2);
   border:1px solid var(--hairline);
@@ -803,7 +803,7 @@ button{border-radius:8px;max-radius:12px}
 }
 .ai-popup-head{background:var(--surface-2);border-bottom:1px solid var(--hairline)}
 
-/* === Responsive — Mobile 390x844 re-composition === */
+/* === Responsive, Mobile 390x844 re-composition === */
 @media(max-width:768px){
   body{overflow:auto;height:auto;display:block}
   .topbar{height:44px;padding:0 12px}
@@ -889,11 +889,11 @@ button:focus-visible,a:focus-visible{outline:1px solid rgba(100,210,255,0.55);ou
 .leaflet-control-zoom a{background:var(--surface-1) !important;color:var(--text-primary) !important;border-color:var(--hairline) !important}
 
 /* ═══════════════════════════════════════════════════════════════
-   AUDIT v3 — 5 SURGICAL PATCHES T1-T5 + token v2 fix
+   AUDIT v3, 5 SURGICAL PATCHES T1-T5 + token v2 fix
    JANGAN ubah hex token di atas. T1-T5 wajib lolos gates.
    ═══════════════════════════════════════════════════════════════ */
 
-/* T1 — raw form controls 51% viewport fix */
+/* T1, raw form controls 51% viewport fix */
 select,
 input[type="text"],
 input[type="search"],
@@ -947,7 +947,7 @@ input[type="checkbox"]:checked::after{transform:translateX(14px)}
 .switch[aria-checked="true"]::after{transform:translateX(14px)}
 .switch[aria-checked="true"]:active::after{box-shadow:0 0 6px rgba(48,209,88,.75)}
 
-/* T2 — <a> color primary not #0000EE — fixes 125 fails / 49 blue links */
+/* T2, <a> color primary not #0000EE, fixes 125 fails / 49 blue links */
 a{color:var(--text-primary);text-decoration:none;transition:color var(--dur-state)}
 a:hover{color:var(--status-alert);text-decoration:underline;text-underline-offset:2px}
 a:visited{color:var(--text-secondary)}
@@ -955,14 +955,14 @@ a:focus-visible{outline:2px solid var(--status-info);outline-offset:2px;border-r
 /* zero rgb(0,0,238) */
 a[href]{color:var(--text-primary)}
 
-/* T3 — KPI .num.is-danger / is-nominal contrast fix */
+/* T3, KPI .num.is-danger / is-nominal contrast fix */
 .kpi .num.is-danger,.kpi-num.is-danger,.stat strong.is-danger{color:var(--status-danger)!important}
 .kpi .num.is-nominal,.kpi-num.is-nominal,.stat strong.is-nominal{color:var(--status-nominal)!important}
 .kpi .num.is-danger,.kpi-num.is-danger{background:rgba(255,69,58,.12);border:1px solid rgba(255,69,58,.32);border-radius:var(--radius-chip);padding:2px 6px}
 .stat.is-danger strong{color:var(--status-danger)}
 .stat.is-nominal strong{color:var(--status-nominal)}
 
-/* T4 — map region collapse fix — grid 1fr inspector-w */
+/* T4, map region collapse fix, grid 1fr inspector-w */
 .page,#main-bloomberg-grid{
   display:grid;
   grid-template-columns:1fr var(--inspector-w);
@@ -989,7 +989,7 @@ a[href]{color:var(--text-primary)}
 }
 .kpi-rail,.stats{min-height:var(--kpi-h)}
 
-/* T5 — brand no emoji use .mark 28x28 drawn flame glyph */
+/* T5, brand no emoji use .mark 28x28 drawn flame glyph */
 .mark,.mark-tag{
   width:28px;height:28px;
   border-radius:var(--radius-card);
@@ -1000,7 +1000,7 @@ a[href]{color:var(--text-primary)}
 }
 .mark svg,.mark-tag svg{display:block}
 
-/* ── dock — 7 tabs covering 11 panels ── */
+/* ── dock, 7 tabs covering 11 panels ── */
 .dock{flex:0 0 auto;background:var(--chrome);border:1px solid var(--hairline);
   border-radius:var(--radius-card);display:flex;flex-direction:column;overflow:hidden;margin-top:var(--card-gap)}
 /* Jalur chrome dock: daftar tab yang bisa digeser + pintu Operations Center
@@ -1106,12 +1106,12 @@ details .body b{color:var(--text-primary);font-weight:600}
 .whois .nm{display:block;font:600 11.5px/1.3 var(--font-prose);color:var(--text-primary)}
 .whois .h{display:block;font:400 9px/1.5 var(--font-data);color:var(--text-tertiary)}
 
-/* ── typography gates — min 9px, tabular-nums mandatory ── */
+/* ── typography gates, min 9px, tabular-nums mandatory ── */
 .micro{font:500 9px/1 var(--font-data);letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)}
 .label{font:500 10px/1 var(--font-data);letter-spacing:.06em;text-transform:uppercase;color:var(--text-tertiary)}
 .numeral,.kpi-num,.kpi .num,.stat strong{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
-/* ── map — ensure ≥60vh ── */
+/* ── map, ensure ≥60vh ── */
 .map-card{min-height:var(--map-min-h)}
 
 
@@ -1122,7 +1122,7 @@ details .body b{color:var(--text-primary);font-weight:600}
 .t-danger{color:var(--status-danger)} .t-nominal{color:var(--status-nominal)} .t-alert{color:var(--status-alert)}
 .t-caution{color:var(--status-caution)} .t-secondary{color:var(--text-secondary)} .t-tertiary{color:var(--text-tertiary)}
 
-/* ── prototipe v3 core — adopted for audit visual parity ── */
+/* ── prototipe v3 core, adopted for audit visual parity ── */
 .wrap{flex:1 1 auto;min-height:0;padding:var(--gutter);display:flex;flex-direction:column;gap:var(--card-gap)}
 .kpi-rail{display:grid;grid-template-columns:repeat(6,1fr);gap:var(--card-gap);flex:0 0 auto}
 .kpi{background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-card);
@@ -1151,7 +1151,7 @@ details .body b{color:var(--text-primary);font-weight:600}
 .map-tools{position:absolute;right:14px;bottom:14px;z-index:4;display:flex;flex-direction:column;gap:8px}
 .tool{width:32px;height:32px;border-radius:50%;background:rgba(20,22,26,.72); border:1px solid rgba(255,255,255,.08);display:grid;place-items:center;cursor:pointer; -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);position:relative}
 /* Lingkaran tetap 32 px seperti prototipe, tetapi area kliknya diperluas jadi 40 px.
-   Tidak sampai 44 px karena jarak antar tombol hanya 40 px — perluasan sebesar itu
+   Tidak sampai 44 px karena jarak antar tombol hanya 40 px, perluasan sebesar itu
    membuat area klik dua tombol bertumpuk dan saling mencuri klik. */
 .tool::after{content:"";position:absolute;inset:-4px}
 .tool:hover{background:var(--surface-3)}
@@ -1167,13 +1167,13 @@ details .body b{color:var(--text-primary);font-weight:600}
   .page,#main-bloomberg-grid{max-width:100vw;overflow-x:hidden}
   .dock-tabs{max-width:100vw}
 }
-/* === Responsive — Tablet === */
+/* === Responsive, Tablet === */
 /* Wajib setelah aturan dasar .grid4; bila ditaruh sebelumnya, kisi tetap
    empat kolom dan kartu menyusut ke ~200 px pada 900-1000 px. */
 @media(max-width:1100px){
   .grid4{grid-template-columns:repeat(2,1fr)}
-  /* Rel KPI memakai perlakuan lebar sempit milik prototipe audit — kartu
-     dikunci 148 px dan dapat digeser — sebab enam kolom menyusut ke ~123 px
+  /* Rel KPI memakai perlakuan lebar sempit milik prototipe audit, kartu
+     dikunci 148 px dan dapat digeser, sebab enam kolom menyusut ke ~123 px
      pada 800 px sampai isi antar kartu saling menumpuk. */
   .kpi-rail{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px;
     -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent 100%);
@@ -1200,7 +1200,7 @@ details .body b{color:var(--text-primary);font-weight:600}
      #main-bloomberg-grid{flex:1 1 auto!important} menyusutkannya, sehingga isi
      terpotong overflow:hidden dan dokumen tidak dapat digulir: panel inspeksi
      tinggal 1 px dan subtabnya tertimpa dok kejadian. Prototipe audit tidak
-     begitu — di 390 px dokumennya 1301 px dan dapat digulir — jadi kedua
+     begitu, di 390 px dokumennya 1301 px dan dapat digulir, jadi kedua
      penjepit itu dilepas pada rentang ini. */
   #main{height:auto;overflow:visible}
   #main-bloomberg-grid{flex:0 0 auto}
@@ -1229,7 +1229,7 @@ details .body b{color:var(--text-primary);font-weight:600}
 
 #main{flex:1 1 auto;min-height:0;padding:var(--gutter);display:flex;flex-direction:column;gap:var(--card-gap)}
 
-/* === Sasaran sentuh — area klik, bukan tampilan === */
+/* === Sasaran sentuh, area klik, bukan tampilan === */
 /* Tinggi tombol ini mengikuti pembungkusan label (22-42 px), jadi area klik
    dibuat kotak 44 px yang ditengahkan pada tombol. Inset tetap tidak dipakai
    karena akan meluber keluar batang atas begitu tombolnya sudah tinggi. */
@@ -1240,8 +1240,8 @@ details .body b{color:var(--text-primary);font-weight:600}
    dapat ditekan, jadi area kliknya boleh melebar ke samping sampai 44 px. */
 .collapse::after{left:-16px;right:-16px}
 /* === Topbar pada lebar sangat sempit === */
-/* Isi topbar berjumlah 389 px, jadi REFRESH — satu-satunya tombol berisi di
-   halaman — terpotong di bawah 390 px. Dua langkah di bawah ini memadatkan
+/* Isi topbar berjumlah 389 px, jadi REFRESH, satu-satunya tombol berisi di
+   halaman, terpotong di bawah 390 px. Dua langkah di bawah ini memadatkan
    baris itu tanpa membuang satu pun kontrol yang dapat ditekan: pertama jarak
    dan padding dirapatkan, lalu label chip sumber dipendekkan menjadi titiknya
    saja. Tombolnya tetap ada dan tetap dapat ditekan. */
@@ -1257,7 +1257,7 @@ details .body b{color:var(--text-primary);font-weight:600}
   #srcChip{min-width:44px;min-height:44px;justify-content:center;padding:0}
 }
 /* Di bawah 340 px bahkan baris yang sudah dipadatkan tidak cukup, jadi lencana
-   status — satu-satunya bagian yang tidak dapat ditekan — disembunyikan.
+   status, satu-satunya bagian yang tidak dapat ditekan, disembunyikan.
    Keadaan sumber data tetap terbaca dari titik pada chip sumber dan dari panel
    Sumber. */
 @media(max-width:340px){
@@ -1270,7 +1270,7 @@ details .body b{color:var(--text-primary);font-weight:600}
 #mapCard:fullscreen{width:100vw;height:100vh;border-radius:0;border:none}
 #mapCard:-webkit-full-screen{width:100vw;height:100vh;border-radius:0;border:none}
 /* Pemulihan tombol ⛶ FULL (1d52b8e). Refactor paritas menghapus markup dan
-   gaya fallback-nya tetapi meninggalkan JS dan gaya tombolnya — itulah sebabnya
+   gaya fallback-nya tetapi meninggalkan JS dan gaya tombolnya, itulah sebabnya
    tombol "sebelumnya ada, sekarang hilang": tanpa elemen, JS bail-out diam-diam.
    Kepala peta adalah overlay pointer-events:none, jadi tombolnya menyalakan
    kembali kemampuan klik sendiri. */
@@ -1300,10 +1300,10 @@ body.has-fullscreen-map{overflow:hidden}
 .map-card:fullscreen .map-fs-exit,.map-card.is-fullscreen .map-fs-exit{display:block}
 .map-fs-exit:hover{border-color:var(--status-alert);color:var(--status-alert)}
 
-/* === AI ASISTEN + NOTICE — dipulihkan ===
+/* === AI ASISTEN + NOTICE, dipulihkan ===
    Riwayat regresi: gaya .ai-fab/.ai-popup/.ask-* dihapus refactor "Compact
    Bloombeq refined v2.0.0" (Fase 4.1), lalu sisa markahnya disembunyikan
-   serentak (9f5fe24) demi paritas tangkapan audit — popupnya ikut mati.
+   serentak (9f5fe24) demi paritas tangkapan audit, popupnya ikut mati.
    Kontrol yang sudah ada tidak boleh hilang tanpa pengganti, jadi gayanya
    dipulihkan di sini sementara footer/layout-bar/hairline tetap seperti
    pada tangkapan auditan. Semua ukuran teks >=10 px dan warna memakai
@@ -1378,7 +1378,7 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
 @media(max-width:768px){.clock-skew{display:none!important}}
 
 /* Catatan keselamatan di panel Sumber: nomor darurat, rujukan resmi, dan
-   pernyataan "bukan peringatan resmi" — untuk publik yang membaca angka
+   pernyataan "bukan peringatan resmi", untuk publik yang membaca angka
    tanpa membuka panel lain. Tautan digarisbawahi (bukan hanya warna) supaya
    tetap terbedakan tanpa penglihatan warna. */
 .src-safe{

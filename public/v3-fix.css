@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════════
-   SIAGA.ID — v3-fix.css
+   SIAGA.ID, v3-fix.css
    Dimuat SETELAH app.css. Diisolasi dalam satu berkas supaya app.css
    tidak perlu disentuh dan perbaikan ini mudah ditinjau atau dibalik.
 
@@ -11,7 +11,7 @@
    #ctlRow berisi 11 grup kontrol era-Bloomberg. v3 sudah memindahkan
    seluruh fungsinya ke inspektur (tab Lapisan & Tampilan), tetapi blok ini
    masih tinggi 593px dan mendesak #main-bloomberg-grid sampai 2px.
-   Disembunyikan — BUKAN dihapus: app.js masih mengikat windLevel, colorSel,
+   Disembunyikan, BUKAN dihapus: app.js masih mengikat windLevel, colorSel,
    confSel, frpSel, himaSel, airAqiSel, dan ly* di dalamnya. Menghapusnya
    dari DOM akan mematikan boot kembali.                                   */
 #ctlRow{display:none!important}
@@ -39,7 +39,7 @@
 
 /* ── 4 · WARNA ANGKA KPI TIDAK BOLEH DATANG DARI DATA ──────────────────
    app.js melakukan `$('sAir').style.color = wa.col`, dan payload
-   mengirim marun #7F1D1D — 1.81:1 di atas permukaan kartu, angka
+   mengirim marun #7F1D1D, 1.81:1 di atas permukaan kartu, angka
    terburuk di seluruh halaman. Warna bahaya adalah keputusan desain,
    bukan konsekuensi data, jadi dikunci di sini.                          */
 .kpi-num.t-danger,.kpi-sub.t-danger{color:var(--status-danger)!important}
@@ -76,7 +76,7 @@ input[type=checkbox]::after{
 input[type=checkbox]:checked{background:var(--status-nominal,#30d158)}
 input[type=checkbox]:checked::after{transform:translateX(14px)}
 
-/* ── 6 · TAUTAN — jangan pernah biru bawaan peramban ──────────────────── */
+/* ── 6 · TAUTAN, jangan pernah biru bawaan peramban ──────────────────── */
 a{color:var(--text-primary);text-decoration:none}
 a:hover{color:var(--status-alert);text-decoration:underline;text-underline-offset:2px}
 a:focus-visible{outline:2px solid rgba(100,210,255,.55);outline-offset:2px;border-radius:4px}
@@ -90,11 +90,11 @@ a:focus-visible{outline:2px solid rgba(100,210,255,.55);outline-offset:2px;borde
    Markup v3 dipasang, tetapi aturan gayanya tidak ada di app.css.
    Akibatnya .seg, .alerts, .ev-* dan lain-lain dirender dengan default
    peramban. Blok di bawah ini menutup celah tersebut.
-   Hanya menyentuh selektor yang BELUM ada di app.css — tidak menimpa
+   Hanya menyentuh selektor yang BELUM ada di app.css, tidak menimpa
    apa pun yang sudah berjalan.
    ══════════════════════════════════════════════════════════════════════ */
 
-/* inspektur — segmented control */
+/* inspektur, segmented control */
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:10px var(--card-pad,12px);
   background:var(--surface-2);border-radius:6px;padding:2px}
 .seg button{background:transparent;border:1px solid transparent;border-radius:4px;
@@ -104,7 +104,7 @@ a:focus-visible{outline:2px solid rgba(100,210,255,.55);outline-offset:2px;borde
 .seg button[aria-selected="true"]{background:var(--surface-3);color:var(--text-primary);
   border-color:rgba(255,255,255,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
 
-/* panel tab — flex kolom agar daftar dapat menggulir sendiri */
+/* panel tab, flex kolom agar daftar dapat menggulir sendiri */
 .tabpanel{display:flex;flex-direction:column;min-height:0}
 .tabpanel[hidden]{display:none!important}
 .scroll{overflow-y:auto;overscroll-behavior:contain;min-height:0}
@@ -157,7 +157,7 @@ a:focus-visible{outline:2px solid rgba(100,210,255,.55);outline-offset:2px;borde
 }
 
 /* ── 9 · TARGET SENTUH ─────────────────────────────────────────────────
-   .dock-tab terukur 24px — tepat di ambang minimum penunjuk dan terlalu
+   .dock-tab terukur 24px, tepat di ambang minimum penunjuk dan terlalu
    kecil untuk sentuhan. Dinaikkan tanpa mengubah tampilan visualnya.     */
 .dock-tab{padding:9px 12px!important;min-height:34px}
 @media (max-width:768px){ .dock-tab{min-height:44px} }
@@ -166,8 +166,8 @@ a:focus-visible{outline:2px solid rgba(100,210,255,.55);outline-offset:2px;borde
    10 · PETA DATA ASLI DIPULIHKAN
    Markup sempat menonaktifkan #map dan #mapWrap dengan atribut hidden,
    sehingga peta Leaflet tidak pernah punya ukuran. Akibatnya seluruh
-   penggambaran data di app.js — titik api, sebaran asap, wilayah
-   terdampak, partikel angin — tidak terlihat sama sekali, dan yang
+   penggambaran data di app.js, titik api, sebaran asap, wilayah
+   terdampak, partikel angin, tidak terlihat sama sekali, dan yang
    tampil hanyalah peta SVG skematik tanpa data nyata.
 
    Peta sungguhan yang menang. SVG skematik disembunyikan.
@@ -215,7 +215,7 @@ a:focus-visible{outline:2px solid rgba(100,210,255,.55);outline-offset:2px;borde
 /* ══════════════════════════════════════════════════════════════════════
    12 · CELAH 7,8 PX ANTAR-KARTU
    .stats{overflow:hidden} memotong setengah celah grid, sehingga bagian
-   atas kartu KPI menempel tepat di bawah bilah tab — terlihat sebagai
+   atas kartu KPI menempel tepat di bawah bilah tab, terlihat sebagai
    potongan, bukan pemisah.
    ══════════════════════════════════════════════════════════════════════ */
 .stats{overflow:visible!important}

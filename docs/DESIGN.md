@@ -1,4 +1,4 @@
-# Sistem Desain — SIAGA ID
+# Sistem Desain: SIAGA ID
 
 Versi 2.0 · 8 September 2026
 
@@ -31,13 +31,13 @@ Tiga hal **sengaja** dibedakan dari templat, dan alasannya penting:
 | `--tx` | `#e2e8f0` | Teks utama |
 | `--tx-dim` | `#64748b` | Teks sekunder |
 | `--tx-faint` | `#334155` | Teks paling redup |
-| `--accent` | `#f97316` | Oranye — aksen utama |
-| `--accent-red` | `#ef4444` | Merah — darurat |
-| `--ok` | `#22c55e` | Hijau — sehat |
-| `--warn` | `#eab308` | Kuning — perhatian |
-| `--info` | `#3b82f6` | Biru — informasi |
-| `--cyan` | `#06b6d4` | Sian — pengungsi |
-| `--magenta` | `#a855f7` | Ungu — berita |
+| `--accent` | `#f97316` | Oranye, aksen utama |
+| `--accent-red` | `#ef4444` | Merah, darurat |
+| `--ok` | `#22c55e` | Hijau, sehat |
+| `--warn` | `#eab308` | Kuning, perhatian |
+| `--info` | `#3b82f6` | Biru, informasi |
+| `--cyan` | `#06b6d4` | Sian, pengungsi |
+| `--magenta` | `#a855f7` | Ungu, berita |
 
 **Nada khusus keterbacaan.** Audit menemukan teks keterangan berkontras 1,71:1 pada
 8 px. Warna berikut menggantikannya di seluruh teks informatif:
@@ -56,7 +56,7 @@ JetBrains Mono di seluruh antarmuka. Dasar 12 px / 1,5.
 |---|---|---|
 | Merek | 16 px, 700 | |
 | Angka metrik | 20 px, 700 | |
-| Kepala panel | 10–11 px, 700, `letter-spacing .1em`, kapital | |
+| Kepala panel | 10-11 px, 700, `letter-spacing .1em`, kapital | |
 | Teks isi | 12 px | |
 | Label dan keterangan | 11 px | **Batas bawah** untuk teks informatif |
 | Label sudut peta | 10 px | Dekoratif |
@@ -72,26 +72,26 @@ Aturan yang dipegang: **tidak ada teks informatif di bawah 11 px**. Templat mema
 ├─────────────────────────────────────────────────────────┤
 │ TICKER berjalan (terpotong overflow:hidden)              │
 ├─────────────────────────────────────────────────────────┤
-│ 8 KARTU METRIK — grid 8 kolom, tinggi seragam            │
+│ 8 KARTU METRIK, grid 8 kolom, tinggi seragam            │
 ├─────────────────────────────────────────────────────────┤
 │ BARIS KONTROL                                            │
 │   ┌───────────────────────────────────────────────────┐ │
-│   │ LAYER PETA — satu kartu selebar halaman, 9 chip   │ │
+│   │ LAYER PETA, satu kartu selebar halaman, 9 chip   │ │
 │   └───────────────────────────────────────────────────┘ │
 │   ┌────────┐ ┌────────┐ ┌────────┐ ┌──────────────────┐ │
 │   │LINIMASA│ │ CITRA  │ │  PETA  │ │  KONFIGURASI     │ │
 │   │  ASAP  │ │SATELIT │ │ DASAR  │ │  HOTSPOT         │ │
 │   └────────┘ └────────┘ └────────┘ └──────────────────┘ │
 ├─────────────────────────────────────────────────────────┤
-│ PETA INTERAKTIF — lebar penuh                            │
+│ PETA INTERAKTIF, lebar penuh                            │
 ├─────────────────────────────────────────────────────────┤
 │ 01 Kejadian aktif   │ 02 Analisis wilayah   (1fr / 2fr)  │
 ├─────────────────────┼───────────────────────────────────┤
 │ 03 Kueri data       │ 04 Berita             (1fr / 1fr)  │
 ├─────────────────────────────────────────────────────────┤
-│ 05 · 06 · 07 · 08 · 09 · 10 — panel lebar penuh          │
+│ 05 · 06 · 07 · 08 · 09 · 10, panel lebar penuh          │
 ├─────────────────────────────────────────────────────────┤
-│ FOOTER  MISI · 112 · FUNGSI CEPAT F1–F8 · CAKUPAN        │
+│ FOOTER  MISI · 112 · FUNGSI CEPAT F1-F8 · CAKUPAN        │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -102,7 +102,7 @@ sebelumnya: susunan apa pun yang menggulir isinya pasti menyembunyikan kendali.
 Tinggi kartu menyesuaikan isi, sehingga tidak ada satu pun kendali terpotong pada
 lebar berapa pun.
 
-Diverifikasi 320–1920 px: chip lapisan 9/9 dan kelompok konfigurasi 4/4 terlihat
+Diverifikasi 320-1920 px: chip lapisan 9/9 dan kelompok konfigurasi 4/4 terlihat
 penuh di semua lebar.
 
 ### Panel bergulir
@@ -124,7 +124,7 @@ Halaman: 9.370 px → ~4.400 px.
 | Panel | `.panel` | Kepala bernomor `.pnum` + chevron |
 | Catatan panel | `.pane-note` | Menjelaskan pemotongan atau keadaan data |
 | Keadaan kosong | `.hz-empty`, `.empty` | Membedakan "memang kosong" dari "gagal" |
-| Fungsi cepat | `.fkey` | F1–F8, benar-benar melompat ke panelnya |
+| Fungsi cepat | `.fkey` | F1-F8, benar-benar melompat ke panelnya |
 
 ### Warna per panel
 
@@ -133,13 +133,13 @@ kuning · `.panel-ask` sian · berita ungu.
 
 ## 6. Keadaan
 
-Setiap tampilan data wajib membedakan empat keadaan. Ini bukan estetika — pada
+Setiap tampilan data wajib membedakan empat keadaan. Ini bukan estetika, pada
 dasbor bencana, "tidak ada kejadian" dan "gagal memuat" berkonsekuensi sangat
 berbeda.
 
 | Keadaan | Tampilan |
 |---|---|
-| Memuat | Kerangka `.skel`, teks `—` |
+| Memuat | Kerangka `.skel`, teks `-` |
 | Berhasil | Angka dan keterangan |
 | Kosong sah | Teks eksplisit, mis. "nihil · terakhir 14 hari lalu" |
 | Gagal | Kerangka dilepas, teks `gagal`, lencana merah, pesan `#notice` |
@@ -173,14 +173,14 @@ dan peninjauan `role="application"` pada peta.
 | Titik henti | Perilaku |
 |---|---|
 | ≥1101 px | Baris kontrol dua tingkat; panel berpasangan |
-| 769–1100 px | Kartu kontrol membungkus; panel satu kolom |
+| 769-1100 px | Kartu kontrol membungkus; panel satu kolom |
 | ≤768 px | Tiap kartu kontrol satu baris penuh; peta `min-height: 60vh` |
 
 Nol geser samping pada 320, 375, 768, 1024, 1280, 1600, dan 1920 px.
 
 **Tinggi peta diuji dengan sapuan langkah 10 px**, bukan titik henti
 terpilih. Sebuah regresi pernah membuat peta runtuh ke tinggi nol pada
-rentang 721–768 px — celah antara dua angka breakpoint yang berbeda di
+rentang 721-768 px, celah antara dua angka breakpoint yang berbeda di
 berkas yang sama. Pengujian pada titik standar hampir melewatkannya
 karena rentang itu tetap lolos pemeriksaan geser samping.
 

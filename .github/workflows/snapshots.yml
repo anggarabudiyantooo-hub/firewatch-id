@@ -1,6 +1,6 @@
 name: Refresh snapshot PVMBG & regions
 
-# Fase 2.3 — perbarui cadangan PVMBG dan rapikan regions.json secara otomatis
+# Fase 2.3: perbarui cadangan PVMBG dan rapikan regions.json secara otomatis
 # Dijalankan mingguan + manual, commit kembali ke repo bila ada perubahan.
 
 on:

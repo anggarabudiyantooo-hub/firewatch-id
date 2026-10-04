@@ -3,7 +3,7 @@ name: Pantau kesehatan sumber
 # Sebelumnya tidak ada satu pun alarm: bila penjadwal luar (refresh.yml)
 # berhenti atau sebuah sumber gagal berjam-jam, stempel di layar menua tetapi
 # tak seorang pun diberi tahu. Alur kerja ini memeriksa /api/status tiap 5
-# menit dan membuka/menutup satu tiket GitHub — tanpa rahasia tambahan,
+# menit dan membuka/menutup satu tiket GitHub: tanpa rahasia tambahan,
 # memakai GITHUB_TOKEN bawaan runner.
 
 on:
@@ -35,7 +35,7 @@ jobs:
           # Endpoint harus mengembalikan JSON; halaman galat HTML berarti
           # aplikasinya sendiri yang bermasalah, bukan sumbernya.
           python3 -c "import json;json.load(open('/tmp/status.json'))" \
-            || { echo "Balasan /api/status bukan JSON — aplikasi tidak sehat"; exit 1; }
+            || { echo "Balasan /api/status bukan JSON, aplikasi tidak sehat"; exit 1; }
 
       - name: Nilai kesehatan sumber
         id: nilai
@@ -54,7 +54,7 @@ jobs:
           if [ -n "$num" ]; then
             gh issue comment "$num" --body-file /tmp/uptime_body.md
           else
-            gh issue create --title "[uptime] Sumber data gagal — $(date -u '+%d %b %H:%M UTC')" --body-file /tmp/uptime_body.md
+            gh issue create --title "[uptime] Sumber data gagal, $(date -u '+%d %b %H:%M UTC')" --body-file /tmp/uptime_body.md
           fi
 
       - name: Tutup tiket bila sudah normal

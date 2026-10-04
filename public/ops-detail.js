@@ -1,4 +1,4 @@
-/* Operations Center — detail insiden (bagian yang dipakai bersama).
+/* Operations Center, detail insiden (bagian yang dipakai bersama).
  *
  * Dipakai oleh papan operasi (/operations, di dalam kartu Incident Detail) dan
  * oleh lembar insiden (/insiden/INC-…). Satu salinan logika tindakan berarti
@@ -10,7 +10,7 @@
  *   - "Sudah dikerjakan" pada langkah runbook TIDAK disimpan sebagai centang
  *     terpisah: ia dibaca dari timeline insiden itu sendiri (catatan yang
  *     menyebut "Langkah RB-00x #n"). Karena itu centangnya tidak bisa berbeda
- *     dari riwayat — dan bila ada yang salah, riwayatnya yang salah, bukan
+ *     dari riwayat, dan bila ada yang salah, riwayatnya yang salah, bukan
  *     centangnya.
  */
 (function (global) {
@@ -50,7 +50,7 @@
       box.textContent = '';
 
       var head = el('div');
-      head.appendChild(el('h2', null, inc.incidentId + ' — ' + inc.title));
+      head.appendChild(el('h2', null, inc.incidentId + ', ' + inc.title));
       var tags = el('p');
       tags.appendChild(el('span', 'tag t-' + inc.severity, inc.severity));
       tags.appendChild(document.createTextNode(' '));
@@ -93,9 +93,9 @@
             boxDiag.textContent = '';
             if (!r.ok) { boxDiag.textContent = 'Diagnosa gagal dimuat: ' + r.error.message; return; }
             var d = r.data;
-            boxDiag.appendChild(el('p', 'who', 'Kejelasan bukti: ' + d.keyakinan.tingkat + ' — ' + d.keyakinan.alasan));
+            boxDiag.appendChild(el('p', 'who', 'Kejelasan bukti: ' + d.keyakinan.tingkat + ', ' + d.keyakinan.alasan));
             boxDiag.appendChild(el('h3', null, d.kesimpulan));
-            (d.dugaan || []).forEach(function (g) { boxDiag.appendChild(el('p', null, g.judul + ' — ' + g.sebab)); });
+            (d.dugaan || []).forEach(function (g) { boxDiag.appendChild(el('p', null, g.judul + ', ' + g.sebab)); });
             if (d.bukti) {
               var ul = el('ul', 'list');
               d.bukti.forEach(function (b) { ul.appendChild(el('li', null, b)); });
@@ -223,11 +223,11 @@
       daftar.forEach(function (r) {
         var d = el('details');
         d.open = true;
-        var s = el('summary', null, r.id + ' — ' + r.title);
+        var s = el('summary', null, r.id + ', ' + r.title);
         d.appendChild(s);
         var body = el('div', 'body');
         // WAJIB ditempelkan ke <details>: tanpa baris ini, isi langkah diisi ke
-        // simpul yang tidak pernah masuk dokumen — langkahnya tak terlihat
+        // simpul yang tidak pernah masuk dokumen, langkahnya tak terlihat
         // padahal permintaannya sukses. Ditemukan oleh work/uji_lembar.py.
         d.appendChild(body);
         boxRunbook.appendChild(d);

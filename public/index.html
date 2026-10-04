@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>SIAGA ID — Pemantauan Bencana Indonesia: Gunung Api, Gempa, Karhutla</title>
+<title>SIAGA ID, Pemantauan Bencana Indonesia: Gunung Api, Gempa, Karhutla</title>
 <meta name="description" content="Pemantauan bencana Indonesia dari sumber resmi dan terbuka: letusan gunung api dan sebaran abu dari pos pengamatan PVMBG, gempa BMKG, tsunami, pengungsi BNPB, titik api dan asap karhutla." />
 <link rel="stylesheet" href="/vendor/leaflet.css" />
 <link rel="stylesheet" href="/app.css" />
@@ -39,7 +39,7 @@
 
 <div id="layoutBar" class="layout-bar" hidden>
   <div class="layout-bar-left">
-    <span class="layout-title">✦ MODE ATUR LAYOUT — drag header untuk geser, sudut untuk resize</span>
+    <span class="layout-title">✦ MODE ATUR LAYOUT, drag header untuk geser, sudut untuk resize</span>
     <span class="layout-hint">Desktop & mobile terpisah</span>
   </div>
   <div class="layout-bar-actions">
@@ -85,22 +85,22 @@
     <!-- hidden compat -->
   </section>
 
-  <!-- Baris kontrol modern: collapsible untuk optimasi ruang — Fase 3 UX -->
+  <!-- Baris kontrol modern: collapsible untuk optimasi ruang, Fase 3 UX -->
   <section class="ctlrow" aria-label="Pengaturan peta" id="ctlRow" hidden>
       <!-- Kontrol di sini dipindahkan ke inspektur (tab Lapisan dan
            Tampilan) agar hanya ada satu salinan tiap id. Elemen ini
            tetap ada karena dirujuk PANEL_IDS di app.js. -->
     </section>
 
-  <!-- Bloomberg grid: map + side panels satu layar — Fase 3 compact -->
+  <!-- Bloomberg grid: map + side panels satu layar, Fase 3 compact -->
   <div id="main-bloomberg-grid">
   <!-- Peta melebar penuh, seperti template. Fullscreen via ⛶ FULL button. -->
   <section class="map-card" id="mapCard" aria-label="Peta interaktif Indonesia">
       <div class="map-head">
-        <span class="micro">Peta interaktif — Indonesia · EPSG:4326 · WGS84</span>
+        <span class="micro">Peta interaktif, Indonesia · EPSG:4326 · WGS84</span>
         <span class="micro" id="mapCount">14.365 titik</span>
         <span class="micro" id="legendPoints"></span>
-        <button id="mapFullscreenBtn" class="btn-fullscreen" type="button" aria-label="Peta layar penuh" aria-pressed="false" title="Layar penuh (F) — ESC untuk keluar"><span class="fs-ic" aria-hidden="true">⛶</span><span class="fs-txt">FULL</span></button>
+        <button id="mapFullscreenBtn" class="btn-fullscreen" type="button" aria-label="Peta layar penuh" aria-pressed="false" title="Layar penuh (F), ESC untuk keluar"><span class="fs-ic" aria-hidden="true">⛶</span><span class="fs-txt">FULL</span></button>
       </div>
       <svg class="map-svg" viewBox="0 0 960 546" preserveAspectRatio="none" role="img"
            aria-label="Peta Indonesia dengan sebaran titik api">
@@ -303,7 +303,7 @@
         <button class="tool" type="button" aria-label="Pusatkan ke lokasi saya"><svg width="13" height="13" viewBox="0 0 24 24" stroke="#9BA1B0" stroke-width="1.6" fill="none"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
       </div>
       <p class="micro" id="srcline"></p>
-      <div class="scale" aria-hidden="true"><div class="scale-bar"></div><div class="scale-lab">—</div></div>
+      <div class="scale" aria-hidden="true"><div class="scale-bar"></div><div class="scale-lab">-</div></div>
     
       <!-- Peta Leaflet yang sesungguhnya. Jangan diberi atribut hidden:
            app.js tidak pernah melepasnya, dan seluruh penggambaran data
@@ -365,10 +365,10 @@
         <div class="hr" aria-hidden="true"></div>
 
         <div class="micro grp">IKHTISAR</div>
-        <div class="kv"><span>Luas sebaran abu</span><b id="sVolLvl">—</b><span id="sVolLvlSub" class="kv-sub"></span></div>
-        <div class="kv"><span>Klaster titik api</span><b id="sClusters">—</b></div>
-        <div class="kv"><span>Titik api di dalam konsesi</span><b id="sConc">—</b><span id="sConcSub" class="kv-sub"></span></div>
-        <div class="kv"><span>Provinsi kekeringan</span><b id="sDrought">—</b><span id="sDroughtSub" class="kv-sub"></span></div>
+        <div class="kv"><span>Luas sebaran abu</span><b id="sVolLvl">-</b><span id="sVolLvlSub" class="kv-sub"></span></div>
+        <div class="kv"><span>Klaster titik api</span><b id="sClusters">-</b></div>
+        <div class="kv"><span>Titik api di dalam konsesi</span><b id="sConc">-</b><span id="sConcSub" class="kv-sub"></span></div>
+        <div class="kv"><span>Provinsi kekeringan</span><b id="sDrought">-</b><span id="sDroughtSub" class="kv-sub"></span></div>
       </div>
     </div>
         <div class="tabpanel" id="p-tampilan" role="tabpanel" aria-labelledby="t-tampilan" hidden>
@@ -387,7 +387,7 @@
 </div><!-- .side-stack -->
   </div><!-- #main-bloomberg-grid -->
 
-  <!-- DOK 7 TAB — cakupan penuh 11 panel asli -->
+  <!-- DOK 7 TAB, cakupan penuh 11 panel asli -->
   <section class="dock" id="dock" aria-label="Dok data">
     <div class="dock-head">
       <div class="dock-tabs" role="tablist" aria-label="Pilih panel data">
@@ -406,10 +406,10 @@
       </span>
       </div>
       <!-- Pintu ke Operations Center: di JALUR CHROME dock, DI LUAR
-           daftar tab yang bisa digeser, dan di luar role="tablist" —
+           daftar tab yang bisa digeser, dan di luar role="tablist",
            supaya tetap terlihat pada 390 px (topbar sudah 0 px sisa) dan
            tidak lagi terbaca sebagai bagian dari data panel. -->
-      <a class="dock-ops" id="opsLink" href="/operations" aria-label="Buka Operations Center — halaman terpisah">Operasi <span aria-hidden="true">&rarr;</span></a>
+      <a class="dock-ops" id="opsLink" href="/operations" aria-label="Buka Operations Center, halaman terpisah">Operasi <span aria-hidden="true">&rarr;</span></a>
     </div>
     <div class="dock-body" id="dockBody">
 
@@ -435,18 +435,18 @@
       <div class="dock-panel" id="d-kejadian" role="tabpanel" aria-labelledby="dt-kejadian" hidden>
         <div class="micro" style="padding-bottom:8px">5 kejadian dipantau · urut keparahan, lalu kebaruan</div>
         <div id="kejadianList">
-          <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-danger" style="margin-top:4px"></span><span><span class="a-name">Papua Selatan — udara berbahaya</span><span class="a-sub">AQI 322 (Berbahaya). 6 kota/kabupaten terdampak asap. Titik api terbanyak nasional: 5.149.</span></span><span class="a-ago">12 menit lalu</span></div>
+          <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-danger" style="margin-top:4px"></span><span><span class="a-name">Papua Selatan, udara berbahaya</span><span class="a-sub">AQI 322 (Berbahaya). 6 kota/kabupaten terdampak asap. Titik api terbanyak nasional: 5.149.</span></span><span class="a-ago">12 menit lalu</span></div>
           <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-alert" style="margin-top:4px"></span><span><span class="a-name">Erupsi Semeru</span><span class="a-sub">9× letusan, kolom 1.000 m di atas puncak, condong ke timur laut.</span></span><span class="a-ago">6 jam lalu</span></div>
           <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-alert" style="margin-top:4px"></span><span><span class="a-name">Erupsi Ibu</span><span class="a-sub">7× letusan, kolom 800 m di atas puncak, condong ke timur laut.</span></span><span class="a-ago">23 menit lalu</span></div>
-          <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-caution" style="margin-top:4px"></span><span><span class="a-name">Karhutla — 14.365 titik api</span><span class="a-sub">Terbanyak: Papua Selatan 5.149 · Sumatera Selatan 2.087 · Kalimantan Barat 1.390 · Kalimantan Tengah 1.243 · Jambi 1.140 · Maluku 875.</span></span><span class="a-ago">24 jam</span></div>
-          <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-caution" style="margin-top:4px"></span><span><span class="a-name">Kekeringan — 4 provinsi</span><span class="a-sub">Terkering Gorontalo, 68 hari tanpa hujan. El Niño kuat (ONI 1,8).</span></span><span class="a-ago">30 hari</span></div>
-          <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-neutral" style="margin-top:4px"></span><span><span class="a-name">Gempa M 4.1 — Calang, Aceh Jaya</span><span class="a-sub">Pusat di laut 54 km barat laut Calang. Kedalaman 5 km. Dirasakan III–IV Calang, III Aceh Besar, III Banda Aceh, II Sigli.</span></span><span class="a-ago">09:35 WIB</span></div>
+          <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-caution" style="margin-top:4px"></span><span><span class="a-name">Karhutla, 14.365 titik api</span><span class="a-sub">Terbanyak: Papua Selatan 5.149 · Sumatera Selatan 2.087 · Kalimantan Barat 1.390 · Kalimantan Tengah 1.243 · Jambi 1.140 · Maluku 875.</span></span><span class="a-ago">24 jam</span></div>
+          <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-caution" style="margin-top:4px"></span><span><span class="a-name">Kekeringan, 4 provinsi</span><span class="a-sub">Terkering Gorontalo, 68 hari tanpa hujan. El Niño kuat (ONI 1,8).</span></span><span class="a-ago">30 hari</span></div>
+          <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-neutral" style="margin-top:4px"></span><span><span class="a-name">Gempa M 4.1, Calang, Aceh Jaya</span><span class="a-sub">Pusat di laut 54 km barat laut Calang. Kedalaman 5 km. Dirasakan III-IV Calang, III Aceh Besar, III Banda Aceh, II Sigli.</span></span><span class="a-ago">09:35 WIB</span></div>
         </div>
         <!-- JS compat -->
         <section class="panel panel-events" id="eventsPanel" hidden><div id="eventsBody2" class="ev-body"></div></section>
       </div>
 
-      <!-- 02 Wilayah — 5 sub-tab -->
+      <!-- 02 Wilayah, 5 sub-tab -->
       <div class="dock-panel" id="d-wilayah" role="tabpanel" aria-labelledby="dt-wilayah" hidden>
         <div class="subtabs" role="tablist" aria-label="Analisis wilayah">
           <button role="tab" aria-selected="true" data-sub="w-terdampak" tabindex="0">Terdampak</button>
@@ -475,10 +475,10 @@
         <section class="panel" id="newsPanel" hidden></section>
       </div>
 
-      <!-- 04 Atribusi — legal warning intact -->
+      <!-- 04 Atribusi, legal warning intact -->
       <div class="dock-panel" id="d-atribusi" role="tabpanel" aria-labelledby="dt-atribusi" hidden>
         <div class="caveat" id="attrDisclaimer">
-          <b>Baca dulu sebelum menyimpulkan.</b> Batas konsesi berasal dari kompilasi Global Forest Watch atas data KLHK, ESDM, dan RSPO — <b>bukan sertifikat HGU resmi ATR/BPN</b>, yang tidak dibuka ke publik. Titik api di dalam batas konsesi <b>tidak otomatis</b> berarti perusahaan itu membakar; api dapat merambat dari luar. Gunakan sebagai indikasi awal, bukan bukti hukum.
+          <b>Baca dulu sebelum menyimpulkan.</b> Batas konsesi berasal dari kompilasi Global Forest Watch atas data KLHK, ESDM, dan RSPO, <b>bukan sertifikat HGU resmi ATR/BPN</b>, yang tidak dibuka ke publik. Titik api di dalam batas konsesi <b>tidak otomatis</b> berarti perusahaan itu membakar; api dapat merambat dari luar. Gunakan sebagai indikasi awal, bukan bukti hukum.
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px">
           <div class="subtabs" style="margin-bottom:0"><button role="tab" aria-selected="true" data-sub="a-unit" tabindex="0">Per unit lahan</button><button role="tab" aria-selected="false" data-sub="a-grup" tabindex="-1">Per grup korporasi</button></div>
@@ -494,7 +494,7 @@
       <div class="dock-panel" id="d-bahaya" role="tabpanel" aria-labelledby="dt-bahaya" hidden>
         <div class="grid3">
           <div class="card"><span class="micro">Gempa terkini</span><div id="hazardBody" class="hazard-body"><p class="empty">Memuat…</p></div><div id="casualtyBox" class="cas-box" hidden></div></div>
-          <div class="card"><span class="micro">Tsunami &amp; pengungsi</span><div class="metric" style="margin-top:6px"><div><b id="hzTsunami">—</b><span>berpotensi tsunami</span></div><div><b id="hzQuake">—</b><span>gempa tercatat</span></div><div><b id="hzStrong">—</b><span>mag ≥ 5</span></div></div><span class="s"><b class="t-nominal">Peringatan tsunami: kawasan aman.</b> Tidak ada pengungsian aktif.</span><span class="panel-sub" id="hazardMeta"></span></div>
+          <div class="card"><span class="micro">Tsunami &amp; pengungsi</span><div class="metric" style="margin-top:6px"><div><b id="hzTsunami">-</b><span>berpotensi tsunami</span></div><div><b id="hzQuake">-</b><span>gempa tercatat</span></div><div><b id="hzStrong">-</b><span>mag ≥ 5</span></div></div><span class="s"><b class="t-nominal">Peringatan tsunami: kawasan aman.</b> Tidak ada pengungsian aktif.</span><span class="panel-sub" id="hazardMeta"></span></div>
           <div class="card"><span class="micro">Gas SO₂ · model CAMS · tiap 30 menit</span><div class="so2-intro" style="font-size:11px;color:var(--text-secondary)"><p>Acuan WHO: rata-rata 24 jam sebaiknya tidak melebihi <b>40 µg/m³</b>.</p></div><div class="so2grid" id="so2Grid"></div><p class="fineprint" style="font-size:10px;color:var(--text-tertiary)">Bukan pengukuran fluks kawah langsung oleh PVMBG.</p></div>
         </div>
         <div id="hazardFoot" class="hazard-foot"></div>
@@ -507,7 +507,7 @@
         <div class="grid2">
           <div>
             <span class="micro" style="display:block;padding-bottom:6px">Status pembaruan data</span>
-            <div class="metric"><div><b id="srcHealthy">—</b><span>sumber aktif</span></div><div><b id="srcQ429">—</b><span>gagal 429 (kuota)</span></div><div><b id="srcQ5xx">—</b><span>galat 5xx</span></div><div><b id="srcRuns">—</b><span>run / gagal</span></div></div>
+            <div class="metric"><div><b id="srcHealthy">-</b><span>sumber aktif</span></div><div><b id="srcQ429">-</b><span>gagal 429 (kuota)</span></div><div><b id="srcQ5xx">-</b><span>galat 5xx</span></div><div><b id="srcRuns">-</b><span>run / gagal</span></div></div>
             <div id="statusBody" class="st-grid"></div>
             <span class="panel-sub" id="statusMeta"></span>
             
@@ -529,24 +529,24 @@
             <details><summary>Apa itu titik api (hotspot)?</summary><div class="body"><b>Apa:</b> piksel yang terdeteksi satelit sebagai anomali panas di permukaan bumi. <b>Penting:</b> hotspot <b>bukan</b> berarti pasti kebakaran hutan. <b>FRP:</b> daya radiasi api dalam megawatt.</div></details>
             <details><summary>Kenapa sebaran asap berbentuk kerucut?</summary><div class="body"><b>Cara baca:</b> ujung sempit adalah sumber api, kerucut melebar mengikuti arah angin. <b>Kenapa melebar:</b> angin tidak pernah bertiup satu arah persis.</div></details>
             <details><summary>Timeline sebaran (+6 / +12 / +18 jam)</summary><div class="body"><b>Cara pakai:</b> tombol di atas peta menggeser tampilan ke prakiraan beberapa jam ke depan. Kerudung putus-putus biru menandakan prakiraan, bukan kondisi terkini.</div></details>
-            <details><summary>Arti “daerah terdampak”</summary><div class="body">Perkiraan kota yang berada di jalur sebaran asap, dihitung dari arah angin dan intensitas api. Indeks 0–100 menandakan seberapa kuat paparan, <b>bukan angka ISPU resmi.</b></div></details>
+            <details><summary>Arti “daerah terdampak”</summary><div class="body">Perkiraan kota yang berada di jalur sebaran asap, dihitung dari arah angin dan intensitas api. Indeks 0-100 menandakan seberapa kuat paparan, <b>bukan angka ISPU resmi.</b></div></details>
             <details><summary>Angin &amp; kenapa ia menentukan segalanya</summary><div class="body">Layer <b>ketinggian angin</b> memilih level tekanan: permukaan 10 m hingga 300 hPa (~9,2 km).</div></details>
             <details><summary>Kenapa kepemilikan lahan dipetakan</summary><div class="body">Untuk atribusi awal: titik api yang jatuh di dalam batas konsesi membantu mengarahkan verifikasi, <b>bukan menetapkan kesalahan.</b></div></details>
-            <details><summary>Abu vulkanik — bahaya yang berbeda</summary><div class="body">Abu adalah partikel padat, dipantau terutama untuk <b>keselamatan penerbangan</b>; SO₂ adalah gas tak kasat mata yang bisa terbawa terpisah dari abu.</div></details>
+            <details><summary>Abu vulkanik: bahaya yang berbeda</summary><div class="body">Abu adalah partikel padat, dipantau terutama untuk <b>keselamatan penerbangan</b>; SO₂ adalah gas tak kasat mata yang bisa terbawa terpisah dari abu.</div></details>
             <div class="hr" style="margin:9px 0"></div>
             <span class="micro" style="display:block;padding-bottom:4px">Sumber data &amp; batasan</span>
-            <details><summary>Letusan gunung api — PVMBG / MAGMA</summary><div class="body">Laporan Pos Pengamatan Gunung Api, ditulis petugas yang berjaga di lapangan. Memuat waktu erupsi, tinggi kolom abu, arah condong, amplitudo dan durasi seismograf. <b>Inilah acuan yang menentukan apakah sebaran abu digambar di peta.</b> Jendela pantau 24 jam terakhir.</div></details>
-            <details><summary>Tingkat aktivitas — PVMBG &amp; Smithsonian GVP</summary><div class="body">Normal / Waspada / Siaga / Awas. Status menyatakan <b>kewaspadaan</b>, bukan bahwa gunung sedang meletus.</div></details>
-            <details><summary>Titik api — NASA FIRMS VIIRS</summary><div class="body">24 jam dari tiga satelit: Suomi-NPP, NOAA-20, NOAA-21. Hotspot adalah <b>anomali suhu permukaan</b> — tidak semuanya kebakaran hutan.</div></details>
-            <details><summary>Sebaran asap — NOAA GFS</summary><div class="body">Model kerucut dari medan angin 10 m (grid global 1°) dikombinasi daya radiasi api. <b>Bukan</b> model dispersi atmosfer maupun pengukuran kualitas udara.</div></details>
-            <details><summary>Batas konsesi — Global Forest Watch</summary><div class="body">Sawit, HTI serat kayu, konsesi tebang, tambang, dan anggota RSPO. Kompilasi dapat tidak lengkap dan tahun sumbernya beragam.</div></details>
-            <details><summary>Kota &amp; penduduk — GeoNames (CC BY 4.0)</summary><div class="body">226 permukiman Indonesia berpenduduk ≥ 50.000 jiwa di 38 provinsi.</div></details>
-            <details><summary>Kualitas udara &amp; SO₂ — CAMS via Open-Meteo</summary><div class="body">Konsentrasi permukaan pada grid model, bukan pembacaan stasiun darat.</div></details>
-            <details><summary>Gempa bumi &amp; tsunami — BMKG &amp; NOAA PTWC</summary><div class="body">Daftar gempa dari BMKG dan buletin tsunami dari NOAA PTWC. Magnitudo dan kedalaman dapat direvisi beberapa menit setelah kejadian; yang tampil adalah nilai terbaru saat data ditarik, bukan revisi akhir.</div></details>
-            <details><summary>Pengungsi — BNPB</summary><div class="body">Jumlah dan lokasi pengungsian dari layanan ArcGIS BNPB. Angka mengikuti pembaruan petugas di lapangan sehingga bisa tertinggal dari keadaan sebenarnya; sumber ini juga kerap menolak permintaan dan tidak selalu tersedia — bila begitu, panel menuliskan alasannya.</div></details>
-            <details><summary>Berita — Google Berita</summary><div class="body">Judul dan tautan dari RSS Google Berita (edisi Indonesia dan negara tetangga). Hak atas tulisan tetap milik penerbitnya; judul tidak kami ubah, dan isi berita tidak kami sajikan ulang.</div></details>
-            <details><summary>Kekeringan &amp; El Niño — NOAA CPC &amp; ERA5</summary><div class="body">Indeks Oceanic Niño Index dari NOAA Climate Prediction Center untuk fase El Niño/La Niña, dan reanalisis ERA5 (Open-Meteo Archive) untuk hitungan hari tanpa hujan.</div></details>
-            <details><summary>Citra satelit — Himawari-9 &amp; Sentinel-2</summary><div class="body">Citra awan dari Himawari-9 (JMA) dan citra optik Sentinel-2 (Copernicus). Keduanya untuk konteks visual, bukan pengukuran presisi: resolusi, tutupan awan, dan waktu perekaman berbeda dari data titik api.</div></details>
+            <details><summary>Letusan gunung api: PVMBG / MAGMA</summary><div class="body">Laporan Pos Pengamatan Gunung Api, ditulis petugas yang berjaga di lapangan. Memuat waktu erupsi, tinggi kolom abu, arah condong, amplitudo dan durasi seismograf. <b>Inilah acuan yang menentukan apakah sebaran abu digambar di peta.</b> Jendela pantau 24 jam terakhir.</div></details>
+            <details><summary>Tingkat aktivitas: PVMBG &amp; Smithsonian GVP</summary><div class="body">Normal / Waspada / Siaga / Awas. Status menyatakan <b>kewaspadaan</b>, bukan bahwa gunung sedang meletus.</div></details>
+            <details><summary>Titik api: NASA FIRMS VIIRS</summary><div class="body">24 jam dari tiga satelit: Suomi-NPP, NOAA-20, NOAA-21. Hotspot adalah <b>anomali suhu permukaan</b>: tidak semuanya kebakaran hutan.</div></details>
+            <details><summary>Sebaran asap: NOAA GFS</summary><div class="body">Model kerucut dari medan angin 10 m (grid global 1°) dikombinasi daya radiasi api. <b>Bukan</b> model dispersi atmosfer maupun pengukuran kualitas udara.</div></details>
+            <details><summary>Batas konsesi: Global Forest Watch</summary><div class="body">Sawit, HTI serat kayu, konsesi tebang, tambang, dan anggota RSPO. Kompilasi dapat tidak lengkap dan tahun sumbernya beragam.</div></details>
+            <details><summary>Kota &amp; penduduk: GeoNames (CC BY 4.0)</summary><div class="body">226 permukiman Indonesia berpenduduk ≥ 50.000 jiwa di 38 provinsi.</div></details>
+            <details><summary>Kualitas udara &amp; SO₂: CAMS via Open-Meteo</summary><div class="body">Konsentrasi permukaan pada grid model, bukan pembacaan stasiun darat.</div></details>
+            <details><summary>Gempa bumi &amp; tsunami: BMKG &amp; NOAA PTWC</summary><div class="body">Daftar gempa dari BMKG dan buletin tsunami dari NOAA PTWC. Magnitudo dan kedalaman dapat direvisi beberapa menit setelah kejadian; yang tampil adalah nilai terbaru saat data ditarik, bukan revisi akhir.</div></details>
+            <details><summary>Pengungsi: BNPB</summary><div class="body">Jumlah dan lokasi pengungsian dari layanan ArcGIS BNPB. Angka mengikuti pembaruan petugas di lapangan sehingga bisa tertinggal dari keadaan sebenarnya; sumber ini juga kerap menolak permintaan dan tidak selalu tersedia: bila begitu, panel menuliskan alasannya.</div></details>
+            <details><summary>Berita: Google Berita</summary><div class="body">Judul dan tautan dari RSS Google Berita (edisi Indonesia dan negara tetangga). Hak atas tulisan tetap milik penerbitnya; judul tidak kami ubah, dan isi berita tidak kami sajikan ulang.</div></details>
+            <details><summary>Kekeringan &amp; El Niño: NOAA CPC &amp; ERA5</summary><div class="body">Indeks Oceanic Niño Index dari NOAA Climate Prediction Center untuk fase El Niño/La Niña, dan reanalisis ERA5 (Open-Meteo Archive) untuk hitungan hari tanpa hujan.</div></details>
+            <details><summary>Citra satelit: Himawari-9 &amp; Sentinel-2</summary><div class="body">Citra awan dari Himawari-9 (JMA) dan citra optik Sentinel-2 (Copernicus). Keduanya untuk konteks visual, bukan pengukuran presisi: resolusi, tutupan awan, dan waktu perekaman berbeda dari data titik api.</div></details>
           </div>
         </div>
         <section class="panel wide" id="statusPanel" hidden></section>
@@ -585,14 +585,14 @@
         <a class="fkey" href="#statusPanel"><b>F8</b><span>STATUS</span></a>
       </nav>
       <div class="foot-lab" style="margin-top:10px">CAKUPAN</div>
-      <p class="foot-p">Seluruh Indonesia · 94,5&deg;–141,5&deg;BT / 11,5&deg;LS–6,5&deg;LU<br />EPSG:4326 · WGS84</p>
+      <p class="foot-p">Seluruh Indonesia · 94,5&deg;-141,5&deg;BT / 11,5&deg;LS-6,5&deg;LU<br />EPSG:4326 · WGS84</p>
     </div>
   </div>
   <div class="foot-btm">SIAGA.ID · TERMINAL BENCANA · DATA PUBLIK · BUKAN PENGGANTI SUMBER RESMI</div>
 </footer>
 
-<!-- AI Asisten Popup — draggable, menggantikan panel Kueri data Fase 3.6 -->
-<button id="aiFab" class="ai-fab" type="button" aria-label="Buka AI Asisten" title="AI Asisten — tanya data bencana (F7)">
+<!-- AI Asisten Popup, draggable, menggantikan panel Kueri data Fase 3.6 -->
+<button id="aiFab" class="ai-fab" type="button" aria-label="Buka AI Asisten" title="AI Asisten, tanya data bencana (F7)">
   <span class="ai-fab-ic">✦</span><span class="ai-fab-txt">AI ASISTEN</span>
 </button>
 <div id="aiPopup" class="ai-popup" hidden role="dialog" aria-label="AI Asisten SIAGA" aria-modal="false">

@@ -1,4 +1,4 @@
-# Model Data — SIAGA ID
+# Model Data: SIAGA ID
 
 Versi 2.0 · 8 September 2026
 
@@ -82,7 +82,7 @@ model dispersi atmosfer.
 
 ### IMPACTED_REGION
 REGION yang berada di jalur PLUME. `{ name, province, population, distanceKm, bearing, score, level }`.
-`score` 0–100 menggabungkan intensitas api, jarak, dan keselarasan angin. Bukan ISPU.
+`score` 0-100 menggabungkan intensitas api, jarak, dan keselarasan angin. Bukan ISPU.
 
 ### REGION
 226 permukiman ≥50.000 jiwa dari GeoNames. **Statis**, tersimpan di
@@ -94,7 +94,7 @@ REGION yang berada di jalur PLUME. `{ name, province, population, distanceKm, be
 | Medan | Keterangan |
 |---|---|
 | `name`, `lat`, `lon`, `elevation` | Identitas |
-| `official.level` | Normal / Waspada / Siaga / Awas — **kewaspadaan, bukan kejadian** |
+| `official.level` | Normal / Waspada / Siaga / Awas, **kewaspadaan, bukan kejadian** |
 | `eruption` | Laporan letusan ≤24 jam, atau `null` |
 
 **Aturan kritis:** ASH_PLUME hanya digambar bila `eruption` ada. Menggambarnya
@@ -103,7 +103,7 @@ diulang.
 
 ### ERUPTION_REPORT
 Laporan pos pengamatan dari MAGMA. `{ volcano, at, count, heightM, bearingDeg, amplitude, duration }`.
-`heightM` dan `bearingDeg` boleh `null` bila kolom abu tidak teramati — dan `null`
+`heightM` dan `bearingDeg` boleh `null` bila kolom abu tidak teramati, dan `null`
 harus ditampilkan sebagai "tidak teramati", bukan nol.
 
 ### ASH_PLUME
@@ -150,7 +150,7 @@ Hasil titik-dalam-poligon antara HOTSPOT dan CONCESSION.
 | `insideShare` | Rasio terhadap **sampel**, bukan populasi |
 | `units[]`, `groups[]` | Per unit lahan dan grup korporasi |
 
-**Peringatan bias:** memilih 220 titik ber-FRP tertinggi adalah bias sistematis —
+**Peringatan bias:** memilih 220 titik ber-FRP tertinggi adalah bias sistematis,
 api besar lebih mungkin berada di perkebunan luas. Ini wajib dinyatakan di antarmuka.
 
 ### ARTICLE
@@ -162,14 +162,14 @@ Artikel berita hasil agregasi.
 | `pubDate`, `seendate` | Waktu terbit |
 | `topic`, `topicLabel` | Satu dari 13 topik |
 | `foreign`, `country` | Penanda edisi negara tetangga |
-| `score` | 0–10 dari `lib/relevance.js` |
+| `score` | 0-10 dari `lib/relevance.js` |
 | `category` | DARURAT / DAMPAK / PENANGANAN / UMUM |
 
 Deduplikasi dua lapis: URL persis, lalu tumpang-tindih token judul (Jaccard ≥ 0,80)
 terhadap 300 judul terakhir.
 
 ### CASUALTY
-Angka korban hasil ekstraksi pola dari judul berita. **Bukan data resmi** — selalu
+Angka korban hasil ekstraksi pola dari judul berita. **Bukan data resmi**, selalu
 disertai kutipan asli dan tautan penerbit. Bila berbeda dengan angka BNPB, yang resmi
 didahulukan.
 
@@ -183,7 +183,7 @@ Tiap respons `/api/overview` membawa blok `meta` yang menyatakan batas datanya:
 {
   "meta": {
     "mode": "live",
-    "source": "NASA FIRMS VIIRS 24 jam — Suomi-NPP, NOAA-20, NOAA-21 (arsip terbuka)",
+    "source": "NASA FIRMS VIIRS 24 jam, Suomi-NPP, NOAA-20, NOAA-21 (arsip terbuka)",
     "updatedAt": "2026-09-08T05:12:00.000Z",
     "windowHours": 24,          // jendela yang dijanjikan
     "oldestAcq":   "2026-09-07T05:12:00.000Z",
@@ -220,7 +220,7 @@ tidak ada permukaan privasi di sisi klien sama sekali. Ini pertukaran yang disen
 
 Entitas di bawah ini tidak berasal dari sumber hulu; ia muncul dari pengukuran
 dan tindakan operator. Semuanya disimpan lewat `lib/ops-store.js` (bukan basis
-data — lihat bagian 6) sehingga bentuknya ditulis sebagai dokumen JSON.
+data, lihat bagian 6) sehingga bentuknya ditulis sebagai dokumen JSON.
 
 ### SERVICE_MEASUREMENT
 Satu baris per tugas penjadwal, hasil pengukuran nyata. Tidak ada angka contoh.
@@ -264,7 +264,7 @@ alert yang kondisinya hilang ditutup (`RESOLVED`), tidak dihapus.
 | `events[]` | array | `INCIDENT_EVENT` di bawah |
 
 ### INCIDENT_EVENT
-`{ at, actor, type, note }` — satu langkah riwayat. `actor` adalah nama yang
+`{ at, actor, type, note }`, satu langkah riwayat. `actor` adalah nama yang
 dikirim operator; kosong berarti tindakan tanpa nama dan ditulis begitu.
 
 ### RUNBOOK / RUNBOOK_STEP
@@ -273,14 +273,14 @@ dikirim operator; kosong berarti tindakan tanpa nama dan ditulis begitu.
 di repo ini (mis. `lib/scheduler.js`, `/api/status`).
 
 ### STORE_MODE
-`{ mode: 'upstash'|'github'|'file'|'ephemeral', persistent, note, lastError }` —
+`{ mode: 'upstash'|'github'|'file'|'ephemeral', persistent, note, lastError }`,
 dibaca dari `/api/operations/store` dan **ditampilkan di halaman**, supaya tidak
 ada yang menyangka insidennya tersimpan padahal hanya ada di memori instance.
 
 ### Metrik
 `GET /api/operations/metrics` menghitung dari insiden yang ada: `total`,
 `terbuka`, `mttrMenit`, `slaPersen`. Tanpa riwayat, nilainya `null` dengan
-catatan `"belum ada riwayat"` — bukan `0` yang bisa disalahartikan sebagai nol menit.
+catatan `"belum ada riwayat"`, bukan `0` yang bisa disalahartikan sebagai nol menit.
 
 ---
 

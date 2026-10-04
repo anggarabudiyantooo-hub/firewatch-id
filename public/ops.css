@@ -1,4 +1,4 @@
-/* Operations Center — gaya.
+/* Operations Center, gaya.
    Mengikuti bahasa visual FireWatch: gelap, mikro-label monospace, hairline,
    status berwarna. Sengaja TIDAK memakai kerangka CSS agar halaman tetap
    satu berkas dan tidak menambah permintaan jaringan. */
@@ -125,7 +125,7 @@ ol.steps li{margin-bottom:4px}
 
 /* KPI penanda "sedang mengukur" pada kunjungan pertama ke instance serverless
    yang belum mengukur apa pun (bila bukan instance lokal). Sengaja diberi kelas
-   tersendiri supaya tidak pernah tertukar dengan angka sungguhan — termasuk
+   tersendiri supaya tidak pernah tertukar dengan angka sungguhan, termasuk
    oleh pengujian otomatis. */
 .kpi.kpi-tunggu{grid-column:1/-1;display:flex;align-items:center;gap:8px}
 .kpi.kpi-tunggu span{font:600 10px/1.4 var(--font-data);color:var(--text-secondary);letter-spacing:.04em}

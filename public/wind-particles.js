@@ -161,7 +161,7 @@
    * Berapa piksel layar yang ditempuh angin 1 m/s dalam satu frame.
    * Dihitung dari skala peta nyata sehingga arus terlihat konsisten:
    * saat diperbesar, wilayah yang terlihat lebih kecil, jadi kecepatan
-   * piksel dinaikkan seperlunya saja — tidak digandakan tiap tingkat zoom.
+   * piksel dinaikkan seperlunya saja, tidak digandakan tiap tingkat zoom.
    */
   WindParticles.prototype._updateScale = function () {
     var map = this.map;

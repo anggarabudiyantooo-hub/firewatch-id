@@ -1,10 +1,10 @@
-# PRD — SIAGA ID (Terminal Bencana)
+# PRD: SIAGA ID (Terminal Bencana)
 
 | | |
 |---|---|
 | **Versi** | 2.0 |
 | **Tanggal** | 8 September 2026 |
-| **Status** | Beta publik — belum direkomendasikan sebagai rujukan darurat |
+| **Status** | Beta publik, belum direkomendasikan sebagai rujukan darurat |
 | **Produksi** | <https://firewatch-id.vercel.app> |
 
 ---
@@ -52,7 +52,7 @@ memutuskan apakah harus mengungsi, kekeliruan semacam ini berkonsekuensi nyata.
 ### Termasuk
 
 - Pemantauan lima jenis bencana: gunung api, gempa, tsunami, pengungsi, karhutla
-- Cakupan seluruh Indonesia (bbox `94,5–141,5°BT` / `11,5°LS–6,5°LU`)
+- Cakupan seluruh Indonesia (bbox `94,5-141,5°BT` / `11,5°LS-6,5°LU`)
 - Peta interaktif sembilan lapisan dengan tiga peta dasar dan citra satelit Himawari
 - Sepuluh panel analisis, termasuk kueri berbasis indeks lokal
 - Atribusi lahan terhadap konsesi sawit, HTI, tambang, dan RSPO
@@ -61,7 +61,7 @@ memutuskan apakah harus mengungsi, kekeliruan semacam ini berkonsekuensi nyata.
 
 ### Tidak termasuk
 
-- Peringatan dini resmi — itu kewenangan BMKG dan PVMBG
+- Peringatan dini resmi, itu kewenangan BMKG dan PVMBG
 - Notifikasi push atau berlangganan
 - Akun pengguna, autentikasi, dan data per-pengguna
 - Data historis jangka panjang atau analisis tren tahunan
@@ -81,35 +81,35 @@ memutuskan apakah harus mengungsi, kekeliruan semacam ini berkonsekuensi nyata.
 
 ## 6. Persyaratan fungsional
 
-### F1 — Ringkasan situasi nasional
+### F1: Ringkasan situasi nasional
 Delapan kartu metrik: gunung meletus, status Siaga dan Awas, gempa dirasakan, warga
 mengungsi, titik api, daerah terdampak asap, titik dalam konsesi, dan udara terburuk.
 Tiap kartu menampilkan angka utama dan keterangan pendukung. Sumber yang belum pernah
-berhasil dimuat menampilkan `—`, bukan `0`.
+berhasil dimuat menampilkan `-`, bukan `0`.
 
-### F2 — Peta interaktif
+### F2: Peta interaktif
 Sembilan lapisan yang dapat dinyalakan sendiri-sendiri, tiga peta dasar, lima produk
 Himawari, dan linimasa prakiraan asap. Mengeklik titik mana pun menampilkan wilayah
 administratif, status lahan, dan kualitas udara di titik tersebut.
 
-### F3 — Kejadian aktif lintas jenis
+### F3: Kejadian aktif lintas jenis
 Satu daftar berisi seluruh kejadian dari semua jenis bencana, diurutkan menurut
 tingkat keparahan, masing-masing dengan waktu relatif.
 
-### F4 — Atribusi lahan
+### F4: Atribusi lahan
 Titik api dipetakan ke batas konsesi GFW, dikelompokkan per unit lahan dan grup
 korporasi. Wajib disertai keterangan ukuran sampel dan penyangkalan kausalitas.
 
-### F5 — Berita
+### F5: Berita
 Tiga belas topik dari Google Berita RSS, disaring gerbang relevansi kebencanaan,
 diberi skor, dan dibuang duplikatnya. Tiap artikel menampilkan penerbit, usia terbit,
 dan jam WIB.
 
-### F6 — Kueri data
+### F6: Kueri data
 Pertanyaan bahasa alami dijawab dari indeks lokal yang disusun dari data dasbor
 sendiri. Tanpa layanan LLM eksternal.
 
-### F7 — Transparansi sumber
+### F7: Transparansi sumber
 Panel status menampilkan umur tiap sumber dan apakah penyegaran terakhirnya berhasil.
 Panel sumber menjelaskan asal data beserta keterbatasannya.
 
@@ -124,17 +124,17 @@ Panel sumber menjelaskan asal data beserta keterbatasannya.
 | Kegagalan terlihat | ≤ 15 detik | 12 detik |
 | Kontras teks | ≥ 4,5:1 pada ≥ 11 px | tercapai, 31 selektor nol gagal |
 | Target sentuh | ≥ 24×24 px | tercapai |
-| Geser samping | nol pada 320–1920 px | tercapai |
+| Geser samping | nol pada 320-1920 px | tercapai |
 | Error JavaScript | nol | tercapai |
 
 ## 8. Kriteria keberhasilan
 
 1. Seluruh delapan kartu terisi angka nyata dalam 15 detik pada instance hangat.
-2. Tidak ada klaim di layar yang melampaui data yang dimiliki — jendela waktu, ukuran
+2. Tidak ada klaim di layar yang melampaui data yang dimiliki, jendela waktu, ukuran
    sampel, dan pemotongan daftar selalu dinyatakan.
 3. Nol error JavaScript pada seluruh alur interaksi.
 4. Kegagalan sumber mana pun terlihat pengguna dalam 15 detik.
-5. Dapat dipakai di jaringan seluler Indonesia — **belum tercapai**, payload masih
+5. Dapat dipakai di jaringan seluler Indonesia, **belum tercapai**, payload masih
    1,5 MB.
 6. Lolos WCAG 2.1 AA untuk kontras, ukuran teks, dan target sentuh.
 

@@ -1,4 +1,4 @@
-/* Operations Center — inti bersama.
+/* Operations Center, inti bersama.
  *
  * Dipakai dua halaman (papan operasi /operations dan lembar insiden /insiden/…)
  * supaya logika tindakan dan cara menampilkan waktu hanya ada di SATU tempat.
@@ -39,7 +39,7 @@
   /**
    * Ambil yang tidak pernah melempar: hasilnya selalu {ok, data} atau
    * {ok:false, error}. Dipakai papan operasi supaya satu endpoint yang gagal
-   * tidak mengosongkan seluruh halaman — di Vercel tiap permintaan bisa mendarat
+   * tidak mengosongkan seluruh halaman, di Vercel tiap permintaan bisa mendarat
    * di instance berbeda, jadi "satu panel gagal" adalah keadaan yang wajar.
    */
   function ambilAman(url, opts) {
@@ -106,9 +106,9 @@
 
   /** Waktu ringkas menurut jam perangkat, untuk tanggal yang mudah dibaca. */
   function waktu(iso) {
-    if (!iso) return '—';
+    if (!iso) return '-';
     var d = new Date(iso);
-    if (isNaN(d.getTime())) return '—';
+    if (isNaN(d.getTime())) return '-';
     function p(n) { return n < 10 ? '0' + n : '' + n; }
     return p(d.getDate()) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][d.getMonth()] +
       ' ' + p(d.getHours()) + '.' + p(d.getMinutes());

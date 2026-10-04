@@ -1,8 +1,8 @@
-/* Lembar insiden — perilaku halaman.
+/* Lembar insiden, perilaku halaman.
  *
  * Tugasnya sedikit saja: mengambil id insiden dari alamat, memanggil renderer
  * bersama (ops-detail.js), dan menyatakan dengan jujur bila id itu tidak ada.
- * Tidak ada logika tindakan di sini — semuanya milik satu salinan bersama.
+ * Tidak ada logika tindakan di sini, semuanya milik satu salinan bersama.
  */
 (function () {
   'use strict';
@@ -34,7 +34,7 @@
     return;
   }
 
-  document.title = 'INSIDEN ' + id + ' — SIAGA.ID · Operations Center';
+  document.title = 'INSIDEN ' + id + ', SIAGA.ID · Operations Center';
 
   // Mode penyimpanan dinyatakan di sini juga: pembaca lembar tautan sering kali
   // tidak pernah melihat papan operasi, dan berhak tahu apakah ini tahan lama.
@@ -42,7 +42,7 @@
     if (!s || s.persistent) return;
     var b = C.$('banner');
     b.className = 'banner';
-    b.textContent = 'PERHATIAN — penyimpanan SEMENTARA (' + s.mode + '). ' + s.note;
+    b.textContent = 'PERHATIAN, penyimpanan SEMENTARA (' + s.mode + '). ' + s.note;
     b.hidden = false;
   }).catch(function () { /* mode penyimpanan hanya keterangan tambahan */ });
 
@@ -54,9 +54,9 @@
     if (!a.ok) return;
     var x = a.data;
     if (x.mode === 'terbuka') {
-      aksesEl.textContent = 'Akses: TERBUKA — belum ada token yang dikonfigurasi; tindakan di halaman ini tercatat, tetapi tidak dibatasi peran.';
+      aksesEl.textContent = 'Akses: TERBUKA, belum ada token yang dikonfigurasi; tindakan di halaman ini tercatat, tetapi tidak dibatasi peran.';
     } else if (!x.peranAnda) {
-      aksesEl.textContent = 'Akses: token aktif, peran Anda belum diisi — halaman ini hanya dapat dibaca. Isi token akses di papan operasi untuk menangani insiden.';
+      aksesEl.textContent = 'Akses: token aktif, peran Anda belum diisi, halaman ini hanya dapat dibaca. Isi token akses di papan operasi untuk menangani insiden.';
     } else {
       aksesEl.textContent = 'Akses: token aktif, peran Anda ' + x.peranAnda + '.';
     }

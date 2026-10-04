@@ -1,4 +1,4 @@
-# Peta Jalan Menuju Rilis Produksi — SIAGA ID
+# Peta Jalan Menuju Rilis Produksi: SIAGA ID
 
 Versi 2.0 · 8 September 2026
 
@@ -7,7 +7,7 @@ Versi 2.0 · 8 September 2026
 ## Keadaan sekarang
 
 Audit black-box menyeluruh (8 September 2026, 43 temuan) memberi skor awal
-**59/100** — *"prototipe publik yang kuat, belum layak menjadi rujukan darurat"*.
+**59/100**, *"prototipe publik yang kuat, belum layak menjadi rujukan darurat"*.
 
 Dua temuan Critical dan sebagian besar High sudah ditangani:
 
@@ -33,7 +33,7 @@ yang diperkenalkan oleh perbaikan putaran-1. Seluruhnya sudah ditangani:
 
 | Temuan | Keadaan | Bukti |
 |---|---|---|
-| BUG-044 Peta runtuh 0 px di 721–768 px | ✅ selesai | Sapuan 320–1920 px langkah 10 px: tinggi minimum 440 px, nol lebar bermasalah |
+| BUG-044 Peta runtuh 0 px di 721-768 px | ✅ selesai | Sapuan 320-1920 px langkah 10 px: tinggi minimum 440 px, nol lebar bermasalah |
 | BUG-013 wind-field 800 KB | ✅ selesai | 800.064 B → 44.600 B (−94,4%); koordinat tidak sah 166 → 0 |
 | BUG-009 Rate limiting | ✅ selesai | Header `RateLimit-*`, kelas biaya terpisah, `Retry-After` |
 | BUG-012 Validasi `step` | ✅ selesai | Himpunan diskret; `?step=abc` → 400 |
@@ -64,7 +64,7 @@ Sisa temuan Low sudah ditangani pada putaran ini:
 
 ### Pelajaran dari BUG-045
 
-Perbaikan payload putaran-2 diuji ketika data sedang sepi — 595 titik,
+Perbaikan payload putaran-2 diuji ketika data sedang sepi, 595 titik,
 sehingga batas array tidak pernah terpakai. Begitu kemarau memuncak ke
 7.172 titik, batas itu ternyata memang tidak pernah ada.
 
@@ -80,7 +80,7 @@ membuat "semua titik" terbaca 2.000 padahal satelit mendeteksi 7.172.
 Regresi ini pelajaran penting: perbaikan putaran-1 menambahkan blok
 `@media(max-width:768px)`, sementara aturan penyelamat `#map` yang sudah
 ada memakai `720px`. Dua angka breakpoint berbeda di berkas yang sama
-menciptakan jendela mati 48 px — dan pengujian responsif standar
+menciptakan jendela mati 48 px, dan pengujian responsif standar
 (320/375/768/1024) hampir melewatkannya karena hanya memeriksa
 "tidak ada geser samping", yang memang lolos.
 
@@ -89,15 +89,15 @@ henti terpilih.
 
 ---
 
-## Fase 1 — Wajib sebelum disebut siap produksi
+## Fase 1: Wajib sebelum disebut siap produksi
 
 Tiga hal berikut menghalangi aplikasi ini dipakai pada saat yang paling dibutuhkan:
 jaringan seluler yang buruk saat bencana.
 
-> **Catatan:** Butir 1.1–1.3 di bawah sudah **selesai** pada audit
+> **Catatan:** Butir 1.1-1.3 di bawah sudah **selesai** pada audit
 > putaran-2. Dipertahankan sebagai catatan keputusan dan angka ukurnya.
 
-### 1.1 Rate limiting per-IP `[keamanan · tinggi]` — ✅ SELESAI
+### 1.1 Rate limiting per-IP `[keamanan · tinggi]`: ✅ SELESAI
 
 Belum ada sama sekali. Satu aktor dapat menghabiskan kuota NASA FIRMS atau Open-Meteo
 dan membuat dasbor gelap bagi semua orang. `/api/overview` 1,5 MB dan
@@ -110,12 +110,12 @@ dan membuat dasbor gelap bagi semua orang. `/api/overview` 1,5 MB dan
 
 **Selesai bila:** header rate limit hadir; permintaan berlebih menerima 429.
 
-### 1.2 Kurangi payload `[performa · tinggi]` — ✅ SELESAI
+### 1.2 Kurangi payload `[performa · tinggi]`: ✅ SELESAI
 
 Target < 500 KB. Sekarang ~1,5 MB.
 
 - Agregasi hotspot di server pada zoom rendah (bin 0,1°)
-- Renderer `L.canvas()` menggantikan SVG — menghapus ribuan simpul DOM
+- Renderer `L.canvas()` menggantikan SVG, menghapus ribuan simpul DOM
 - Pangkas `/api/wind-field` ke rentang koordinat sah dan bbox yang relevan; 98,6%
   isinya kini di luar Indonesia, dan 166 titik berkoordinat tidak valid (`lon ±182`)
 - Verifikasi kompresi Brotli aktif untuk JSON
@@ -123,9 +123,9 @@ Target < 500 KB. Sekarang ~1,5 MB.
 **Selesai bila:** payload awal < 500 KB; re-render filter < 200 ms; klik marker tetap
 membuka popup.
 
-### 1.3 Retry dan cache hulu `[keandalan · tinggi]` — 🔸 SEBAGIAN
+### 1.3 Retry dan cache hulu `[keandalan · tinggi]`: 🔸 SEBAGIAN
 
-`/api/air-quality` membalas 502 setelah sembilan permintaan berurutan — dan
+`/api/air-quality` membalas 502 setelah sembilan permintaan berurutan, dan
 `loadAir()` terpicu pada tiap `moveend` dengan debounce hanya 450 ms, sehingga
 pengguna yang menggeser peta memicunya pada pemakaian normal.
 
@@ -139,7 +139,7 @@ pengguna yang menggeser peta memicunya pada pemakaian normal.
 
 ---
 
-## Fase 2 — Pengerasan operasional
+## Fase 2: Pengerasan operasional
 
 ### 2.1 Pindahkan nilai tetap ke konfigurasi `[pemeliharaan]`
 Prioritas dari [`HARDCODED.md`](HARDCODED.md): URL dasar hulu, interval penjadwal,
@@ -166,7 +166,7 @@ kini tiap 404 mengembalikan dokumen 27 KB.
 
 ---
 
-## Fase 3 — Kualitas dan kepercayaan
+## Fase 3: Kualitas dan kepercayaan
 
 ### 3.1 Uji pembaca layar sungguhan `[a11y]`
 NVDA + Firefox, JAWS + Chrome, VoiceOver + Safari. Sekaligus tinjau
@@ -189,11 +189,11 @@ Perbaikan kontras mudah kembali rusak tanpa penjaga otomatis.
 
 ---
 
-## Fase 4 — Peningkatan pengalaman
+## Fase 4: Peningkatan pengalaman
 
 | Butir | Catatan |
 |---|---|
-| Persistensi preferensi | `localStorage` untuk lapisan, peta dasar, filter. **Menambah permukaan privasi** — perlu pertimbangan sadar |
+| Persistensi preferensi | `localStorage` untuk lapisan, peta dasar, filter. **Menambah permukaan privasi**, perlu pertimbangan sadar |
 | Deep linking | `?lat=&lon=&zoom=&layers=` agar tampilan dapat dibagikan; penting untuk koordinasi darurat |
 | Tombol atur ulang tampilan | Default FRP ≥10 MW menyembunyikan sebagian besar titik tanpa jalan kembali yang jelas |
 | Label filter keyakinan | Ganti ambang numerik dengan kategori; VIIRS hanya punya tiga nilai sehingga angka menyiratkan ketelitian palsu |
@@ -206,11 +206,11 @@ Perbaikan kontras mudah kembali rusak tanpa penjaga otomatis.
 
 Ditulis eksplisit agar tidak berulang jadi bahan diskusi:
 
-- **Peringatan dini resmi** — kewenangan BMKG dan PVMBG, bukan aplikasi ini
-- **Akun pengguna** — tidak ada data per-pengguna, dan ketiadaannya menghapus seluruh
+- **Peringatan dini resmi**, kewenangan BMKG dan PVMBG, bukan aplikasi ini
+- **Akun pengguna**, tidak ada data per-pengguna, dan ketiadaannya menghapus seluruh
   kelas kerentanan
-- **Prediksi bencana** — di luar kemampuan data yang tersedia dan berbahaya bila keliru
-- **Kerangka frontend** — payload tambahan pada jaringan yang justru sedang buruk
+- **Prediksi bencana**, di luar kemampuan data yang tersedia dan berbahaya bila keliru
+- **Kerangka frontend**, payload tambahan pada jaringan yang justru sedang buruk
 
 ---
 
@@ -231,7 +231,7 @@ Sebelum menyebut aplikasi ini siap dipakai sebagai rujukan publik:
 - [ ] Penyangkalan "bukan sumber resmi" terlihat di setiap tampilan utama
 - [ ] Kontak pelaporan kekeliruan data tersedia
 
-**Perkiraan skor setelah Fase 1–2: ~85/100.**
+**Perkiraan skor setelah Fase 1-2: ~85/100.**
 
 ---
 
