@@ -27,6 +27,10 @@ proyek ini. Format tanggal: YYYY-MM-DD (WIB).
 - Pemutar disematkan hanya setelah tombol ditekan, memakai domain
   youtube-nocookie, dan CSP dibuka khusus domain itu. Setiap kartu punya
   tautan keluar sebagai jalur yang selalu bekerja.
+- Titik adsb.lol diambil menurut prioritas koridor (Jawa, Sumatra selatan,
+  Sulawesi lebih dulu), dan pengambilan titik dihentikan begitu penyedia
+  mengembalikan pembatasan laju dua kali, bukan mengulang tujuh titik yang
+  sama. Titik yang dilewati dilaporkan sebagai dilewati.
 - Jalur snapshot: workflow `flights-snapshot.yml` mengambil snapshot kotak
   Indonesia tiap 15 menit ke cabang `snapshot-flights`, karena dari fungsi
   produksi Vercel koneksi ke OpenSky timeout sedangkan dari runner GitHub
