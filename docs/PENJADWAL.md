@@ -130,6 +130,11 @@ diukur pada 5 Oktober 2026, bukan disimpulkan dari konfigurasi:
   diterapkan aplikasi. Bila begitu, lapisan otomatis beralih ke sumber
   langsung (`OpenSky Network`, lalu `adsb.lol`) dan menampilkan umur data apa
   adanya di keterangan lapisan.
+- Berkas snapshot disajikan lewat CDN GitHub, bukan langsung dari cabangnya.
+  Terukur pada 5 Oktober 2026: `cache-control: max-age=300` dengan `x-cache:
+  HIT`, sehingga salinan yang dibaca aplikasi bisa tertinggal sampai lima
+  menit dari isi cabang. Umur yang ditampilkan di antarmuka tetap umur data
+  di dalam berkas, jadi angka kesegarannya tidak ikut menyesatkan.
 - Menjalankan workflow secara manual selalu bisa dilakukan dari tab Actions,
   dan itu memang cara yang andal untuk menyegarkan snapshot saat diperlukan.
 - Bila kelak tersedia penjadwal luar dengan presisi menit (misalnya layanan
