@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Laporan kerentanan keamanan
+    url: https://github.com/anggarabudiyantooo-hub/firewatch-id/security/advisories/new
+    about: Jangan buka issue publik untuk masalah keamanan. Ikuti SECURITY.md.

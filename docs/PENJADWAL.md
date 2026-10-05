@@ -30,24 +30,45 @@ sebab yang jelas (9/9 → 5/9), beberapa sumber bertanda TELAMBAT, dan alarm
 ## 2. Yang **tidak** dilakukan, dan alasannya
 
 **Menjadikan alur kerja sebagai proses panjang** (`curl` lalu `sleep` berulang
-dalam satu job 6 jam) memang membuat jadwal rapi, dan itu **ditolak karena
-biaya**: repositori ini **privat**, dan menit GitHub Actions pada repo privat
-dihitung (kuota gratis 2.000 menit/bulan). Job yang berjalan 24/7 ≈ 43.200
-menit/bulan, jauh di atas kuota, artinya tagihan bulanan yang besar. Solusi yang
-membuat jadwal rapi tetapi menagih puluhan dolar sebulan bukan solusi.
+dalam satu job 6 jam) memang membuat jadwal lebih rapi, dan tetap **tidak
+dipakai**, tetapi alasannya berubah sejak repositori ini dibuka untuk publik:
+
+- Saat repo masih privat, alasannya biaya: menit Actions dihitung (kuota 2.000
+  menit/bulan) sedangkan job 24/7 sekitar 43.200 menit/bulan.
+- Sekarang repo publik sehingga menitnya tidak lagi dihitung. Alasannya jadi:
+  job tetap bisa **tertunda atau dilewati** karena jadwal GitHub masuk antrean,
+  satu sesi hanya menutup 6 jam sehingga lubangnya tetap ada, dan menjalankan
+  runner publik terus-menerus untuk keperluan yang bukan produksi perangkat
+  lunak berisiko dianggap pemakaian di luar tujuan.
+
+Yang menggantikannya bukan job panjang, melainkan tiga lapis yang saling
+menutup: percobaan GitHub Actions, **cron harian bawaan Vercel** sebagai lantai
+(selalu berjalan walau seluruh penjadwal luar mati), dan cron eksternal gratis
+bila ingin presisi menit.
 
 ## 3. Pilihan yang tersedia
 
 | Pilihan | Keandalan | Biaya | Catatan |
 |---|---|---|---|
 | **A. Cron eksternal gratis** (mis. cron-job.org) memanggil `/api/cron?key=…` | tinggi (per 5-10 menit) | Rp0 | butuh satu pendaftaran; tidak memakai menit Actions |
-| B. Vercel Cron | Hobby: sekali sehari | Rp0 | terlalu jarang untuk data 10 menitan; berguna sebagai jaring terakhir |
+| B. Vercel Cron | Hobby: sekali sehari | Rp0 | **terpasang** di `vercel.json` sebagai jaring terakhir; terlalu jarang untuk data 10 menitan |
 | C. Vercel Pro (cron per menit) | tinggi | ±$20/bln | tidak perlu bila pilihan A cukup |
 | D. Biarkan seperti sekarang | rendah | Rp0 | dashboard sudah jujur menandai TELAMBAT, tetapi angka berubah tanpa penjelasan |
 
 **Rekomendasi: A**, ditambah **D** sebagai keadaan cadangan yang jujur.
 
-## 4. Langkah memasang pilihan A (tanpa menyentuh kode)
+## 4. Jaring harian yang sudah terpasang
+
+`vercel.json` memuat `crons` yang memanggil `/api/cron` sekali sehari (19:00 UTC,
+2:00 WIB). Batas "sekali sehari" itu milik paket Hobby, bukan pilihan desain:
+Vercel menolak jadwal yang lebih rapat pada paket gratis. Fungsinya sempit dan
+jelas, yaitu memastikan ada satu penyegaran penuh setiap hari tanpa bergantung
+pada GitHub Actions, penjadwal luar, atau uluran tangan.
+
+Bila `CRON_SECRET` dipasang di Vercel, permintaan cron dari Vercel membawa
+header `Authorization: Bearer` secara otomatis dan tetap diterima `server.js`.
+
+## 5. Langkah memasang pilihan A (tanpa menyentuh kode)
 
 1. Daftar gratis di cron-job.org → **Create cronjob**.
 2. URL: `https://firewatch-id.vercel.app/api/cron?key=<CRON_SECRET>`
@@ -59,7 +80,7 @@ membuat jadwal rapi tetapi menagih puluhan dolar sebulan bukan solusi.
 4. Buat cronjob kedua untuk alarm: `https://firewatch-id.vercel.app/api/alarm`
    setiap 5 menit, dengan notifikasi saat balasan **bukan 200**.
 
-## 5. Alarm yang bisa dipakai monitor apa pun
+## 6. Alarm yang bisa dipakai monitor apa pun
 
 Sebelumnya alarm hanya ada di dalam `uptime.yml`, yang ikut telat. Sejak
 `/api/alarm` ditambahkan, monitor mana pun cukup melihat kode HTTP:
@@ -78,7 +99,7 @@ Aturan penilaiannya dipilih dengan sadar dan diuji:
   yang berbunyi setiap kali instance didaur ulang akan dilatih untuk diabaikan.
   Jumlah `UNKNOWN` tetap dilaporkan di badan balasan.
 
-## 6. Cara memeriksa sendiri kapan saja
+## 7. Cara memeriksa sendiri kapan saja
 
 ```
 curl -s https://firewatch-id.vercel.app/api/alarm     # 200 atau 503

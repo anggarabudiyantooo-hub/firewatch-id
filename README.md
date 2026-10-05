@@ -57,6 +57,10 @@ GET /api/cron
 GET /api/cron?force=1        # abaikan interval, segarkan semua
 ```
 
+Sebagai lantai, `vercel.json` juga mendaftarkan cron harian bawaan Vercel
+(`GET /api/cron`, 19:00 UTC) sehingga data tetap tersegarkan walau seluruh
+penjadwal luar berhenti.
+
 Untuk monitor luar ada **`GET /api/alarm`**: `200` bila normal, `503` bila ada
 sumber DOWN (kritis → `tingkat:"kritis"`). Penjadwalan dan mengapa jadwal GitHub
 Actions bisa tertunda berjam-jam dijelaskan di **`docs/PENJADWAL.md`**.
@@ -403,6 +407,8 @@ docs/PENJADWAL.md      mengapa jadwal GitHub bisa tertunda + /api/alarm
 scripts/verify-store.py  membuktikan penyimpanan benar-benar bertahan
 scripts/check-style.js   gerbang gaya naskah: menolak tanda pisah panjang
 .github/workflows/     penjadwal (refresh, uptime, snapshot) + gerbang uji (ci)
+.github/dependabot.yml PR pembaruan ketergantungan mingguan, dikelompokkan
+.github/               templat issue dan pull request
 scripts/test-ops.js    uji modul ops (ikut `npm run check`)
 ```
 
@@ -431,6 +437,7 @@ OpenStreetMap.
 ## Ikut mengembangkan
 
 - Aturan dan alur perubahan: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Kode etik: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 - Melaporkan kerentanan: [SECURITY.md](SECURITY.md)
 - Riwayat perubahan: [CHANGELOG.md](CHANGELOG.md)
 - Gerbang wajib: `npm run check`; CI menjalankannya di setiap push dan pull request.

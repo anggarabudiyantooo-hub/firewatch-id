@@ -49,4 +49,6 @@ dijalankan dengan peramban karena tidak dapat ikut di gerbang ini.
 ## Melaporkan masalah
 
 Sertakan: apa yang diharapkan, apa yang terjadi, langkah mengulang, dan
-tangkapan layar bila ada. Untuk masalah keamanan, ikuti `SECURITY.md`.
+tangkapan layar bila ada. Templat issue dan pull request sudah disediakan dan
+memuat pertanyaan yang sama, jadi mengisinya mempercepat penanganan. Untuk
+masalah keamanan, ikuti `SECURITY.md`; untuk perilaku, `CODE_OF_CONDUCT.md`.
