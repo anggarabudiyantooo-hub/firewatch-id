@@ -30,7 +30,7 @@
     "grib2-simple": "^1.1.1",
     "helmet": "^8.3.0",
     "leaflet": "^1.9.4",
-    "pbf": "^3.3.0"
+    "pbf": "^5.1.2"
   },
   "private": true,
   "engines": {
