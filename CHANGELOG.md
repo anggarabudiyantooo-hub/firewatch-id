@@ -19,6 +19,18 @@ proyek ini. Format tanggal: YYYY-MM-DD (WIB).
 - Uji ulang sesudah pembaruan: 53 uji bundel dan atmosfer, 180 uji modul
   operasi, serta uji antarmuka papan operasi dan tata letak.
 
+**Penjadwal dan tata kelola repo publik**
+- `vercel.json` mendaftarkan cron harian bawaan Vercel ke `/api/cron` sebagai
+  lantai: data tetap tersegarkan walau seluruh penjadwal luar berhenti.
+- Jadwal GitHub `refresh.yml` dirapatkan ke tiap 5 menit. Menit Actions kini
+  gratis karena repo publik, dan percobaan yang lebih banyak memperbesar
+  peluang jadwal benar-benar dijalankan.
+- Dependabot dikonfigurasi mingguan dan dikelompokkan, ditambah templat issue
+  dan pull request, serta `CODE_OF_CONDUCT.md`.
+- `docs/PENJADWAL.md` diperbarui: alasan menolak job panjang berubah sejak repo
+  menjadi publik (bukan lagi soal biaya menit), dan jaring harian Vercel
+  didokumentasikan.
+
 ## 2026-10-04
 
 **Operations Center (P0 sampai P2 selesai)**

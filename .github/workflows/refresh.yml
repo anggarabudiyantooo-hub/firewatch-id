@@ -9,7 +9,7 @@ on:
     # Tiap 10 menit. GitHub menjalankan cron dengan toleransi beberapa menit
     # saat antrean sedang padat; itu memadai karena tiap tugas punya
     # intervalnya sendiri dan hanya disegarkan bila sudah jatuh tempo.
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:        # memungkinkan pemicu manual dari tab Actions
 
 # Cegah dua putaran berjalan bersamaan bila satu putaran melambat.
