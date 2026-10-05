@@ -19,6 +19,22 @@ proyek ini. Format tanggal: YYYY-MM-DD (WIB).
 - Uji ulang sesudah pembaruan: 53 uji bundel dan atmosfer, 180 uji modul
   operasi, serta uji antarmuka papan operasi dan tata letak.
 
+**Panel Siaran dan lapisan lalu lintas udara**
+- Panel Siaran pada dock berisi 5 sumber terkurasi (3 resmi, 2 komunitas):
+  kamera Merapi BPPTKG, kanal BNPB, kanal MAGMA, serta dua kanal komunitas
+  pemantau gunung api. Setiap kartu menyebut pemilik, dasar pemeriksaan, dan
+  tidak ada klaim "sedang live"; status siaran diatur sumbernya.
+- Pemutar disematkan hanya setelah tombol ditekan, memakai domain
+  youtube-nocookie, dan CSP dibuka khusus domain itu. Setiap kartu punya
+  tautan keluar sebagai jalur yang selalu bekerja.
+- Lapisan peta baru: lalu lintas udara sipil dari OpenSky Network (ADS-B
+  publik), rute `GET /api/flights`. Ada karena abu vulkanik adalah bahaya
+  penerbangan. Tidak ada lapisan militer atau jet pribadi, umur data selalu
+  ditulis, dan kegagalan sumber tidak pernah berubah menjadi "tidak ada
+  pesawat". Kamera komunitas yang berpindah gunung sengaja tidak dipetakan.
+- `GET /api/kamera` mengembalikan daftar tersebut; isinya kurasi di repo,
+  bukan hasil pengambilan berkala dari YouTube.
+
 **Penjadwal dan tata kelola repo publik**
 - `vercel.json` mendaftarkan cron harian bawaan Vercel ke `/api/cron` sebagai
   lantai: data tetap tersegarkan walau seluruh penjadwal luar berhenti.
