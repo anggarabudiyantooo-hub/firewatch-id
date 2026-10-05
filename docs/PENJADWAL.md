@@ -111,3 +111,27 @@ Umur tiap sumber (`ageMs`) dibandingkan dengan intervalnya sendiri; ambangnya
 ditampilkan di halaman (`STALE > 1,5× · CRITICAL > 6×`). Bila GitHub Actions
 terlambat lagi, yang berubah hanyalah kesegaran angka, dan itu tertulis apa
 adanya, bukan disembunyikan.
+
+## 8. Penjadwal luar untuk snapshot lalu lintas udara (dan batasnya)
+
+Lapisan penerbangan sipil memakai jalur snapshot (`.github/workflows/flights-snapshot.yml`)
+karena dari fungsi produksi Vercel koneksi ke OpenSky Network timeout, sedangkan
+dari runner GitHub alamat yang sama menjawab 200.
+
+Yang perlu diketahui siapa pun yang memakai atau mengembangkan jalur ini,
+diukur pada 5 Oktober 2026, bukan disimpulkan dari konfigurasi:
+
+- Meski `cron` ditulis `*/15 * * * *`, penjadwal GitHub pada repositori ini
+  menjalankan workflow berjadwal sekitar **5 kali sehari**. Workflow
+  `refresh.yml` yang ditulis `*/5 * * * *` pun tercatat berjalan pada pukul
+  08:20, 14:12, 18:10, dan 21:29 UTC, bukan 288 kali sehari. Jadi jadwal
+  GitHub adalah penjadwal "kadang", bukan penjadwal menit.
+- Karena itu, snapshot sering lebih tua daripada batas 45 menit yang
+  diterapkan aplikasi. Bila begitu, lapisan otomatis beralih ke sumber
+  langsung (`OpenSky Network`, lalu `adsb.lol`) dan menampilkan umur data apa
+  adanya di keterangan lapisan.
+- Menjalankan workflow secara manual selalu bisa dilakukan dari tab Actions,
+  dan itu memang cara yang andal untuk menyegarkan snapshot saat diperlukan.
+- Bila kelak tersedia penjadwal luar dengan presisi menit (misalnya layanan
+  cron gratis yang memanggil workflow ini), tidak ada perubahan kode yang
+  diperlukan: cukup arahkan penjadwal itu ke `workflow_dispatch`.

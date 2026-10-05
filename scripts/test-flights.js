@@ -236,6 +236,36 @@ function fetchPalsu(opsi) {
     cek('snapshot hilang -> turun ke adsb.lol', r3.penyedia === 'adsb.lol' && r3.ok === true, String(r3.penyedia));
   }
 
+  console.log('\n[5d] Jatah penyedia habis di tengah jalan');
+  flights._setCache(null); flights._setTunggu({});
+  {
+    // Titik ke-3 dan seterusnya selalu 429. Tingkah laku yang diharapkan:
+    // titik ke-3 diulang sekali, lalu sisanya dilewati tanpa dipanggil lagi.
+    let n = 0;
+    const fHabis = async function (url) {
+      if (/opensky-network\.org/.test(url)) {
+        const e = new Error('fetch failed');
+        e.cause = { code: 'UND_ERR_CONNECT_TIMEOUT' };
+        throw e;
+      }
+      if (/raw\.githubusercontent\.com/.test(url)) throw new Error('HTTP 404');
+      n++;
+      if (n >= 3) throw new Error('HTTP 429');
+      return balasanStub({ ac: [Object.assign({}, PESAWAT_LOL, { hex: 'h' + n })] });
+    };
+    const r = await flights.ambilPenerbangan({ fetchImpl: fHabis, sekarang: t0, jedaTitikMs: 0, jedaUlangMs: 0 });
+    cek('hasil sebagian tetap ada', r.ok === true && r.jumlah === 2, r.jumlah + ' pesawat');
+    cek('titik ke-3 dipanggil dua kali (satu percobaan ulang), sisanya tidak',
+      n === 4, n + ' panggilan untuk ' + flights.TITIK_ADSB_LOL.length + ' titik');
+    cek('titik yang dilewati dilaporkan sebagai dilewati',
+      (r.cakupan.gagal || []).filter(g => /dilewati/.test(g.galat)).length === flights.TITIK_ADSB_LOL.length - 2,
+      JSON.stringify((r.cakupan.gagal || []).map(g => g.lat + ',' + g.lon)));
+    cek('koridor padat diambil lebih dulu',
+      flights.TITIK_ADSB_LOL[0].lon > 105 && flights.TITIK_ADSB_LOL[0].lon < 110
+      && flights.TITIK_ADSB_LOL[1].lon > 110 && flights.TITIK_ADSB_LOL[1].lon < 115,
+      JSON.stringify(flights.TITIK_ADSB_LOL.slice(0, 2)));
+  }
+
   console.log('\n[6] Kegagalan sebagian titik dilaporkan dengan lokasi');
   flights._setCache(null); flights._setTunggu({});
   {
