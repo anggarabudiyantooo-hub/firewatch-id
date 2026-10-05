@@ -121,7 +121,39 @@ function fetchPalsu(opsi) {
   cek('penyedia yang gagal dilewati pada permintaan berikutnya',
     f2.catatan.opensky === 1 && b2.ok === true, 'opensky dipanggil ' + f2.catatan.opensky + ' kali');
 
-  console.log('\n[6] Kegagalan sumber tidak menjadi "tidak ada pesawat"');
+  console.log('\n[6] Kegagalan sebagian titik dilaporkan dengan lokasi');
+  flights._setCache(null); flights._setTunggu({});
+  {
+    let n = 0;
+    const fTitik = async function (url) {
+      // OpenSky gagal lebih dulu, supaya yang diuji benar-benar jalur
+      // penyedia kedua dan penghitungan titik tidak tercampur.
+      if (/opensky-network\.org/.test(url)) {
+        const e = new Error('fetch failed');
+        e.cause = { code: 'UND_ERR_CONNECT_TIMEOUT' };
+        throw e;
+      }
+      n++;
+      if (n === 3 || n === 5) {
+        const e = new Error('fetch failed');
+        e.cause = { code: 'UND_ERR_CONNECT_TIMEOUT' };
+        throw e;
+      }
+      return balasanStub({ ac: [Object.assign({}, PESAWAT_LOL, { hex: 'hex' + n })] });
+    };
+    const parsial = await flights.ambilPenerbangan({ fetchImpl: fTitik, sekarang: t0 });
+    cek('sebagian titik gagal -> hasil tetap ada', parsial.ok === true && parsial.jumlah === 5, parsial.jumlah + ' pesawat');
+    cek('jumlah titik yang berhasil disebut', parsial.cakupan.titik === 5, String(parsial.cakupan.titik));
+    cek('titik gagal dicatat dengan koordinat',
+      Array.isArray(parsial.cakupan.gagal) && parsial.cakupan.gagal.length === 2
+      && typeof parsial.cakupan.gagal[0].lat === 'number' && typeof parsial.cakupan.gagal[0].lon === 'number',
+      JSON.stringify((parsial.cakupan.gagal || []).map(g => g.lat + ',' + g.lon)));
+    const gagal0 = (parsial.cakupan && parsial.cakupan.gagal && parsial.cakupan.gagal[0]) || {};
+    cek('sebab kegagalan ikut dicatat', /UND_ERR_CONNECT_TIMEOUT/.test(gagal0.galat || ''), String(gagal0.galat || ''));
+    cek('keterangan menyebut koordinat titik gagal', /titik gagal: /.test(parsial.cakupan.keterangan), parsial.cakupan.keterangan);
+  }
+
+  console.log('\n[7] Kegagalan sumber tidak menjadi "tidak ada pesawat"');
   flights._setCache(null); flights._setTunggu({});
   const f3 = fetchPalsu({ openskyGagal: true, adsbLolGagal: true });
   const c1 = await flights.ambilPenerbangan({ fetchImpl: f3, sekarang: t0 });
@@ -130,7 +162,7 @@ function fetchPalsu(opsi) {
   cek('daftar kosong, bukan dikarang', c1.items.length === 0 && c1.jumlah === 0);
   cek('belum ada salinan -> bukan basi', c1.basi === false);
 
-  console.log('\n[7] Salinan lama wajib berlabel basi');
+  console.log('\n[8] Salinan lama wajib berlabel basi');
   flights._setCache(null); flights._setTunggu({});
   const f4 = fetchPalsu();
   await flights.ambilPenerbangan({ fetchImpl: f4, sekarang: t0 });
@@ -141,7 +173,7 @@ function fetchPalsu(opsi) {
   cek('ditandai basi', basi.basi === true);
   cek('umur salinan apa adanya', basi.umurMs === flights.CACHE_MS + 60000, String(basi.umurMs));
 
-  console.log('\n[8] Kotak wilayah dan jatah permintaan');
+  console.log('\n[9] Kotak wilayah dan jatah permintaan');
   const k = flights.KOTAK;
   cek('mencakup ujung barat sampai timur', k.lomin <= 95.3 && k.lomax >= 141.0, k.lomin + '..' + k.lomax);
   cek('mencakup ujung utara sampai selatan', k.lamax >= 5.9 && k.lamin <= -10.9, k.lamin + '..' + k.lamax);
@@ -150,7 +182,7 @@ function fetchPalsu(opsi) {
     && flights.TITIK_ADSB_LOL.some(p => p.lon > 130) && flights.TITIK_ADSB_LOL.some(p => p.lon < 105),
     flights.TITIK_ADSB_LOL.length + ' titik');
 
-  console.log('\n[9] Sambungan antarmuka dan rute');
+  console.log('\n[10] Sambungan antarmuka dan rute');
   const html = fs.readFileSync(path.join(__dirname, '..', 'public/index.html'), 'utf8');
   const js = fs.readFileSync(path.join(__dirname, '..', 'public/app.js'), 'utf8');
   const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
