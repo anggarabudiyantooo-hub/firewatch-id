@@ -97,6 +97,7 @@ const { fetchDrought } = require('./lib/drought');
 const { summarize: summarizeCasualties } = require('./lib/casualty');
 const { Scheduler } = require('./lib/scheduler');
 const { answer: ragAnswer } = require('./lib/rag');
+const kamera = require('./lib/kamera');
 
 // batas kotak provinsi (kasar) untuk peringkat provinsi
 const PROVINCE_BOXES = [
@@ -150,6 +151,11 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:', 'blob:', 'https://server.arcgisonline.com', 'https://*.tile.openstreetmap.org'],
+      // Panel Siaran menyematkan pemutar YouTube. Domain nocookie dipakai
+      // supaya tidak ada cookie pelacak sebelum pemutaran, dan hanya domain
+      // itu yang diizinkan: tanpa batas ini, halaman mana pun bisa dibingkai
+      // ke dalam dasbor bencana dan menutupinya dengan informasi palsu.
+      frameSrc: ['https://www.youtube-nocookie.com'],
       connectSrc: ["'self'"],
       fontSrc: ["'self'", 'data:'],
       objectSrc: ["'none'"]
@@ -2013,10 +2019,31 @@ app.get('/api/casualties', async (_req, res) => {
   }
 });
 
-/** Status tiap sumber data, dipakai panel "Status data" di antarmuka. */
+/**
+ * Status tiap sumber data, dipakai panel "Status data" di antarmuka.
+ */
 app.get('/api/status', (_req, res) => {
   res.set('Cache-Control', 'no-store');
   res.json(scheduler.status());
+});
+
+/**
+ * Kamera & siaran publik (panel "Siaran").
+ *
+ * Daftarnya hasil kurasi manusia dan disimpan di repo, bukan hasil
+ * pengambilan berkala dari YouTube. Alasannya ada di lib/kamera.js: halaman
+ * kanal bukan data terbuka, dan status siaran bukan milik kami untuk
+ * diklaim. Cache panjang karena isi daftar hanya berubah saat kode berubah.
+ */
+app.get('/api/kamera', (_req, res) => {
+  res.set('Cache-Control', 'public, max-age=600');
+  res.json({
+    ok: true,
+    sumber: 'kurasi kanal resmi dan komunitas, diperiksa berkala',
+    catatan: 'Status siaran diatur sumbernya dan sengaja tidak diukur di sini.',
+    ringkas: kamera.ringkas(),
+    item: kamera.daftar()
+  });
 });
 
 /* ---------- gempa, tsunami & pengungsi ---------- */

@@ -4474,11 +4474,111 @@
     tickerView.addEventListener('mouseleave', function () { ticker.paused = false; });
   }
 
+
+  /* ---------- panel Siaran: kamera & siaran publik ---------- */
+  /**
+   * Daftar ini bukan hasil pengambilan berkala dari YouTube, melainkan
+   * kurasi yang disimpan di repo (data/kamera.js). Konsekuensinya di layar:
+   * yang ditampilkan adalah identitas kanal, tautan, dan dasar pemeriksaannya,
+   * bukan klaim "sedang live", sebab status siaran tidak kami ukur.
+   *
+   * Pemutar disematkan hanya setelah pengguna menekan tombol, jadi membuka
+   * panel tidak otomatis menghubungi pihak ketiga, dan bila kanal sedang
+   * tidak menyiarkan, YouTube sendiri yang menampilkan pesannya.
+   */
+  function muatSiaran() {
+    var box = $('daftarSiaran');
+    if (!box) return;
+    fetchT('/api/kamera', { headers: { Accept: 'application/json' } })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (d) { renderSiaran(d); })
+      .catch(function (e) {
+        box.textContent = '';
+        box.appendChild(el('p', 'empty', 'Daftar siaran tidak dapat dimuat ('
+          + ((e && e.message) || 'galat') + '). Kanalnya tetap ada di YouTube; '
+          + 'aplikasi ini tidak menyimpan salinan siaran.'));
+        var m = $('siaranMeta');
+        if (m) m.textContent = 'gagal dimuat';
+      });
+  }
+
+  function renderSiaran(d) {
+    var box = $('daftarSiaran');
+    if (!box) return;
+    box.textContent = '';
+    var items = (d && d.item) || [];
+    var meta = $('siaranMeta');
+    if (meta) {
+      var r = (d && d.ringkas) || {};
+      meta.textContent = items.length
+        ? items.length + ' sumber (' + (r.resmi || 0) + ' resmi, ' + (r.komunitas || 0)
+          + ' komunitas), kurasi manual, diperiksa '
+          + (r.diperiksa ? fmtTanggal(new Date(r.diperiksa + 'T00:00:00Z')) : 'tidak dicatat')
+          + ' · status siaran milik sumber, bukan diukur di sini'
+        : 'belum ada sumber terdaftar';
+    }
+    if (!items.length) {
+      box.appendChild(el('p', 'empty', 'Belum ada sumber siaran yang terdaftar.'));
+      return;
+    }
+    items.forEach(function (k) { box.appendChild(kartuSiaran(k)); });
+  }
+
+  function kartuSiaran(k) {
+    var card = el('div', 'siaran-card');
+    var head = el('div', 'siaran-card-head');
+    head.appendChild(el('b', null, k.nama));
+    head.appendChild(el('span', 'siaran-badge ' + (k.sifat === 'resmi' ? 'resmi' : 'komunitas'),
+      k.sifat === 'resmi' ? 'RESMI' : 'KOMUNITAS'));
+    card.appendChild(head);
+    card.appendChild(el('div', 'siaran-owner', k.pemilik + ' · ' + k.wilayah));
+    card.appendChild(el('div', 'siaran-note-body', k.catatan));
+
+    var aksi = el('div', 'siaran-aksi');
+    if (k.kanal) {
+      var tombol = el('button', 'btn btn-ghost', 'TAMPILKAN SIARAN');
+      tombol.type = 'button';
+      tombol.addEventListener('click', function () { sematSiaran(k, card, tombol); });
+      aksi.appendChild(tombol);
+    }
+    var tautan = el('a', 'btn btn-ghost', 'BUKA DI YOUTUBE');
+    tautan.href = k.tautan;
+    tautan.target = '_blank';
+    tautan.rel = 'noopener noreferrer';
+    aksi.appendChild(tautan);
+    card.appendChild(aksi);
+    card.appendChild(el('div', 'siaran-bukti', 'Dasar pemeriksaan: ' + k.bukti));
+    return card;
+  }
+
+  function sematSiaran(k, card, tombol) {
+    // Sekali semat per kartu: menekan berulang dulu akan menumpuk bingkai
+    // dan menyalakan beberapa pemutar sekaligus di dalam satu panel.
+    if (card.querySelector('iframe')) return;
+    var wrap = el('div', 'siaran-frame');
+    var f = document.createElement('iframe');
+    f.src = 'https://www.youtube-nocookie.com/embed/live_stream?channel=' + encodeURIComponent(k.kanal);
+    f.title = 'Siaran ' + k.kanalNama;
+    f.loading = 'lazy';
+    f.setAttribute('allow', 'encrypted-media; picture-in-picture');
+    f.setAttribute('allowfullscreen', '');
+    wrap.appendChild(f);
+    card.appendChild(wrap);
+    card.appendChild(el('div', 'siaran-frame-note',
+      'Bila kotak di atas kosong atau berbunyi tidak ada siaran, berarti kanal '
+      + 'sedang tidak menyiarkan. Status siaran diatur YouTube, bukan diukur aplikasi ini.'));
+    if (tombol) { tombol.disabled = true; tombol.textContent = 'SIARAN DISEMATKAN'; }
+  }
+
   /* ---------- mulai ---------- */
   tickClock();
   var clockIv = setInterval(tickClock, 1000);
   updateLegend();
   loadOverview();
+  muatSiaran();
   // loadWind() tidak dipanggil di sini: lapisan angin mulai mati, dan
   // pengambilannya akan berjalan sendiri begitu pengguna menyalakannya.
   loadNews();

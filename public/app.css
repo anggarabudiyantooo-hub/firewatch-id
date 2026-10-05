@@ -1000,7 +1000,7 @@ a[href]{color:var(--text-primary)}
 }
 .mark svg,.mark-tag svg{display:block}
 
-/* ── dock, 7 tabs covering 11 panels ── */
+/* ── dock, 8 tabs covering 12 panels ── */
 .dock{flex:0 0 auto;background:var(--chrome);border:1px solid var(--hairline);
   border-radius:var(--radius-card);display:flex;flex-direction:column;overflow:hidden;margin-top:var(--card-gap)}
 /* Jalur chrome dock: daftar tab yang bisa digeser + pintu Operations Center
@@ -1391,3 +1391,29 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
 .src-safe a{color:var(--text-primary);text-decoration:underline;text-underline-offset:2px}
 .src-safe a:hover{color:var(--status-alert)}
 .src-safe a:focus-visible{outline:2px solid var(--status-alert);outline-offset:2px;border-radius:3px}
+
+/* Panel Siaran: kamera & siaran publik pihak ketiga.
+   Tata letak dibuat hemat tempat karena dock hanya setinggi 180 px dan bisa
+   digulir. Pemutar video tidak dimuat sebelum pengguna menekan tombol, jadi
+   membuka panel tidak menghubungi pihak ketiga lebih dulu. Lencana sifat
+   memakai kata, bukan hanya warna, supaya tetap terbedakan tanpa penglihatan
+   warna: kanal resmi dan kanal komunitas punya konsekuensi berbeda. */
+.siaran-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding-bottom:8px}
+.siaran-note{font:400 10px/1.5 var(--font-prose);color:var(--text-tertiary)}
+.siaran-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(265px,1fr));gap:8px}
+.siaran-card{border:1px solid var(--hairline);border-radius:var(--radius-field);background:var(--surface-1);padding:9px 10px;min-width:0}
+.siaran-card-head{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.siaran-card-head b{font:600 11px/1.35 var(--font-prose);color:var(--text-primary)}
+.siaran-badge{flex:0 0 auto;font:600 var(--fs-micro)/1 var(--font-data);letter-spacing:.08em;
+  padding:2px 6px;border-radius:9px;border:1px solid var(--hairline)}
+.siaran-badge.resmi{color:var(--status-nominal);border-color:rgba(48,209,88,.35)}
+.siaran-badge.komunitas{color:var(--status-alert);border-color:rgba(255,159,10,.35)}
+.siaran-owner{font:400 10px/1.5 var(--font-prose);color:var(--text-secondary);margin-top:3px}
+.siaran-note-body{font:400 10.5px/1.55 var(--font-prose);color:var(--text-secondary);margin-top:4px}
+.siaran-aksi{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.siaran-aksi .btn[disabled]{opacity:.55;cursor:default}
+.siaran-bukti{font:400 9.5px/1.5 var(--font-data);color:var(--text-tertiary);margin-top:7px}
+.siaran-frame{margin-top:8px;aspect-ratio:16/9;border:1px solid var(--hairline);
+  border-radius:var(--radius-chip);overflow:hidden;background:#000}
+.siaran-frame iframe{width:100%;height:100%;border:0;display:block}
+.siaran-frame-note{font:400 9.5px/1.5 var(--font-prose);color:var(--text-tertiary);margin-top:5px}

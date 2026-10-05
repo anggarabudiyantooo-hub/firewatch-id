@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════
-   Lapisan antarmuka v3: dock 7 tab, inspektur 3 tab, sub-tab, peta SVG.
+   Lapisan antarmuka v3: dock 8 tab, inspektur 3 tab, sub-tab, peta SVG.
 
    Diekstrak dari <script> inline di index.html. Server mengirim
    Content-Security-Policy: script-src 'self', sehingga skrip inline
@@ -11,7 +11,7 @@
 
 /* ── blok asli 1 dari index.html ── */
 (function () {
-// Audit v3, dock 7 tabs + inspector 3 tabs + sub-tabs
+// Audit v3, dock 8 tabs + inspector 3 tabs + sub-tabs
 (function(){
   // inspector seg
   const itabs=[...document.querySelectorAll('.seg [role="tab"]')];
