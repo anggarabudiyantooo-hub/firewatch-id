@@ -221,6 +221,7 @@ function fetchPalsu(opsi) {
     cek('adsb.lol tidak perlu dipanggil', fS.catatan.adsblol === 0, fS.catatan.adsblol + ' panggilan');
     cek('umur yang dilaporkan umur snapshot, bukan umur unduhan', r.umurMs === 60000, String(r.umurMs));
     cek('cakupan kotak penuh', r.cakupan.mode === 'kotak', r.cakupan.keterangan);
+    cek('sumber asli snapshot ikut dibawa', r.sumberAsal === 'OpenSky Network', String(r.sumberAsal));
   }
   {
     flights._setCache(null); flights._setTunggu({});
@@ -331,6 +332,7 @@ function fetchPalsu(opsi) {
   cek('skrip snapshot menolak hasil kosong',
     /!hasil\.items\.length/.test(skrip) && (skrip.match(/process\.exit\(1\)/g) || []).length >= 2);
   cek('aplikasi membaca snapshot dari URL tetap', flights.SNAPSHOT_URL.includes('snapshot-flights/snapshot/flights.json'));
+  cek('sumber asli snapshot disebut di antarmuka', js.includes('d.sumberAsal'));
 
   console.log('\n' + '='.repeat(46));
   console.log('  ' + lulus + ' lulus, ' + gagal + ' gagal');
