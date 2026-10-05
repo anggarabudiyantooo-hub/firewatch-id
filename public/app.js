@@ -4695,6 +4695,14 @@
     _lyFlights.addEventListener('change', function (e) {
       state.flightsOn = e.target.checked;
       if (state.flightsOn) {
+        // Tanda memuat dipasang lebih dulu. Sebelum ini layar diam sampai
+        // data tiba, dan jeda itu nyata: terukur 6,2 detik di produksi
+        // karena percobaan ke sumber langsung menghabiskan batas waktunya.
+        // Diam selama itu terbaca sebagai fitur rusak.
+        var m = $('fltMeta');
+        if (m && !state.flights) {
+          m.textContent = 'memuat lalu lintas udara sipil...';
+        }
         map.addLayer(gFlights);
         loadFlights();
       } else {
