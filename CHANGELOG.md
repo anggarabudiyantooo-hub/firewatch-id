@@ -3,6 +3,22 @@
 Catatan perubahan yang berarti bagi pengguna atau bagi siapa pun yang memasang
 proyek ini. Format tanggal: YYYY-MM-DD (WIB).
 
+## 2026-10-05
+
+**Repositori siap publik**
+- Lisensi MIT, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, dan gerbang CI
+  yang menjalankan `npm run check` pada setiap push dan pull request.
+- Riwayat git dirapikan: 150 menjadi 132 commit, tanpa berkas catatan proses
+  internal, dan tanpa tanda pisah panjang pada naskah maupun pesan commit.
+- Pemindaian rahasia, perlindungan push, peringatan Dependabot, dan pelaporan
+  kerentanan privat aktif pada repositori.
+
+**Ketergantungan diperbarui untuk menutup peringatan keamanan**
+- `express` 4.22.3, `body-parser` 1.20.8, `qs` 6.16.0, `moment` 2.31.0, dan
+  `playwright` 1.55.1 (khusus pengembangan). `npm audit` bersih.
+- Uji ulang sesudah pembaruan: 53 uji bundel dan atmosfer, 180 uji modul
+  operasi, serta uji antarmuka papan operasi dan tata letak.
+
 ## 2026-10-04
 
 **Operations Center (P0 sampai P2 selesai)**
