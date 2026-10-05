@@ -37,7 +37,7 @@
     "node": ">=20 <23"
   },
   "devDependencies": {
-    "playwright": "^1.55.1"
+    "playwright": "^1.63.0"
   },
   "repository": {
     "type": "git",
