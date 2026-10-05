@@ -100,26 +100,59 @@ function fetchPalsu(opsi) {
   flights._setCache(null); flights._setTunggu({});
   const f1 = fetchPalsu();
   const t0 = 1_000_000_000_000;
-  const a1 = await flights.ambilPenerbangan({ fetchImpl: f1, sekarang: t0 });
+  const a1 = await flights.ambilPenerbangan({ fetchImpl: f1, sekarang: t0, jedaTitikMs: 0, jedaUlangMs: 0 });
   const a2 = await flights.ambilPenerbangan({ fetchImpl: f1, sekarang: t0 + 60000 });
   cek('penyedia pertama dipakai', a1.penyedia === 'OpenSky Network', String(a1.penyedia));
   cek('panggilan kedua memakai cache', f1.catatan.opensky === 1 && a2.dariCache === true, f1.catatan.opensky + ' panggilan');
   cek('umur data dilaporkan', a2.umurMs === 60000, String(a2.umurMs));
-  const a3 = await flights.ambilPenerbangan({ fetchImpl: f1, sekarang: t0 + flights.CACHE_MS + 1 });
+  const a3 = await flights.ambilPenerbangan({ fetchImpl: f1, sekarang: t0 + flights.CACHE_MS + 1, jedaTitikMs: 0, jedaUlangMs: 0 });
   cek('lewat masa cache -> ambil lagi', f1.catatan.opensky === 2 && a3.dariCache === false);
 
   console.log('\n[5] Penyedia pertama gagal -> beralih, lalu dilewati sementara');
   flights._setCache(null); flights._setTunggu({});
   const f2 = fetchPalsu({ openskyGagal: true });
-  const b1 = await flights.ambilPenerbangan({ fetchImpl: f2, sekarang: t0 });
+  const b1 = await flights.ambilPenerbangan({ fetchImpl: f2, sekarang: t0, jedaTitikMs: 0, jedaUlangMs: 0 });
   cek('hasil tetap ada walau OpenSky gagal', b1.ok === true && b1.jumlah > 0);
   cek('penyedia kedua dipakai', b1.penyedia === 'adsb.lol', String(b1.penyedia));
   cek('seluruh titik adsb.lol dipanggil', f2.catatan.adsblol === flights.TITIK_ADSB_LOL.length,
     f2.catatan.adsblol + ' titik');
   cek('cakupan dinyatakan bukan seluruh wilayah', /bukan seluruh wilayah/.test(b1.cakupan.keterangan), b1.cakupan.keterangan);
-  const b2 = await flights.ambilPenerbangan({ fetchImpl: f2, sekarang: t0 + flights.CACHE_MS + 1000, paksa: true });
+  const b2 = await flights.ambilPenerbangan({
+    fetchImpl: f2, sekarang: t0 + flights.CACHE_MS + 1000, paksa: true,
+    jedaTitikMs: 0, jedaUlangMs: 0
+  });
   cek('penyedia yang gagal dilewati pada permintaan berikutnya',
     f2.catatan.opensky === 1 && b2.ok === true, 'opensky dipanggil ' + f2.catatan.opensky + ' kali');
+
+  console.log('\n[5b] Pembatasan penyedia (429) dijawab dengan percobaan ulang');
+  flights._setCache(null); flights._setTunggu({});
+  {
+    let n = 0;
+    const sekali429 = {};
+    const f429 = async function (url) {
+      if (/opensky-network\.org/.test(url)) {
+        const e = new Error('fetch failed');
+        e.cause = { code: 'UND_ERR_CONNECT_TIMEOUT' };
+        throw e;
+      }
+      n++;
+      if (n === 3 && !sekali429[n]) {
+        sekali429[n] = true;
+        const e = new Error('HTTP 429');
+        throw e;
+      }
+      return balasanStub({ ac: [Object.assign({}, PESAWAT_LOL, { hex: 'hex' + n })] });
+    };
+    const hasil429 = await flights.ambilPenerbangan({
+      fetchImpl: f429, sekarang: t0, jedaTitikMs: 0, jedaUlangMs: 0
+    });
+    cek('429 diulang sekali lalu berhasil', hasil429.ok === true && hasil429.cakupan.titik === 7,
+      hasil429.cakupan && hasil429.cakupan.keterangan);
+    cek('tidak ada titik yang dilaporkan gagal', (hasil429.cakupan.gagal || []).length === 0);
+    cek('titik dipanggil lebih dari jumlah titik (ada percobaan ulang)', n === 8, n + ' panggilan');
+    cek('jeda antar titik disetel > 1 detik di produksi', flights.JEDA_TITIK_MS >= 1000,
+      flights.JEDA_TITIK_MS + ' ms');
+  }
 
   console.log('\n[6] Kegagalan sebagian titik dilaporkan dengan lokasi');
   flights._setCache(null); flights._setTunggu({});
@@ -141,7 +174,9 @@ function fetchPalsu(opsi) {
       }
       return balasanStub({ ac: [Object.assign({}, PESAWAT_LOL, { hex: 'hex' + n })] });
     };
-    const parsial = await flights.ambilPenerbangan({ fetchImpl: fTitik, sekarang: t0 });
+    const parsial = await flights.ambilPenerbangan({
+      fetchImpl: fTitik, sekarang: t0, jedaTitikMs: 0, jedaUlangMs: 0
+    });
     cek('sebagian titik gagal -> hasil tetap ada', parsial.ok === true && parsial.jumlah === 5, parsial.jumlah + ' pesawat');
     cek('jumlah titik yang berhasil disebut', parsial.cakupan.titik === 5, String(parsial.cakupan.titik));
     cek('titik gagal dicatat dengan koordinat',
@@ -156,7 +191,7 @@ function fetchPalsu(opsi) {
   console.log('\n[7] Kegagalan sumber tidak menjadi "tidak ada pesawat"');
   flights._setCache(null); flights._setTunggu({});
   const f3 = fetchPalsu({ openskyGagal: true, adsbLolGagal: true });
-  const c1 = await flights.ambilPenerbangan({ fetchImpl: f3, sekarang: t0 });
+  const c1 = await flights.ambilPenerbangan({ fetchImpl: f3, sekarang: t0, jedaTitikMs: 0, jedaUlangMs: 0 });
   cek('ok=false saat semua penyedia gagal', c1.ok === false);
   cek('alasan kedua penyedia disertakan', /OpenSky/.test(c1.galat || '') && /adsb\.lol/.test(c1.galat || ''));
   cek('daftar kosong, bukan dikarang', c1.items.length === 0 && c1.jumlah === 0);
@@ -165,9 +200,12 @@ function fetchPalsu(opsi) {
   console.log('\n[8] Salinan lama wajib berlabel basi');
   flights._setCache(null); flights._setTunggu({});
   const f4 = fetchPalsu();
-  await flights.ambilPenerbangan({ fetchImpl: f4, sekarang: t0 });
+  await flights.ambilPenerbangan({ fetchImpl: f4, sekarang: t0, jedaTitikMs: 0, jedaUlangMs: 0 });
   const f5 = fetchPalsu({ openskyGagal: true, adsbLolGagal: true });
-  const basi = await flights.ambilPenerbangan({ fetchImpl: f5, sekarang: t0 + flights.CACHE_MS + 60000, paksa: true });
+  const basi = await flights.ambilPenerbangan({
+    fetchImpl: f5, sekarang: t0 + flights.CACHE_MS + 60000, paksa: true,
+    jedaTitikMs: 0, jedaUlangMs: 0
+  });
   cek('ok=false saat gagal walau ada salinan', basi.ok === false);
   cek('salinan lama tetap dikirim', basi.items.length === 1);
   cek('ditandai basi', basi.basi === true);
