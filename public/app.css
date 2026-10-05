@@ -1269,7 +1269,7 @@ details .body b{color:var(--text-primary);font-weight:600}
    mengesampingkan tinggi dari penulis, jadi tinggi ditetapkan ulang. */
 #mapCard:fullscreen{width:100vw;height:100vh;border-radius:0;border:none}
 #mapCard:-webkit-full-screen{width:100vw;height:100vh;border-radius:0;border:none}
-/* Pemulihan tombol ⛶ FULL (1d52b8e). Refactor paritas menghapus markup dan
+/* Pemulihan tombol ⛶ FULL. Refactor paritas menghapus markup dan
    gaya fallback-nya tetapi meninggalkan JS dan gaya tombolnya, itulah sebabnya
    tombol "sebelumnya ada, sekarang hilang": tanpa elemen, JS bail-out diam-diam.
    Kepala peta adalah overlay pointer-events:none, jadi tombolnya menyalakan
@@ -1303,7 +1303,7 @@ body.has-fullscreen-map{overflow:hidden}
 /* === AI ASISTEN + NOTICE, dipulihkan ===
    Riwayat regresi: gaya .ai-fab/.ai-popup/.ask-* dihapus refactor "Compact
    Bloombeq refined v2.0.0" (Fase 4.1), lalu sisa markahnya disembunyikan
-   serentak (9f5fe24) demi paritas tangkapan audit, popupnya ikut mati.
+   serentak demi paritas tangkapan audit, popupnya ikut mati.
    Kontrol yang sudah ada tidak boleh hilang tanpa pengganti, jadi gayanya
    dipulihkan di sini sementara footer/layout-bar/hairline tetap seperti
    pada tangkapan auditan. Semua ukuran teks >=10 px dan warna memakai

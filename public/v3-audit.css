@@ -7,7 +7,6 @@
    dideklarasikan repo sengaja tidak disalin, supaya tidak ada regresi pada
    bagian yang sudah berjalan.
 
-   Cara menghasilkannya kembali: python3 work/port_audit.py
    ══════════════════════════════════════════════════════════════════════ */
 
 .prose{font-family:var(--font-prose)}

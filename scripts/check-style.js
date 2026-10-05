@@ -32,6 +32,10 @@ const NAMA_TANPA_EKSTENSI = new Set(['LICENSE', 'Procfile', 'Dockerfile']);
 const TANDA_PISAH_PANJANG = String.fromCharCode(0x2014);
 const TANDA_PISAH_SEDANG = String.fromCharCode(0x2013);
 
+// Jalur absolut mesin pengembang tidak boleh bocor ke berkas yang dibaca publik:
+// rujukan seperti ini menunjuk berkas yang tidak ada di repo.
+const JALUR_TERLARANG = '/home/user';
+
 function berkasDiperiksa(nama) {
   if (NAMA_TANPA_EKSTENSI.has(nama)) return true;
   if (nama.startsWith('.env')) return true;
@@ -79,6 +83,12 @@ for (const jalur of berkas) {
       posisi = teks.indexOf(tanda, posisi + 1);
     }
   }
+  // Berkas ini sendiri memuat polanya sebagai konstanta, jadi dikecualikan.
+  let posisiJalur = relatif === 'scripts/check-style.js' ? -1 : teks.indexOf(JALUR_TERLARANG);
+  while (posisiJalur !== -1) {
+    temuan.push(`${relatif}:${nomorBaris(teks, posisiJalur)}: jalur absolut di luar repo (${JALUR_TERLARANG})`);
+    posisiJalur = teks.indexOf(JALUR_TERLARANG, posisiJalur + 1);
+  }
 }
 
 for (const nama of TERLARANG) {
@@ -91,6 +101,7 @@ console.log(`Gaya naskah: ${diperiksa} berkas diperiksa, ${temuan.length} temuan
 if (temuan.length) {
   for (const t of temuan.slice(0, 40)) console.log(`  ${t}`);
   if (temuan.length > 40) console.log(`  ... dan ${temuan.length - 40} lagi`);
-  console.log('Pakai tanda hubung biasa, titik dua, atau tanda kurung sebagai gantinya.');
+  console.log('Tanda pisah panjang: pakai tanda hubung biasa, titik dua, atau tanda kurung.');
+  console.log('Jalur absolut: tulis jalur relatif terhadap akar repo.');
   process.exit(1);
 }

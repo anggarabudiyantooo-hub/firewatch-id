@@ -1,6 +1,6 @@
 # Audit Teknis: FireWatch / SIAGA.ID → Operations Center
 
-Tanggal audit: 4 Oktober 2026 · Cakupan: repo produksi `firewatch-id` (tip `2fd37e8`)
+Tanggal audit: 4 Oktober 2026 · Cakupan: repo produksi `firewatch-id` pada keadaan tip saat audit
 Sifat dokumen: **pembacaan kode + pengukuran langsung**, bukan asumsi. Fase ini **tidak mengubah kode**.
 
 ---
@@ -38,7 +38,7 @@ Sifat dokumen: **pembacaan kode + pengukuran langsung**, bukan asumsi. Fase ini 
 | AI Asisten (RAG lokal, `/api/ask`) | `lib/rag.js`, `server.js:1785+` |
 | Pemantau uptime → tiket GitHub otomatis | `scripts/uptime_check.py`, `.github/workflows/uptime.yml` |
 | Uji: `npm run check` = `check-bundle.js` (simulasi serverless) + `test-atmos.js` (harness `cek()`) | `scripts/` |
-| Uji end-to-end Playwright (di luar repo) | `/home/user/work/uji_*.py`, 8 skrip, 100+ asersi |
+| Uji end-to-end antarmuka (Playwright) | 8 skrip, 100+ asersi; sengaja tidak disertakan di repo karena menuntut peramban |
 
 **Kesimpulan bagian ini:** fondasi monitoring **sudah ada** (status per tugas, log terstruktur, errorNote, uptime→tiket). Yang belum ada: **insiden, alert engine, runbook, halaman operasi, penyimpanan, dan RBAC**.
 
@@ -89,7 +89,7 @@ public/*, satu halaman; stempel waktu dari server; panel Sumber membaca /api/sta
 
 **Baru (backend):** `lib/service-health.js` · `lib/freshness.js` · `lib/alert-engine.js` · `lib/incidents.js` · `lib/runbooks.js` · `lib/ops-store.js` (adaptor penyimpanan) · `lib/ops-log.js`
 **Baru (frontend):** `public/operations.html` · `public/ops.js` · `public/ops.css`
-**Baru (uji & skrip):** `scripts/test-ops.js` (di `npm run check`) · `scripts/ops-smoke.js` · tambahan asersi di `/home/user/work/uji_*.py`
+**Baru (uji & skrip):** `scripts/test-ops.js` (di `npm run check`) · `scripts/ops-smoke.js` · tambahan asersi di uji antarmuka terpisah
 **Disentuh minimal (additif):** `server.js` (rute baru + `sendOps`), `lib/scheduler.js` (`status()` menambah `responseTimeMs` terakhir & `lastAttemptAt`), `.github/workflows/uptime.yml` (memicu evaluasi alert), `README.md`, `docs/ARCHITECTURE.md`, `docs/ERD.md` (memetakan entitas baru), `.env.example` (kunci ops baru, tanpa nilai).
 
 **Tidak disentuh:** seluruh logika sumber hulu, `public/app.js` kecuali satu tautan masuk ke `/operations` (dan itu pun di area bebas dok auditan), CSP selain penambahan `connect-src 'self'` yang sudah ada, desain dasar.
@@ -116,7 +116,7 @@ nol ≠ "belum ada riwayat"), dan panel infrastruktur berlabel SIMULATED
 (`lib/infra-sim.js`, tanpa perangkat/vendor/protokol fiktif). **Fase P2 (arsip,
 rencana awal):** mode diagnosa AI (memisahkan **fakta terukur / dugaan / rekomendasi**, memakai `/api/ask` yang sudah ada), RBAC sederhana berbasis token peran, analitik riwayat, panel infrastruktur, **semua yang tidak nyata diberi label SIMULATED atau tidak dibuat sama sekali**.
 
-**Urutan verifikasi tiap fase:** `npm run check` (termasuk `test-ops.js` baru) → uji Playwright baru untuk halaman → uji regresi 8 skrip `/home/user/work/` → tangkapan bukti → commit + deploy + uji terhadap produksi.
+**Urutan verifikasi tiap fase:** `npm run check` (termasuk `test-ops.js` baru) → uji Playwright baru untuk halaman → uji regresi 8 skrip antarmuka → tangkapan bukti → commit + deploy + uji terhadap produksi.
 
 ---
 

@@ -63,9 +63,9 @@ Repo yang dipakai saat ini: `anggarabudiyantooo-hub/firewatch-id` (**privat**).
 
 4. **Redeploy** (Deployments → … → Redeploy). Variabel lingkungan baru hanya
    terbaca oleh fungsi setelah deploy ulang.
-5. Verifikasi: `python3 work/verifikasi_penyimpanan.py`, mode harus berubah
+5. Verifikasi: `python3 scripts/verify-store.py`, mode harus berubah
    menjadi `github`. Untuk membuktikan datanya benar-benar bertahan:
-   `python3 work/verifikasi_penyimpanan.py --tulis` (membuat satu insiden uji,
+   `python3 scripts/verify-store.py --tulis` (membuat satu insiden uji,
    membacanya ulang, lalu menutupnya; insidennya tidak dihapus).
 6. Issue keadaan: dibuat otomatis saat penulisan pertama, berjudul
    `[ops] Keadaan operasional SIAGA.ID`, berlabel `ops-state`. Pada pemasangan
@@ -130,8 +130,8 @@ Pemasangan mode `github` diverifikasi ulang sesudah tokennya diperbaiki:
 
 - `GET /api/operations/store?uji=1` → `ok: true, langkah: "baca penuh", issue: 1`
   ("Keadaan terbaca utuh").
-- `python3 work/verifikasi_penyimpanan.py` → **3/3 LULUS** (baca-saja).
-- `python3 work/verifikasi_penyimpanan.py --tulis` → **8/8 LULUS**: insiden
+- `python3 scripts/verify-store.py` → **3/3 LULUS** (baca-saja).
+- `python3 scripts/verify-store.py --tulis` → **8/8 LULUS**: insiden
   `INC-2026-00001` dibuat (201), terbaca pada **dua permintaan berbeda**
   (bukti penyimpanan bersama, bukan memori satu instance), lalu diselesaikan
   dan ditutup; 3 tindakan tercatat di log audit.

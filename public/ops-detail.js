@@ -228,7 +228,7 @@
         var body = el('div', 'body');
         // WAJIB ditempelkan ke <details>: tanpa baris ini, isi langkah diisi ke
         // simpul yang tidak pernah masuk dokumen, langkahnya tak terlihat
-        // padahal permintaannya sukses. Ditemukan oleh work/uji_lembar.py.
+        // padahal permintaannya sukses. Ditemukan lewat uji antarmuka.
         d.appendChild(body);
         boxRunbook.appendChild(d);
 

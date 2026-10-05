@@ -1,7 +1,7 @@
 # Fitur Fullscreen Peta
 
 **Tanggal:** 2026-09-30  
-**Commit:** e0313b1  
+**Status:** tergabung di main  
 **Request:** "apakah bisa peta dapat dikeluarkan sehingga bisa full layar jika dibutuhkan?"
 
 ## Solusi
@@ -96,4 +96,4 @@ npm run check # lolos 53 test
 
 ## Screenshot / Demo
 
-Fitur sudah push ke main (e0313b1), bisa di-test di https://firewatch-id.vercel.app setelah deploy Vercel selesai (auto-deploy dari main).
+Fitur sudah tergabung di main dan dapat diuji di https://firewatch-id.vercel.app setelah proses deploy Vercel selesai.
