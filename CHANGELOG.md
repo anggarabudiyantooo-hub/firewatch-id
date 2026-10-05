@@ -5,6 +5,17 @@ proyek ini. Format tanggal: YYYY-MM-DD (WIB).
 
 ## 2026-10-05
 
+**Kamera web komunitas Windy disiapkan (belum aktif tanpa kunci)**
+- Modul baru `lib/webcams.js` + rute `GET /api/webcams` dan
+  `GET /api/webcams/foto`. Windy tidak menyediakan daftar kamera tanpa kunci
+  (terukur: `403 Missing Header x-windy-api-key`), jadi tanpa env
+  `WINDY_WEBCAMS_KEY` modul ini tidak menghubungi jaringan sama sekali dan
+  menyatakan keadaannya di layar, lengkap dengan sebab dan cara
+  mengaktifkannya. Begitu kunci dipasang, daftarnya terisi tanpa perubahan
+  kode.
+- 51 asersi uji baru (`scripts/test-webcams.js`), termasuk janji bahwa kunci
+  tidak pernah sampai ke peramban dan alamat gambar tetap di server.
+
 **Repositori siap publik**
 - Lisensi MIT, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, dan gerbang CI
   yang menjalankan `npm run check` pada setiap push dan pull request.

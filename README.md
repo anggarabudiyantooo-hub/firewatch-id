@@ -123,6 +123,7 @@ hanya diminta mulai zoom 8, sehingga pemakaian kuota tetap rendah.
 | **Open-Meteo Archive** | Curah hujan harian per provinsi (ERA5) | tidak |
 | **OpenSky Network / adsb.lol** | Lalu lintas udara sipil (ADS-B publik) sebagai konteks bahaya abu vulkanik | tidak |
 | **YouTube (kanal resmi & komunitas)** | Panel Siaran: kamera gunung api dan kanal informasi, disematkan hanya setelah diminta | tidak |
+| **Windy (kamera web komunitas)** | Panel Siaran: kamera jalan, pelabuhan, dan pantai dari pengunggah Windy | ya, gratis non-komersial |
 
 ---
 
@@ -138,6 +139,21 @@ kekeringan sebelum daun menguning, genangan air (MNDWI) yang tidak salah
 menandai atap logam sebagai air, dan **radar Sentinel-1** yang menembus awan,
  satu-satunya cara memotret banjir saat kejadian, karena banjir justru
 terjadi ketika langit tertutup mendung.
+
+**Kamera web komunitas Windy.** Kamera ini menutup jalan, pelabuhan, dan pantai
+di kota-kota yang tidak punya kamera resmi. Windy tidak menyediakan daftar
+kamera tanpa kunci: permintaan tanpa kunci dijawab `403 Missing Header
+x-windy-api-key`, dan halaman windy.com bisa menampilkannya karena aplikasi
+Windy memakai kunci Windy sendiri, yang bukan milik kita. Karena itu bagian ini
+menyatakan dirinya **belum aktif** di layar sampai kunci kita sendiri dipasang,
+alih-alih menampilkan kotak kosong yang terbaca sebagai "tidak ada kamera".
+
+Cara mengaktifkannya: ambil kunci gratis non-komersial di api.windy.com, lalu
+pasang sebagai env `WINDY_WEBCAMS_KEY` (Vercel: Settings, Environment
+Variables) dan deploy ulang. Tidak ada perubahan kode yang diperlukan. Kuncinya
+hanya dipakai di server; thumbnail dialirkan lewat `/api/webcams/foto`
+sehingga daftar CSP tetap hanya `'self'`. Setiap kartu menyebut Windy.com dan
+waktu fotonya, sesuai syarat atribusi sumber itu.
 
 **Lalu lintas udara sipil** dari jaringan ADS-B publik ditampilkan sebagai lapisan peta: abu vulkanik adalah bahaya penerbangan, jadi posisi pesawat membuat penutupan ruang udara bisa dibaca pada konteksnya. Lapisan ini hanya memuat lalu lintas yang terpancar ke jaringan ADS-B publik dan menyebut umur datanya; tidak ada lapisan militer maupun jet pribadi.
 

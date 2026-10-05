@@ -87,6 +87,7 @@ const SETTLEMENTS = (() => {
 const { attributeHotspots } = require('./lib/concession');
 const { fetchWindField, sampleAt, gridPoints } = require('./lib/wind-gfs');
 const { openHotspots, toIsoUtc, WINDOW_HOURS: FIRMS_WINDOW_HOURS } = require('./lib/firms-open');
+const webcams = require('./lib/webcams');
 const { volcanicAsh } = require('./lib/volcano');
 const { fetchStatus: fetchPvmbgStatus } = require('./lib/pvmbg');
 const { fetchEruptions } = require('./lib/eruption');
@@ -2072,6 +2073,44 @@ app.get('/api/kamera', (_req, res) => {
     ringkas: kamera.ringkas(),
     item: kamera.daftar()
   });
+});
+
+/* ---------- kamera web komunitas (Windy) ---------- */
+// Sumber ini butuh kunci API milik kita sendiri. Tanpa kunci, balasannya
+// tetap 200 tetapi menyatakan dirinya belum aktif beserta sebabnya, supaya
+// antarmuka tidak perlu menebak dan tidak ada daftar kosong yang menyamar
+// sebagai "tidak ada kamera".
+app.get('/api/webcams', async (_req, res) => {
+  try {
+    const d = await webcams.ambilWebcam({});
+    res.set('Cache-Control', 'public, max-age=600');
+    res.json(d);
+  } catch (err) {
+    res.status(502).json({
+      ok: false,
+      aktif: webcams.keadaan().aktif,
+      sumber: webcams.SUMBER,
+      item: [],
+      galat: (err && err.message) || 'sumber tidak dapat dihubungi'
+    });
+  }
+});
+
+// Thumbnail dialirkan lewat server supaya daftar CSP tetap hanya 'self' dan
+// alamat CDN sumber tidak perlu dibuka di peramban.
+app.get('/api/webcams/foto', async (req, res) => {
+  try {
+    const d = await webcams.ambilFoto(String(req.query.id || ''));
+    if (!d.ok) {
+      res.status(404).json({ ok: false, galat: d.galat });
+      return;
+    }
+    res.set('Content-Type', d.tipe || 'image/jpeg');
+    res.set('Cache-Control', 'public, max-age=300');
+    res.send(d.isi);
+  } catch (err) {
+    res.status(502).json({ ok: false, galat: (err && err.message) || 'gambar tidak dapat diambil' });
+  }
 });
 
 /* ---------- gempa, tsunami & pengungsi ---------- */

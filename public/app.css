@@ -1413,6 +1413,11 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
 .siaran-aksi{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .siaran-aksi .btn[disabled]{opacity:.55;cursor:default}
 .siaran-bukti{font:400 9.5px/1.5 var(--font-data);color:var(--text-tertiary);margin-top:7px}
+.siaran-thumb{margin-top:8px;aspect-ratio:16/9;border:1px solid var(--hairline);
+  border-radius:var(--radius-chip);overflow:hidden;background:var(--surface-0);
+  display:flex;align-items:center;justify-content:center;
+  font:400 10px/1.4 var(--font-data);color:var(--text-tertiary)}
+.siaran-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .siaran-frame{margin-top:8px;aspect-ratio:16/9;border:1px solid var(--hairline);
   border-radius:var(--radius-chip);overflow:hidden;background:#000}
 .siaran-frame iframe{width:100%;height:100%;border:0;display:block}

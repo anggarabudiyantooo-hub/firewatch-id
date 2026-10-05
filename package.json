@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "check": "node scripts/check-style.js && node scripts/check-bundle.js && node scripts/test-atmos.js && node scripts/test-ops.js && node scripts/test-kamera.js && node scripts/test-flights.js",
+    "check": "node scripts/check-style.js && node scripts/check-bundle.js && node scripts/test-atmos.js && node scripts/test-ops.js && node scripts/test-kamera.js && node scripts/test-flights.js && node scripts/test-webcams.js",
     "test": "node scripts/test-atmos.js",
     "refresh:snapshots": "node scripts/refresh-snapshots.js",
     "refresh:pvmbg": "node scripts/refresh-snapshots.js --only-pvmbg",
