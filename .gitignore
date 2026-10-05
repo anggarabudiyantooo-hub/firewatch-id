@@ -24,3 +24,7 @@ npm-debug.log*
 
 # data operasional lokal (insiden/alert saat dikembangkan)
 .data/
+
+# snapshot lalu lintas udara: ditulis penjadwal luar ke cabang snapshot-flights,
+# tidak pernah ikut cabang utama
+snapshot/

@@ -27,6 +27,10 @@ proyek ini. Format tanggal: YYYY-MM-DD (WIB).
 - Pemutar disematkan hanya setelah tombol ditekan, memakai domain
   youtube-nocookie, dan CSP dibuka khusus domain itu. Setiap kartu punya
   tautan keluar sebagai jalur yang selalu bekerja.
+- Jalur snapshot: workflow `flights-snapshot.yml` mengambil snapshot kotak
+  Indonesia tiap 15 menit ke cabang `snapshot-flights`, karena dari fungsi
+  produksi Vercel koneksi ke OpenSky timeout sedangkan dari runner GitHub
+  berhasil. Snapshot lebih tua dari 45 menit ditolak.
 - Lapisan peta baru: lalu lintas udara sipil dari jaringan ADS-B publik,
   rute `GET /api/flights`. Dua penyedia dipakai berurutan: OpenSky Network
   (satu permintaan untuk seluruh kotak Indonesia) dan adsb.lol (tujuh titik
