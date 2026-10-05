@@ -4531,6 +4531,117 @@
     items.forEach(function (k) { box.appendChild(kartuSiaran(k)); });
   }
 
+  /* ---------- kamera web komunitas (Windy) ----------
+     Sumber ini butuh kunci API milik kita. Bila kunci belum ada, yang
+     ditampilkan adalah keadaan sebenarnya beserta sebabnya; daftar kosong
+     tanpa keterangan akan terbaca sebagai "tidak ada kamera di Indonesia",
+     dan itu tidak benar. */
+  var PETA_WINDY = 'https://www.windy.com/id/-Kamera-web/webcams';
+
+  function muatWindy() {
+    var box = $('daftarWindy');
+    if (!box) return;
+    fetchT('/api/webcams', { headers: { Accept: 'application/json' } })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (d) { renderWindy(d); })
+      .catch(function (e) {
+        var m = $('windyMeta');
+        if (m) m.textContent = 'gagal dimuat';
+        box.textContent = '';
+        box.appendChild(el('p', 'empty', 'Keadaan sumber kamera Windy tidak dapat diperiksa ('
+          + ((e && e.message) || 'galat') + '). Daftar kamera Windy tetap ada di situsnya.'));
+      });
+  }
+
+  function renderWindy(d) {
+    var box = $('daftarWindy');
+    if (!box) return;
+    box.textContent = '';
+    var meta = $('windyMeta');
+    var item = (d && d.item) || [];
+
+    if (!d || d.aktif === false) {
+      if (meta) meta.textContent = 'belum aktif';
+      var p = el('p', 'empty',
+        'Belum aktif: kunci API Windy belum dipasang pada lingkungan ini, jadi daftar kamera tidak diambil. '
+        + 'Windy tidak menyediakan daftar kamera tanpa kunci (permintaan tanpa kunci dijawab 403), '
+        + 'sehingga halaman ini menyatakan keadaannya apa adanya alih-alih menampilkan kotak kosong.');
+      box.appendChild(p);
+      var baris = el('div', 'siaran-aksi');
+      var a = el('a', 'btn btn-ghost', 'BUKA PETA KAMERA DI WINDY');
+      a.href = PETA_WINDY;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      baris.appendChild(a);
+      box.appendChild(baris);
+      return;
+    }
+
+    if (!d.ok) {
+      if (meta) meta.textContent = 'sumber sedang gagal';
+      box.appendChild(el('p', 'empty', 'Sumber kamera Windy sedang gagal ('
+        + ((d.galat) || 'sebab tidak diketahui') + '). Tidak ada kamera yang ditampilkan, '
+        + 'bukan berarti tidak ada kamera di sana.'));
+      return;
+    }
+
+    if (meta) {
+      var bagian = [item.length + ' kamera komunitas'];
+      bagian.push('sumber Windy.com');
+      bagian.push('diperbarui ' + umurTeks(d.umurMs));
+      if (d.basi) bagian.push('salinan lama, sumber sedang gagal');
+      bagian.push('waktu foto milik sumber, bukan siaran langsung yang diukur di sini');
+      meta.textContent = bagian.join(' · ');
+    }
+    if (!item.length) {
+      box.appendChild(el('p', 'empty', 'Windy menjawab, tetapi tidak ada kamera komunitas untuk Indonesia.'));
+      return;
+    }
+    item.forEach(function (c) { box.appendChild(kartuWindy(c)); });
+  }
+
+  function kartuWindy(c) {
+    var card = el('div', 'siaran-card');
+    var head = el('div', 'siaran-card-head');
+    head.appendChild(el('b', null, c.judul));
+    head.appendChild(el('span', 'siaran-badge komunitas', 'KOMUNITAS'));
+    card.appendChild(head);
+    card.appendChild(el('div', 'siaran-owner',
+      [c.kota, c.wilayah, c.negara].filter(Boolean).join(', ') || 'lokasi tidak dicatat sumber'));
+
+    if (c.adaFoto) {
+      var bingkai = el('div', 'siaran-thumb');
+      var img = document.createElement('img');
+      img.loading = 'lazy';
+      img.alt = 'Pratinjau kamera ' + c.judul;
+      // Gambar dialirkan lewat server; daftar CSP tidak perlu dibuka ke CDN
+      // pihak ketiga hanya untuk pratinjau.
+      img.src = '/api/webcams/foto?id=' + encodeURIComponent(c.id);
+      img.addEventListener('error', function () {
+        bingkai.textContent = 'pratinjau tidak dapat dimuat';
+        bingkai.classList.add('gagal');
+      });
+      bingkai.appendChild(img);
+      card.appendChild(bingkai);
+    }
+
+    card.appendChild(el('div', 'siaran-bukti', c.waktuFoto
+      ? 'Foto terakhir menurut sumber: ' + fmtJamWib(Date.parse(c.waktuFoto)) + ' · Windy.com'
+      : 'Waktu foto tidak dicatat sumber · Windy.com'));
+
+    var aksi = el('div', 'siaran-aksi');
+    var a = el('a', 'btn btn-ghost', 'BUKA DI WINDY');
+    a.href = c.tautan;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    aksi.appendChild(a);
+    card.appendChild(aksi);
+    return card;
+  }
+
   function kartuSiaran(k) {
     var card = el('div', 'siaran-card');
     var head = el('div', 'siaran-card-head');
@@ -4718,6 +4829,7 @@
   updateLegend();
   loadOverview();
   muatSiaran();
+  muatWindy();
   // loadWind() tidak dipanggil di sini: lapisan angin mulai mati, dan
   // pengambilannya akan berjalan sendiri begitu pengguna menyalakannya.
   loadNews();

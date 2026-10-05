@@ -550,6 +550,7 @@
             <details><summary>Berita: Google Berita</summary><div class="body">Judul dan tautan dari RSS Google Berita (edisi Indonesia dan negara tetangga). Hak atas tulisan tetap milik penerbitnya; judul tidak kami ubah, dan isi berita tidak kami sajikan ulang.</div></details>
             <details><summary>Kekeringan &amp; El Niño: NOAA CPC &amp; ERA5</summary><div class="body">Indeks Oceanic Niño Index dari NOAA Climate Prediction Center untuk fase El Niño/La Niña, dan reanalisis ERA5 (Open-Meteo Archive) untuk hitungan hari tanpa hujan.</div></details>
             <details><summary>Citra satelit: Himawari-9 &amp; Sentinel-2</summary><div class="body">Citra awan dari Himawari-9 (JMA) dan citra optik Sentinel-2 (Copernicus). Keduanya untuk konteks visual, bukan pengukuran presisi: resolusi, tutupan awan, dan waktu perekaman berbeda dari data titik api.</div></details>
+            <details><summary>Kamera web komunitas: Windy</summary><div class="body">Kamera yang diunggah pengguna Windy: jalan, pelabuhan, dan pantai di kota-kota yang tidak punya kamera resmi. Windy <b>tidak mengizinkan</b> daftar kamera diambil tanpa kunci: permintaan tanpa kunci dijawab <b>403</b> dengan pesan "Missing Header x-windy-api-key", dan halaman windy.com bisa menampilkannya karena aplikasi Windy memakai kunci Windy sendiri, bukan kunci yang boleh kita pinjam. Karena itu bagian ini <b>belum aktif</b> selama kunci milik kita belum dipasang, dan sebabnya ditulis di layar, bukan dibiarkan kosong. Setelah env <code>WINDY_WEBCAMS_KEY</code> dipasang, daftarnya terisi sendiri. Pemakaian gratis Windy dibatasi untuk non-komersial dan mewajibkan atribusi, jadi setiap kartu menyebut Windy.com dan waktu fotonya ditampilkan apa adanya; sumber ini tidak menyatakan siaran langsung.</div></details>
             <details><summary>Lalu lintas udara: OpenSky Network &amp; adsb.lol (ADS-B)</summary><div class="body">Posisi pesawat sipil dari jaringan penerima ADS-B sukarela. <b>Bukan</b> radar resmi dan <b>tidak lengkap</b>: di banyak wilayah Indonesia penerima tidak rapat, jadi pesawat bisa sama sekali tidak terlihat. Tidak ada lapisan militer maupun jet pribadi; yang tampil hanya lalu lintas yang memang terpancar ke jaringan publik. Ada dua jalur pengambilan, dan penyedia yang sedang dipakai selalu tertulis di keterangan lapisan. Bila sumber langsung tidak dapat dijangkau dari produksi, aplikasi memakai snapshot yang diambil penjadwal luar tiap 15 menit; snapshot yang lebih tua dari 45 menit ditolak karena langit sudah berubah. Umur data selalu ditulis, dan bila seluruh jalur gagal, itu dikatakan apa adanya.</div></details>
           </div>
         </div>
@@ -569,6 +570,18 @@
           <span class="siaran-note" id="siaranMeta">Memuat daftar siaran…</span>
         </div>
         <div id="daftarSiaran" class="siaran-grid"></div>
+
+        <!-- Kamera web komunitas Windy. Sumber ini butuh kunci API milik kita
+             sendiri: api.windy.com menjawab 403 "Missing Header
+             x-windy-api-key" tanpa kunci, sedangkan halaman windy.com bisa
+             karena aplikasi mereka memakai kunci mereka. Jadi bagian ini
+             menyatakan keadaannya apa adanya, bukan menampilkan daftar kosong
+             yang tampak seperti "tidak ada kamera". -->
+        <div class="siaran-head" style="margin-top:12px">
+          <span class="micro">KAMERA WEB KOMUNITAS (WINDY)</span>
+          <span class="siaran-note" id="windyMeta">Memeriksa keadaan sumber…</span>
+        </div>
+        <div id="daftarWindy" class="siaran-grid"></div>
       </div>
 
     </div>
