@@ -4652,7 +4652,12 @@
       var bagian = [];
       bagian.push(items.length
         ? items.length + ' pesawat terpancar'
-        : 'tidak ada pesawat terpancar di kotak ini');
+        : 'tidak ada pesawat terpancar di wilayah cakupan');
+      if (d.penyedia) bagian.push('sumber ' + d.penyedia);
+      // Cakupan wajib disebut: adsb.lol hanya menutup titik-titik yang
+      // terdaftar, dan menyembunyikan itu sama dengan mengklaim peta ini
+      // menampilkan seluruh langit Indonesia.
+      if (d.cakupan && d.cakupan.keterangan) bagian.push('cakupan ' + d.cakupan.keterangan);
       bagian.push('diperbarui ' + umurTeks(d.umurMs));
       if (d.basi) bagian.push('salinan lama, sumber sedang gagal: ' + (d.galat || 'sebab tidak diketahui'));
       bagian.push('data publik ADS-B, jaringan penerima tidak rapat');
@@ -4675,8 +4680,9 @@
     if (p.terakhirKontak) baris.push('Kontak terakhir: ' + fmtJamWib(Date.parse(p.terakhirKontak)));
     baris.push('Kode ICAO24: ' + p.icao);
     baris.forEach(function (t) { box.appendChild(el('div', 'pp-r', t)); });
+    var penyedia = (state.flights && state.flights.penyedia) || 'jaringan ADS-B publik';
     box.appendChild(el('div', 'pp-r pp-load',
-      'Sumber: OpenSky Network (ADS-B publik). Tidak semua pesawat terpancar ke penerima darat; '
+      'Sumber: ' + penyedia + '. Tidak semua pesawat terpancar ke penerima darat; '
       + 'ketiadaan pesawat di satu wilayah bukan bukti tidak ada penerbangan.'));
     return box;
   }

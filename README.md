@@ -121,7 +121,7 @@ hanya diminta mulai zoom 8, sehingga pemakaian kuota tetap rendah.
 | **Smithsonian GVP** | Katalog dan ringkasan aktivitas gunung api | tidak |
 | **NOAA CPC** | Indeks ONI, status El Niño / La Niña | tidak |
 | **Open-Meteo Archive** | Curah hujan harian per provinsi (ERA5) | tidak |
-| **OpenSky Network** | Lalu lintas udara sipil (ADS-B publik) sebagai konteks bahaya abu vulkanik | tidak |
+| **OpenSky Network / adsb.lol** | Lalu lintas udara sipil (ADS-B publik) sebagai konteks bahaya abu vulkanik | tidak |
 | **YouTube (kanal resmi & komunitas)** | Panel Siaran: kamera gunung api dan kanal informasi, disematkan hanya setelah diminta | tidak |
 
 ---
@@ -139,7 +139,7 @@ menandai atap logam sebagai air, dan **radar Sentinel-1** yang menembus awan,
  satu-satunya cara memotret banjir saat kejadian, karena banjir justru
 terjadi ketika langit tertutup mendung.
 
-**Lalu lintas udara sipil** dari OpenSky Network ditampilkan sebagai lapisan peta: abu vulkanik adalah bahaya penerbangan, jadi posisi pesawat membuat penutupan ruang udara bisa dibaca pada konteksnya. Lapisan ini hanya memuat lalu lintas yang terpancar ke jaringan ADS-B publik dan menyebut umur datanya; tidak ada lapisan militer maupun jet pribadi.
+**Lalu lintas udara sipil** dari jaringan ADS-B publik ditampilkan sebagai lapisan peta: abu vulkanik adalah bahaya penerbangan, jadi posisi pesawat membuat penutupan ruang udara bisa dibaca pada konteksnya. Lapisan ini hanya memuat lalu lintas yang terpancar ke jaringan ADS-B publik dan menyebut umur datanya; tidak ada lapisan militer maupun jet pribadi.
 
 Tab **Kekeringan** pada panel Analisis Wilayah memberi jalan pintas: klik
 sebuah provinsi, peta langsung berpindah ke sana dengan lapisan citra yang

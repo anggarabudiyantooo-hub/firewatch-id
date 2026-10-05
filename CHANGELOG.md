@@ -27,8 +27,12 @@ proyek ini. Format tanggal: YYYY-MM-DD (WIB).
 - Pemutar disematkan hanya setelah tombol ditekan, memakai domain
   youtube-nocookie, dan CSP dibuka khusus domain itu. Setiap kartu punya
   tautan keluar sebagai jalur yang selalu bekerja.
-- Lapisan peta baru: lalu lintas udara sipil dari OpenSky Network (ADS-B
-  publik), rute `GET /api/flights`. Ada karena abu vulkanik adalah bahaya
+- Lapisan peta baru: lalu lintas udara sipil dari jaringan ADS-B publik,
+  rute `GET /api/flights`. Dua penyedia dipakai berurutan: OpenSky Network
+  (satu permintaan untuk seluruh kotak Indonesia) dan adsb.lol (tujuh titik
+  radius 400 nm). Penyedia kedua diperlukan karena koneksi ke OpenSky
+  timeout dari lingkungan produksi Vercel walau berhasil dari jaringan
+  pengembang; penyebabnya sekarang ikut dilaporkan di badan balasan. Ada karena abu vulkanik adalah bahaya
   penerbangan. Tidak ada lapisan militer atau jet pribadi, umur data selalu
   ditulis, dan kegagalan sumber tidak pernah berubah menjadi "tidak ada
   pesawat". Kamera komunitas yang berpindah gunung sengaja tidak dipetakan.
