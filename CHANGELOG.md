@@ -31,6 +31,11 @@ proyek ini. Format tanggal: YYYY-MM-DD (WIB).
   Sulawesi lebih dulu), dan pengambilan titik dihentikan begitu penyedia
   mengembalikan pembatasan laju dua kali, bukan mengulang tujuh titik yang
   sama. Titik yang dilewati dilaporkan sebagai dilewati.
+- Lapisan penerbangan tampil lebih cepat dan tidak lagi diam: snapshot penjadwal
+  luar dibaca lebih dulu bila umurnya di bawah 20 menit, dan sakelar langsung
+  menulis "memuat lalu lintas udara sipil..." sampai data tiba. Sebelumnya
+  produksi menunggu 6,2 detik percobaan ke sumber langsung sebelum gagal, dan
+  selama itu layar tampak tidak melakukan apa pun.
 - Irama snapshot dijaga pekerjaan berputar: satu pekerjaan mengambil 20
   putaran berjeda 15 menit, dan penjadwal GitHub hanya berperan sebagai
   penjaga penerusnya. Sebelumnya jadwal GitHub yang terukur hanya memicu

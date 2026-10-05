@@ -150,6 +150,11 @@ diukur pada 5 Oktober 2026, bukan disimpulkan dari konfigurasi:
 - Riwayat cabang `snapshot-flights` selalu berisi satu commit: tiap putaran
   membuat commit tanpa induk lalu mendorongnya dengan paksa, jadi cabang data
   itu tidak menumpuk 96 commit sehari.
+- Snapshot sekarang juga menjadi jalur cepat aplikasi: bila umurnya di bawah
+  20 menit, ia dibaca lebih dulu dan penyedia langsung tidak dicoba, sehingga
+  lapisan tampil dalam ratusan milidetik, bukan setelah 6,2 detik percobaan
+  yang berakhir gagal. Di atas 20 menit, penyedia langsung dicoba demi
+  kesegaran, dan snapshot tetap disimpan sebagai cadangan bila semuanya gagal.
 - Bila kelak tersedia penjadwal luar dengan presisi menit (misalnya layanan
   cron gratis yang memanggil workflow ini), tidak ada perubahan kode yang
   diperlukan: cukup arahkan penjadwal itu ke `workflow_dispatch` dengan
