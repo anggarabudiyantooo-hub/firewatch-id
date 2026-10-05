@@ -34,6 +34,37 @@ const PESAWAT_LOL = {
   lat: -6.1938, lon: 106.3399, t: 1791178828
 };
 
+// Waktu patokan uji. Diletakkan di lingkup modul supaya pembuat snapshot uji
+// memakai patokan yang sama dengan uji umur data.
+const t0 = 1_000_000_000_000;
+
+/** Penyedia dicari lewat id, bukan nomor urut: menambah penyedia baru tidak
+ *  boleh membuat uji lama diam-diam menguji hal lain. */
+function penyedia(id) {
+  const pr = flights.PENYEDIA.find(x => x.id === id);
+  if (!pr) throw new Error('penyedia tidak ada: ' + id);
+  return pr;
+}
+
+/** Snapshot buatan penjadwal luar, bentuknya sama dengan berkas sungguhan. */
+function snapshotStub(umurMs, jumlah) {
+  const items = [];
+  for (let i = 0; i < (jumlah === undefined ? 3 : jumlah); i++) {
+    items.push({
+      icao: 'snap' + i, callsign: 'SNAP' + i, negara: 'Indonesia',
+      lon: 106 + i, lat: -6 - i, altM: 9000, kecepatanMs: 220,
+      arahDeg: 90, diDarat: false, terakhirKontak: '2026-10-05T00:00:00.000Z'
+    });
+  }
+  return {
+    diambilAt: new Date(t0 - umurMs).toISOString(),
+    sumber: 'OpenSky Network',
+    penyedia: 'OpenSky Network',
+    jumlah: items.length,
+    items: items
+  };
+}
+
 function balasanStub(payload, status) {
   return { ok: status ? status < 400 : true, status: status || 200, json: async () => payload };
 }
@@ -41,7 +72,7 @@ function balasanStub(payload, status) {
 /** fetch palsu: membedakan OpenSky dan adsb.lol menurut URL-nya. */
 function fetchPalsu(opsi) {
   opsi = opsi || {};
-  const catatan = { opensky: 0, adsblol: 0, url: [] };
+  const catatan = { opensky: 0, snapshot: 0, adsblol: 0, url: [] };
   const f = async function (url) {
     catatan.url.push(url);
     if (/opensky-network\.org/.test(url)) {
@@ -52,6 +83,11 @@ function fetchPalsu(opsi) {
         throw e;
       }
       return balasanStub({ states: opsi.statesOpenSky || [BARIS_SAH] });
+    }
+    if (/raw\.githubusercontent\.com/.test(url)) {
+      catatan.snapshot++;
+      if (opsi.snapshotGagal) throw new Error('HTTP 404');
+      return balasanStub(opsi.snapshot || snapshotStub(60000, 3));
     }
     catatan.adsblol++;
     if (opsi.adsbLolGagal) throw new Error('jaringan mati');
@@ -92,14 +128,34 @@ function fetchPalsu(opsi) {
   cek('"ground" -> di darat tanpa ketinggian karangan', darat.diDarat === true && darat.altM === null);
   const tanpaKoord = flights.normalisasiAdsbLol(Object.assign({}, PESAWAT_LOL, { lat: null, lon: null }));
   cek('tanpa koordinat -> dibuang', tanpaKoord === null);
-  const gabung = flights.PENYEDIA[1].normalisasi({ ac: [PESAWAT_LOL, PESAWAT_LOL, Object.assign({}, PESAWAT_LOL, { hex: 'lain' })] });
+  const gabung = penyedia('adsblol').normalisasi({ ac: [PESAWAT_LOL, PESAWAT_LOL, Object.assign({}, PESAWAT_LOL, { hex: 'lain' })] });
   cek('pesawat ganda di dua titik tidak muncul dua kali', gabung.items.length === 2, gabung.items.length + ' dari 3 baris');
   cek('cakupan titik dilaporkan', /titik radius .* nm/.test(gabung.cakupan.keterangan), gabung.cakupan.keterangan);
+
+  console.log('\n[3b] Snapshot penjadwal luar');
+  const snap = penyedia('snapshot').normalisasi(snapshotStub(120000, 3));
+  cek('snapshot sah diterima', snap.items.length === 3);
+  cek('waktu pengambilan snapshot dibawa', Number.isFinite(snap.diambilAt));
+  cek('cakupan menyebut penjadwal luar', /penjadwal luar/.test(snap.cakupan.keterangan), snap.cakupan.keterangan);
+  const snapKosong = (function () {
+    try { penyedia('snapshot').normalisasi({ diambilAt: new Date(t0).toISOString(), items: [] }); return null; }
+    catch (e) { return e.message; }
+  })();
+  cek('snapshot kosong DITOLAK, bukan dibaca sebagai tidak ada pesawat', snapKosong !== null, String(snapKosong));
+  const snapTanpaWaktu = (function () {
+    try { penyedia('snapshot').normalisasi({ items: [{ lat: 1, lon: 1 }] }); return null; }
+    catch (e) { return e.message; }
+  })();
+  cek('snapshot tanpa waktu ditolak', snapTanpaWaktu !== null, String(snapTanpaWaktu));
+  const snapKotor = penyedia('snapshot').normalisasi({
+    diambilAt: new Date(t0).toISOString(),
+    items: [{ lat: 1, lon: 1 }, { lat: null, lon: null }, null, { lat: 999, lon: 999 }]
+  });
+  cek('baris rusak di dalam snapshot disaring', snapKotor.items.length === 1, snapKotor.items.length + ' dari 4');
 
   console.log('\n[4] Cache: jatah sumber dijaga');
   flights._setCache(null); flights._setTunggu({});
   const f1 = fetchPalsu();
-  const t0 = 1_000_000_000_000;
   const a1 = await flights.ambilPenerbangan({ fetchImpl: f1, sekarang: t0, jedaTitikMs: 0, jedaUlangMs: 0 });
   const a2 = await flights.ambilPenerbangan({ fetchImpl: f1, sekarang: t0 + 60000 });
   cek('penyedia pertama dipakai', a1.penyedia === 'OpenSky Network', String(a1.penyedia));
@@ -110,7 +166,7 @@ function fetchPalsu(opsi) {
 
   console.log('\n[5] Penyedia pertama gagal -> beralih, lalu dilewati sementara');
   flights._setCache(null); flights._setTunggu({});
-  const f2 = fetchPalsu({ openskyGagal: true });
+  const f2 = fetchPalsu({ openskyGagal: true, snapshotGagal: true });
   const b1 = await flights.ambilPenerbangan({ fetchImpl: f2, sekarang: t0, jedaTitikMs: 0, jedaUlangMs: 0 });
   cek('hasil tetap ada walau OpenSky gagal', b1.ok === true && b1.jumlah > 0);
   cek('penyedia kedua dipakai', b1.penyedia === 'adsb.lol', String(b1.penyedia));
@@ -129,12 +185,14 @@ function fetchPalsu(opsi) {
   {
     let n = 0;
     const sekali429 = {};
+    // Snapshot sengaja digagalkan: yang diuji di sini perilaku adsb.lol.
     const f429 = async function (url) {
       if (/opensky-network\.org/.test(url)) {
         const e = new Error('fetch failed');
         e.cause = { code: 'UND_ERR_CONNECT_TIMEOUT' };
         throw e;
       }
+      if (/raw\.githubusercontent\.com/.test(url)) throw new Error('HTTP 404');
       n++;
       if (n === 3 && !sekali429[n]) {
         sekali429[n] = true;
@@ -152,6 +210,29 @@ function fetchPalsu(opsi) {
     cek('titik dipanggil lebih dari jumlah titik (ada percobaan ulang)', n === 8, n + ' panggilan');
     cek('jeda antar titik disetel > 1 detik di produksi', flights.JEDA_TITIK_MS >= 1000,
       flights.JEDA_TITIK_MS + ' ms');
+  }
+
+  console.log('\n[5c] Snapshot dipakai saat OpenSky tidak terjangkau dari produksi');
+  flights._setCache(null); flights._setTunggu({});
+  {
+    const fS = fetchPalsu({ openskyGagal: true });
+    const r = await flights.ambilPenerbangan({ fetchImpl: fS, sekarang: t0, jedaTitikMs: 0, jedaUlangMs: 0 });
+    cek('snapshot menggantikan OpenSky', r.penyedia === 'snapshot penjadwal luar', String(r.penyedia));
+    cek('adsb.lol tidak perlu dipanggil', fS.catatan.adsblol === 0, fS.catatan.adsblol + ' panggilan');
+    cek('umur yang dilaporkan umur snapshot, bukan umur unduhan', r.umurMs === 60000, String(r.umurMs));
+    cek('cakupan kotak penuh', r.cakupan.mode === 'kotak', r.cakupan.keterangan);
+  }
+  {
+    flights._setCache(null); flights._setTunggu({});
+    const fTua = fetchPalsu({ openskyGagal: true, snapshot: snapshotStub(flights.KESEGARAN_MAKS_MS + 60000, 3) });
+    const r2 = await flights.ambilPenerbangan({ fetchImpl: fTua, sekarang: t0, jedaTitikMs: 0, jedaUlangMs: 0 });
+    cek('snapshot terlalu tua ditolak', r2.penyedia === 'adsb.lol', String(r2.penyedia));
+  }
+  {
+    flights._setCache(null); flights._setTunggu({});
+    const fRuntime = fetchPalsu({ openskyGagal: true, snapshotGagal: true });
+    const r3 = await flights.ambilPenerbangan({ fetchImpl: fRuntime, sekarang: t0, jedaTitikMs: 0, jedaUlangMs: 0 });
+    cek('snapshot hilang -> turun ke adsb.lol', r3.penyedia === 'adsb.lol' && r3.ok === true, String(r3.penyedia));
   }
 
   console.log('\n[6] Kegagalan sebagian titik dilaporkan dengan lokasi');
@@ -190,7 +271,7 @@ function fetchPalsu(opsi) {
 
   console.log('\n[7] Kegagalan sumber tidak menjadi "tidak ada pesawat"');
   flights._setCache(null); flights._setTunggu({});
-  const f3 = fetchPalsu({ openskyGagal: true, adsbLolGagal: true });
+  const f3 = fetchPalsu({ openskyGagal: true, snapshotGagal: true, adsbLolGagal: true });
   const c1 = await flights.ambilPenerbangan({ fetchImpl: f3, sekarang: t0, jedaTitikMs: 0, jedaUlangMs: 0 });
   cek('ok=false saat semua penyedia gagal', c1.ok === false);
   cek('alasan kedua penyedia disertakan', /OpenSky/.test(c1.galat || '') && /adsb\.lol/.test(c1.galat || ''));
@@ -201,7 +282,7 @@ function fetchPalsu(opsi) {
   flights._setCache(null); flights._setTunggu({});
   const f4 = fetchPalsu();
   await flights.ambilPenerbangan({ fetchImpl: f4, sekarang: t0, jedaTitikMs: 0, jedaUlangMs: 0 });
-  const f5 = fetchPalsu({ openskyGagal: true, adsbLolGagal: true });
+  const f5 = fetchPalsu({ openskyGagal: true, snapshotGagal: true, adsbLolGagal: true });
   const basi = await flights.ambilPenerbangan({
     fetchImpl: f5, sekarang: t0 + flights.CACHE_MS + 60000, paksa: true,
     jedaTitikMs: 0, jedaUlangMs: 0
@@ -241,6 +322,15 @@ function fetchPalsu(opsi) {
     html.includes('Tidak ada lapisan militer maupun jet pribadi'));
   cek('keterangan menyebut keterbatasan cakupan ADS-B',
     js.includes('jaringan penerima tidak rapat') && html.includes('Jaringan penerima tidak rapat'));
+  const alur = fs.readFileSync(path.join(__dirname, '..', '.github/workflows/flights-snapshot.yml'), 'utf8');
+  const skrip = fs.readFileSync(path.join(__dirname, '..', 'scripts/flights-snapshot.js'), 'utf8');
+  cek('penjadwal luar ada dan berjadwal', /cron: '\*\/15 \* \* \* \*'/.test(alur));
+  cek('penjadwal luar menulis cabang terpisah', alur.includes('snapshot-flights'));
+  cek('penjadwal luar tidak menyentuh cabang utama', /git push -f origin snapshot-flights/.test(alur));
+  cek('skrip snapshot memakai modul yang sama', skrip.includes("require('../lib/flights')"));
+  cek('skrip snapshot menolak hasil kosong',
+    /!hasil\.items\.length/.test(skrip) && (skrip.match(/process\.exit\(1\)/g) || []).length >= 2);
+  cek('aplikasi membaca snapshot dari URL tetap', flights.SNAPSHOT_URL.includes('snapshot-flights/snapshot/flights.json'));
 
   console.log('\n' + '='.repeat(46));
   console.log('  ' + lulus + ' lulus, ' + gagal + ' gagal');

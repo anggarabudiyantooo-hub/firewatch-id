@@ -1,0 +1,69 @@
+name: Snapshot lalu lintas udara
+
+# Sebab penjadwal ini ada, dan sebabnya terukur: dari fungsi produksi Vercel,
+# koneksi ke OpenSky Network timeout, sedangkan dari runner GitHub alamat yang
+# sama menjawab 200 dengan lebih dari 170 pesawat. Jadi pengambilannya
+# dipindahkan ke runner, dan aplikasi membaca berkas hasilnya.
+#
+# Berkasnya ditulis ke cabang terpisah (snapshot-flights), bukan ke cabang
+# utama. Setiap putaran menimpa cabang itu dengan satu commit, sehingga
+# riwayat cabang utama tidak bertambah 96 commit sehari.
+#
+# Snapshot yang gagal diambil tidak dipublikasikan: berkas kosong akan
+# terbaca aplikasi sebagai "tidak ada pesawat".
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: snapshot-flights
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+
+      - name: Ambil snapshot
+        run: node scripts/flights-snapshot.js
+
+      - name: Publikasikan ke cabang snapshot-flights
+        run: |
+          set -euo pipefail
+          if [ ! -f snapshot/flights.json ]; then
+            echo "::error::snapshot/flights.json tidak ada, pembatalan publikasi"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan snapshot-flights
+          # Semua berkas cabang utama dilepas dari indeks; yang tersisa hanya
+          # satu berkas snapshot. Berkas ini diabaikan .gitignore di cabang
+          # utama, jadi penambahannya harus dipaksa.
+          git reset
+          git add -f snapshot/flights.json
+          git commit -m "snapshot lalu lintas udara $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -f origin snapshot-flights
+
+      - name: Ringkasan
+        run: |
+          node -e "
+            const s = require('./snapshot/flights.json');
+            console.log('Penyedia :', s.penyedia);
+            console.log('Jumlah   :', s.jumlah, 'pesawat');
+            console.log('Diambil  :', s.diambilAt);
+          "
