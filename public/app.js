@@ -316,6 +316,9 @@
   var gImpact = L.layerGroup();
   var gQuake = L.layerGroup();
   var gShelter = L.layerGroup();
+  // Lalu lintas udara sipil (ADS-B publik). Grup terpisah supaya
+  // mematikannya tidak menyentuh lapisan lain mana pun.
+  var gFlights = L.layerGroup();
 
   var state = {
     data: null, attr: null, news: [], newsTopics: [], newsTopic: 'semua', minConf: 0, minFrp: 10,
@@ -340,6 +343,7 @@
     // citra yang cukup jernih dan cukup sering tersedia di iklim tropis.
     s2Product: null, s2Layer: null, s2Meta: null, s2MetaKey: null, s2Cloud: 30,
     hazard: null, hazardAt: null, quakeOn: false, shelterOn: false,
+    flightsOn: false, flights: null, flightsAt: null,
     casualties: null, status: null, eruptions: null, newsFetchedAt: null
   };
 
@@ -4573,6 +4577,124 @@
     if (tombol) { tombol.disabled = true; tombol.textContent = 'SIARAN DISEMATKAN'; }
   }
 
+
+  /* ---------- lalu lintas udara sipil (ADS-B publik) ---------- */
+  /**
+   * Dua hal yang tidak boleh terjadi di lapisan ini, dan karena itu ditulis
+   * di kode bukan hanya di niat: (a) menyajikan salinan lama seolah baru, dan
+   * (b) membiarkan pembaca menyimpulkan bahwa peta ini lengkap. Jaringan
+   * penerima ADS-B tidak rapat di banyak wilayah Indonesia, jadi ketiadaan
+   * pesawat di satu kotak bukan bukti tidak ada penerbangan - itu ditulis di
+   * keterangan panel, bukan disembunyikan.
+   */
+  var WARNA_PESAWAT = { darat: '#8E96A3', rendah: '#fb923c', sedang: '#facc15', tinggi: '#7dd3fc' };
+
+  function warnaPesawat(p) {
+    if (p.diDarat) return WARNA_PESAWAT.darat;
+    if (p.altM == null) return WARNA_PESAWAT.sedang;
+    if (p.altM < 3000) return WARNA_PESAWAT.rendah;
+    if (p.altM < 9000) return WARNA_PESAWAT.sedang;
+    return WARNA_PESAWAT.tinggi;
+  }
+
+  function loadFlights() {
+    return fetchT('/api/flights', { headers: { Accept: 'application/json' } })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (d) {
+        state.flights = d;
+        state.flightsAt = new Date();
+        drawFlights();
+      })
+      .catch(function (e) {
+        // Kegagalan pengambilan TIDAK diubah menjadi "tidak ada pesawat".
+        state.flights = { ok: false, items: [], galat: (e && e.message) || 'galat' };
+        state.flightsAt = new Date();
+        drawFlights();
+      });
+  }
+
+  function umurTeks(ms) {
+    if (ms == null) return 'umur tidak diketahui';
+    var mnt = Math.round(ms / 60000);
+    if (mnt < 1) return 'baru saja';
+    if (mnt < 60) return mnt + ' mnt lalu';
+    return Math.round(mnt / 60) + ' jam lalu';
+  }
+
+  function drawFlights() {
+    gFlights.clearLayers();
+    var meta = $('fltMeta');
+    var d = state.flights;
+    if (!d) return;
+    var items = d.items || [];
+
+    if (!d.ok) {
+      if (meta) {
+        meta.textContent = 'Sumber lalu lintas udara tidak tersedia (' + (d.galat || 'sebab tidak diketahui')
+          + '). Tidak ada pesawat yang digambar, bukan berarti tidak ada penerbangan.';
+      }
+      return;
+    }
+
+    items.forEach(function (p) {
+      var warna = warnaPesawat(p);
+      var mk = L.circleMarker([p.lat, p.lon], {
+        radius: p.diDarat ? 2.8 : 3.6,
+        color: warna, weight: 1.1, fillColor: warna, fillOpacity: p.diDarat ? 0.5 : 0.75
+      }).addTo(gFlights);
+      mk.bindPopup(function () { return popupPesawat(p); });
+    });
+
+    if (meta) {
+      var bagian = [];
+      bagian.push(items.length
+        ? items.length + ' pesawat terpancar'
+        : 'tidak ada pesawat terpancar di kotak ini');
+      bagian.push('diperbarui ' + umurTeks(d.umurMs));
+      if (d.basi) bagian.push('salinan lama, sumber sedang gagal: ' + (d.galat || 'sebab tidak diketahui'));
+      bagian.push('data publik ADS-B, jaringan penerima tidak rapat');
+      meta.textContent = bagian.join(' · ');
+    }
+  }
+
+  function popupPesawat(p) {
+    var box = document.createElement('div');
+    box.appendChild(el('div', 'pp-t', p.callsign || p.icao || 'Pesawat tanpa callsign'));
+    var baris = [];
+    if (p.negara) baris.push('Negara pendaftaran: ' + p.negara);
+    baris.push('Ketinggian: ' + (p.altM == null ? 'tidak terukur'
+      : nf.format(p.altM) + ' m (' + nf.format(Math.round(p.altM * 3.28084)) + ' kaki)'));
+    if (p.kecepatanMs != null) {
+      baris.push('Kecepatan: ' + nf.format(Math.round(p.kecepatanMs * 3.6)) + ' km/j');
+    }
+    if (p.arahDeg != null) baris.push('Arah: ' + Math.round(p.arahDeg) + ' derajat');
+    baris.push(p.diDarat ? 'Status: di darat' : 'Status: di udara');
+    if (p.terakhirKontak) baris.push('Kontak terakhir: ' + fmtJamWib(Date.parse(p.terakhirKontak)));
+    baris.push('Kode ICAO24: ' + p.icao);
+    baris.forEach(function (t) { box.appendChild(el('div', 'pp-r', t)); });
+    box.appendChild(el('div', 'pp-r pp-load',
+      'Sumber: OpenSky Network (ADS-B publik). Tidak semua pesawat terpancar ke penerima darat; '
+      + 'ketiadaan pesawat di satu wilayah bukan bukti tidak ada penerbangan.'));
+    return box;
+  }
+
+  var _lyFlights = $('lyFlights');
+  if (_lyFlights) {
+    _lyFlights.addEventListener('change', function (e) {
+      state.flightsOn = e.target.checked;
+      if (state.flightsOn) {
+        map.addLayer(gFlights);
+        loadFlights();
+      } else {
+        map.removeLayer(gFlights);
+        gFlights.clearLayers();
+      }
+    });
+  }
+
   /* ---------- mulai ---------- */
   tickClock();
   var clockIv = setInterval(tickClock, 1000);
@@ -4606,6 +4728,9 @@
     intervals.push(setInterval(loadDrought, 60 * 60 * 1000));
     intervals.push(setInterval(loadNews, 3 * 60 * 1000));
     intervals.push(setInterval(loadHazard, 2 * 60 * 1000));
+    // Lalu lintas udara hanya disegarkan saat lapisannya menyala. Sumber
+    // punya jatah permintaan harian, jadi jangan memanggil saat tak terlihat.
+    intervals.push(setInterval(function () { if (state.flightsOn) loadFlights(); }, 5 * 60 * 1000));
     intervals.push(setInterval(loadEruptions, 5 * 60 * 1000));
     intervals.push(setInterval(loadCasualties, 10 * 60 * 1000));
     intervals.push(setInterval(loadStatus, 60 * 1000));
@@ -4690,6 +4815,7 @@
     if (_lv) state.volcanoOn = _lv.checked;
     [['lyFire', gFire], ['lyAir', gAir], ['lyQuake', gQuake],
      ['lyShelter', gShelter], ['lySmoke', gSmoke], ['lyConc', gConc],
+     ['lyFlights', gFlights],
      ['lyVolcano', gVolcano]
     ].forEach(function (t) {
       var el = $(t[0]);
@@ -4699,6 +4825,7 @@
     // Data gunung dibutuhkan dua sakelar (abu & letusan); muat sekali di awal
     // bila salah satunya ON - loadAsh punya gerbang ashOn||volcanoOn sendiri.
     if (state.volcanoOn || state.ashOn) loadAsh();
+    if (state.flightsOn) loadFlights();
     setTimeout(function () {
       try { map.invalidateSize(); } catch (e) {}
     }, 260);

@@ -98,6 +98,7 @@ const { summarize: summarizeCasualties } = require('./lib/casualty');
 const { Scheduler } = require('./lib/scheduler');
 const { answer: ragAnswer } = require('./lib/rag');
 const kamera = require('./lib/kamera');
+const flights = require('./lib/flights');
 
 // batas kotak provinsi (kasar) untuk peringkat provinsi
 const PROVINCE_BOXES = [
@@ -2035,6 +2036,33 @@ app.get('/api/status', (_req, res) => {
  * kanal bukan data terbuka, dan status siaran bukan milik kami untuk
  * diklaim. Cache panjang karena isi daftar hanya berubah saat kode berubah.
  */
+/**
+ * Lalu lintas udara sipil di atas Indonesia (OpenSky Network, ADS-B publik).
+ *
+ * Lapisan ini ada karena abu vulkanik adalah bahaya penerbangan: posisi
+ * pesawat membuat penutupan ruang udara bisa dibaca pada konteksnya.
+ *
+ * Yang TIDAK dilakukan: tidak ada lapisan militer atau jet pribadi, dan
+ * umur data selalu ikut dikirim. Bila sumber gagal, `ok:false` beserta
+ * alasannya; salinan lama hanya keluar dengan penanda `basi:true`.
+ */
+app.get('/api/flights', async (req, res) => {
+  try {
+    const hasil = await flights.ambilPenerbangan({ paksa: req.query.paksa === '1' });
+    // Cache di CDN pendek supaya beberapa pengunjung tidak menghabiskan
+    // jatah permintaan sumber; cache di dalam proses yang mengatur umurnya.
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json(hasil);
+  } catch (err) {
+    res.status(502).json({
+      ok: false,
+      sumber: flights.SUMBER,
+      items: [],
+      galat: (err && err.message) || 'sumber tidak dapat dihubungi'
+    });
+  }
+});
+
 app.get('/api/kamera', (_req, res) => {
   res.set('Cache-Control', 'public, max-age=600');
   res.json({

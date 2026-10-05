@@ -121,6 +121,8 @@ hanya diminta mulai zoom 8, sehingga pemakaian kuota tetap rendah.
 | **Smithsonian GVP** | Katalog dan ringkasan aktivitas gunung api | tidak |
 | **NOAA CPC** | Indeks ONI, status El Niño / La Niña | tidak |
 | **Open-Meteo Archive** | Curah hujan harian per provinsi (ERA5) | tidak |
+| **OpenSky Network** | Lalu lintas udara sipil (ADS-B publik) sebagai konteks bahaya abu vulkanik | tidak |
+| **YouTube (kanal resmi & komunitas)** | Panel Siaran: kamera gunung api dan kanal informasi, disematkan hanya setelah diminta | tidak |
 
 ---
 
@@ -136,6 +138,8 @@ kekeringan sebelum daun menguning, genangan air (MNDWI) yang tidak salah
 menandai atap logam sebagai air, dan **radar Sentinel-1** yang menembus awan,
  satu-satunya cara memotret banjir saat kejadian, karena banjir justru
 terjadi ketika langit tertutup mendung.
+
+**Lalu lintas udara sipil** dari OpenSky Network ditampilkan sebagai lapisan peta: abu vulkanik adalah bahaya penerbangan, jadi posisi pesawat membuat penutupan ruang udara bisa dibaca pada konteksnya. Lapisan ini hanya memuat lalu lintas yang terpancar ke jaringan ADS-B publik dan menyebut umur datanya; tidak ada lapisan militer maupun jet pribadi.
 
 Tab **Kekeringan** pada panel Analisis Wilayah memberi jalan pintas: klik
 sebuah provinsi, peta langsung berpindah ke sana dengan lapisan citra yang
@@ -381,6 +385,8 @@ lib/
   scheduler.js         penjadwal terpusat dengan anggaran waktu
   scheduler-instance.js satu instance penjadwal untuk seluruh proses
   service-health.js    model kesehatan layanan (dipakai /operations)
+  flights.js           lalu lintas udara sipil OpenSky (ADS-B) + cache jatah harian
+  kamera.js            daftar kurasi kamera & siaran publik
   freshness.js         ambang FRESH/STALE/CRITICAL yang terdokumentasi
   alert-engine.js      aturan alert + deduplikasi
   incidents.js         siklus hidup insiden, timeline, metrik SLA/MTTR
@@ -389,6 +395,7 @@ lib/
   ops-github.js        penyimpanan lewat GitHub Issues (mode github)
   ops-routes.js        seluruh rute /api/operations, /api/incidents, /api/runbooks
 data/regions.json      226 permukiman GeoNames
+data/kamera.js         daftar kurasi kanal siaran + dasar pemeriksaannya
 public/
   index.html           satu halaman
   app.js               seluruh logika antarmuka
@@ -406,6 +413,8 @@ docs/PENYIMPANAN.md    pilihan penyimpanan operasional + cara memasangnya
 docs/PENJADWAL.md      mengapa jadwal GitHub bisa tertunda + /api/alarm
 scripts/verify-store.py  membuktikan penyimpanan benar-benar bertahan
 scripts/check-style.js   gerbang gaya naskah: menolak tanda pisah panjang
+scripts/test-kamera.js   uji panel Siaran
+scripts/test-flights.js  uji modul lalu lintas udara
 .github/workflows/     penjadwal (refresh, uptime, snapshot) + gerbang uji (ci)
 .github/dependabot.yml PR pembaruan ketergantungan mingguan, dikelompokkan
 .github/               templat issue dan pull request
