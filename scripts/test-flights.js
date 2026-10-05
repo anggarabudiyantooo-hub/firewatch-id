@@ -356,8 +356,21 @@ function fetchPalsu(opsi) {
   const alur = fs.readFileSync(path.join(__dirname, '..', '.github/workflows/flights-snapshot.yml'), 'utf8');
   const skrip = fs.readFileSync(path.join(__dirname, '..', 'scripts/flights-snapshot.js'), 'utf8');
   cek('penjadwal luar ada dan berjadwal', /cron: '\*\/15 \* \* \* \*'/.test(alur));
-  cek('penjadwal luar menulis cabang terpisah', alur.includes('snapshot-flights'));
-  cek('penjadwal luar tidak menyentuh cabang utama', /git push -f origin snapshot-flights/.test(alur));
+  // Penjadwal GitHub terukur hanya memicu sekitar lima kali sehari, jadi satu
+  // pekerjaan mengambil beberapa putaran sekaligus; penerusnya datang dari
+  // pekerjaan yang menunggu di grup concurrency yang sama.
+  cek('penjadwal luar berputar dengan jeda', /for i in \$\(seq 1 "\$PUTARAN"\)/.test(alur)
+    && /sleep "\$tidur"/.test(alur) && /PUTARAN: \$\{\{ inputs\.putaran \|\| '20' \}\}/.test(alur));
+  cek('jeda antar putaran dipecah supaya tidak menggantung tanpa log', /sisa=\$\(\(sisa - tidur\)\)/.test(alur));
+  cek('penjadwal luar menulis cabang terpisah', alur.includes('refs/heads/snapshot-flights'));
+  cek('penjadwal luar tidak pernah mendorong ke cabang utama',
+    !/push[^\n]*\borigin\s+main\b/.test(alur) && !/refs\/heads\/main/.test(alur));
+  cek('tiap publikasi satu commit tanpa induk, cabang tidak menumpuk riwayat',
+    /git read-tree --empty/.test(alur) && /git commit-tree/.test(alur) && !/--orphan/.test(alur));
+  cek('batas waktu pekerjaan di bawah batas enam jam GitHub',
+    /timeout-minutes: 350/.test(alur));
+  cek('tanpa rahasia tambahan di luar token bawaan', !/secrets\./.test(alur));
+  cek('putaran diperiksa: ada penghitung sukses dan gagal', /sukses=\$?\(\(sukses/.test(alur) || /sukses=\$\(\(sukses/.test(alur));
   cek('skrip snapshot memakai modul yang sama', skrip.includes("require('../lib/flights')"));
   cek('skrip snapshot menolak hasil kosong',
     /!hasil\.items\.length/.test(skrip) && (skrip.match(/process\.exit\(1\)/g) || []).length >= 2);

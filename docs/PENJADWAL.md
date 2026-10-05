@@ -126,6 +126,16 @@ diukur pada 5 Oktober 2026, bukan disimpulkan dari konfigurasi:
   `refresh.yml` yang ditulis `*/5 * * * *` pun tercatat berjalan pada pukul
   08:20, 14:12, 18:10, dan 21:29 UTC, bukan 288 kali sehari. Jadi jadwal
   GitHub adalah penjadwal "kadang", bukan penjadwal menit.
+- Karena itu pekerjaan snapshot tidak dirancang "sekali panggil, sekali
+  jalan". Satu pekerjaan mengambil 20 putaran dengan jeda 15 menit (sekitar
+  5 jam 20 menit, di bawah batas enam jam GitHub), dan **penjadwal GitHub
+  hanya berperan sebagai penjaga**: tiap kali cron memicu pekerjaan baru saat
+  satu pekerjaan masih berjalan, pekerjaan baru itu masuk antrean grup
+  `concurrency` yang sama, lalu mengambil alih begitu pekerjaan sebelumnya
+  selesai. GitHub menyimpan paling banyak satu pekerjaan menunggu per grup,
+  jadi antreannya tidak bisa menumpuk. Hasilnya irama 15 menit berjalan
+  terus tanpa layanan penjadwal tambahan dan tanpa rahasia tambahan.
+- Untuk memeriksa sekali ambil, jalankan manual dengan `putaran: 1`.
 - Karena itu, snapshot sering lebih tua daripada batas 45 menit yang
   diterapkan aplikasi. Bila begitu, lapisan otomatis beralih ke sumber
   langsung (`OpenSky Network`, lalu `adsb.lol`) dan menampilkan umur data apa
@@ -137,6 +147,10 @@ diukur pada 5 Oktober 2026, bukan disimpulkan dari konfigurasi:
   di dalam berkas, jadi angka kesegarannya tidak ikut menyesatkan.
 - Menjalankan workflow secara manual selalu bisa dilakukan dari tab Actions,
   dan itu memang cara yang andal untuk menyegarkan snapshot saat diperlukan.
+- Riwayat cabang `snapshot-flights` selalu berisi satu commit: tiap putaran
+  membuat commit tanpa induk lalu mendorongnya dengan paksa, jadi cabang data
+  itu tidak menumpuk 96 commit sehari.
 - Bila kelak tersedia penjadwal luar dengan presisi menit (misalnya layanan
   cron gratis yang memanggil workflow ini), tidak ada perubahan kode yang
-  diperlukan: cukup arahkan penjadwal itu ke `workflow_dispatch`.
+  diperlukan: cukup arahkan penjadwal itu ke `workflow_dispatch` dengan
+  `putaran: 1`, dan biarkan putaran berantai ini berhenti dengan sendirinya.

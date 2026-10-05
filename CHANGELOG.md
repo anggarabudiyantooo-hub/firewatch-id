@@ -31,6 +31,10 @@ proyek ini. Format tanggal: YYYY-MM-DD (WIB).
   Sulawesi lebih dulu), dan pengambilan titik dihentikan begitu penyedia
   mengembalikan pembatasan laju dua kali, bukan mengulang tujuh titik yang
   sama. Titik yang dilewati dilaporkan sebagai dilewati.
+- Irama snapshot dijaga pekerjaan berputar: satu pekerjaan mengambil 20
+  putaran berjeda 15 menit, dan penjadwal GitHub hanya berperan sebagai
+  penjaga penerusnya. Sebelumnya jadwal GitHub yang terukur hanya memicu
+  sekitar lima kali sehari, sehingga snapshot sering melewati batas 45 menit.
 - Jalur snapshot: workflow `flights-snapshot.yml` mengambil snapshot kotak
   Indonesia tiap 15 menit ke cabang `snapshot-flights`, karena dari fungsi
   produksi Vercel koneksi ke OpenSky timeout sedangkan dari runner GitHub

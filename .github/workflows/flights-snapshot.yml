@@ -5,17 +5,37 @@ name: Snapshot lalu lintas udara
 # sama menjawab 200 dengan lebih dari 170 pesawat. Jadi pengambilannya
 # dipindahkan ke runner, dan aplikasi membaca berkas hasilnya.
 #
+# Kenapa berputar (loop) dan bukan hanya sekali jalan: penjadwal GitHub
+# terukur hanya memicu workflow berjadwal sekitar lima kali sehari pada
+# repositori ini, jauh dari */15 menit yang tertulis. Karena itu satu
+# pekerjaan mengambil beberapa putaran sekaligus dengan jeda di antaranya,
+# dan karena grup concurrency menyimpan paling banyak satu pekerjaan yang
+# menunggu, putaran berikutnya selalu tersambung: tiap kali satu pekerjaan
+# selesai, pekerjaan yang menunggu mengambil alih. Yang tidak pernah terjadi
+# adalah pekerjaan menumpuk tanpa batas, karena GitHub membatalkan pekerjaan
+# yang menunggu lebih lama saat ada pekerjaan baru masuk ke grup yang sama.
+#
 # Berkasnya ditulis ke cabang terpisah (snapshot-flights), bukan ke cabang
-# utama. Setiap putaran menimpa cabang itu dengan satu commit, sehingga
-# riwayat cabang utama tidak bertambah 96 commit sehari.
+# utama. Tiap putaran membuat satu commit tanpa induk lalu mendorongnya
+# dengan paksa, sehingga cabang itu selalu berisi satu commit.
 #
 # Snapshot yang gagal diambil tidak dipublikasikan: berkas kosong akan
 # terbaca aplikasi sebagai "tidak ada pesawat".
+#
+# Catatan kredensial: workflow ini TIDAK memakai rahasia apa pun di luar
+# GITHUB_TOKEN bawaan.
 
 on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
+    inputs:
+      putaran:
+        description: 'Jumlah putaran (1 berarti sekali ambil, untuk memeriksa)'
+        default: '20'
+      jeda_detik:
+        description: 'Jeda antar putaran dalam detik'
+        default: '900'
 
 concurrency:
   group: snapshot-flights
@@ -24,7 +44,9 @@ concurrency:
 jobs:
   snapshot:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Batas pekerjaan GitHub enam jam; dipilih di bawahnya dengan margin,
+    # supaya pekerjaan ditutup rapi dan penerusnya mengambil alih.
+    timeout-minutes: 350
     permissions:
       contents: write
     steps:
@@ -38,32 +60,61 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Ambil snapshot
-        run: node scripts/flights-snapshot.js
-
-      - name: Publikasikan ke cabang snapshot-flights
+      - name: Identitas git
         run: |
-          set -euo pipefail
-          if [ ! -f snapshot/flights.json ]; then
-            echo "::error::snapshot/flights.json tidak ada, pembatalan publikasi"
-            exit 1
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan snapshot-flights
-          # Semua berkas cabang utama dilepas dari indeks; yang tersisa hanya
-          # satu berkas snapshot. Berkas ini diabaikan .gitignore di cabang
-          # utama, jadi penambahannya harus dipaksa.
-          git reset
-          git add -f snapshot/flights.json
-          git commit -m "snapshot lalu lintas udara $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push -f origin snapshot-flights
 
-      - name: Ringkasan
+      - name: Putaran snapshot
+        env:
+          PUTARAN: ${{ inputs.putaran || '20' }}
+          JEDA: ${{ inputs.jeda_detik || '900' }}
         run: |
-          node -e "
-            const s = require('./snapshot/flights.json');
-            console.log('Penyedia :', s.penyedia);
-            console.log('Jumlah   :', s.jumlah, 'pesawat');
-            console.log('Diambil  :', s.diambilAt);
-          "
+          set -uo pipefail
+
+          sukses=0
+          gagal=0
+
+          for i in $(seq 1 "$PUTARAN"); do
+            echo "::group::Putaran $i dari $PUTARAN ($(date -u +%H:%M:%SZ))"
+
+            if node scripts/flights-snapshot.js; then
+              # Publikasi lewat git plumbing: satu commit tanpa induk, lalu
+              # dorong paksa. Cabang snapshot karena itu selalu satu commit,
+              # tidak menumpuk riwayat walau putaran berjalan puluhan kali.
+              BLOB=$(git hash-object -w snapshot/flights.json)
+              git read-tree --empty
+              git update-index --add --cacheinfo "100644,$BLOB,snapshot/flights.json"
+              TREE=$(git write-tree)
+              COMMIT=$(git commit-tree "$TREE" \
+                -m "snapshot lalu lintas udara $(date -u +%Y-%m-%dT%H:%MZ)")
+              if git push -f origin "$COMMIT:refs/heads/snapshot-flights"; then
+                sukses=$((sukses + 1))
+                echo "Terbit: $(git show -s --format=%h "$COMMIT")"
+              else
+                gagal=$((gagal + 1))
+                echo "::warning::Putaran $i: gagal mendorong ke cabang snapshot-flights"
+              fi
+            else
+              gagal=$((gagal + 1))
+              echo "::warning::Putaran $i: pengambilan gagal, snapshot tidak dipublikasikan"
+            fi
+            echo "::endgroup::"
+
+            if [ "$i" -lt "$PUTARAN" ]; then
+              # Jeda dipotong-potong supaya baris log tetap muncul dan
+              # pekerjaan tidak terlihat menggantung tanpa keterangan.
+              sisa="$JEDA"
+              while [ "$sisa" -gt 0 ]; do
+                tidur=$(( sisa > 60 ? 60 : sisa ))
+                sleep "$tidur"
+                sisa=$((sisa - tidur))
+              done
+            fi
+          done
+
+          echo "Selesai: $sukses putaran terbit, $gagal putaran gagal"
+          if [ "$sukses" -eq 0 ]; then
+            echo "::error::Tidak ada satu pun putaran yang berhasil"
+            exit 1
+          fi
