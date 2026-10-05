@@ -1,0 +1,53 @@
+name: Uji keterjangkauan sumber (manual)
+
+# Dipertahankan sebagai alat diagnosa, bukan penjadwal.
+#
+# Sebabnya terukur: dari lingkungan produksi Vercel, koneksi ke OpenSky
+# Network timeout, sedangkan dari runner GitHub hasilnya berbeda. Sebelum
+# memutuskan sebuah sumber dipakai sebagai cadangan, keterjangkauannya harus
+# dibuktikan dari tempat yang benar-benar akan memakainya, bukan disimpulkan
+# dari jaringan pengembang.
+#
+# Jalankan manual dari tab Actions. Tidak dijalankan oleh jadwal.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  uji:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Uji sumber lalu lintas udara
+        run: |
+          set -uo pipefail
+
+          uji() {
+            local nama="$1" url="$2" jalur="$3"
+            local kode waktu berkas
+            berkas="$(mktemp)"
+            kode=$(curl -sS -o "$berkas" -w '%{http_code}' --max-time 25 \
+                     -H 'User-Agent: SiagaID/1.0' -H 'Accept: application/json' "$url") || kode=000
+            waktu=$(date -u +%H:%M:%S)
+            local jumlah
+            jumlah=$(jq -r "$jalur" < "$berkas" 2>/dev/null || echo 'n/a')
+            printf '%-16s HTTP %-4s jumlah=%-5s (%s)\n' "$nama" "$kode" "$jumlah" "$waktu"
+            rm -f "$berkas"
+          }
+
+          echo "::group::Lalu lintas udara"
+          uji opensky    'https://opensky-network.org/api/states/all?lamin=-11.5&lomin=94.5&lamax=6.5&lomax=141.5' '.states | length'
+          uji adsblol    'https://api.adsb.lol/v2/point/-6.2/106.8/250'    '.ac | length'
+          uji airplanes  'https://api.airplanes.live/v2/point/-6.2/106.8/250' '.ac | length'
+          uji adsbfi     'https://opendata.adsb.fi/api/v2/point/-6.2/106.8/250' '.ac | length'
+          uji adsbone    'https://api.adsb.one/v2/point/-6.2/106.8/250'    '.ac | length'
+          echo "::endgroup::"
+
+          echo "::group::Pembatasan laju adsb.lol (7 titik berurutan, jeda 1,1 dtk)"
+          for t in "2.5/99.0" "-3.0/102.5" "-6.5/107.5" "-7.8/112.5" "-0.5/114.0" "-2.0/121.0" "-4.0/138.0"; do
+            kode=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 \
+                     -H 'User-Agent: SiagaID/1.0' "https://api.adsb.lol/v2/point/${t}/400") || kode=000
+            printf '  titik %-10s HTTP %s\n' "$t" "$kode"
+            sleep 1.1
+          done
+          echo "::endgroup::"
