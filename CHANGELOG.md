@@ -3,6 +3,23 @@
 Catatan perubahan yang berarti bagi pengguna atau bagi siapa pun yang memasang
 proyek ini. Format tanggal: YYYY-MM-DD (WIB).
 
+## 2026-10-19
+
+**Lapisan raster aerosol satelit NASA OMPS NOAA-21**
+- Panel Lapisan kini menyediakan indeks aerosol satelit terpisah dari model sebaran
+  asap. Raster harian 380 nm dimuat lewat proksi same-origin NASA GIBS, tanggalnya
+  mengikuti metadata waktu terbaru yang diterbitkan sumber.
+- Petak dibatasi pada layer yang diizinkan, rentang tanggal tujuh hari, dan zoom
+  asli level 6. Cache petak server dan CDN berlaku satu jam; metadata tanggal 30
+  menit. CSP tetap `connect-src 'self'`.
+- Antarmuka menampilkan status memuat, tanggal observasi, dan kegagalan petak.
+  Batas data menjelaskan bahwa indeks mengukur aerosol pada kolom atmosfer, bukan
+  identifikasi asap kebakaran atau PM2.5 permukaan. Area transparan tidak dibaca
+  sebagai udara bersih.
+- README dan panel Sumber menyebut atribusi NASA GIBS serta cara membaca keterbatasan.
+  Dua belas uji unit dan antarmuka menguji tanggal, petak, URL hulu, signature PNG,
+  status muat, atribusi, dan batas interpretasi.
+
 ## 2026-10-05
 
 **Kamera web komunitas Windy disiapkan (belum aktif tanpa kunci)**
