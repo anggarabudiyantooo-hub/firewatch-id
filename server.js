@@ -2537,12 +2537,12 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
 });
 
 /**
- * Versi aset: hash isi app.js/app.css/wind-particles.js.
+ * Versi aset: hash isi berkas antarmuka utama dan dependensinya.
  * Ditempelkan ke URL aset di index.html sehingga setiap penerapan baru
  * menghasilkan URL baru, peramban pengguna tidak akan lagi memakai
  * berkas lama dari cache tanpa perlu hard-refresh manual.
  */
-const ASSET_FILES = ['app.js', 'app.css', 'wind-particles.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css'];
+const ASSET_FILES = ['app.js', 'app.css', 'smoke-geometry.js', 'wind-particles.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css'];
 let assetVersion = null;
 
 function getAssetVersion() {
@@ -2564,7 +2564,7 @@ function renderIndex() {
   // Fase 2.1: label sudut peta dari BBOX config, bukan hardcoded
   const corners = BBOX_CORNERS; // { nw, ne, sw, se } dari lib/config.js
   let html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
-    .replace(/(href|src)="\/(app\.css|app\.js|wind-particles\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css)"/g,
+    .replace(/(href|src)="\/(app\.css|app\.js|smoke-geometry\.js|wind-particles\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css)"/g,
       (_m, attr, file) => `${attr}="${file}?v=${v}"`);
   // Inject BBOX corners ke HTML (fallback jika JS belum load)
   try {

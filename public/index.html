@@ -530,7 +530,7 @@
           <div>
             <span class="micro" style="display:block;padding-bottom:6px">Memahami data ini</span>
             <details><summary>Apa itu titik api (hotspot)?</summary><div class="body"><b>Apa:</b> piksel yang terdeteksi satelit sebagai anomali panas di permukaan bumi. <b>Penting:</b> hotspot <b>bukan</b> berarti pasti kebakaran hutan. <b>FRP:</b> daya radiasi api dalam megawatt.</div></details>
-            <details><summary>Kenapa sebaran asap berbentuk kerucut?</summary><div class="body"><b>Cara baca:</b> ujung sempit adalah sumber api, kerucut melebar mengikuti arah angin. <b>Kenapa melebar:</b> angin tidak pernah bertiup satu arah persis.</div></details>
+            <details><summary>Kenapa sebaran asap berbentuk kerucut?</summary><div class="body"><b>Cara baca:</b> ujung sempit adalah sumber api, kerucut melebar mengikuti arah angin. Tiga lapis warna dengan tepi lembut hanya membantu membaca jangkauan relatif model, bukan konsentrasi asap. Klik poligon untuk menyorot zona kota/kabupaten dari daftar terdampak yang titik pusatnya berada di dalamnya. Prakiraan menggunakan daftar dampak saat ini dan tidak menghitung ulang kota yang mungkin terdampak pada jam mendatang.</div></details>
             <details><summary>Timeline sebaran (+6 / +12 / +18 jam)</summary><div class="body"><b>Cara pakai:</b> tombol di atas peta menggeser tampilan ke prakiraan beberapa jam ke depan. Kerudung putus-putus biru menandakan prakiraan, bukan kondisi terkini.</div></details>
             <details><summary>Arti “daerah terdampak”</summary><div class="body">Perkiraan kota yang berada di jalur sebaran asap, dihitung dari arah angin dan intensitas api. Indeks 0-100 menandakan seberapa kuat paparan, <b>bukan angka ISPU resmi.</b></div></details>
             <details><summary>Angin &amp; kenapa ia menentukan segalanya</summary><div class="body">Layer <b>ketinggian angin</b> memilih level tekanan: permukaan 10 m hingga 300 hPa (~9,2 km).</div></details>
@@ -657,6 +657,7 @@
 </div>
 
 <script src="/vendor/leaflet.js"></script>
+<script src="/smoke-geometry.js"></script>
 <script src="/wind-particles.js"></script>
 <script src="/app.js"></script>
 <script src="/v3-ui.js"></script>

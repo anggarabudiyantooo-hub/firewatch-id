@@ -84,11 +84,18 @@ if (typeof app === 'function') {
   const http = require('http');
   const srv = http.createServer(app).listen(0, '127.0.0.1', async () => {
     const port = srv.address().port;
-    const paths = ['/api/health', '/', '/app.css', '/wind-particles.js', '/vendor/leaflet.js'];
+    const paths = ['/api/health', '/', '/app.css', '/smoke-geometry.js', '/wind-particles.js', '/vendor/leaflet.js'];
     for (const p of paths) {
       try {
         const r = await fetch(`http://127.0.0.1:${port}${p}`);
-        if (r.status === 200) ok(`${r.status} ${p}`); else bad(`${r.status} ${p}`);
+        if (r.status === 200) {
+          ok(`${r.status} ${p}`);
+          if (p === '/') {
+            const html = await r.text();
+            if (/src="smoke-geometry\.js\?v=[a-f0-9]{10}"/.test(html)) ok('HTML memberi versi aset pada modul geometri asap');
+            else bad('HTML tidak memberi versi aset pada modul geometri asap');
+          }
+        } else bad(`${r.status} ${p}`);
       } catch (e) { bad(`${p}, ${e.message}`); }
     }
     srv.close();

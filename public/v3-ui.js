@@ -79,26 +79,28 @@
           x.setAttribute("aria-selected",String(i===j));
           const sub=document.getElementById(x.dataset.sub);
           if(sub) sub.classList.toggle("on",i===j);
-          // legacy pane handling for compatibility
-          if(x.dataset.sub && x.dataset.sub.startsWith("w-")){
-            const map={"w-terdampak":"paneImpact","w-provinsi":"paneProv","w-abu":"paneAsh","w-klaster":"paneCluster","w-kering":"paneDry"};
-            const target=map[x.dataset.sub];
-            if(target){
-              document.querySelectorAll("#paneImpact,#paneProv,#paneAsh,#paneCluster,#paneDry").forEach(p=>p.hidden=true);
-              const el=document.getElementById(target);
-              if(el) el.hidden=false;
-            }
-          }
-          if(x.dataset.sub && x.dataset.sub.startsWith("a-")){
-            const map2={"a-unit":"paneUnit","a-grup":"paneGroup"};
-            const target=map2[x.dataset.sub];
-            if(target){
-              document.querySelectorAll("#paneUnit,#paneGroup").forEach(p=>p.hidden=true);
-              const el=document.getElementById(target);
-              if(el) el.hidden=false;
-            }
-          }
         });
+
+        // Panel lama mengikuti tab yang dipilih, bukan setiap tab saat loop.
+        const id=bs[i].dataset.sub;
+        if(id && id.startsWith("w-")){
+          const map={"w-terdampak":"paneImpact","w-provinsi":"paneProv","w-abu":"paneAsh","w-klaster":"paneCluster","w-kering":"paneDry"};
+          const target=map[id];
+          if(target){
+            document.querySelectorAll("#paneImpact,#paneProv,#paneAsh,#paneCluster,#paneDry").forEach(p=>p.hidden=true);
+            const pane=document.getElementById(target);
+            if(pane) pane.hidden=false;
+          }
+        }
+        if(id && id.startsWith("a-")){
+          const map={"a-unit":"paneUnit","a-grup":"paneGroup"};
+          const target=map[id];
+          if(target){
+            document.querySelectorAll("#paneUnit,#paneGroup").forEach(p=>p.hidden=true);
+            const pane=document.getElementById(target);
+            if(pane) pane.hidden=false;
+          }
+        }
       });
     });
   });

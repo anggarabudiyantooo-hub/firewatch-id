@@ -331,6 +331,7 @@
     // lapisan atmosfer yang sama, bukan permukaan lawan ketinggian.
     windLevel: 'auto', windLevelUsed: '10m', windMeta: null,
     wind: null, windKey: null, windOn: false, windBusy: false, particles: null, plumeHour: 0,
+    smokeSelection: null,
     air: null, airKey: null, airOn: false, airBusy: false, airPendingQ: null,
     airMinAqi: 0, airFilteredCount: 0, // Fase 2.5: filter AQI UI friendly
     ash: null, ashOn: false, volcanoOn: false, ashBusy: false, newsAt: '',
@@ -500,55 +501,165 @@
     box.appendChild(tot);
   }
 
+  function impactedRegionKey(r) {
+    var lat = Number(r.lat), lon = Number(r.lon);
+    return [r.name || '', r.prov || '', Number.isFinite(lat) ? lat.toFixed(4) : '',
+      Number.isFinite(lon) ? lon.toFixed(4) : ''].join('|');
+  }
+
+  function smokeRegionsWithin(polygon) {
+    var geometry = window.SiagaSmokeGeometry;
+    if (!geometry || typeof geometry.containsPoint !== 'function') return null;
+    var regions = state.data && Array.isArray(state.data.impacted) ? state.data.impacted : [];
+    return regions.filter(function (r) {
+      var lat = Number(r.lat), lon = Number(r.lon);
+      return Number.isFinite(lat) && Number.isFinite(lon)
+        && geometry.containsPoint(polygon, lat, lon);
+    });
+  }
+
+  function scaleSmokePolygon(ring, originLat, originLon, factor) {
+    if (!Array.isArray(ring)) return [];
+    return ring.map(function (point) {
+      return [
+        originLat + (Number(point[0]) - originLat) * factor,
+        originLon + (Number(point[1]) - originLon) * factor
+      ];
+    });
+  }
+
   function drawSmoke() {
+    var clearSelection = !!state.smokeSelection;
+    state.smokeSelection = null;
     gSmoke.clearLayers();
+    if (clearSelection && state.data) renderImpactList();
     if (!state.data) return;
+
     var h = state.plumeHour;
-    state.data.plumes.forEach(function (p) {
-      // Pada jam > 0 pakai bentuk hasil prakiraan angin; jika tak tersedia, lewati.
+    var selectionLayer = L.layerGroup();
+
+    function selectPlume(polygon, hour) {
+      var matches = smokeRegionsWithin(polygon);
+      selectionLayer.clearLayers();
+      if (matches === null) {
+        state.smokeSelection = null;
+        showHint('Pencocokan wilayah belum tersedia. Selubung model tetap ditampilkan.', 7000);
+        return;
+      }
+
+      state.smokeSelection = {
+        hour: hour,
+        keys: matches.map(impactedRegionKey)
+      };
+      matches.forEach(function (r) {
+        var radius = ZONE_RADIUS_KM[r.level] || 10;
+        L.polygon(zoneRingKm(r.lat, r.lon, radius), {
+          color: '#ffe083', weight: 2.2, opacity: 0.95,
+          fillColor: '#e2d8c1', fillOpacity: 0.2,
+          dashArray: '3,3', className: 'smoke-affected-zone',
+          interactive: false
+        }).addTo(selectionLayer);
+      });
+
+      renderImpactList();
+      var wilayahTab = $('dt-wilayah');
+      if (wilayahTab) wilayahTab.click();
+      var terdampakTab = document.querySelector('#d-wilayah [data-sub="w-terdampak"]');
+      if (terdampakTab) terdampakTab.click();
+
+      showHint(matches.length
+        ? nf.format(matches.length) + ' zona kota/kabupaten disorot; daftar dibuka di Wilayah > Terdampak.'
+        : 'Tidak ada titik pusat dari daftar dampak saat ini di dalam poligon ini. Lihat Wilayah > Terdampak untuk rinciannya.', 7000);
+    }
+
+    var plumes = Array.isArray(state.data.plumes) ? state.data.plumes : [];
+    plumes.forEach(function (p) {
+      // Pada jam > 0, pakai bentuk hasil prakiraan angin; jika tak tersedia, lewati.
       var f = p;
       if (h > 0) {
         var found = null;
-        if (p.forecast) {
+        if (Array.isArray(p.forecast)) {
           p.forecast.forEach(function (x) { if (x.hour === h) found = x; });
         }
         if (!found) return;
         f = found;
       }
+      if (!Array.isArray(f.polygon) || f.polygon.length < 3) return;
 
-      // Dua lapis: inti pekat di dekat sumber + selubung tipis sejauh jangkauan,
-      // supaya bentuk kepulan terbaca jelas di atas peta gelap.
-      var op = Math.min(0.55, 0.22 + p.intensity * 0.33);
-      var spd = h > 0 ? f.windSpeed : p.wind.speed;
+      var intensity = Number(p.intensity);
+      if (!Number.isFinite(intensity)) intensity = 0;
+      intensity = Math.max(0, Math.min(1, intensity));
+      var speed = h > 0 ? Number(f.windSpeed) : Number(p.wind && p.wind.speed);
+      if (!Number.isFinite(speed)) speed = 0;
+
+      // Tiga selubung bersarang memberi peralihan warna dari tepi ke inti.
+      // Ini hanya gaya peta, bukan hasil pengukuran konsentrasi aerosol.
+      var matches = smokeRegionsWithin(f.polygon);
+      var matchLine = matches === null
+        ? 'Pencocokan titik pusat kota/kabupaten belum tersedia di peramban.'
+        : matches.length
+          ? 'Pusat kota/kabupaten dalam poligon: ' + matches.slice(0, 5).map(function (r) {
+            return r.name + (r.prov ? ', ' + r.prov : '');
+          }).join('; ') + (matches.length > 5 ? '; +' + nf.format(matches.length - 5) + ' lainnya' : '')
+          : 'Tidak ada titik pusat dari daftar dampak saat ini di dalam poligon ini.';
       var lines = [
         'Sumber: klaster ' + p.count + ' titik api · FRP ' + nf.format(p.frp) + ' MW',
-        'Angin ' + spd.toFixed(1) + ' m/s, asap bergerak ke ' + compass(f.bearingTo) + ' (' + f.bearingTo + '°)',
-        'Jangkauan perkiraan: ± ' + nf.format(f.lengthKm) + ' km'
+        'Angin ' + speed.toFixed(1) + ' m/s, asap bergerak ke ' + compass(f.bearingTo) + ' (' + f.bearingTo + '°)',
+        'Jangkauan perkiraan: ± ' + nf.format(f.lengthKm) + ' km',
+        matchLine
       ];
       if (h === 0) {
-        lines.push((p.wind.rh !== null ? 'Kelembapan ' + p.wind.rh + '%' : '') +
-          (p.wind.temp !== null ? (p.wind.rh !== null ? ' · ' : '') + 'Suhu ' + p.wind.temp + '°C' : ''));
+        var weather = [];
+        if (p.wind && p.wind.rh !== null && p.wind.rh !== undefined) weather.push('Kelembapan ' + p.wind.rh + '%');
+        if (p.wind && p.wind.temp !== null && p.wind.temp !== undefined) weather.push('Suhu ' + p.wind.temp + '°C');
+        if (weather.length) lines.push(weather.join(' · '));
       } else {
         lines.push('Prakiraan +' + h + ' jam' + (f.run ? ' · siklus GFS ' + f.run : ''));
       }
+      var warning = 'Model perkiraan berbasis angin, bukan model dispersi atmosfer maupun pengukuran kualitas udara.';
+      if (h > 0) {
+        warning += ' Daftar kota yang dicocokkan berasal dari hitungan dampak saat ini; kota terdampak baru pada jam prakiraan tidak dihitung ulang.';
+      } else {
+        warning += ' Klik selubung untuk menyorot zona kota yang pusatnya berada di dalam poligon.';
+      }
       var info = popupNode(h === 0 ? 'Perkiraan sebaran asap' : 'Prakiraan sebaran +' + h + ' jam', lines,
-        { warn: 'Model perkiraan berbasis angin, bukan model dispersi atmosfer maupun pengukuran kualitas udara.' });
+        { warn: warning });
+
+      // Lapisan luar menangani klik. Dua lapisan di dalamnya hanya visual,
+      // sehingga klik tetap dapat mencapai poligon yang membuka rincian.
+      var haze = L.polygon(f.polygon, {
+        stroke: false, fillColor: h > 0 ? '#8ab4d8' : '#d8d5cc',
+        fillOpacity: h > 0 ? 0.06 + intensity * 0.05 : 0.1 + intensity * 0.1,
+        smoothFactor: 1, className: 'smoke-haze',
+        interactive: true, bubblingMouseEvents: false
+      });
+      haze.on('click', function () { selectPlume(f.polygon, h); });
+      haze.bindPopup(info).addTo(gSmoke);
+
+      var middlePolygon = scaleSmokePolygon(f.polygon, p.lat, p.lon, 0.72);
+      L.polygon(middlePolygon, {
+        stroke: false, fillColor: h > 0 ? '#6f9bc4' : '#d5ad7b',
+        fillOpacity: h > 0 ? 0.07 + intensity * 0.06 : 0.12 + intensity * 0.13,
+        smoothFactor: 1, className: 'smoke-body', interactive: false
+      }).addTo(gSmoke);
+
+      var core = Array.isArray(f.corePolygon) && f.corePolygon.length >= 3
+        ? f.corePolygon : scaleSmokePolygon(f.polygon, p.lat, p.lon, 0.45);
+      L.polygon(core, {
+        stroke: false, fillColor: h > 0 ? '#4f7ea8' : '#bd7e49',
+        fillOpacity: h > 0 ? 0.08 + intensity * 0.07 : 0.18 + intensity * 0.24,
+        smoothFactor: 1, className: 'smoke-core', interactive: false
+      }).addTo(gSmoke);
 
       L.polygon(f.polygon, {
-        color: h > 0 ? '#8ab4d8' : '#e2b184', weight: 1.2, opacity: 0.75,
-        fillColor: h > 0 ? '#6f9bc4' : '#d9a273',
-        fillOpacity: op * (h > 0 ? 0.35 : 0.45),
-        smoothFactor: 1, dashArray: h > 0 ? '4,3' : null
-      }).bindPopup(info).addTo(gSmoke);
-
-      if (f.corePolygon) {
-        L.polygon(f.corePolygon, {
-          color: 'transparent', weight: 0,
-          fillColor: h > 0 ? '#4f7ea8' : '#c98b52',
-          fillOpacity: op * (h > 0 ? 0.75 : 1), smoothFactor: 1
-        }).bindPopup(info).addTo(gSmoke);
-      }
+        color: h > 0 ? '#8ab4d8' : '#e2b184', weight: 1.1,
+        opacity: h > 0 ? 0.75 : 0.58, fill: false,
+        smoothFactor: 1, dashArray: h > 0 ? '4,3' : null,
+        className: 'smoke-plume-outline', interactive: false
+      }).addTo(gSmoke);
     });
+
+    gSmoke.addLayer(selectionLayer);
   }
 
 
@@ -2595,19 +2706,51 @@
   }
 
   function renderImpactList() {
-      var pane = $('paneImpact'); clear(pane);
-      var list = state.data ? state.data.impacted : [];
-      if (!list.length) { pane.appendChild(el('p', 'empty', 'Tidak ada zona terdampak saat ini, tidak ada kota/kabupaten yang dijangkau paparan asap atau abu (jendela 24 jam).')); return; }
-      var jml = list.length;
-      pane.appendChild(el('div', 'micro',
-        'Zona terdampak aktif · ' + nf.format(jml) + ' kota/kabupaten · jendela data 24 jam'));
-      pane.appendChild(el('p', 'pane-note',
-        'Wilayah terdampak = kota/kabupaten yang KINI berada di dalam jangkauan paparan: ' +
-        'jalur pluma asap dari titik api dan/atau sebaran abu vulkanik, dihitung dari arah angin ' +
-        'dan intensitas sumbernya. Yang digambar adalah ZONA PAPARAN, poligon buffer berjari-jari ' +
-        '7-18 km sesuai tingkat paparan (bukan batas administratif dan bukan data kerusakan). ' +
-        'Indeks 0-100 menandakan seberapa kuat paparan, bukan angka ISPU resmi. Klik sebuah zona di ' +
-        'peta untuk melihat semua peristiwa bahaya lain yang tercatat di lokasi sekitar zona itu.'));
+      var pane = $('paneImpact');
+      if (!pane) return;
+      clear(pane);
+      var all = state.data && Array.isArray(state.data.impacted) ? state.data.impacted : [];
+      var selection = state.smokeSelection;
+      var list = all;
+      if (selection) {
+        list = all.filter(function (r) { return selection.keys.indexOf(impactedRegionKey(r)) !== -1; });
+        var period = selection.hour > 0 ? 'prakiraan +' + selection.hour + ' jam' : 'kondisi saat ini';
+        pane.appendChild(el('div', 'micro',
+          'Zona dalam plume terpilih · ' + nf.format(list.length) + ' kota/kabupaten · ' + period));
+        pane.appendChild(el('p', 'pane-note', selection.hour > 0
+          ? 'Kota yang ditampilkan hanya irisan antara daftar dampak saat ini dan titik pusat yang masuk poligon prakiraan. Dampak prakiraan tidak dihitung ulang, sehingga kota baru yang mungkin masuk jalur asap tidak disimpulkan. Zona peta adalah radius estimasi, bukan batas administratif atau data kerusakan.'
+          : 'Filter memakai titik pusat kota/kabupaten pada daftar dampak saat ini yang berada di dalam poligon. Zona peta adalah radius estimasi 7-18 km, bukan batas administratif atau data kerusakan; indeks bukan pengukuran ISPU.'));
+        var resetFilter = el('button', 'chipbtn smoke-filter-reset', 'Tampilkan semua wilayah terdampak');
+        resetFilter.type = 'button';
+        resetFilter.addEventListener('click', function () {
+          state.smokeSelection = null;
+          drawSmoke();
+          renderImpactList();
+        });
+        pane.appendChild(resetFilter);
+      }
+
+      if (!list.length) {
+        pane.appendChild(el('p', 'empty', selection
+          ? (all.length
+            ? 'Tidak ada titik pusat dari daftar dampak saat ini di dalam poligon asap terpilih.'
+            : 'Daftar dampak saat ini kosong, jadi tidak ada kota yang dapat dicocokkan.')
+          : 'Tidak ada zona terdampak saat ini, tidak ada kota/kabupaten yang dijangkau paparan asap atau abu (jendela 24 jam).'));
+        return;
+      }
+
+      if (!selection) {
+        pane.appendChild(el('div', 'micro',
+          'Zona terdampak aktif · ' + nf.format(list.length) + ' kota/kabupaten · jendela data 24 jam'));
+        pane.appendChild(el('p', 'pane-note',
+          'Wilayah terdampak = kota/kabupaten yang KINI berada di dalam jangkauan paparan: ' +
+          'jalur pluma asap dari titik api dan/atau sebaran abu vulkanik, dihitung dari arah angin ' +
+          'dan intensitas sumbernya. Yang digambar adalah ZONA PAPARAN, poligon buffer berjari-jari ' +
+          '7-18 km sesuai tingkat paparan (bukan batas administratif dan bukan data kerusakan). ' +
+          'Indeks 0-100 menandakan seberapa kuat paparan, bukan angka ISPU resmi. Klik sebuah zona di ' +
+          'peta untuk melihat semua peristiwa bahaya lain yang tercatat di lokasi sekitar zona itu.'));
+      }
+
       // Satu kartu per zona. Baris bawah memuat badge multi-bahaya: jenis
       // peristiwa lain yang terhitung ada di sekitar zona (bukan hanya asap).
       var grid = el('div', 'grid4');
@@ -3161,7 +3304,15 @@
   function bindLayer(id, group) {
     $(id).addEventListener('change', function (e) {
       if (e.target.checked) { map.addLayer(group); layerHint(id); }
-      else { map.removeLayer(group); showHint(null); }
+      else {
+        map.removeLayer(group);
+        if (id === 'lySmoke' && state.smokeSelection) {
+          state.smokeSelection = null;
+          drawSmoke();
+          renderImpactList();
+        }
+        showHint(null);
+      }
     });
   }
   bindLayer('lyFire', gFire);
