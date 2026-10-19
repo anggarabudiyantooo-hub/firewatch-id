@@ -886,6 +886,12 @@ button:focus-visible,a:focus-visible{outline:1px solid rgba(100,210,255,0.55);ou
 
 /* === Leaflet dark === */
 .leaflet-container{background:var(--map-ocean) !important}
+.leaflet-container .smoke-haze{filter:blur(9px)}
+.leaflet-container .smoke-body{filter:blur(3px)}
+.leaflet-container .smoke-core{filter:drop-shadow(0 0 5px rgba(214,166,112,.34))}
+.leaflet-container .smoke-affected-zone{filter:drop-shadow(0 0 5px rgba(255,214,10,.5))}
+.leaflet-container .smoke-plume-outline{pointer-events:none}
+.smoke-filter-reset{margin:2px 0 8px}
 .leaflet-control-zoom a{background:var(--surface-1) !important;color:var(--text-primary) !important;border-color:var(--hairline) !important}
 
 /* ═══════════════════════════════════════════════════════════════
