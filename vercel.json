@@ -1,6 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
+  "git": {
+    "deploymentEnabled": {
+      "snapshot-flights": false
+    }
+  },
   "functions": {
     "api/index.js": {
       "maxDuration": 60,
