@@ -20,6 +20,12 @@ proyek ini. Format tanggal: YYYY-MM-DD (WIB).
   Dua belas uji unit dan antarmuka menguji tanggal, petak, URL hulu, signature PNG,
   status muat, atribusi, dan batas interpretasi.
 
+**Playback linimasa sebaran asap model**
+- Kontrol putar/jeda dan penggeser kini memutar empat frame yang tersedia:
+  kondisi saat ini, +6, +12, dan +18 jam. Pemutaran berhenti di frame terakhir;
+  tekan Putar ulang untuk memulai lagi. Label menegaskan ini model angin dan
+  intensitas titik api, bukan pengukuran PM2.5.
+
 ## 2026-10-05
 
 **Kamera web komunitas Windy disiapkan (belum aktif tanpa kunci)**

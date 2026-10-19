@@ -331,7 +331,7 @@
     // lapisan atmosfer yang sama, bukan permukaan lawan ketinggian.
     windLevel: 'auto', windLevelUsed: '10m', windMeta: null,
     wind: null, windKey: null, windOn: false, windBusy: false, particles: null, plumeHour: 0,
-    smokeSelection: null,
+    smokeSelection: null, smokePlaying: false, smokePlaybackTimer: null,
     aerosolOn: false, aerosolLayer: null, aerosolMeta: null, aerosolRequest: 0,
     air: null, airKey: null, airOn: false, airBusy: false, airPendingQ: null,
     airMinAqi: 0, airFilteredCount: 0, // Fase 2.5: filter AQI UI friendly
@@ -3306,6 +3306,7 @@
     $(id).addEventListener('change', function (e) {
       if (e.target.checked) { map.addLayer(group); layerHint(id); }
       else {
+        if (id === 'lySmoke') stopSmokePlayback();
         map.removeLayer(group);
         if (id === 'lySmoke' && state.smokeSelection) {
           state.smokeSelection = null;
@@ -4658,21 +4659,90 @@
     });
   });
 
-// Linimasa sebaran: 0 = kondisi sekarang, >0 = prakiraan angin ke depan.
-  // Idiomnya select .field seperti baris lain panel, grup tombol lamanya bekerja
-  // tetapi tidak pernah diberi gaya, sehingga muncul sebagai tombol bawaan
-  // peramban yang menabrak gelapnya panel (laporan: "ada yang tidak sesuai").
+  // Linimasa model memakai empat frame yang tersedia: sekarang, +6, +12, +18 jam.
   var _tlSel = $('tlSel');
-  if (_tlSel) _tlSel.addEventListener('change', function (e) {
-    state.plumeHour = Number(e.target.value) || 0;
-    // Memilih prakiraan tanpa lapisan asap hanya menghasilkan petunjuk kosong,
-    // jadi asapnya dinyalakan sendiri seperti perilaku tombol sebelumnya.
-    if (!$('lySmoke').checked) { $('lySmoke').checked = true; map.addLayer(gSmoke); }
+  var _smokePlay = $('smokePlay');
+  var _smokeTimeLabel = $('smokeTimeLabel');
+  var _smokePlaybackStatus = $('smokePlaybackStatus');
+
+  function smokeHourLabel(hour) {
+    return hour === 0 ? 'SEKARANG' : '+' + hour + ' JAM';
+  }
+
+  function updateSmokePlaybackButton() {
+    if (!_smokePlay) return;
+    var playing = state.smokePlaying;
+    _smokePlay.textContent = playing ? 'Ⅱ' : '▶';
+    _smokePlay.setAttribute('aria-pressed', String(playing));
+    _smokePlay.setAttribute('aria-label', playing
+      ? 'Jeda prakiraan sebaran asap'
+      : state.plumeHour >= 18 ? 'Putar ulang prakiraan sebaran asap'
+        : 'Putar prakiraan sebaran asap');
+    _smokePlay.title = playing ? 'Jeda' : state.plumeHour >= 18 ? 'Putar ulang' : 'Putar';
+  }
+
+  function stopSmokePlayback() {
+    if (state.smokePlaybackTimer !== null) {
+      window.clearInterval(state.smokePlaybackTimer);
+      state.smokePlaybackTimer = null;
+    }
+    state.smokePlaying = false;
+    updateSmokePlaybackButton();
+  }
+
+  function ensureSmokeLayer() {
+    var toggle = $('lySmoke');
+    if (toggle && !toggle.checked) {
+      toggle.checked = true;
+      map.addLayer(gSmoke);
+      layerHint('lySmoke');
+    } else if (!map.hasLayer(gSmoke)) {
+      map.addLayer(gSmoke);
+    }
+  }
+
+  function setSmokeHour(value) {
+    var hour = Number(value);
+    if ([0, 6, 12, 18].indexOf(hour) < 0) return;
+    state.plumeHour = hour;
+    if (_tlSel) {
+      _tlSel.value = String(hour);
+      _tlSel.setAttribute('aria-valuetext', smokeHourLabel(hour).toLowerCase());
+    }
+    if (_smokeTimeLabel) _smokeTimeLabel.textContent = smokeHourLabel(hour);
+    if (_smokePlaybackStatus) {
+      _smokePlaybackStatus.textContent = hour === 0
+        ? 'Kondisi saat ini · model angin dan intensitas titik api. Bukan ukuran PM2.5.'
+        : 'Prakiraan +' + hour + ' jam · model angin dan intensitas titik api. Bukan ukuran PM2.5.';
+    }
+    ensureSmokeLayer();
     drawSmoke();
-    showHint(state.plumeHour === 0
-      ? 'Menampilkan sebaran asap saat ini.'
-      : 'Prakiraan sebaran ' + state.plumeHour + ' jam ke depan (garis putus-putus).');
+    updateSmokePlaybackButton();
+  }
+
+  function startSmokePlayback() {
+    if (state.plumeHour >= 18) setSmokeHour(0);
+    ensureSmokeLayer();
+    state.smokePlaying = true;
+    updateSmokePlaybackButton();
+    state.smokePlaybackTimer = window.setInterval(function () {
+      if (state.plumeHour >= 18) {
+        stopSmokePlayback();
+        return;
+      }
+      setSmokeHour(state.plumeHour + 6);
+    }, 1800);
+  }
+
+  if (_tlSel) _tlSel.addEventListener('input', function (event) {
+    stopSmokePlayback();
+    setSmokeHour(event.target.value);
   });
+  if (_smokePlay) _smokePlay.addEventListener('click', function () {
+    if (state.smokePlaying) stopSmokePlayback();
+    else startSmokePlayback();
+  });
+  updateSmokePlaybackButton();
 
   // Panel SO2: hanya muncul bila ada gunung yang sedang erupsi.
   function loadSo2() {

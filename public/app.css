@@ -1047,16 +1047,6 @@ a[href]{color:var(--text-primary)}
 .ev time{font:400 10px/1 var(--font-data);color:var(--text-tertiary)}
 .ev b{font:600 12px/1.2 var(--font-prose);color:var(--text-secondary)}
 .ev b span{color:var(--text-primary)}
-.axis{position:relative;height:30px;display:flex;align-items:center;margin-top:8px}
-.axis-line{position:absolute;left:0;right:0;top:50%;height:1px;background:var(--hairline-strong)}
-.node{position:absolute;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--text-disabled)}
-.now{position:absolute;top:50%;transform:translate(-50%,-50%)}
-.now::before{content:"";position:absolute;width:74px;height:46px;border-radius:50%;top:-13px;left:50%;
-  margin-left:-37px;background:radial-gradient(closest-side,rgba(255,159,10,.26),rgba(255,159,10,0))}
-.now b{position:relative;background:var(--status-alert);color:#0A0A0C;border-radius:var(--radius-chip);
-  padding:4px 10px;font:700 10px/1 var(--font-data);letter-spacing:.06em}
-.ticks{position:absolute;right:0;display:flex;gap:44px}
-.ticks span{font:400 10px/1 var(--font-data);color:var(--text-tertiary)}
 .subtabs{display:flex;gap:2px;margin-bottom:8px;background:var(--surface-2);
   border-radius:var(--radius-chip);padding:2px;width:max-content}
 .subtabs button{background:transparent;border:1px solid transparent;border-radius:var(--radius-micro);
@@ -1225,7 +1215,7 @@ details .body b{color:var(--text-primary);font-weight:600}
   .side-stack.expanded{height:auto!important}
   .dock-body{height:auto;max-height:none}
   .grid4,.grid3,.grid2{grid-template-columns:1fr}
-  .ticks,.scrub-ticks{display:none}
+  .scrub-ticks{display:none}
   .hud{gap:10px;padding:8px 10px;left:10px;top:40px}
   .whois{grid-template-columns:1fr 70px}
 }
@@ -1431,6 +1421,22 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
 
 .aerosol-status{margin:0 0 7px;padding:7px 8px 7px 10px;border-left:2px solid var(--status-info);background:var(--surface-1);font:400 10px/1.45 var(--font-prose);color:var(--text-secondary)}
 .aerosol-status[hidden]{display:none!important}
+.smoke-playback{display:flex;align-items:center;gap:8px;min-width:0;margin:2px 0 0}
+.smoke-play-btn{width:32px;height:32px;flex:0 0 32px;display:grid;place-items:center;padding:0;border:1px solid var(--hairline-strong);border-radius:50%;background:var(--surface-2);color:var(--text-primary);font:700 12px/1 var(--font-data);cursor:pointer}
+.smoke-play-btn:hover{border-color:var(--status-info);color:var(--status-info)}
+.smoke-play-btn:focus-visible{outline:2px solid var(--status-info);outline-offset:2px}
+.smoke-play-track{flex:1;min-width:0}
+.smoke-play-range{display:block;width:100%;height:18px;margin:0;padding:0;appearance:none;-webkit-appearance:none;background:transparent;cursor:pointer;touch-action:pan-y}
+.smoke-play-range::-webkit-slider-runnable-track{height:3px;border-radius:3px;background:var(--hairline-strong)}
+.smoke-play-range::-moz-range-track{height:3px;border-radius:3px;background:var(--hairline-strong)}
+.smoke-play-range::-webkit-slider-thumb{width:12px;height:12px;margin-top:-4.5px;appearance:none;-webkit-appearance:none;border:2px solid var(--surface-0);border-radius:50%;background:var(--status-info);box-shadow:0 0 0 2px rgba(100,210,255,.14)}
+.smoke-play-range::-moz-range-thumb{width:9px;height:9px;border:2px solid var(--surface-0);border-radius:50%;background:var(--status-info);box-shadow:0 0 0 2px rgba(100,210,255,.14)}
+.smoke-play-ticks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:2px;color:var(--text-tertiary);font:400 8px/1.2 var(--font-data)}
+.smoke-play-ticks span:nth-child(2),.smoke-play-ticks span:nth-child(3){text-align:center}
+.smoke-play-ticks span:last-child{text-align:right}
+.smoke-time-label{min-width:52px;text-align:right;color:var(--status-info);font:600 9px/1.2 var(--font-data);white-space:nowrap}
+.smoke-playback-status{margin:4px 0 7px 40px;color:var(--text-tertiary);font:400 9px/1.4 var(--font-prose)}
+@media(max-width:540px){.smoke-time-label{min-width:46px;font-size:8px}.smoke-play-ticks{font-size:7.5px}}
 .aerosol-status[data-state="error"]{border-left-color:var(--status-alert);color:var(--status-alert)}
 .aerosol-status[data-state="loading"]::before{content:"";display:inline-block;width:9px;height:9px;margin:0 6px 0 0;vertical-align:-1px;border:1.5px solid rgba(100,210,255,.28);border-top-color:var(--status-info);border-radius:50%;animation:aerosol-spin .8s linear infinite}
 @keyframes aerosol-spin{to{transform:rotate(360deg)}}
