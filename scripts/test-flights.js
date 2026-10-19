@@ -380,6 +380,13 @@ function fetchPalsu(opsi) {
     js.includes('jaringan penerima tidak rapat') && html.includes('Jaringan penerima tidak rapat'));
   const alur = fs.readFileSync(path.join(__dirname, '..', '.github/workflows/flights-snapshot.yml'), 'utf8');
   const skrip = fs.readFileSync(path.join(__dirname, '..', 'scripts/flights-snapshot.js'), 'utf8');
+  const vercelConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'vercel.json'), 'utf8'));
+  cek('vercel.json menonaktifkan deployment cabang snapshot-flights',
+    vercelConfig.git && vercelConfig.git.deploymentEnabled
+      && vercelConfig.git.deploymentEnabled['snapshot-flights'] === false);
+  cek('commit snapshot membawa vercel.json agar pengecualian dibaca Vercel',
+    alur.includes('VERCEL_BLOB=$(git hash-object -w vercel.json)')
+      && alur.includes('100644,$VERCEL_BLOB,vercel.json'));
   cek('penjadwal luar ada dan berjadwal', /cron: '\*\/15 \* \* \* \*'/.test(alur));
   // Penjadwal GitHub terukur hanya memicu sekitar lima kali sehari, jadi satu
   // pekerjaan mengambil beberapa putaran sekaligus; penerusnya datang dari
