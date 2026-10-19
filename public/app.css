@@ -1421,6 +1421,16 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
 
 .aerosol-status{margin:0 0 7px;padding:7px 8px 7px 10px;border-left:2px solid var(--status-info);background:var(--surface-1);font:400 10px/1.45 var(--font-prose);color:var(--text-secondary)}
 .aerosol-status[hidden]{display:none!important}
+.pm25-status{margin:4px 0 7px;padding:7px 8px 7px 10px;border-left:2px solid var(--status-info);background:var(--surface-1);font:400 10px/1.45 var(--font-prose);color:var(--text-secondary)}
+.pm25-status[hidden],.pm25-legend[hidden]{display:none!important}
+.pm25-status[data-state="error"]{border-left-color:var(--status-alert);color:var(--status-alert)}
+.pm25-status[data-state="loading"]::before{content:"";display:inline-block;width:9px;height:9px;margin:0 6px 0 0;vertical-align:-1px;border:1.5px solid rgba(100,210,255,.28);border-top-color:var(--status-info);border-radius:50%;animation:aerosol-spin .8s linear infinite}
+.pm25-legend{margin:0 0 8px;padding:7px 8px;background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-field)}
+.pm25-legend-title{margin-bottom:6px;color:var(--text-secondary);font:600 10px/1.2 var(--font-prose)}
+.pm25-legend-bands{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 6px}
+.pm25-legend-item{display:flex;align-items:center;gap:5px;min-width:0;color:var(--text-tertiary);font:400 9px/1.2 var(--font-data)}
+.pm25-legend-swatch{width:11px;height:11px;flex:0 0 11px;border-radius:2px}
+.pm25-legend-note{margin-top:6px;color:var(--text-tertiary);font:400 9px/1.4 var(--font-prose)}
 .smoke-playback{display:flex;align-items:center;gap:8px;min-width:0;margin:2px 0 0}
 .smoke-play-btn{width:32px;height:32px;flex:0 0 32px;display:grid;place-items:center;padding:0;border:1px solid var(--hairline-strong);border-radius:50%;background:var(--surface-2);color:var(--text-primary);font:700 12px/1 var(--font-data);cursor:pointer}
 .smoke-play-btn:hover{border-color:var(--status-info);color:var(--status-info)}
@@ -1440,4 +1450,4 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
 .aerosol-status[data-state="error"]{border-left-color:var(--status-alert);color:var(--status-alert)}
 .aerosol-status[data-state="loading"]::before{content:"";display:inline-block;width:9px;height:9px;margin:0 6px 0 0;vertical-align:-1px;border:1.5px solid rgba(100,210,255,.28);border-top-color:var(--status-info);border-radius:50%;animation:aerosol-spin .8s linear infinite}
 @keyframes aerosol-spin{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){.aerosol-status[data-state="loading"]::before{animation:none}}
+@media(prefers-reduced-motion:reduce){.aerosol-status[data-state="loading"]::before,.pm25-status[data-state="loading"]::before{animation:none}}

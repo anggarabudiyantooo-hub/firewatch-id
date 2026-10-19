@@ -26,6 +26,19 @@ proyek ini. Format tanggal: YYYY-MM-DD (WIB).
   tekan Putar ulang untuk memulai lagi. Label menegaskan ini model angin dan
   intensitas titik api, bukan pengukuran PM2.5.
 
+**Layer PM2.5 total model CAMS Global**
+- Layer baru memakai deret PM2.5 hourly CAMS Global dari endpoint same-origin
+  `/api/air-quality`; variabel current AQI dan deret PM2.5 hourly hanya diminta
+  saat layer masing-masing aktif. Grid tetap dibatasi, diberi cache, dan memakai
+  kunci berbeda untuk AQI saja, prakiraan saja, atau keduanya.
+- Frame 0/+6/+12/+18 mengikuti linimasa bersama, dengan pane, legenda, status,
+  waktu berlaku WIB, dan satuan µg/m³ sendiri. Layer ini adalah PM2.5 model total
+  dekat permukaan, bukan pengukuran stasiun atau atribusi khusus asap kebakaran.
+  Plume indikatif, US AQI, dan indeks aerosol satelit tetap produk terpisah.
+- Normalisasi memvalidasi waktu, satuan, koordinat, serta nilai kosong. Tes helper
+  dan integrasi route memeriksa variabel kondisional, satu permintaan bulk, cache,
+  dan keadaan saat kedua layer mati; semuanya masuk `npm run check`.
+
 ## 2026-10-05
 
 **Kamera web komunitas Windy disiapkan (belum aktif tanpa kunci)**

@@ -279,6 +279,9 @@
     document.body.classList.toggle('basemap-citra', name === 'citra');
   }
 
+  map.createPane('pm25Pane');
+  map.getPane('pm25Pane').style.zIndex = 340;
+  map.getPane('pm25Pane').style.pointerEvents = 'auto';
   map.createPane('airPane');
   map.getPane('airPane').style.zIndex = 350;      // di bawah overlayPane (400)
   map.getPane('airPane').style.pointerEvents = 'auto';
@@ -297,6 +300,7 @@
   map.getPane('volcanoPane').style.zIndex = 640;
 
   var gAir = L.layerGroup();
+  var gPm25 = L.layerGroup();
   var gAsh = L.layerGroup();
   // Marker status gunung berdiri sendiri; dulu menempel di gAsh sehingga
   // ikut padam saat lapisan Abu vulkanik dimatikan - padahal data status tetap
@@ -334,6 +338,7 @@
     smokeSelection: null, smokePlaying: false, smokePlaybackTimer: null,
     aerosolOn: false, aerosolLayer: null, aerosolMeta: null, aerosolRequest: 0,
     air: null, airKey: null, airOn: false, airBusy: false, airPendingQ: null,
+    pm25On: false, pm25Loading: false, pm25Error: '',
     airMinAqi: 0, airFilteredCount: 0, // Fase 2.5: filter AQI UI friendly
     ash: null, ashOn: false, volcanoOn: false, ashBusy: false, newsAt: '',
     // Harus cocok dengan <option selected> pada #himaSel (nonaktif),
@@ -787,7 +792,7 @@
         color: col, weight: 2, fillColor: col, fillOpacity: 0.16
       }).bindTooltip(r.name + ' \u00b7 paparan ' + r.level + ' \u00b7 radius ' + rad + ' km', {
         direction: 'top', className: 'zone-tip'
-      }).bindPopup(popupNode(r.name + ' \u2014 ' + r.prov, [
+      }).bindPopup(popupNode(r.name + ' · ' + r.prov, [
         'Zona terdampak = area terpapar dengan radius ' + rad + ' km dari pusat permukiman (bukan batas administratif, bukan data kerusakan).',
         'Tingkat paparan: ' + r.level + ' (indeks ' + r.score + '/100)',
         'Sumber asap terdekat: ' + nf.format(r.nearestKm) + ' km (' + r.proximity + ')',
@@ -853,6 +858,81 @@
       // Jangan timpa confSummary bila sedang menampilkan hotspot summary
       // confSummary dipakai bersama, hanya update jika air layer aktif dan tidak ada hotspot filter aktif
     }
+  }
+
+  var PM25_COLOR_BANDS = [
+    { max: 5, label: '0-5', color: '#38bdf8' },
+    { max: 10, label: '>5-10', color: '#34d399' },
+    { max: 15, label: '>10-15', color: '#a3e635' },
+    { max: 25, label: '>15-25', color: '#facc15' },
+    { max: 50, label: '>25-50', color: '#fb923c' },
+    { max: Infinity, label: '>50', color: '#c084fc' }
+  ];
+
+  function pm25FrameIndex() {
+    return Math.max(0, Math.min(3, Math.round((Number(state.plumeHour) || 0) / 6)));
+  }
+
+  function formatPm25Time(value) {
+    var date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return 'waktu model tidak tersedia';
+    return date.toLocaleString('id-ID', {
+      timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short',
+      hour: '2-digit', minute: '2-digit', hour12: false
+    }) + ' WIB';
+  }
+
+  function pm25Color(value) {
+    for (var i = 0; i < PM25_COLOR_BANDS.length; i++) {
+      if (value <= PM25_COLOR_BANDS[i].max) return PM25_COLOR_BANDS[i].color;
+    }
+    return PM25_COLOR_BANDS[PM25_COLOR_BANDS.length - 1].color;
+  }
+
+  function drawPm25() {
+    gPm25.clearLayers();
+    if (!state.pm25On || state.pm25Loading || state.pm25Error
+        || !state.air || !state.air.pm25Forecast) {
+      updatePm25Status(0);
+      return;
+    }
+
+    var forecast = state.air.pm25Forecast;
+    var index = pm25FrameIndex();
+    var time = forecast.validTimes && forecast.validTimes[index];
+    var step = Number(forecast.sampleStepDeg) || Number(state.air.step) || 1.5;
+    var cellSize = Math.max(Number(forecast.nativeResolutionDeg) || 0.4, step);
+    var half = cellSize / 2;
+    var points = (forecast.points || []).slice().sort(function (a, b) {
+      return (Number(a.values[index]) || 0) - (Number(b.values[index]) || 0);
+    });
+    var drawn = 0;
+
+    points.forEach(function (point) {
+      var value = point.values && point.values[index];
+      if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return;
+      var color = pm25Color(value);
+      var cell = L.rectangle([
+        [point.lat - half, point.lon - half],
+        [point.lat + half, point.lon + half]
+      ], {
+        pane: 'pm25Pane', color: color, weight: 0.35, opacity: 0.16,
+        fillColor: color, fillOpacity: 0.48, interactive: true
+      });
+      cell.bindPopup(popupNode('PM2.5 model total', [
+        'Nilai model: ' + nf.format(value) + ' µg/m³',
+        time ? 'Waktu berlaku: ' + formatPm25Time(time) : null,
+        'Ketinggian representatif: sekitar 10 m di atas tanah.',
+        'Sampel tampilan: ' + step + '°; grid native CAMS Global: sekitar 0,4° (~45 km).'
+      ], { warn: 'Konsentrasi model total dari semua sumber. Bukan pengukuran stasiun dan bukan kontribusi khusus asap kebakaran.' }))
+        .bindTooltip('PM2.5 model ' + nf.format(value) + ' µg/m³', {
+          direction: 'top', offset: [0, -4], opacity: 0.9, className: 'aqi-tip'
+        })
+        .addTo(gPm25);
+      drawn++;
+    });
+
+    updatePm25Status(drawn);
   }
 
   /* ---------- gunung api & sebaran abu vulkanik ---------- */
@@ -2214,69 +2294,96 @@
   }
 
   function loadAir() {
-    if (!state.airOn) return Promise.resolve();
+    if (!state.airOn && !state.pm25On) return Promise.resolve();
     var step = airStepFor(map.getZoom());
     var b = map.getBounds();
-    var q = 'step=' + step;
+    var q = 'step=' + step + '&aqi=' + (state.airOn ? '1' : '0')
+      + '&forecast=' + (state.pm25On ? '1' : '0');
     if (step < 1.5) {
       q += '&west=' + b.getWest().toFixed(2) + '&south=' + b.getSouth().toFixed(2) +
            '&east=' + b.getEast().toFixed(2) + '&north=' + b.getNorth().toFixed(2);
     }
-    // Fase 2.5: jika key sama, tetap redraw karena filter AQI mungkin berubah, jangan skip renderAirLegend
+    if (state.pm25On && state.airKey !== q) {
+      state.pm25Loading = true;
+      state.pm25Error = '';
+      gPm25.clearLayers();
+      updatePm25Status(0);
+    }
+    // Saat kedua layer aktif, AQI dan CAMS PM2.5 memakai satu permintaan grid.
     if (state.airKey === q) {
-      drawAir();
+      state.pm25Loading = false;
+      state.pm25Error = '';
+      if (state.airOn) drawAir();
       renderAirLegend();
+      if (state.pm25On) drawPm25();
       try { if (typeof updateAirCfg === 'function') updateAirCfg(); } catch (e) {}
+      updateForecastStatus();
       return Promise.resolve();
     }
-    // Jika sedang sibuk, simpan pending agar tidak miss update saat geser peta cepat
+    // Jika sedang sibuk, simpan area terbaru agar geser cepat tidak memakai area lama.
     if (state.airBusy) {
       state.airPendingQ = q;
       return Promise.resolve();
     }
     state.airBusy = true;
-    showHint('Memuat data kualitas udara…');
+    showHint(state.pm25On
+      ? 'Memuat grid kualitas udara dan prakiraan PM2.5 CAMS…'
+      : 'Memuat data kualitas udara…');
     return fetchTRetry('/api/air-quality?' + q, { headers: { Accept: 'application/json' } }, 15000, 3)
       .then(function (r) {
         if (r.status === 429) {
           return r.json().then(function (j) {
             var sec = j.retryAfter || 60;
             showHint('Kuota udara tercapai, coba lagi ' + sec + ' detik. Memakai cache terakhir.', 8000);
-            // Jika ada cache lama, tetap gambar, jangan kosongkan
-            if (state.air) { drawAir(); renderAirLegend(); try { if (typeof updateAirCfg === 'function') updateAirCfg(); } catch (e) {} }
             return Promise.reject(new Error('quota'));
           });
         }
-        return r.ok ? r.json() : Promise.reject(new Error('x'));
+        return r.ok ? r.json() : Promise.reject(new Error('air_unavailable'));
       })
       .then(function (d) {
         state.air = d;
         state.airKey = q;
-        drawAir();
-        renderAirLegend();
-        try { if (typeof updateAirCfg === 'function') updateAirCfg(); } catch (e) {}
-        showHint(d.count
-          ? nf.format(d.count) + ' sel kualitas udara (filter: ' + nf.format(state.airFilteredCount) + ' tampil) · model CAMS via Open-Meteo.'
-          : 'Tidak ada data kualitas udara pada area ini.', 5000);
+        state.pm25Loading = false;
+        state.pm25Error = '';
+        var hasNewerArea = state.airPendingQ && state.airPendingQ !== q;
+        if (!hasNewerArea) {
+          if (state.airOn) drawAir();
+          renderAirLegend();
+          if (state.pm25On) drawPm25();
+          try { if (typeof updateAirCfg === 'function') updateAirCfg(); } catch (e) {}
+          updateForecastStatus();
+          if (state.pm25On) {
+            var forecast = d.pm25Forecast;
+            showHint(forecast && forecast.count
+              ? nf.format(forecast.count) + ' sampel PM2.5 total CAMS. Bukan kontribusi khusus asap.'
+              : 'Prakiraan PM2.5 CAMS tidak tersedia pada area ini.', 5000);
+          } else {
+            showHint(d.count
+              ? nf.format(d.count) + ' sel kualitas udara (filter: ' + nf.format(state.airFilteredCount) + ' tampil) · model CAMS via Open-Meteo.'
+              : 'Tidak ada data kualitas udara pada area ini.', 5000);
+          }
+        }
       })
       .catch(function (err) {
-        if (err && err.message === 'quota') {
-          // sudah ditangani di atas, jangan tampilkan gagal lagi
-        } else {
+        state.pm25Loading = false;
+        if (state.pm25On) {
+          state.pm25Error = err && err.message === 'quota'
+            ? 'Kuota Open-Meteo tercapai. Coba lagi setelah jeda; tidak ada nilai baru yang ditampilkan.'
+            : 'Prakiraan PM2.5 CAMS tidak tersedia saat ini.';
+          if (!state.airKey || state.airKey !== q) gPm25.clearLayers();
+          updatePm25Status(0);
+        }
+        if (!(err && err.message === 'quota')) {
           showHint('Gagal memuat data kualitas udara. Akan coba lagi saat peta digeser.', 6000);
         }
       })
       .then(function () {
         state.airBusy = false;
-        // Jika ada pending request saat sibuk tadi, jalankan sekarang
-        if (state.airPendingQ && state.airPendingQ !== state.airKey) {
-          var pending = state.airPendingQ;
-          state.airPendingQ = null;
-          // Panggil ulang, akan cek key lagi
-          if (state.airOn) loadAir();
-        } else {
-          state.airPendingQ = null;
-        }
+        // Ulangi hanya jika peta berpindah ke query berbeda saat request berjalan.
+        // Query yang sama yang sudah gagal tidak dikirim ulang dua kali sekaligus.
+        var pendingQ = state.airPendingQ;
+        state.airPendingQ = null;
+        if (pendingQ && pendingQ !== q && (state.airOn || state.pm25On)) loadAir();
       });
   }
 
@@ -2392,6 +2499,120 @@
     box.appendChild(foot);
   }
 
+  function setPm25Status(status, message) {
+    var node = $('pm25Status');
+    if (!node) return;
+    node.hidden = !message;
+    node.dataset.state = status || '';
+    node.setAttribute('aria-busy', status === 'loading' ? 'true' : 'false');
+    node.textContent = message || '';
+  }
+
+  function renderPm25Legend() {
+    var box = $('pm25Legend');
+    if (!box) return;
+    clear(box);
+    var forecast = state.air && state.air.pm25Forecast;
+    if (!state.pm25On || state.pm25Loading || state.pm25Error
+        || !forecast || !forecast.points || !forecast.points.length) {
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    box.appendChild(el('div', 'pm25-legend-title', 'PM2.5 model total · µg/m³'));
+    var bands = el('div', 'pm25-legend-bands');
+    PM25_COLOR_BANDS.forEach(function (band) {
+      var item = el('span', 'pm25-legend-item');
+      var swatch = el('i', 'pm25-legend-swatch');
+      swatch.style.background = band.color;
+      item.appendChild(swatch);
+      item.appendChild(el('span', '', band.label));
+      bands.appendChild(item);
+    });
+    box.appendChild(bands);
+    var step = Number(forecast.sampleStepDeg) || 1.5;
+    box.appendChild(el('div', 'pm25-legend-note',
+      'CAMS Global native 0,4° (~45 km), 3 jam. Sampel tampilan ' + step + '° (~' + Math.round(step * 111) + ' km). Warna bukan kategori kesehatan.'));
+  }
+
+  function updatePm25Status(drawn) {
+    if (!state.pm25On) {
+      setPm25Status('', '');
+      renderPm25Legend();
+      return;
+    }
+    if (state.pm25Loading) {
+      setPm25Status('loading', 'Memuat prakiraan PM2.5 model CAMS Global…');
+      renderPm25Legend();
+      return;
+    }
+    if (state.pm25Error) {
+      setPm25Status('error', state.pm25Error);
+      renderPm25Legend();
+      return;
+    }
+    var forecast = state.air && state.air.pm25Forecast;
+    if (!forecast || !forecast.points || !forecast.points.length) {
+      setPm25Status('error', 'Prakiraan PM2.5 CAMS tidak tersedia untuk area ini.');
+      renderPm25Legend();
+      return;
+    }
+    var index = pm25FrameIndex();
+    var validTime = forecast.validTimes && forecast.validTimes[index];
+    var suffix = validTime ? ' Waktu berlaku: ' + formatPm25Time(validTime) + '.' : '';
+    var retrieved = forecast.fetchedAt
+      ? ' Data sumber diambil: ' + formatPm25Time(forecast.fetchedAt) + '.' : '';
+    if (!drawn) {
+      setPm25Status('ready', 'Tidak ada nilai model valid pada frame ini.' + suffix + retrieved
+        + ' PM2.5 total semua sumber, bukan khusus asap kebakaran.');
+    } else {
+      setPm25Status('ready', nf.format(drawn) + ' sampel PM2.5 model total.' + suffix + retrieved
+        + ' Dekat permukaan 10 m; bukan pembacaan stasiun atau kontribusi khusus asap.');
+    }
+    renderPm25Legend();
+  }
+
+  function updateForecastStatus() {
+    var smokeToggle = $('lySmoke');
+    var pm25Toggle = $('lyPm25');
+    var smokeOn = !!(smokeToggle && smokeToggle.checked);
+    var pm25On = !!(pm25Toggle && pm25Toggle.checked);
+    var hour = Number(state.plumeHour) || 0;
+    var forecast = state.air && state.air.pm25Forecast;
+    var index = pm25FrameIndex();
+    var validTime = state.pm25On && !state.pm25Loading && !state.pm25Error
+      && forecast && forecast.validTimes && forecast.validTimes[index];
+    var frameLabel = hour === 0 ? '0 (kondisi saat ini)' : '+' + hour + ' jam';
+    var timeSuffix = validTime
+      ? ' Waktu berlaku PM2.5: ' + formatPm25Time(validTime) + '.'
+      : ' Waktu berlaku PM2.5 tidak tersedia.';
+
+    if (_smokePlaybackStatus) {
+      if (smokeOn && pm25On) {
+        _smokePlaybackStatus.textContent = 'Plume asap indikatif, frame ' + frameLabel
+          + ', dari model angin dan titik api; bukan ukuran PM2.5. PM2.5 CAMS Global '
+          + 'adalah total semua sumber pada frame yang sama.' + timeSuffix;
+      } else if (pm25On) {
+        _smokePlaybackStatus.textContent = 'PM2.5 total model CAMS Global, frame ' + frameLabel
+          + ', dekat permukaan 10 m; bukan khusus asap kebakaran.' + timeSuffix;
+      } else if (smokeOn) {
+        _smokePlaybackStatus.textContent = hour === 0
+          ? 'Kondisi saat ini · model angin dan intensitas titik api. Bukan ukuran PM2.5.'
+          : 'Prakiraan +' + hour + ' jam · model angin dan intensitas titik api. Bukan ukuran PM2.5.';
+      } else {
+        _smokePlaybackStatus.textContent = 'Pilih layer asap atau PM2.5 model untuk melihat prakiraan.';
+      }
+    }
+    if (_smokeTimeLabel) {
+      _smokeTimeLabel.textContent = pm25On ? 'CAMS +' + hour + 'J' : smokeHourLabel(hour);
+    }
+    if (_tlSel) {
+      _tlSel.setAttribute('aria-valuetext', pm25On
+        ? 'CAMS, prakiraan plus ' + hour + ' jam'
+        : smokeHourLabel(hour).toLowerCase());
+    }
+  }
+
   /* ---------- medan angin ---------- */
   // Warna panah mengikuti kecepatan (biru tenang -> merah kencang).
   function windColor(s) {
@@ -2451,7 +2672,7 @@
     box.appendChild(el('span', 'wb-lab', 'ANGIN'));
     box.appendChild(el('span', 'wb-h', m.levelLabel || 'permukaan'));
     if (state.windLevel === 'auto') {
-      box.appendChild(el('span', 'wb-auto', 'AUTO \u2014 ikut abu'));
+      box.appendChild(el('span', 'wb-auto', 'AUTO · ikut abu'));
     }
     box.appendChild(el('span', 'wb-src', m.hPa ? 'Open-Meteo' : 'NOAA GFS'));
     box.appendChild(el('span', 'wb-mode', 'MODEL'));
@@ -3264,6 +3485,12 @@
       return n ? nf.format(n) + ' pluma asap dimodelkan dari arah angin dan intensitas api.'
                : 'Tidak ada pluma asap pada data saat ini.';
     },
+    lyPm25: function () {
+      var forecast = state.air && state.air.pm25Forecast;
+      return forecast && forecast.count
+        ? nf.format(forecast.count) + ' sampel PM2.5 total model CAMS, bukan khusus asap.'
+        : 'Prakiraan PM2.5 total CAMS sedang dimuat.';
+    },
     lyImpact: function () {
       var n = state.data && state.data.impacted ? state.data.impacted.length : 0;
       return n
@@ -3306,7 +3533,7 @@
     $(id).addEventListener('change', function (e) {
       if (e.target.checked) { map.addLayer(group); layerHint(id); }
       else {
-        if (id === 'lySmoke') stopSmokePlayback();
+        if (id === 'lySmoke' && !$('lyPm25').checked) stopSmokePlayback();
         map.removeLayer(group);
         if (id === 'lySmoke' && state.smokeSelection) {
           state.smokeSelection = null;
@@ -3314,6 +3541,10 @@
           renderImpactList();
         }
         showHint(null);
+      }
+      if (id === 'lySmoke') {
+        updateForecastStatus();
+        updateSmokePlaybackButton();
       }
     });
   }
@@ -3428,6 +3659,29 @@
       updateAirCfg();
       showHint(null);
     }
+  });
+
+  var _lyPm25 = $('lyPm25');
+  _lyPm25 && _lyPm25.addEventListener('change', function (event) {
+    state.pm25On = event.target.checked;
+    if (state.pm25On) {
+      map.addLayer(gPm25);
+      state.pm25Loading = true;
+      state.pm25Error = '';
+      layerHint('lyPm25');
+      updatePm25Status(0);
+      loadAir();
+    } else {
+      state.pm25Loading = false;
+      state.pm25Error = '';
+      map.removeLayer(gPm25);
+      gPm25.clearLayers();
+      updatePm25Status(0);
+      if (!$('lySmoke').checked) stopSmokePlayback();
+      showHint(null);
+    }
+    updateForecastStatus();
+    updateSmokePlaybackButton();
   });
 
   // Fase 2.5: filter AQI, UI friendly
@@ -4318,7 +4572,7 @@
     moveTimer = setTimeout(function () {
       if (state.concOn) loadConcessions();
       if (state.windOn) loadWind();
-      if (state.airOn) loadAir();
+      if (state.airOn || state.pm25On) loadAir();
     }, 800);
   });
 
@@ -4659,7 +4913,7 @@
     });
   });
 
-  // Linimasa model memakai empat frame yang tersedia: sekarang, +6, +12, +18 jam.
+  // Satu linimasa menyelaraskan plume asap indikatif dan PM2.5 model total.
   var _tlSel = $('tlSel');
   var _smokePlay = $('smokePlay');
   var _smokeTimeLabel = $('smokeTimeLabel');
@@ -4672,12 +4926,15 @@
   function updateSmokePlaybackButton() {
     if (!_smokePlay) return;
     var playing = state.smokePlaying;
+    var smokeOn = $('lySmoke').checked;
+    var pm25On = $('lyPm25').checked;
+    var label = smokeOn && pm25On ? 'prakiraan asap dan PM2.5 model'
+      : pm25On ? 'prakiraan PM2.5 model' : 'prakiraan sebaran asap';
     _smokePlay.textContent = playing ? 'Ⅱ' : '▶';
     _smokePlay.setAttribute('aria-pressed', String(playing));
     _smokePlay.setAttribute('aria-label', playing
-      ? 'Jeda prakiraan sebaran asap'
-      : state.plumeHour >= 18 ? 'Putar ulang prakiraan sebaran asap'
-        : 'Putar prakiraan sebaran asap');
+      ? 'Jeda ' + label
+      : state.plumeHour >= 18 ? 'Putar ulang ' + label : 'Putar ' + label);
     _smokePlay.title = playing ? 'Jeda' : state.plumeHour >= 18 ? 'Putar ulang' : 'Putar';
   }
 
@@ -4701,29 +4958,36 @@
     }
   }
 
+  function ensureForecastLayers() {
+    var smokeToggle = $('lySmoke');
+    var pm25Toggle = $('lyPm25');
+    if ((!smokeToggle || !smokeToggle.checked) && (!pm25Toggle || !pm25Toggle.checked)) {
+      ensureSmokeLayer();
+    }
+    if (smokeToggle && smokeToggle.checked && !map.hasLayer(gSmoke)) map.addLayer(gSmoke);
+    if (pm25Toggle && pm25Toggle.checked) {
+      if (!map.hasLayer(gPm25)) map.addLayer(gPm25);
+      loadAir();
+    }
+  }
+
   function setSmokeHour(value) {
     var hour = Number(value);
     if ([0, 6, 12, 18].indexOf(hour) < 0) return;
     state.plumeHour = hour;
-    if (_tlSel) {
-      _tlSel.value = String(hour);
-      _tlSel.setAttribute('aria-valuetext', smokeHourLabel(hour).toLowerCase());
-    }
-    if (_smokeTimeLabel) _smokeTimeLabel.textContent = smokeHourLabel(hour);
-    if (_smokePlaybackStatus) {
-      _smokePlaybackStatus.textContent = hour === 0
-        ? 'Kondisi saat ini · model angin dan intensitas titik api. Bukan ukuran PM2.5.'
-        : 'Prakiraan +' + hour + ' jam · model angin dan intensitas titik api. Bukan ukuran PM2.5.';
-    }
-    ensureSmokeLayer();
-    drawSmoke();
+    ensureForecastLayers();
+    if (_tlSel) _tlSel.value = String(hour);
+    if ($('lySmoke').checked) drawSmoke();
+    if (state.pm25On) drawPm25();
+    updateForecastStatus();
     updateSmokePlaybackButton();
   }
 
   function startSmokePlayback() {
     if (state.plumeHour >= 18) setSmokeHour(0);
-    ensureSmokeLayer();
+    ensureForecastLayers();
     state.smokePlaying = true;
+    updateForecastStatus();
     updateSmokePlaybackButton();
     state.smokePlaybackTimer = window.setInterval(function () {
       if (state.plumeHour >= 18) {
@@ -4742,6 +5006,7 @@
     if (state.smokePlaying) stopSmokePlayback();
     else startSmokePlayback();
   });
+  updateForecastStatus();
   updateSmokePlaybackButton();
 
   // Panel SO2: hanya muncul bila ada gunung yang sedang erupsi.
@@ -5259,12 +5524,14 @@
   (function syncLayers() {
     var _lv = $('lyVolcano');
     var _la = $('lyAerosol');
+    var _lp = $('lyPm25');
     if (_lv) state.volcanoOn = _lv.checked;
+    if (_lp) state.pm25On = _lp.checked;
     if (_la && _la.checked) {
       state.aerosolOn = true;
       loadAerosolRaster();
     }
-    [['lyFire', gFire], ['lyAir', gAir], ['lyQuake', gQuake],
+    [['lyFire', gFire], ['lyAir', gAir], ['lyPm25', gPm25], ['lyQuake', gQuake],
      ['lyShelter', gShelter], ['lySmoke', gSmoke], ['lyConc', gConc],
      ['lyFlights', gFlights],
      ['lyVolcano', gVolcano]
@@ -5276,6 +5543,7 @@
     // Data gunung dibutuhkan dua sakelar (abu & letusan); muat sekali di awal
     // bila salah satunya ON - loadAsh punya gerbang ashOn||volcanoOn sendiri.
     if (state.volcanoOn || state.ashOn) loadAsh();
+    if (state.pm25On) loadAir();
     if (state.flightsOn) loadFlights();
     setTimeout(function () {
       try { map.invalidateSize(); } catch (e) {}

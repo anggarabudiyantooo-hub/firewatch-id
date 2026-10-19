@@ -111,7 +111,7 @@ memakai `no-store` agar keadaan "belum tahu" tidak ikut ter-cache.
 | `/api/casualties` | - | Angka korban dari berita |
 | `/api/status` | no-store | Umur tiap sumber |
 | `/api/wind-field` | 1800 dtk | Medan angin |
-| `/api/air-quality` | - | Grid AQI |
+| `/api/air-quality` | 900 dtk, stale 1800 dtk | Grid US AQI; `forecast=1` menambahkan empat frame PM2.5 CAMS Global |
 | `/api/air-point` | - | AQI satu titik |
 | `/api/place` | - | Wilayah administratif |
 | `/api/whose-land` | - | Status lahan satu titik |
@@ -124,6 +124,20 @@ memakai `no-store` agar keadaan "belum tahu" tidak ikut ter-cache.
 | `/api/sentinel/meta` | 1800 dtk | Tanggal perekaman & tutupan awan |
 | `/api/sentinel/:p/:z/:x/:y.jpg` | 21600 dtk | Proksi ubin Sentinel-2, allowlist produk, zoom 8-16 |
 | `/` | no-store | Halaman, menyuntik hash aset |
+
+**Permintaan grid udara.** `/api/air-quality` tetap same-origin dan membatasi grid
+hingga 400 titik. Varian AQI dan varian prakiraan memakai kunci cache berbeda; klien
+mengirim `aqi=1` hanya saat layer US AQI aktif dan `forecast=1` hanya saat PM2.5
+aktif. Dengan begitu layer PM2.5 saja tidak meminta variabel current AQI, sedangkan
+layer AQI saja tidak meminta deret hourly. Varian prakiraan meminta `pm2_5` hourly
+dari CAMS Global. `lib/pm25-forecast.js` memvalidasi empat frame
+0/+6/+12/+18 jam, waktu berlaku, satuan, koordinat, serta nilai kosong sebelum
+mengirim `pm25Forecast`. Nilainya
+mewakili PM2.5 total model dekat permukaan sekitar 10 m, grid native 0,4° (~45 km)
+dan interval 3 jam; bukan pengukuran stasiun atau atribusi khusus asap. Cache server
+berlaku 30 menit dengan stale 60 menit. Pane, palet, legenda, dan status PM2.5
+terpisah dari US AQI, plume indikatif, serta raster aerosol OMPS; linimasa dapat
+menyelaraskan waktunya tanpa menyatukan arti produk.
 
 ### 2.4 Frontend
 
