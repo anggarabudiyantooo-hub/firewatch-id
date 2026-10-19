@@ -80,6 +80,18 @@ Array dipotong 40 teratas; `clustersMeta` melaporkan `{ returned, total, truncat
 Model kerucut sebaran asap dari CLUSTER, dihitung dari arah angin dan FRP. Bukan
 model dispersi atmosfer.
 
+### PM25_FORECAST
+Deret prakiraan PM2.5 total dekat permukaan dari CAMS Global via Open-Meteo. Produk
+ini terpisah dari PLUME, AQI, dan indeks aerosol OMPS; nilainya bukan kontribusi
+khusus asap kebakaran atau hasil pengukuran stasiun. Respons `pm25Forecast` berisi
+`available`, `model`, `source`, `variable`, `units`, `surfaceHeightM`, resolusi dan
+interval native, `sampleStepDeg`, `hours`, `validTimes`, `fetchedAt`, `count`, serta
+`points[]`.
+Tiap titik `{ lat, lon, values[] }` menyimpan nilai pada jam 0, 6, 12, dan 18; nilai
+hilang tetap `null`. Bila deret tidak diminta atau format hulu tidak tervalidasi,
+field bernilai `null`, bukan prakiraan nol. Respons yang formatnya benar tetapi tidak
+memiliki nilai valid berisi `available: false` dan `points: []`.
+
 ### IMPACTED_REGION
 REGION yang berada di jalur PLUME. `{ name, province, population, distanceKm, bearing, score, level }`.
 `score` 0-100 menggabungkan intensitas api, jarak, dan keselarasan angin. Bukan ISPU.

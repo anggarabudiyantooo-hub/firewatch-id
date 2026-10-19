@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
-// Gerbang gaya naskah: menjaga dua hal yang mudah rusak kembali setelah rilis,
-// yaitu tanda pisah panjang dan berkas catatan proses yang tidak layak publik.
+// Gerbang gaya naskah: menjaga tanda pisah panjang (termasuk bentuk escape /
+// entitas em dash) serta menolak berkas catatan proses yang tidak layak publik.
 // Dijalankan sebagai langkah pertama `npm run check`, tanpa jaringan.
 
 const fs = require('fs');
@@ -31,6 +31,15 @@ const NAMA_TANPA_EKSTENSI = new Set(['LICENSE', 'Procfile', 'Dockerfile']);
 // U+2014 dan U+2013 ditulis lewat kode agar berkas ini sendiri tidak memuatnya.
 const TANDA_PISAH_PANJANG = String.fromCharCode(0x2014);
 const TANDA_PISAH_SEDANG = String.fromCharCode(0x2013);
+const REPRESENTASI_EM_DASH = [
+  ['\\' + 'u2014', 'escape Unicode em dash'],
+  ['\\' + 'u{2014}', 'escape Unicode em dash'],
+  ['\\' + '2014', 'escape CSS em dash'],
+  ['&' + 'mdash;', 'entitas HTML em dash'],
+  ['&' + '#8212;', 'entitas numerik em dash'],
+  ['&' + '#x2014;', 'entitas heksadesimal em dash'],
+  ['%' + 'e2%80%94', 'em dash persen-encoded'],
+];
 
 // Jalur absolut mesin pengembang tidak boleh bocor ke berkas yang dibaca publik:
 // rujukan seperti ini menunjuk berkas yang tidak ada di repo.
@@ -83,7 +92,16 @@ for (const jalur of berkas) {
       posisi = teks.indexOf(tanda, posisi + 1);
     }
   }
-  // Berkas ini sendiri memuat polanya sebagai konstanta, jadi dikecualikan.
+  const teksKecil = teks.toLowerCase();
+  for (const [bentuk, nama] of REPRESENTASI_EM_DASH) {
+    const bentukKecil = bentuk.toLowerCase();
+    let posisi = teksKecil.indexOf(bentukKecil);
+    while (posisi !== -1) {
+      temuan.push(`${relatif}:${nomorBaris(teks, posisi)}: ${nama}`);
+      posisi = teksKecil.indexOf(bentukKecil, posisi + 1);
+    }
+  }
+  // Berkas ini sendiri memuat jalur tersebut sebagai konstanta, jadi dikecualikan.
   let posisiJalur = relatif === 'scripts/check-style.js' ? -1 : teks.indexOf(JALUR_TERLARANG);
   while (posisiJalur !== -1) {
     temuan.push(`${relatif}:${nomorBaris(teks, posisiJalur)}: jalur absolut di luar repo (${JALUR_TERLARANG})`);

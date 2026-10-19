@@ -112,7 +112,7 @@ hanya diminta mulai zoom 8, sehingga pemakaian kuota tetap rendah.
 | **NOAA GFS** | Medan angin untuk model sebaran asap | tidak |
 | **[NASA GIBS](https://nasa-gibs.github.io/gibs-api-docs/) / OMPS NOAA-21** | Raster harian Aerosol Index 380 nm untuk konteks aerosol atmosfer | tidak |
 | **NOAA PTWC/NTWC** | Buletin tsunami kawasan | tidak |
-| **Open-Meteo / CAMS** | Kualitas udara, SO₂ gunung api | tidak |
+| **Open-Meteo / CAMS Global** | US AQI, PM2.5 model total dekat permukaan, SO₂ gunung api | tidak |
 | **Global Forest Watch** | Batas konsesi sawit, HTI, tambang, RSPO | tidak |
 | **GeoNames** | 226 permukiman ≥50.000 jiwa | tidak |
 | **JMA Himawari** | Citra satelit (IR, warna alami, abu RGB, debu, uap air) | tidak |
@@ -130,10 +130,12 @@ hanya diminta mulai zoom 8, sehingga pemakaian kuota tetap rendah.
 
 ## Fitur utama
 
-**Peta interaktif** dengan sepuluh lapisan: titik api, kualitas udara, aliran angin,
-sebaran asap hasil model, aerosol satelit, wilayah terdampak, batas konsesi, abu
-vulkanik, gempa, dan pengungsi. Tiga peta dasar, delapan produk pada pemilih citra
-satelit, dan linimasa asap model +6/+12/+18 jam dengan kontrol putar dan jeda.
+**Peta interaktif** dengan layer mandiri untuk letusan gunung api, titik api,
+US AQI, PM2.5 total model CAMS Global, aliran angin, plume asap indikatif,
+aerosol satelit, wilayah terdampak, batas konsesi, abu vulkanik, gempa,
+pengungsian, dan lalu lintas udara. Tiga peta dasar, pilihan citra Himawari dan
+Sentinel, serta satu linimasa +6/+12/+18 jam yang dapat memutar plume atau PM2.5
+jika layer terkait aktif.
 
 **Aerosol satelit bukan peta asap khusus.** Lapisan NASA OMPS NOAA-21 menampilkan
 Aerosol Index harian yang dapat mencakup asap, debu, atau abu vulkanik di kolom
@@ -142,12 +144,18 @@ partikel, dan bukan PM2.5 permukaan. Tanggal pengamatan terbaru tertulis pada
 status lapisan. Area transparan berarti tidak ada retrieval satelit, bukan bukti
 udara bersih.
 
-**Enam produk citra untuk keperluan berbeda.** Selain warna alami dan
-inframerah, tersedia kelembapan tanaman (NDMI) untuk melihat tekanan
-kekeringan sebelum daun menguning, genangan air (MNDWI) yang tidak salah
-menandai atap logam sebagai air, dan **radar Sentinel-1** yang menembus awan,
- satu-satunya cara memotret banjir saat kejadian, karena banjir justru
-terjadi ketika langit tertutup mendung.
+**PM2.5 model total bukan pengukuran atau atribusi asap.** Layer PM2.5 memakai
+prakiraan dekat permukaan CAMS Global melalui Open-Meteo. Nilainya mencakup total
+sumber dalam model, bukan kontribusi khusus kebakaran, dan tidak sama dengan
+US AQI. Resolusi native sekitar 0,4° (~45 km), keluaran model 3-jam, dan
+pembaruan model kira-kira tiap 12 jam; kerapatan sel tampilan mengikuti zoom dan
+dapat lebih kasar. Waktu berlaku setiap frame ditampilkan dalam WIB. Untuk
+keputusan kesehatan, rujuk alat ukur dan arahan instansi resmi.
+
+**Pilihan citra untuk keperluan berbeda.** Selain warna alami dan inframerah,
+tersedia kelembapan tanaman (NDMI) untuk melihat tekanan kekeringan, genangan air
+(MNDWI), dan **radar Sentinel-1** yang dapat melihat permukaan melalui awan, berguna
+saat banjir terjadi ketika cuaca mendung.
 
 **Kamera web komunitas Windy.** Kamera ini menutup jalan, pelabuhan, dan pantai
 di kota-kota yang tidak punya kamera resmi. Windy tidak menyediakan daftar
@@ -195,8 +203,9 @@ Perangkat keselamatan publik harus jujur tentang batas pengetahuannya sendiri:
   dimuat, antarmuka menampilkan `-`, bukan `0`.
 - **Status bukan kejadian.** Gunung berstatus Siaga tidak digambar berpluma abu;
   sebaran abu hanya muncul bila pos pengamatan melaporkan letusan dalam 24 jam.
-- **Model bukan pengukuran.** Sebaran asap adalah model kerucut geometrik, bukan
-  HYSPLIT. Indeks paparan bukan ISPU. Kerucut abu bukan advisory VAAC.
+- **Model bukan pengukuran.** Plume asap adalah model kerucut geometrik, bukan
+  HYSPLIT. PM2.5 CAMS adalah konsentrasi total model, bukan kontribusi khusus asap.
+  Indeks paparan bukan ISPU. Kerucut abu bukan advisory VAAC.
 - **Sampel dinyatakan sebagai sampel.** Atribusi konsesi memeriksa 220 titik ber-FRP
   tertinggi; ukuran sampel, populasi, dan metode pengambilannya ditampilkan
   berdampingan karena memilih FRP tertinggi adalah bias sistematis.

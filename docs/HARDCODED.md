@@ -42,6 +42,8 @@ di antaranya.
 | `BBOX = {94.5, -11.5, 141.5, 6.5}` | `server.js:29` | Kotak batas Indonesia. Bila cakupan diperluas ke ASEAN, ini harus jadi konfigurasi |
 | `R = 6371` | `server.js:121` | Jari-jari bumi, km |
 | `PLUME_STEPS = [0, 6, 12, 18]` | `server.js:338` | Jam prakiraan asap |
+| `FRAME_HOURS = [0, 6, 12, 18]` | `lib/pm25-forecast.js` | Frame PM2.5 yang diselaraskan dengan linimasa; harus cocok dengan indeks hourly yang divalidasi |
+| `CAMS_NATIVE_RESOLUTION_DEG = 0.4`, `CAMS_NATIVE_INTERVAL_HOURS = 3` | `lib/pm25-forecast.js` | Metadata resolusi dan interval native CAMS Global; bukan ketelitian sel tampilan |
 | `AQI_BANDS` | `server.js:1052` | Ambang US AQI resmi EPA |
 | `ALLOWED_SOURCES` | `server.js:26` | Empat produk FIRMS yang didukung |
 | `HIMAWARI_PRODUCTS` | `server.js:1549` | Allowlist produk citra, sekaligus pertahanan SSRF |
@@ -72,6 +74,7 @@ kesimpulan yang dibaca pengguna, jadi tiap perubahan perlu pertimbangan sadar.
 | Jaccard `0.80` | `server.js` (dedup berita) | Menangkap kawat AP yang diterbitkan ulang | Terlalu rendah menggabungkan peristiwa berbeda; terlalu tinggi meloloskan duplikat |
 | `QUOTA = 12`, `LIMIT = 200` | `server.js` | Jatah artikel per topik | |
 | Ambang keparahan gempa | `lib/hazard.js` | Mengikuti kaidah umum BMKG | Bukan rumus resmi BMKG |
+| `PM25_COLOR_BANDS` | `public/app.js` | Enam rentang warna numerik untuk membantu membaca sampel model | Bukan kategori kesehatan dan tidak boleh diberi label aman/bahaya |
 | Ambang paparan 66 / 33 | `server.js` | Berat / Sedang / Ringan | **Bukan ISPU**, sudah dinyatakan di antarmuka |
 | `budgetMs: 45000` | `server.js` (`/api/cron`) | Batas Vercel 60 detik dikurangi margin | Terikat platform; harus diubah bila pindah |
 | `RL_NORMAL = 240`, `RL_EXPENSIVE = 90` | `server.js` | Diukur: satu sesi aktif hanya 4 permintaan kelas mahal per menit | Terlalu ketat memblokir pengguna sah di balik CGNAT; terlalu longgar membiarkan kuota hulu terkuras |

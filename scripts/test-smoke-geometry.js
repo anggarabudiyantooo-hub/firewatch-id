@@ -54,13 +54,15 @@ check('play dan jeda prakiraan asap tersedia di linimasa bawah',
 check('penggeser linimasa menyediakan empat frame 0 hingga 18 jam',
   /id="tlSel" class="smoke-play-range" type="range" min="0" max="18" step="6"/.test(html)
     && html.includes('+6j') && html.includes('+12j') && html.includes('+18j'), true);
-check('playback berhenti saat lapisan asap dimatikan',
-  /if \(id === 'lySmoke'\) stopSmokePlayback\(\)/.test(app), true);
+check('playback berhenti hanya saat seluruh layer prakiraan mati',
+  /if \(id === 'lySmoke' && !\$\('lyPm25'\)\.checked\) stopSmokePlayback\(\)/.test(app)
+    && app.includes("if (!$('lySmoke').checked) stopSmokePlayback();"), true);
 check('geser manual menjeda playback sebelum mengubah frame',
   app.includes("_tlSel.addEventListener('input'")
     && /stopSmokePlayback\(\);\s*setSmokeHour\(event\.target\.value\)/.test(app), true);
-check('keterangan waktu melarang interpretasi sebagai PM2.5',
-  html.includes('Bukan ukuran PM2.5.') && app.includes("Bukan ukuran PM2.5."), true);
+check('keterangan waktu membedakan plume dari ukuran PM2.5',
+  /bukan ukuran PM2\.5/i.test(html) && /bukan ukuran PM2\.5/i.test(app)
+    && app.includes('PM2.5 total model CAMS Global'), true);
 
 console.log('\n' + '='.repeat(40));
 console.log('  ' + passed + ' lulus, ' + failed + ' gagal');

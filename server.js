@@ -95,6 +95,7 @@ const { fetchQuakes, fetchTsunamiBulletins, fetchShelters } = require('./lib/haz
 const { isRelevant, scoreArticle, classify } = require('./lib/relevance');
 const sentinel = require('./lib/sentinel');
 const aerosolRaster = require('./lib/aerosol-raster');
+const pm25Forecast = require('./lib/pm25-forecast');
 const { fetchDrought } = require('./lib/drought');
 const { summarize: summarizeCasualties } = require('./lib/casualty');
 const { Scheduler } = require('./lib/scheduler');
@@ -1615,12 +1616,16 @@ function aqiBand(v) {
   return AQI_BANDS[AQI_BANDS.length - 1];
 }
 
-async function airQualityField(stepDeg, box) {
+async function airQualityField(stepDeg, box, includeForecast, includeAqi) {
   const step = [0.25, 0.5, 1, 1.5, 2, 3].includes(stepDeg) ? stepDeg : 1.5;
   const b = box || BBOX;
+  const withForecast = includeForecast === true;
+  const withAqi = includeAqi !== false;
+  if (!withForecast && !withAqi) return { step, count: 0, points: [], pm25Forecast: null };
+  const cachePrefix = withAqi ? (withForecast ? 'aqf' : 'aq') : 'pmf';
   const key = box
-    ? `aq:${step}:${b.west.toFixed(1)},${b.south.toFixed(1)},${b.east.toFixed(1)},${b.north.toFixed(1)}`
-    : `aq:${step}`;
+    ? `${cachePrefix}:${step}:${b.west.toFixed(1)},${b.south.toFixed(1)},${b.east.toFixed(1)},${b.north.toFixed(1)}`
+    : `${cachePrefix}:${step}`;
   // TTL 30 menit, stale 60 menit (SWR), Fase 1.3
   return cached(key, 30 * 60 * 1000, async () => {
     const lats = [], lons = [];
@@ -1629,11 +1634,14 @@ async function airQualityField(stepDeg, box) {
         lats.push(la.toFixed(2)); lons.push(lo.toFixed(2));
       }
     }
-    if (!lats.length) return { step, count: 0, points: [] };
+    if (!lats.length) return { step, count: 0, points: [], pm25Forecast: null };
 
-    const url = 'https://air-quality-api.open-meteo.com/v1/air-quality'
+    const url = CONFIG.UPSTREAM_URLS.openMeteo.airQuality
       + `?latitude=${lats.join(',')}&longitude=${lons.join(',')}`
-      + '&current=pm2_5,pm10,us_aqi';
+      + (withAqi ? '&current=pm2_5,pm10,us_aqi' : '')
+      + (withForecast
+        ? '&hourly=pm2_5&forecast_hours=19&timezone=UTC&domains=cams_global'
+        : '');
     const r = await fetchWithRetry(url, {}, 25000, 3);
     if (!r.ok) {
       // 429 = kuota habis, lempar error khusus agar caller bisa balas 429 bukan 502
@@ -1642,8 +1650,12 @@ async function airQualityField(stepDeg, box) {
     }
     const j = await r.json();
     const arr = Array.isArray(j) ? j : [j];
+    const forecast = withForecast
+      ? pm25Forecast.fromOpenMeteo(arr, step, new Date().toISOString())
+      : null;
 
     const points = [];
+    if (!withAqi) return { step, count: 0, points, pm25Forecast: forecast };
     for (const p of arr) {
       const c = p && p.current;
       if (!c) continue;
@@ -1660,7 +1672,7 @@ async function airQualityField(stepDeg, box) {
         color: band.color
       });
     }
-    return { step, count: points.length, points };
+    return { step, count: points.length, points, pm25Forecast: forecast };
   }, { staleMs: 60 * 60 * 1000, background: true });
 }
 
@@ -1668,6 +1680,13 @@ app.get('/api/air-quality', async (req, res) => {
   const sp = readStep(req.query.step, AQ_STEPS, 1.5);
   if (sp.error) return res.status(400).json({ error: sp.error });
   const step = sp.value;
+  const includeForecast = req.query.forecast === '1';
+  const includeAqi = req.query.aqi !== '0';
+  const source = includeAqi
+    ? 'Open-Meteo Air Quality (model CAMS), skala US AQI'
+    : includeForecast
+      ? 'Open-Meteo Air Quality API (CAMS Global PM2.5 total model)'
+      : 'Open-Meteo Air Quality API';
   const w = Number(req.query.west), s = Number(req.query.south);
   const e = Number(req.query.east), n = Number(req.query.north);
   let box = null;
@@ -1682,20 +1701,20 @@ app.get('/api/air-quality', async (req, res) => {
     if (box.west >= box.east || box.south >= box.north) {
       return res.json({
         updatedAt: new Date().toISOString(),
-        source: 'Open-Meteo Air Quality (CAMS)', step: 0, count: 0, points: [], legend: []
+        source, step: 0, count: 0, points: [], legend: [], pm25Forecast: null
       });
     }
   }
   try {
-    const field = await airQualityField(step, box);
+    const field = await airQualityField(step, box, includeForecast, includeAqi);
     // Cache-Control dengan stale-while-revalidate, Fase 1.3
     res.set('Cache-Control', apiCache(900, 1800));
     res.json({
       updatedAt: new Date().toISOString(),
-      source: 'Open-Meteo Air Quality (model CAMS), skala US AQI',
-      legend: AQI_BANDS.map(b => ({
+      source,
+      legend: includeAqi ? AQI_BANDS.map(b => ({
         upto: b.max === Infinity ? null : b.max, label: b.label, color: b.color, advice: b.advice
-      })),
+      })) : [],
       ...field
     });
   } catch (err) {

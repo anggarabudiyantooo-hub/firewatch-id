@@ -53,7 +53,8 @@ memutuskan apakah harus mengungsi, kekeliruan semacam ini berkonsekuensi nyata.
 
 - Pemantauan lima jenis bencana: gunung api, gempa, tsunami, pengungsi, karhutla
 - Cakupan seluruh Indonesia (bbox `94,5-141,5°BT` / `11,5°LS-6,5°LU`)
-- Peta interaktif sembilan lapisan dengan tiga peta dasar dan citra satelit Himawari
+- Peta interaktif dengan layer mandiri, termasuk PM2.5 total model CAMS Global,
+  tiga peta dasar, dan citra satelit Himawari
 - Sepuluh panel analisis, termasuk kueri berbasis indeks lokal
 - Atribusi lahan terhadap konsesi sawit, HTI, tambang, dan RSPO
 - Agregasi berita 13 topik, termasuk lima edisi negara tetangga
@@ -88,9 +89,12 @@ Tiap kartu menampilkan angka utama dan keterangan pendukung. Sumber yang belum p
 berhasil dimuat menampilkan `-`, bukan `0`.
 
 ### F2: Peta interaktif
-Sembilan lapisan yang dapat dinyalakan sendiri-sendiri, tiga peta dasar, lima produk
-Himawari, dan linimasa prakiraan asap. Mengeklik titik mana pun menampilkan wilayah
-administratif, status lahan, dan kualitas udara di titik tersebut.
+Layer peta dapat dinyalakan sendiri-sendiri, tersedia tiga peta dasar, lima produk
+Himawari, dan linimasa prakiraan. Linimasa dapat menyelaraskan plume asap indikatif
+dan PM2.5 total model CAMS Global, tetapi status kedua produk harus tetap terpisah.
+PM2.5 CAMS bukan atribusi khusus asap, bukan pengukuran stasiun, dan bukan US AQI.
+Mengeklik titik mana pun menampilkan wilayah administratif, status lahan, dan
+kualitas udara di titik tersebut.
 
 ### F3: Kejadian aktif lintas jenis
 Satu daftar berisi seluruh kejadian dari semua jenis bencana, diurutkan menurut
