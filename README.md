@@ -110,6 +110,7 @@ hanya diminta mulai zoom 8, sehingga pemakaian kuota tetap rendah.
 | **BNPB GIS** | Titik pengungsian, jumlah jiwa | tidak |
 | **NASA FIRMS** | Titik api VIIRS 3 satelit | opsional |
 | **NOAA GFS** | Medan angin untuk model sebaran asap | tidak |
+| **[NASA GIBS](https://nasa-gibs.github.io/gibs-api-docs/) / OMPS NOAA-21** | Raster harian Aerosol Index 380 nm untuk konteks aerosol atmosfer | tidak |
 | **NOAA PTWC/NTWC** | Buletin tsunami kawasan | tidak |
 | **Open-Meteo / CAMS** | Kualitas udara, SO₂ gunung api | tidak |
 | **Global Forest Watch** | Batas konsesi sawit, HTI, tambang, RSPO | tidak |
@@ -129,9 +130,17 @@ hanya diminta mulai zoom 8, sehingga pemakaian kuota tetap rendah.
 
 ## Fitur utama
 
-**Peta interaktif** dengan sembilan lapisan: titik api, kualitas udara, aliran angin,
-sebaran asap, wilayah terdampak, batas konsesi, abu vulkanik, gempa, dan pengungsi.
-Tiga peta dasar, delapan produk citra satelit, dan linimasa prakiraan asap +6/+12/+18 jam.
+**Peta interaktif** dengan sepuluh lapisan: titik api, kualitas udara, aliran angin,
+sebaran asap hasil model, aerosol satelit, wilayah terdampak, batas konsesi, abu
+vulkanik, gempa, dan pengungsi. Tiga peta dasar, delapan produk pada pemilih citra
+satelit, dan linimasa prakiraan asap +6/+12/+18 jam.
+
+**Aerosol satelit bukan peta asap khusus.** Lapisan NASA OMPS NOAA-21 menampilkan
+Aerosol Index harian yang dapat mencakup asap, debu, atau abu vulkanik di kolom
+atmosfer. Data ini bukan prakiraan sebaran kebakaran, tidak memastikan sumber
+partikel, dan bukan PM2.5 permukaan. Tanggal pengamatan terbaru tertulis pada
+status lapisan. Area transparan berarti tidak ada retrieval satelit, bukan bukti
+udara bersih.
 
 **Enam produk citra untuk keperluan berbeda.** Selain warna alami dan
 inframerah, tersedia kelembapan tanaman (NDMI) untuk melihat tekanan

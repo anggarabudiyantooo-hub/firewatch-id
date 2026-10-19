@@ -94,6 +94,7 @@ const { fetchEruptions } = require('./lib/eruption');
 const { fetchQuakes, fetchTsunamiBulletins, fetchShelters } = require('./lib/hazard');
 const { isRelevant, scoreArticle, classify } = require('./lib/relevance');
 const sentinel = require('./lib/sentinel');
+const aerosolRaster = require('./lib/aerosol-raster');
 const { fetchDrought } = require('./lib/drought');
 const { summarize: summarizeCasualties } = require('./lib/casualty');
 const { Scheduler } = require('./lib/scheduler');
@@ -200,7 +201,7 @@ const RL_NORMAL = CONFIG.RATE_LIMIT.normal;
  * Biayanya pun berbeda: petak dilayani dari cache dan tidak memanggil
  * pihak ketiga berkuota untuk tiap permintaan.
  */
-const RL_TILE_PATHS = /^\/(himawari|sentinel)\//;
+const RL_TILE_PATHS = /^\/(himawari|sentinel|aerosol-raster)\//;
 const RL_TILE = 1200;
 // Satu sesi pemakaian aktif, memuat halaman, menyalakan empat lapisan,
 // lalu memperbesar dan memperkecil peta berkali-kali, terukur hanya
@@ -2280,6 +2281,90 @@ app.get('/api/volcano-so2', async (_req, res) => {
         ? 'Kuota harian layanan kualitas udara terbuka sudah tercapai. Data akan tersedia lagi besok.'
         : 'Data gas SO2 sedang tidak tersedia dari sumbernya.'
     });
+  }
+});
+
+/* ---------- raster aerosol satelit NOAA-21 (NASA GIBS) ---------- */
+let aerosolCapabilitiesInFlight = null;
+
+async function fetchAerosolRasterMeta() {
+  if (!aerosolCapabilitiesInFlight) {
+    aerosolCapabilitiesInFlight = (async () => {
+      const r = await fetchWithTimeout(aerosolRaster.CAPABILITIES_URL, {
+        headers: { Accept: 'application/xml, text/xml' }
+      }, 20000);
+      if (!r.ok) throw new Error('gibs_capabilities_http_' + r.status);
+      const xml = await r.text();
+      if (xml.length > 15 * 1024 * 1024) throw new Error('gibs_capabilities_too_large');
+      return {
+        date: aerosolRaster.parseLatestDate(xml),
+        checkedAt: new Date().toISOString(),
+        source: 'NASA GIBS / OMPS NOAA-21 Aerosol Index 380 nm',
+        maxNativeZoom: aerosolRaster.MAX_NATIVE_ZOOM
+      };
+    })();
+  }
+
+  const pending = aerosolCapabilitiesInFlight;
+  try { return await pending; }
+  finally { if (aerosolCapabilitiesInFlight === pending) aerosolCapabilitiesInFlight = null; }
+}
+
+app.get('/api/aerosol-raster/meta', async (_req, res) => {
+  try {
+    const meta = await cached('aerosol-raster:meta', 30 * 60 * 1000,
+      fetchAerosolRasterMeta, { staleMs: 6 * 60 * 60 * 1000 });
+    const ageDays = aerosolRaster.dateAgeDays(meta.date);
+    const available = ageDays !== null && ageDays >= 0
+      && ageDays <= aerosolRaster.MAX_DATE_AGE_DAYS;
+    const reason = available ? null
+      : ageDays === null ? 'Tanggal data NASA GIBS tidak valid.'
+        : ageDays < 0 ? 'Tanggal data NASA GIBS berada di masa depan terhadap jam server.'
+          : 'Data NASA GIBS terbaru berumur ' + ageDays + ' hari, melewati batas 7 hari.';
+    res.set('Cache-Control', apiCache(1800, 3600));
+    res.json({
+      ...meta,
+      available,
+      ageDays,
+      reason
+    });
+  } catch (e) {
+    console.error('[aerosol:meta]', e.message);
+    res.set('Cache-Control', 'no-store');
+    res.status(502).json({
+      available: false,
+      reason: 'Metadata raster NASA GIBS tidak dapat dijangkau saat ini.'
+    });
+  }
+});
+
+app.get('/api/aerosol-raster/:date/:z/:x/:y.png', async (req, res) => {
+  const date = req.params.date;
+  const z = Number(req.params.z), x = Number(req.params.x), y = Number(req.params.y);
+  if (!aerosolRaster.isRecentDate(date) || !aerosolRaster.isValidTile(z, x, y)) {
+    return res.status(404).end();
+  }
+
+  try {
+    const key = `aerosol-raster:${date}:${z}/${x}/${y}`;
+    const image = await cached(key, 60 * 60 * 1000, async () => {
+      const r = await fetchWithTimeout(aerosolRaster.tileUrl(date, z, x, y), {
+        headers: { Accept: 'image/png' }
+      }, 15000);
+      if (!r.ok) throw new Error('gibs_tile_http_' + r.status);
+      const buffer = Buffer.from(await r.arrayBuffer());
+      if (!aerosolRaster.isPng(buffer)) throw new Error('gibs_tile_not_png');
+      return buffer;
+    }, { staleMs: 6 * 60 * 60 * 1000 });
+
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=7200');
+    res.set('X-Aerosol-Observation-Date', date);
+    res.send(image);
+  } catch (e) {
+    console.error('[aerosol:tile]', e.message);
+    res.set('Cache-Control', 'no-store');
+    res.status(502).end();
   }
 });
 

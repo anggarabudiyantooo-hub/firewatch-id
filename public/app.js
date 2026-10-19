@@ -332,6 +332,7 @@
     windLevel: 'auto', windLevelUsed: '10m', windMeta: null,
     wind: null, windKey: null, windOn: false, windBusy: false, particles: null, plumeHour: 0,
     smokeSelection: null,
+    aerosolOn: false, aerosolLayer: null, aerosolMeta: null, aerosolRequest: 0,
     air: null, airKey: null, airOn: false, airBusy: false, airPendingQ: null,
     airMinAqi: 0, airFilteredCount: 0, // Fase 2.5: filter AQI UI friendly
     ash: null, ashOn: false, volcanoOn: false, ashBusy: false, newsAt: '',
@@ -3319,6 +3320,101 @@
   bindLayer('lySmoke', gSmoke);
   bindLayer('lyImpact', gImpact);
 
+  function setAerosolStatus(status, message) {
+    var node = $('aerosolStatus');
+    if (!node) return;
+    node.hidden = !message;
+    node.dataset.state = status || '';
+    node.setAttribute('aria-busy', status === 'loading' ? 'true' : 'false');
+    node.textContent = message || '';
+  }
+
+  function aerosolDateLabel(date) {
+    var value = new Date(date + 'T00:00:00Z');
+    return isNaN(value.getTime()) ? date : value.toLocaleDateString('id-ID', {
+      timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric'
+    }) + ' UTC';
+  }
+
+  function removeAerosolLayer() {
+    if (!state.aerosolLayer) return;
+    if (map.hasLayer(state.aerosolLayer)) map.removeLayer(state.aerosolLayer);
+    state.aerosolLayer = null;
+  }
+
+  function loadAerosolRaster() {
+    if (!state.aerosolOn) return;
+    var requestId = ++state.aerosolRequest;
+    setAerosolStatus('loading', 'Mengambil tanggal terbaru dan raster NASA GIBS…');
+
+    fetchT('/api/aerosol-raster/meta', {}, 20000)
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (meta) {
+          if (!res.ok) throw new Error(meta.reason || 'Metadata raster tidak dapat dimuat.');
+          return meta;
+        });
+      })
+      .then(function (meta) {
+        if (requestId !== state.aerosolRequest || !state.aerosolOn) return;
+        state.aerosolMeta = meta;
+        if (!meta.available || !meta.date) {
+          setAerosolStatus('error', 'Sumber NASA GIBS tidak aktif: '
+            + (meta.reason || 'tanggal data terbaru tidak tersedia.'));
+          return;
+        }
+
+        removeAerosolLayer();
+        var tileErrors = 0;
+        var layer = L.tileLayer('/api/aerosol-raster/' + meta.date + '/{z}/{x}/{y}.png', {
+          minZoom: 4,
+          maxZoom: 12,
+          maxNativeZoom: Number(meta.maxNativeZoom) || 6,
+          opacity: 0.82,
+          errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+          attribution: 'Aerosol Index: NASA GIBS / OMPS NOAA-21'
+        });
+        state.aerosolLayer = layer;
+
+        layer.on('loading', function () {
+          if (requestId !== state.aerosolRequest || !state.aerosolOn) return;
+          tileErrors = 0;
+          setAerosolStatus('loading', 'Memuat petak aerosol NASA OMPS untuk '
+            + aerosolDateLabel(meta.date) + '…');
+        });
+        layer.on('tileerror', function () { tileErrors++; });
+        layer.on('load', function () {
+          if (requestId !== state.aerosolRequest || !state.aerosolOn) return;
+          if (tileErrors) {
+            setAerosolStatus('error', tileErrors + ' petak raster gagal dimuat. '
+              + 'Lapisan mungkin belum lengkap; coba lagi setelah beberapa saat.');
+            return;
+          }
+          setAerosolStatus('ready', 'Petak raster selesai dimuat · observasi ' + aerosolDateLabel(meta.date)
+            + '. Indeks kolom atmosfer, bukan PM2.5 permukaan atau bukti asap karhutla. '
+            + 'Area transparan berarti tidak ada retrieval, bukan berarti tidak ada asap.');
+        });
+        layer.addTo(map);
+      })
+      .catch(function (err) {
+        if (requestId !== state.aerosolRequest || !state.aerosolOn) return;
+        setAerosolStatus('error', 'Sumber NASA GIBS tidak aktif saat ini: '
+          + (err && err.message ? err.message : 'metadata raster tidak dapat dimuat.'));
+      });
+  }
+
+  var aerosolToggle = $('lyAerosol');
+  if (aerosolToggle) aerosolToggle.addEventListener('change', function (event) {
+    state.aerosolOn = event.target.checked;
+    if (state.aerosolOn) {
+      loadAerosolRaster();
+    } else {
+      state.aerosolRequest++;
+      removeAerosolLayer();
+      state.aerosolMeta = null;
+      setAerosolStatus('', '');
+    }
+  });
+
   var _lyAir = $('lyAir'); _lyAir && _lyAir.addEventListener('change', function (e) {
     state.airOn = e.target.checked;
     if (state.airOn) {
@@ -5092,7 +5188,12 @@
   // saat mulai, dan menambahkannya di sini akan memicu muat dua kali.
   (function syncLayers() {
     var _lv = $('lyVolcano');
+    var _la = $('lyAerosol');
     if (_lv) state.volcanoOn = _lv.checked;
+    if (_la && _la.checked) {
+      state.aerosolOn = true;
+      loadAerosolRaster();
+    }
     [['lyFire', gFire], ['lyAir', gAir], ['lyQuake', gQuake],
      ['lyShelter', gShelter], ['lySmoke', gSmoke], ['lyConc', gConc],
      ['lyFlights', gFlights],
