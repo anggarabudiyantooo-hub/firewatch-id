@@ -149,7 +149,9 @@ diukur pada 5 Oktober 2026, bukan disimpulkan dari konfigurasi:
   dan itu memang cara yang andal untuk menyegarkan snapshot saat diperlukan.
 - Riwayat cabang `snapshot-flights` selalu berisi satu commit: tiap putaran
   membuat commit tanpa induk lalu mendorongnya dengan paksa, jadi cabang data
-  itu tidak menumpuk 96 commit sehari.
+  itu tidak menumpuk 96 commit sehari. Karena pohonnya dibangun dari kosong,
+  workflow juga menyalin `vercel.json` ke cabang itu. Konfigurasi tersebut
+  mencegah Vercel membuat Preview untuk berkas data saja.
 - Snapshot sekarang juga menjadi jalur cepat aplikasi: bila umurnya di bawah
   20 menit, ia dibaca lebih dulu dan penyedia langsung tidak dicoba, sehingga
   lapisan tampil dalam ratusan milidetik, bukan setelah 6,2 detik percobaan
