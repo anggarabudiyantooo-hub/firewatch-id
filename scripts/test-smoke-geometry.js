@@ -46,6 +46,21 @@ check('app.js memakai fungsi geometri bersama',
 check('versi aset server meliputi modul geometri', server.indexOf("'smoke-geometry.js'") >= 0, true);
 check('pane wilayah mengikuti subtab yang dipilih',
   ui.indexOf('const id=bs[i].dataset.sub;') > ui.indexOf('bs.forEach((x,j)=>{'), true);
+check('play dan jeda prakiraan asap tersedia di linimasa bawah',
+  html.indexOf('<div class="dock-panel on" id="d-linimasa"') >= 0
+    && html.indexOf('id="smokePlay"') > html.indexOf('<div class="dock-panel on" id="d-linimasa"')
+    && (html.match(/id="smokePlay"/g) || []).length === 1
+    && app.includes('function startSmokePlayback()') && app.includes('function stopSmokePlayback()'), true);
+check('penggeser linimasa menyediakan empat frame 0 hingga 18 jam',
+  /id="tlSel" class="smoke-play-range" type="range" min="0" max="18" step="6"/.test(html)
+    && html.includes('+6j') && html.includes('+12j') && html.includes('+18j'), true);
+check('playback berhenti saat lapisan asap dimatikan',
+  /if \(id === 'lySmoke'\) stopSmokePlayback\(\)/.test(app), true);
+check('geser manual menjeda playback sebelum mengubah frame',
+  app.includes("_tlSel.addEventListener('input'")
+    && /stopSmokePlayback\(\);\s*setSmokeHour\(event\.target\.value\)/.test(app), true);
+check('keterangan waktu melarang interpretasi sebagai PM2.5',
+  html.includes('Bukan ukuran PM2.5.') && app.includes("Bukan ukuran PM2.5."), true);
 
 console.log('\n' + '='.repeat(40));
 console.log('  ' + passed + ' lulus, ' + failed + ' gagal');

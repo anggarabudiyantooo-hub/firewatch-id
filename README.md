@@ -133,7 +133,7 @@ hanya diminta mulai zoom 8, sehingga pemakaian kuota tetap rendah.
 **Peta interaktif** dengan sepuluh lapisan: titik api, kualitas udara, aliran angin,
 sebaran asap hasil model, aerosol satelit, wilayah terdampak, batas konsesi, abu
 vulkanik, gempa, dan pengungsi. Tiga peta dasar, delapan produk pada pemilih citra
-satelit, dan linimasa prakiraan asap +6/+12/+18 jam.
+satelit, dan linimasa asap model +6/+12/+18 jam dengan kontrol putar dan jeda.
 
 **Aerosol satelit bukan peta asap khusus.** Lapisan NASA OMPS NOAA-21 menampilkan
 Aerosol Index harian yang dapat mencakup asap, debu, atau abu vulkanik di kolom
