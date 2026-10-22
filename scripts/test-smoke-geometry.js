@@ -51,9 +51,23 @@ check('play dan jeda prakiraan asap tersedia di linimasa bawah',
     && html.indexOf('id="smokePlay"') > html.indexOf('<div class="dock-panel on" id="d-linimasa"')
     && (html.match(/id="smokePlay"/g) || []).length === 1
     && app.includes('function startSmokePlayback()') && app.includes('function stopSmokePlayback()'), true);
-check('penggeser linimasa menyediakan empat frame 0 hingga 18 jam',
-  /id="tlSel" class="smoke-play-range" type="range" min="0" max="18" step="6"/.test(html)
-    && html.includes('+6j') && html.includes('+12j') && html.includes('+18j'), true);
+check('penggeser linimasa mencakup 24 jam historis hingga +18 jam',
+  /id="tlSel" class="smoke-play-range" type="range" min="-24" max="18" step="6"/.test(html)
+    && html.includes('24-18') && html.includes('18-12') && html.includes('12-6')
+    && html.includes('6-0') && html.includes('+6') && html.includes('+12') && html.includes('+18'), true);
+check('frame plume historis menggunakan data arsip yang tersedia saja',
+  app.includes('plumeHistoryFrame(h)') && app.includes('historyFrame.plumes')
+    && app.includes("historyFrame.status === 'wind-unavailable'")
+    && app.includes("historyFrame.status === 'partial'")
+    && server.includes('fetchWindFieldAt') && server.includes('historyWindows(hotspots, anchorTime)'), true);
+check('titik api historis difilter ke interval akuisisi frame',
+  app.includes('Date.parse(frame.intervalStart)') && app.includes('Date.parse(frame.intervalEnd)'), true);
+const drawPm25At = app.indexOf('function drawPm25()');
+const pm25NegativeGuardAt = app.indexOf('Number(state.plumeHour) < 0', drawPm25At);
+check('CAMS PM2.5 historis tidak ditampilkan sebagai plume atau nilai buatan',
+  app.includes('Data PM2.5 historis CAMS tidak tersedia sebelum frame 0.')
+    && drawPm25At >= 0 && pm25NegativeGuardAt > drawPm25At
+    && pm25NegativeGuardAt < app.indexOf('var forecast = state.air.pm25Forecast', drawPm25At), true);
 check('playback berhenti hanya saat seluruh layer prakiraan mati',
   /if \(id === 'lySmoke' && !\$\('lyPm25'\)\.checked\) stopSmokePlayback\(\)/.test(app)
     && app.includes("if (!$('lySmoke').checked) stopSmokePlayback();"), true);

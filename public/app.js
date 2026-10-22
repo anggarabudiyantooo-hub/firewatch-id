@@ -388,10 +388,29 @@
   };
 
   /* ---------- lapisan peta ---------- */
+  function plumeHistoryFrame(hour) {
+    var history = state.data && state.data.plumeHistory;
+    if (!history || !Array.isArray(history.frames)) return null;
+    for (var i = 0; i < history.frames.length; i++) {
+      if (Number(history.frames[i].hour) === Number(hour)) return history.frames[i];
+    }
+    return null;
+  }
+
   function drawFires() {
     gFire.clearLayers();
     if (!state.data) return;
-    var hs = state.data.hotspots.filter(function (h) {
+    var historical = state.plumeHour < 0;
+    var frame = historical ? plumeHistoryFrame(state.plumeHour) : null;
+    var hotspots = Array.isArray(state.data.hotspots) ? state.data.hotspots : [];
+    var hs = hotspots.filter(function (h) {
+      if (historical) {
+        if (!frame) return false;
+        var acquired = Date.parse(h.acq);
+        var start = Date.parse(frame.intervalStart);
+        var end = Date.parse(frame.intervalEnd);
+        if (!Number.isFinite(acquired) || acquired < start || acquired >= end) return false;
+      }
       return h.confidence >= state.minConf && h.frp >= state.minFrp;
     });
     hs.forEach(function (h) {
@@ -430,7 +449,22 @@
       : '';
 
     var txt;
-    if (!total) {
+    if (historical) {
+      var frameTotal = frame && Number.isFinite(Number(frame.hotspotCount))
+        ? Number(frame.hotspotCount) : null;
+      var period = smokeHourLabel(state.plumeHour).toLowerCase();
+      var capHistoryNote = hm && hm.truncated
+        ? ' · daftar titik memakai batas top-FRP 24 jam' : '';
+      if (!frame) {
+        txt = 'riwayat titik api belum tersedia · ' + period;
+      } else if (frameTotal === 0) {
+        txt = 'tidak ada deteksi FIRMS · ' + period;
+      } else {
+        txt = nf.format(hs.length) + ' dari ' + nf.format(frameTotal)
+          + (hs.length < frameTotal ? ' lolos filter' : ' tampil')
+          + ' · ' + period + capHistoryNote;
+      }
+    } else if (!total) {
       txt = 'tidak ada data dari sumber';
     } else if (!hs.length) {
       txt = '0 dari ' + nf.format(total) + ' lolos filter' + age;
@@ -542,9 +576,15 @@
     if (!state.data) return;
 
     var h = state.plumeHour;
+    var historyFrame = h < 0 ? plumeHistoryFrame(h) : null;
     var selectionLayer = L.layerGroup();
 
     function selectPlume(polygon, hour) {
+      if (hour < 0) {
+        state.smokeSelection = null;
+        showHint('Wilayah terdampak tidak dihitung ulang untuk frame historis.', 7000);
+        return;
+      }
       var matches = smokeRegionsWithin(polygon);
       selectionLayer.clearLayers();
       if (matches === null) {
@@ -578,7 +618,9 @@
         : 'Tidak ada titik pusat dari daftar dampak saat ini di dalam poligon ini. Lihat Wilayah > Terdampak untuk rinciannya.', 7000);
     }
 
-    var plumes = Array.isArray(state.data.plumes) ? state.data.plumes : [];
+    var plumes = h < 0
+      ? (historyFrame && Array.isArray(historyFrame.plumes) ? historyFrame.plumes : [])
+      : (Array.isArray(state.data.plumes) ? state.data.plumes : []);
     plumes.forEach(function (p) {
       // Pada jam > 0, pakai bentuk hasil prakiraan angin; jika tak tersedia, lewati.
       var f = p;
@@ -600,21 +642,31 @@
 
       // Tiga selubung bersarang memberi peralihan warna dari tepi ke inti.
       // Ini hanya gaya peta, bukan hasil pengukuran konsentrasi aerosol.
-      var matches = smokeRegionsWithin(f.polygon);
-      var matchLine = matches === null
-        ? 'Pencocokan titik pusat kota/kabupaten belum tersedia di peramban.'
-        : matches.length
-          ? 'Pusat kota/kabupaten dalam poligon: ' + matches.slice(0, 5).map(function (r) {
-            return r.name + (r.prov ? ', ' + r.prov : '');
-          }).join('; ') + (matches.length > 5 ? '; +' + nf.format(matches.length - 5) + ' lainnya' : '')
-          : 'Tidak ada titik pusat dari daftar dampak saat ini di dalam poligon ini.';
+      var matches = h < 0 ? null : smokeRegionsWithin(f.polygon);
+      var matchLine = h < 0
+        ? 'Wilayah terdampak tidak dihitung ulang untuk frame historis.'
+        : matches === null
+          ? 'Pencocokan titik pusat kota/kabupaten belum tersedia di peramban.'
+          : matches.length
+            ? 'Pusat kota/kabupaten dalam poligon: ' + matches.slice(0, 5).map(function (r) {
+              return r.name + (r.prov ? ', ' + r.prov : '');
+            }).join('; ') + (matches.length > 5 ? '; +' + nf.format(matches.length - 5) + ' lainnya' : '')
+            : 'Tidak ada titik pusat dari daftar dampak saat ini di dalam poligon ini.';
+      var sourceLine = h < 0
+        ? 'Sumber: klaster ' + p.count + ' deteksi FIRMS · FRP gabungan interval ' + nf.format(p.frp) + ' MW'
+        : 'Sumber: klaster ' + p.count + ' titik api · FRP ' + nf.format(p.frp) + ' MW';
       var lines = [
-        'Sumber: klaster ' + p.count + ' titik api · FRP ' + nf.format(p.frp) + ' MW',
+        sourceLine,
         'Angin ' + speed.toFixed(1) + ' m/s, asap bergerak ke ' + compass(f.bearingTo) + ' (' + f.bearingTo + '°)',
         'Jangkauan perkiraan: ± ' + nf.format(f.lengthKm) + ' km',
         matchLine
       ];
-      if (h === 0) {
+      if (h < 0) {
+        lines.push('Deteksi FIRMS: ' + smokeHourLabel(h).toLowerCase());
+        if (historyFrame && historyFrame.windValidTime) {
+          lines.push('Angin NOAA GFS 10 m, grid 1°, berlaku ' + formatPm25Time(historyFrame.windValidTime));
+        }
+      } else if (h === 0) {
         var weather = [];
         if (p.wind && p.wind.rh !== null && p.wind.rh !== undefined) weather.push('Kelembapan ' + p.wind.rh + '%');
         if (p.wind && p.wind.temp !== null && p.wind.temp !== undefined) weather.push('Suhu ' + p.wind.temp + '°C');
@@ -623,13 +675,17 @@
         lines.push('Prakiraan +' + h + ' jam' + (f.run ? ' · siklus GFS ' + f.run : ''));
       }
       var warning = 'Model perkiraan berbasis angin, bukan model dispersi atmosfer maupun pengukuran kualitas udara.';
-      if (h > 0) {
+      if (h < 0) {
+        warning = 'Rekonstruksi indikatif dari deteksi FIRMS dan angin arsip NOAA GFS, bukan lintasan asap teramati atau ukuran PM2.5. FRP adalah agregat deteksi pada interval enam jam, bukan daya api sesaat.';
+      } else if (h > 0) {
         warning += ' Daftar kota yang dicocokkan berasal dari hitungan dampak saat ini; kota terdampak baru pada jam prakiraan tidak dihitung ulang.';
       } else {
         warning += ' Klik selubung untuk menyorot zona kota yang pusatnya berada di dalam poligon.';
       }
-      var info = popupNode(h === 0 ? 'Perkiraan sebaran asap' : 'Prakiraan sebaran +' + h + ' jam', lines,
-        { warn: warning });
+      var title = h === 0 ? 'Perkiraan sebaran asap'
+        : h < 0 ? 'Rekonstruksi plume ' + smokeHourLabel(h).toLowerCase()
+          : 'Prakiraan sebaran +' + h + ' jam';
+      var info = popupNode(title, lines, { warn: warning });
 
       // Lapisan luar menangani klik. Dua lapisan di dalamnya hanya visual,
       // sehingga klik tetap dapat mencapai poligon yang membuka rincian.
@@ -891,7 +947,7 @@
 
   function drawPm25() {
     gPm25.clearLayers();
-    if (!state.pm25On || state.pm25Loading || state.pm25Error
+    if (!state.pm25On || Number(state.plumeHour) < 0 || state.pm25Loading || state.pm25Error
         || !state.air || !state.air.pm25Forecast) {
       updatePm25Status(0);
       return;
@@ -2513,7 +2569,7 @@
     if (!box) return;
     clear(box);
     var forecast = state.air && state.air.pm25Forecast;
-    if (!state.pm25On || state.pm25Loading || state.pm25Error
+    if (!state.pm25On || Number(state.plumeHour) < 0 || state.pm25Loading || state.pm25Error
         || !forecast || !forecast.points || !forecast.points.length) {
       box.hidden = true;
       return;
@@ -2538,6 +2594,11 @@
   function updatePm25Status(drawn) {
     if (!state.pm25On) {
       setPm25Status('', '');
+      renderPm25Legend();
+      return;
+    }
+    if (Number(state.plumeHour) < 0) {
+      setPm25Status('ready', 'Data PM2.5 historis CAMS tidak tersedia sebelum frame 0.');
       renderPm25Legend();
       return;
     }
@@ -2580,36 +2641,76 @@
     var hour = Number(state.plumeHour) || 0;
     var forecast = state.air && state.air.pm25Forecast;
     var index = pm25FrameIndex();
-    var validTime = state.pm25On && !state.pm25Loading && !state.pm25Error
+    var validTime = hour >= 0 && state.pm25On && !state.pm25Loading && !state.pm25Error
       && forecast && forecast.validTimes && forecast.validTimes[index];
-    var frameLabel = hour === 0 ? '0 (kondisi saat ini)' : '+' + hour + ' jam';
+    var frameLabel = hour === 0 ? '0 (kondisi saat ini)'
+      : hour < 0 ? smokeHourLabel(hour).toLowerCase() : '+' + hour + ' jam';
     var timeSuffix = validTime
       ? ' Waktu berlaku PM2.5: ' + formatPm25Time(validTime) + '.'
       : ' Waktu berlaku PM2.5 tidak tersedia.';
 
     if (_smokePlaybackStatus) {
-      if (smokeOn && pm25On) {
+      if (hour < 0) {
+        var historyFrame = plumeHistoryFrame(hour);
+        var historyStatus = 'Data riwayat plume belum tersedia.';
+        if (historyFrame && historyFrame.status === 'no-detections') {
+          historyStatus = 'Tidak ada deteksi FIRMS pada interval ini; ini bukan bukti bahwa tidak ada kebakaran.';
+        } else if (historyFrame && historyFrame.status === 'wind-unavailable') {
+          historyStatus = nf.format(historyFrame.hotspotCount || 0)
+            + ' deteksi FIRMS tersedia, tetapi medan angin historis tidak tersedia. Plume tidak digambar.';
+        } else if (historyFrame && historyFrame.status === 'partial') {
+          var plumeCount = Array.isArray(historyFrame.plumes) ? historyFrame.plumes.length : 0;
+          historyStatus = nf.format(historyFrame.hotspotCount || 0)
+            + ' deteksi FIRMS; plume tersedia untuk ' + nf.format(plumeCount) + ' dari '
+            + nf.format(historyFrame.totalClusterCount || 0) + ' klaster. '
+            + (historyFrame.truncated ? 'Hanya 14 klaster teratas yang diproses. ' : '')
+            + 'Angin NOAA GFS 10 m, grid 1° berlaku '
+            + (historyFrame.windValidTime ? formatPm25Time(historyFrame.windValidTime) : 'pada waktu yang tidak tersedia')
+            + '. FRP dijumlah per klaster, bukan daya api sesaat.';
+        } else if (historyFrame && historyFrame.status === 'ready') {
+          historyStatus = nf.format(historyFrame.hotspotCount || 0)
+            + ' deteksi FIRMS pada interval ini; NOAA GFS 10 m, grid 1° berlaku '
+            + (historyFrame.windValidTime ? formatPm25Time(historyFrame.windValidTime) : 'pada waktu yang tidak tersedia')
+            + '. FRP dijumlah per klaster, bukan daya api sesaat.';
+        }
+        if (smokeOn) {
+          _smokePlaybackStatus.textContent = 'Plume asap indikatif, ' + smokeHourLabel(hour).toLowerCase()
+            + '. ' + historyStatus + ' Rekonstruksi berbasis model angin dan intensitas titik api, '
+            + 'bukan lintasan teramati atau ukuran PM2.5.';
+        } else {
+          _smokePlaybackStatus.textContent = 'Aktifkan layer asap untuk melihat riwayat '
+            + smokeHourLabel(hour).toLowerCase() + '. ' + historyStatus;
+        }
+        if (pm25On) {
+          _smokePlaybackStatus.textContent += ' Data PM2.5 historis CAMS tidak tersedia sebelum frame 0.';
+        }
+      } else if (smokeOn && pm25On) {
         _smokePlaybackStatus.textContent = 'Plume asap indikatif, frame ' + frameLabel
-          + ', dari model angin dan titik api; bukan ukuran PM2.5. PM2.5 CAMS Global '
+          + ', dari model angin dan deteksi FIRMS 24 jam terakhir; bukan ukuran PM2.5. PM2.5 CAMS Global '
           + 'adalah total semua sumber pada frame yang sama.' + timeSuffix;
       } else if (pm25On) {
         _smokePlaybackStatus.textContent = 'PM2.5 total model CAMS Global, frame ' + frameLabel
           + ', dekat permukaan 10 m; bukan khusus asap kebakaran.' + timeSuffix;
       } else if (smokeOn) {
         _smokePlaybackStatus.textContent = hour === 0
-          ? 'Kondisi saat ini · model angin dan intensitas titik api. Bukan ukuran PM2.5.'
-          : 'Prakiraan +' + hour + ' jam · model angin dan intensitas titik api. Bukan ukuran PM2.5.';
+          ? 'Kondisi angin saat ini dan deteksi FIRMS 24 jam terakhir. Plume indikatif, bukan ukuran PM2.5.'
+          : 'Prakiraan +' + hour + ' jam dari deteksi FIRMS 24 jam terakhir dan angin model. Bukan ukuran PM2.5.';
       } else {
         _smokePlaybackStatus.textContent = 'Pilih layer asap atau PM2.5 model untuk melihat prakiraan.';
       }
     }
     if (_smokeTimeLabel) {
-      _smokeTimeLabel.textContent = pm25On ? 'CAMS +' + hour + 'J' : smokeHourLabel(hour);
+      _smokeTimeLabel.textContent = pm25On && hour >= 0
+        ? (hour === 0 ? 'CAMS 0J' : 'CAMS +' + hour + 'J')
+        : smokeHourShortLabel(hour);
     }
     if (_tlSel) {
-      _tlSel.setAttribute('aria-valuetext', pm25On
-        ? 'CAMS, prakiraan plus ' + hour + ' jam'
-        : smokeHourLabel(hour).toLowerCase());
+      _tlSel.setAttribute('aria-valuetext', hour < 0
+        ? 'Plume asap indikatif, riwayat ' + smokeHourLabel(hour).toLowerCase()
+          + ', data PM2.5 tidak tersedia'
+        : pm25On
+          ? 'CAMS, prakiraan plus ' + hour + ' jam'
+          : smokeHourLabel(hour).toLowerCase());
     }
   }
 
@@ -3390,6 +3491,7 @@
           $('sAirSub').textContent = 'data tidak tersedia';
         }
         drawFires(); drawSmoke(); drawImpact();
+        updateForecastStatus();
         // Kota terdampak abu berasal dari overview, sedangkan kerucutnya
         // dari endpoint gunung api. Keduanya tiba terpisah, jadi lapisan
         // abu digambar ulang begitu daftar kotanya siap.
@@ -4919,7 +5021,17 @@
   var _smokePlaybackStatus = $('smokePlaybackStatus');
 
   function smokeHourLabel(hour) {
-    return hour === 0 ? 'SEKARANG' : '+' + hour + ' JAM';
+    if (hour === 0) return 'SEKARANG';
+    if (hour > 0) return '+' + hour + ' JAM';
+    var start = Math.abs(hour);
+    return start + '-' + (start - 6) + ' JAM LALU';
+  }
+
+  function smokeHourShortLabel(hour) {
+    if (hour === 0) return 'SEKARANG';
+    if (hour > 0) return '+' + hour + 'J';
+    var start = Math.abs(hour);
+    return start + '-' + (start - 6) + 'J';
   }
 
   function updateSmokePlaybackButton() {
@@ -4927,8 +5039,8 @@
     var playing = state.smokePlaying;
     var smokeOn = $('lySmoke').checked;
     var pm25On = $('lyPm25').checked;
-    var label = smokeOn && pm25On ? 'prakiraan asap dan PM2.5 model'
-      : pm25On ? 'prakiraan PM2.5 model' : 'prakiraan sebaran asap';
+    var label = smokeOn && pm25On ? 'linimasa asap dan PM2.5 model'
+      : pm25On ? 'linimasa PM2.5 model' : 'linimasa sebaran asap';
     _smokePlay.textContent = playing ? 'Ⅱ' : '▶';
     _smokePlay.setAttribute('aria-pressed', String(playing));
     _smokePlay.setAttribute('aria-label', playing
@@ -4972,10 +5084,11 @@
 
   function setSmokeHour(value) {
     var hour = Number(value);
-    if ([0, 6, 12, 18].indexOf(hour) < 0) return;
+    if ([-24, -18, -12, -6, 0, 6, 12, 18].indexOf(hour) < 0) return;
     state.plumeHour = hour;
     ensureForecastLayers();
     if (_tlSel) _tlSel.value = String(hour);
+    drawFires();
     if ($('lySmoke').checked) drawSmoke();
     if (state.pm25On) drawPm25();
     updateForecastStatus();

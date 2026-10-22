@@ -85,7 +85,8 @@ const SETTLEMENTS = (() => {
   return out;
 })();
 const { attributeHotspots } = require('./lib/concession');
-const { fetchWindField, sampleAt, gridPoints } = require('./lib/wind-gfs');
+const { fetchWindField, fetchWindFieldAt, runForValidTime, sampleAt, gridPoints } = require('./lib/wind-gfs');
+const { HISTORY_INTERVAL_HOURS, historyWindows, buildFramePlumes, clusterHotspots } = require('./lib/plume-history');
 const { openHotspots, toIsoUtc, WINDOW_HOURS: FIRMS_WINDOW_HOURS } = require('./lib/firms-open');
 const webcams = require('./lib/webcams');
 const { volcanicAsh } = require('./lib/volcano');
@@ -522,19 +523,6 @@ async function getHotspots() {
 }
 
 // ---------- klaster + sebaran asap ----------
-function clusterHotspots(hs, cell = 0.5) {
-  const map = new Map();
-  for (const h of hs) {
-    const k = `${Math.round(h.lat / cell)}|${Math.round(h.lon / cell)}`;
-    let c = map.get(k);
-    if (!c) { c = { lat: 0, lon: 0, frp: 0, count: 0 }; map.set(k, c); }
-    c.lat += h.lat; c.lon += h.lon; c.frp += h.frp; c.count++;
-  }
-  return [...map.values()]
-    .map(c => ({ lat: +(c.lat / c.count).toFixed(3), lon: +(c.lon / c.count).toFixed(3), frp: +c.frp.toFixed(1), count: c.count }))
-    .sort((a, b) => b.frp - a.frp);
-}
-
 async function windAt(lat, lon) {
   // Angin murni dari medan GFS global yang sudah di-cache: tidak ada
   // permintaan jaringan per klaster. Suhu & kelembapan diambil terpisah
@@ -670,6 +658,79 @@ async function buildPlumes(clusters) {
   });
   await enrichWeather(built);
   return built;
+}
+
+async function buildPlumeHistory(hotspots, anchorTime) {
+  const frames = historyWindows(hotspots, anchorTime);
+  const results = await Promise.all(frames.map(async frame => {
+    const base = {
+      hour: frame.hour,
+      intervalStart: frame.intervalStart,
+      intervalEnd: frame.intervalEnd,
+      windTargetTime: frame.windTargetTime,
+      hotspotCount: frame.detections.length,
+      clusterCount: 0,
+      totalClusterCount: 0,
+      truncated: false,
+      plumes: []
+    };
+    if (!frame.detections.length) {
+      return {
+        ...base,
+        available: true,
+        status: 'no-detections',
+        reason: 'Tidak ada deteksi FIRMS pada interval ini.'
+      };
+    }
+
+    try {
+      const field = await gfsHistoryField(frame.windTargetTime);
+      const built = buildFramePlumes(frame, field, plumePolygon);
+      if (!built.plumes.length) {
+        return {
+          ...base,
+          available: false,
+          status: 'wind-unavailable',
+          reason: 'Data angin historis tidak tersedia untuk titik api pada interval ini.',
+          windRun: field.run || null,
+          windValidTime: field.validTime || null,
+          clusterCount: built.clusterCount,
+          totalClusterCount: built.totalClusterCount,
+          truncated: built.truncated
+        };
+      }
+      const partial = built.truncated || built.plumes.length < built.clusterCount;
+      return {
+        ...base,
+        available: true,
+        status: partial ? 'partial' : 'ready',
+        reason: partial ? 'Sebagian klaster dibatasi atau tidak memiliki nilai angin yang dapat dipakai.' : null,
+        model: 'NOAA GFS 10 m, grid 1°',
+        windRun: field.run || null,
+        windValidTime: field.validTime || null,
+        clusterCount: built.clusterCount,
+        totalClusterCount: built.totalClusterCount,
+        truncated: built.truncated,
+        plumes: built.plumes
+      };
+    } catch (error) {
+      console.error('[plume:history]', frame.hour, error.message);
+      return {
+        ...base,
+        available: false,
+        status: 'wind-unavailable',
+        reason: 'Data angin historis tidak tersedia untuk interval ini.'
+      };
+    }
+  }));
+
+  return {
+    windowHours: FIRMS_WINDOW_HOURS,
+    stepHours: HISTORY_INTERVAL_HOURS,
+    source: 'NASA FIRMS dan NOAA GFS',
+    description: 'Rekonstruksi indikatif dari deteksi FIRMS per interval, bukan lintasan asap teramati atau pengukuran PM2.5.',
+    frames: results
+  };
 }
 
 // ---------- daerah terdampak ----------
@@ -1150,8 +1211,12 @@ async function buildOverview() {
   {
     const hs = await getHotspots();
     const { mode, source, days, hotspots, notice } = hs;
+    const anchorTime = Date.now();
     const clusters = clusterHotspots(hotspots);
-    const plumes = await buildPlumes(clusters);
+    const [plumes, plumeHistory] = await Promise.all([
+      buildPlumes(clusters),
+      buildPlumeHistory(hotspots, anchorTime)
+    ]);
     const impacted = impactedRegions(plumes);
     const highConf = hotspots.filter(h => h.confidence >= 80).length;
     const totalFrp = hotspots.reduce((s, h) => s + h.frp, 0);
@@ -1251,7 +1316,7 @@ async function buildOverview() {
         dataAgeHours: hs.dataAgeHours != null ? hs.dataAgeHours : null,
         filteredOut: hs.filteredOut != null ? hs.filteredOut : null,
         bbox: BBOX,
-        attribution: ['NASA FIRMS', 'Open-Meteo', 'GDELT Project', 'Global Forest Watch', 'Esri']
+        attribution: ['NASA FIRMS', 'NOAA GFS', 'Open-Meteo', 'GDELT Project', 'Global Forest Watch', 'Esri']
       },
       stats: {
         hotspots: hotspots.length,
@@ -1264,7 +1329,7 @@ async function buildOverview() {
         peopleExposed: impacted.reduce((s, r) => s + r.population, 0),
         peopleExposedModerate: impacted.reduce((s, r) => s + (r.score >= 33 ? r.population : 0), 0)
       },
-      hotspots: hotspotsOut, clusters: clusters.slice(0, CONFIG.THRESHOLDS.clustersMax), plumes, impacted,
+      hotspots: hotspotsOut, clusters: clusters.slice(0, CONFIG.THRESHOLDS.clustersMax), plumes, plumeHistory, impacted,
       // Titik api dipotong ke yang paling kuat agar payload tidak
       // membengkak saat musim kebakaran memuncak. Metadata di bawah
       // membuat pemotongan itu terbaca, bukan tersembunyi: antarmuka
@@ -1395,6 +1460,31 @@ async function gfsField(fhour) {
       return stale;
     }
     throw e;
+  }
+}
+
+const gfsHistoryInFlight = new Map();
+async function gfsHistoryField(targetTime) {
+  const selection = runForValidTime(targetTime);
+  if (!selection) throw new Error('gfs_waktu_tidak_valid');
+  const key = `gfs-history:${selection.run.ymd}:${selection.run.cyc}:f${String(selection.fhour).padStart(3, '0')}`;
+  const pending = gfsHistoryInFlight.get(key);
+  if (pending) {
+    const field = await pending;
+    return { ...field, targetTime: selection.targetTime };
+  }
+
+  const archiveFetch = (url, options, timeout) =>
+    fetchWithTimeout(url, options, Math.min(Number(timeout) || 12000, 12000));
+  const task = cached(key, 30 * 24 * 60 * 60 * 1000,
+    () => fetchWindFieldAt(archiveFetch, selection.targetTime),
+    { staleMs: 90 * 24 * 60 * 60 * 1000, background: false });
+  gfsHistoryInFlight.set(key, task);
+  try {
+    const field = await task;
+    return { ...field, targetTime: selection.targetTime };
+  } finally {
+    if (gfsHistoryInFlight.get(key) === task) gfsHistoryInFlight.delete(key);
   }
 }
 

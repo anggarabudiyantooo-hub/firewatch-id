@@ -1441,12 +1441,13 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
 .smoke-play-range::-moz-range-track{height:3px;border-radius:3px;background:var(--hairline-strong)}
 .smoke-play-range::-webkit-slider-thumb{width:12px;height:12px;margin-top:-4.5px;appearance:none;-webkit-appearance:none;border:2px solid var(--surface-0);border-radius:50%;background:var(--status-info);box-shadow:0 0 0 2px rgba(100,210,255,.14)}
 .smoke-play-range::-moz-range-thumb{width:9px;height:9px;border:2px solid var(--surface-0);border-radius:50%;background:var(--status-info);box-shadow:0 0 0 2px rgba(100,210,255,.14)}
-.smoke-play-ticks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:2px;color:var(--text-tertiary);font:400 8px/1.2 var(--font-data)}
-.smoke-play-ticks span:nth-child(2),.smoke-play-ticks span:nth-child(3){text-align:center}
+.smoke-play-ticks{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));margin-top:2px;color:var(--text-tertiary);font:400 8px/1.2 var(--font-data)}
+.smoke-play-ticks span{text-align:center}
+.smoke-play-ticks span:first-child{text-align:left}
 .smoke-play-ticks span:last-child{text-align:right}
 .smoke-time-label{min-width:52px;text-align:right;color:var(--status-info);font:600 9px/1.2 var(--font-data);white-space:nowrap}
 .smoke-playback-status{margin:4px 0 7px 40px;color:var(--text-tertiary);font:400 9px/1.4 var(--font-prose)}
-@media(max-width:540px){.smoke-time-label{min-width:46px;font-size:8px}.smoke-play-ticks{font-size:7.5px}}
+@media(max-width:540px){.smoke-time-label{min-width:46px;font-size:8px}.smoke-play-ticks{font-size:7px}}
 .aerosol-status[data-state="error"]{border-left-color:var(--status-alert);color:var(--status-alert)}
 .aerosol-status[data-state="loading"]::before{content:"";display:inline-block;width:9px;height:9px;margin:0 6px 0 0;vertical-align:-1px;border:1.5px solid rgba(100,210,255,.28);border-top-color:var(--status-info);border-radius:50%;animation:aerosol-spin .8s linear infinite}
 @keyframes aerosol-spin{to{transform:rotate(360deg)}}
