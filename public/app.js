@@ -149,6 +149,9 @@
 
   var map = L.map('map', { zoomControl: false, minZoom: 4, maxZoom: 12, worldCopyJump: false })
     .setView([-2.2, 117.5], 5);
+  if (window.MapResize && typeof window.MapResize.attach === 'function') {
+    window.MapResize.attach(map);
+  }
 
   // Leaflet menyimpan ukuran petanya saat inisialisasi dan tidak
   // memperbaruinya sendiri. Bila tinggi wadah berubah karena media query
@@ -158,6 +161,10 @@
   // diseret.
   var resizeTimer = null;
   window.addEventListener('resize', function () {
+    if (window.MapResize && typeof window.MapResize.invalidate === 'function') {
+      window.MapResize.invalidate(200);
+      return;
+    }
     if (resizeTimer) clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () { map.invalidateSize(); }, 200);
   });
@@ -3891,8 +3898,11 @@
           m.style.height = '100%';
           m.style.minHeight = '520px';
         }
-        if (window.map && map && map.invalidateSize) map.invalidateSize();
-        else if (map && map.invalidateSize) map.invalidateSize();
+        if (window.MapResize && typeof window.MapResize.invalidate === 'function') {
+          window.MapResize.invalidate();
+        } else if (map && map.invalidateSize) {
+          map.invalidateSize();
+        }
       } catch (e) {}
     }
     setTimeout(fixMap, 100);
