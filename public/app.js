@@ -647,8 +647,8 @@
       var speed = h > 0 ? Number(f.windSpeed) : Number(p.wind && p.wind.speed);
       if (!Number.isFinite(speed)) speed = 0;
 
-      // Tiga selubung bersarang memberi peralihan warna dari tepi ke inti.
-      // Ini hanya gaya peta, bukan hasil pengukuran konsentrasi aerosol.
+      // Tiga selubung arang memberi tampilan kabut dengan tepi lembut.
+      // Rona gelap adalah gaya visual, bukan ukuran kepadatan asap.
       var matches = h < 0 ? null : smokeRegionsWithin(f.polygon);
       var matchLine = h < 0
         ? 'Wilayah terdampak tidak dihitung ulang untuk frame historis.'
@@ -681,9 +681,9 @@
       } else {
         lines.push('Prakiraan +' + h + ' jam' + (f.run ? ' · siklus GFS ' + f.run : ''));
       }
-      var warning = 'Model perkiraan berbasis angin, bukan model dispersi atmosfer maupun pengukuran kualitas udara.';
+      var warning = 'Rona gelap hanya gaya visual plume indikatif berbasis angin, bukan ketebalan asap terukur, model dispersi atmosfer, maupun pengukuran kualitas udara.';
       if (h < 0) {
-        warning = 'Rekonstruksi indikatif dari deteksi FIRMS dan angin arsip NOAA GFS, bukan lintasan asap teramati atau ukuran PM2.5. FRP adalah agregat deteksi pada interval enam jam, bukan daya api sesaat.';
+        warning = 'Rekonstruksi indikatif dari deteksi FIRMS dan angin arsip NOAA GFS, bukan lintasan asap teramati atau ukuran PM2.5. Rona gelap hanya gaya visual, bukan ketebalan asap terukur. FRP adalah agregat deteksi pada interval enam jam, bukan daya api sesaat.';
       } else if (h > 0) {
         warning += ' Daftar kota yang dicocokkan berasal dari hitungan dampak saat ini; kota terdampak baru pada jam prakiraan tidak dihitung ulang.';
       } else {
@@ -697,8 +697,8 @@
       // Lapisan luar menangani klik. Dua lapisan di dalamnya hanya visual,
       // sehingga klik tetap dapat mencapai poligon yang membuka rincian.
       var haze = L.polygon(f.polygon, {
-        stroke: false, fillColor: h > 0 ? '#8ab4d8' : '#d8d5cc',
-        fillOpacity: h > 0 ? 0.06 + intensity * 0.05 : 0.1 + intensity * 0.1,
+        stroke: false, fillColor: '#262a28',
+        fillOpacity: h > 0 ? 0.08 + intensity * 0.04 : 0.1 + intensity * 0.06,
         smoothFactor: 1, className: 'smoke-haze',
         interactive: true, bubblingMouseEvents: false
       });
@@ -707,22 +707,22 @@
 
       var middlePolygon = scaleSmokePolygon(f.polygon, p.lat, p.lon, 0.72);
       L.polygon(middlePolygon, {
-        stroke: false, fillColor: h > 0 ? '#6f9bc4' : '#d5ad7b',
-        fillOpacity: h > 0 ? 0.07 + intensity * 0.06 : 0.12 + intensity * 0.13,
+        stroke: false, fillColor: '#151816',
+        fillOpacity: h > 0 ? 0.11 + intensity * 0.05 : 0.14 + intensity * 0.06,
         smoothFactor: 1, className: 'smoke-body', interactive: false
       }).addTo(gSmoke);
 
       var core = Array.isArray(f.corePolygon) && f.corePolygon.length >= 3
         ? f.corePolygon : scaleSmokePolygon(f.polygon, p.lat, p.lon, 0.45);
       L.polygon(core, {
-        stroke: false, fillColor: h > 0 ? '#4f7ea8' : '#bd7e49',
-        fillOpacity: h > 0 ? 0.08 + intensity * 0.07 : 0.18 + intensity * 0.24,
+        stroke: false, fillColor: '#080a09',
+        fillOpacity: h > 0 ? 0.17 + intensity * 0.07 : 0.21 + intensity * 0.08,
         smoothFactor: 1, className: 'smoke-core', interactive: false
       }).addTo(gSmoke);
 
       L.polygon(f.polygon, {
-        color: h > 0 ? '#8ab4d8' : '#e2b184', weight: 1.1,
-        opacity: h > 0 ? 0.75 : 0.58, fill: false,
+        color: h > 0 ? '#9aabb2' : '#626865', weight: 0.8,
+        opacity: h > 0 ? 0.48 : 0.36, fill: false,
         smoothFactor: 1, dashArray: h > 0 ? '4,3' : null,
         className: 'smoke-plume-outline', interactive: false
       }).addTo(gSmoke);
@@ -2683,7 +2683,7 @@
         if (smokeOn) {
           _smokePlaybackStatus.textContent = 'Plume asap indikatif, ' + smokeHourLabel(hour).toLowerCase()
             + '. ' + historyStatus + ' Rekonstruksi berbasis model angin dan intensitas titik api, '
-            + 'bukan lintasan teramati atau ukuran PM2.5.';
+            + 'bukan lintasan teramati atau ukuran PM2.5. Rona gelap hanya gaya visual.';
         } else {
           _smokePlaybackStatus.textContent = 'Aktifkan layer asap untuk melihat riwayat '
             + smokeHourLabel(hour).toLowerCase() + '. ' + historyStatus;
@@ -2694,14 +2694,14 @@
       } else if (smokeOn && pm25On) {
         _smokePlaybackStatus.textContent = 'Plume asap indikatif, frame ' + frameLabel
           + ', dari model angin dan deteksi FIRMS 24 jam terakhir; bukan ukuran PM2.5. PM2.5 CAMS Global '
-          + 'adalah total semua sumber pada frame yang sama.' + timeSuffix;
+          + 'adalah total semua sumber pada frame yang sama. Rona gelap bukan ukuran konsentrasi.' + timeSuffix;
       } else if (pm25On) {
         _smokePlaybackStatus.textContent = 'PM2.5 total model CAMS Global, frame ' + frameLabel
           + ', dekat permukaan 10 m; bukan khusus asap kebakaran.' + timeSuffix;
       } else if (smokeOn) {
         _smokePlaybackStatus.textContent = hour === 0
-          ? 'Kondisi angin saat ini dan deteksi FIRMS 24 jam terakhir. Plume indikatif, bukan ukuran PM2.5.'
-          : 'Prakiraan +' + hour + ' jam dari deteksi FIRMS 24 jam terakhir dan angin model. Bukan ukuran PM2.5.';
+          ? 'Kondisi angin saat ini dan deteksi FIRMS 24 jam terakhir. Plume indikatif, bukan ukuran PM2.5. Rona gelap hanya gaya visual.'
+          : 'Prakiraan +' + hour + ' jam dari deteksi FIRMS 24 jam terakhir dan angin model. Bukan ukuran PM2.5. Rona gelap hanya gaya visual.';
       } else {
         _smokePlaybackStatus.textContent = 'Pilih layer asap atau PM2.5 model untuk melihat prakiraan.';
       }

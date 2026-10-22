@@ -36,6 +36,7 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
 const app = fs.readFileSync(path.join(root, 'public/app.js'), 'utf8');
+const css = fs.readFileSync(path.join(root, 'public/app.css'), 'utf8');
 const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 const ui = fs.readFileSync(path.join(root, 'public/v3-ui.js'), 'utf8');
 check('modul geometri dimuat sebelum app.js',
@@ -77,6 +78,11 @@ check('geser manual menjeda playback sebelum mengubah frame',
 check('keterangan waktu membedakan plume dari ukuran PM2.5',
   /bukan ukuran PM2\.5/i.test(html) && /bukan ukuran PM2\.5/i.test(app)
     && app.includes('PM2.5 total model CAMS Global'), true);
+check('plume memakai tiga tingkat kabut arang transparan',
+  app.includes("fillColor: '#262a28'") && app.includes("fillColor: '#151816'")
+    && app.includes("fillColor: '#080a09'") && css.includes('.smoke-haze{filter:blur(14px)}'), true);
+check('gelapnya plume dijelaskan sebagai gaya visual, bukan konsentrasi',
+  app.includes('Rona gelap hanya gaya visual') && app.includes('Rona gelap bukan ukuran konsentrasi.'), true);
 
 console.log('\n' + '='.repeat(40));
 console.log('  ' + passed + ' lulus, ' + failed + ' gagal');
