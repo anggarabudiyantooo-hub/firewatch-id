@@ -1371,9 +1371,10 @@ app.get('/api/attribution', async (_req, res) => {
 });
 
 // ---------- medan angin (grid) ----------
-// Satu permintaan Open-Meteo multi-titik untuk seluruh Indonesia.
-// Medan angin global dari GFS. Satu berkas GRIB2 (~160 KB) memuat seluruh
-// bumi, jadi tidak ada lagi batas 320 titik maupun jepitan ke bbox Indonesia.
+// GFS menyediakan medan angin global dalam satu berkas GRIB2 (~160 KB).
+// Angin permukaan hanya mengirim grid viewport. Angin atas memakai
+// Open-Meteo dengan kisi adaptif supaya seluruh viewport masuk dalam
+// batas 320 koordinat per permintaan.
 // Cache lama disimpan terpisah agar tetap bisa dipakai bila NOMADS sedang
 // menolak permintaan (batas laju). Angin 3 jam lalu jauh lebih berguna
 // daripada tidak ada angin sama sekali.
@@ -1401,7 +1402,9 @@ async function windField(stepDeg, box) {
   const step = [0.25, 0.5, 1, 1.5, 2, 3, 5].includes(stepDeg) ? stepDeg : 2;
   const f = await gfsField(0);
   const points = gridPoints(f, step, box);
-  return { step, count: points.length, points, run: f.run, global: !box };
+  const wrapCenter = box ? (box.west + box.east) / 2 : 0;
+  const global = !box || box.east - box.west >= 360;
+  return { step, count: points.length, points, run: f.run, global, wrapCenter };
 }
 
 
@@ -1454,31 +1457,62 @@ const WIND_ALOFT_LEVELS = {
  *
  * GFS byte-range yang dipakai untuk angin 10 m hanya menyediakan satu
  * aras; untuk angin atas dipakai Open-Meteo yang melayani banyak titik
- * dalam satu permintaan. Kerapatan grid sengaja lebih longgar karena
- * angin atas berubah jauh lebih halus secara spasial daripada angin
- * permukaan yang dipengaruhi topografi.
+ * dalam satu permintaan. Jarak grid angin atas bertambah saat viewport
+ * luas agar seluruh area tercakup dalam batas 320 koordinat.
  */
+function aloftAxis(min, max, step, limits) {
+  let first = Math.floor(min / step) * step - step;
+  let last = Math.ceil(max / step) * step + step;
+  if (limits) {
+    first = Math.max(limits[0], first);
+    last = Math.min(limits[1], last);
+  }
+  const values = [];
+  for (let i = 0; first + i * step <= last + 1e-9; i++) {
+    values.push(+(first + i * step).toFixed(2));
+  }
+  return values;
+}
+
+function normalizeWindLongitude(lon) {
+  return +(((((lon + 180) % 360) + 360) % 360) - 180).toFixed(2);
+}
+
 async function aloftWindField(level, box) {
   const lv = WIND_ALOFT_LEVELS[level];
   if (!lv || !lv.hPa) throw new Error('level_tidak_dikenal');
 
   const b = box || { west: 94.5, south: -11.5, east: 141.5, north: 6.5 };
-  const step = 2;
-  const lats = [];
-  const lons = [];
-  for (let la = Math.ceil(b.south / step) * step; la <= b.north; la += step) {
-    for (let lo = Math.ceil(b.west / step) * step; lo <= b.east; lo += step) {
-      lats.push(la.toFixed(2));
-      lons.push(lo.toFixed(2));
-      // Open-Meteo membatasi jumlah koordinat per permintaan.
-      if (lats.length >= 320) break;
+  const maxPoints = 320;
+  let step = 2;
+  let lats;
+  let lons;
+  do {
+    lats = aloftAxis(b.south, b.north, step, [-90, 90]);
+    lons = aloftAxis(b.west, b.east, step);
+    if (lats.length * lons.length <= maxPoints) break;
+    step += 1;
+  } while (step <= 180);
+
+  const latitudes = [];
+  const longitudes = [];
+  for (const lat of lats) {
+    for (const lon of lons) {
+      latitudes.push(lat.toFixed(2));
+      longitudes.push(normalizeWindLongitude(lon).toFixed(2));
     }
-    if (lats.length >= 320) break;
   }
-  if (!lats.length) return { points: [], level, count: 0 };
+  if (!latitudes.length) {
+    return {
+      points: [], count: 0, level, levelLabel: lv.label, heightM: lv.heightM,
+      hPa: lv.hPa, modelTime: null, step,
+      wrapCenter: (b.west + b.east) / 2,
+      source: `Open-Meteo (GFS/ECMWF), angin ${lv.hPa} hPa`
+    };
+  }
 
   const url = 'https://api.open-meteo.com/v1/forecast'
-    + `?latitude=${lats.join(',')}&longitude=${lons.join(',')}`
+    + `?latitude=${latitudes.join(',')}&longitude=${longitudes.join(',')}`
     + `&current=wind_speed_${lv.hPa}hPa,wind_direction_${lv.hPa}hPa`
     + '&wind_speed_unit=ms';
 
@@ -1495,13 +1529,15 @@ async function aloftWindField(level, box) {
   for (const loc of list) {
     const c = loc && loc.current;
     if (!c) continue;
+    const lat = Number(loc.latitude);
+    const lon = Number(loc.longitude);
     const sp = Number(c[`wind_speed_${lv.hPa}hPa`]);
     const fr = Number(c[`wind_direction_${lv.hPa}hPa`]);
-    if (!Number.isFinite(sp) || !Number.isFinite(fr)) continue;
+    if (![lat, lon, sp, fr].every(Number.isFinite)) continue;
     if (!modelTime && c.time) modelTime = c.time;
     points.push({
-      lat: +Number(loc.latitude).toFixed(2),
-      lon: +Number(loc.longitude).toFixed(2),
+      lat: +lat.toFixed(2),
+      lon: normalizeWindLongitude(lon),
       speed: +sp.toFixed(1),
       from: Math.round(fr),
       to: Math.round((fr + 180) % 360)
@@ -1516,6 +1552,8 @@ async function aloftWindField(level, box) {
     heightM: lv.heightM,
     hPa: lv.hPa,
     modelTime,
+    step,
+    wrapCenter: (b.west + b.east) / 2,
     source: `Open-Meteo (GFS/ECMWF), angin ${lv.hPa} hPa`
   };
 }
@@ -1526,21 +1564,21 @@ app.get('/api/wind-field', async (req, res) => {
   const step = sp.value;
   const w = Number(req.query.west), so = Number(req.query.south);
   const e = Number(req.query.east), n = Number(req.query.north);
+  const boundsRequested = ['west', 'south', 'east', 'north']
+    .some(key => req.query[key] !== undefined);
   let box = null;
-  if ([w, so, e, n].every(Number.isFinite)) {
-    if (w >= e || so >= n || so < -90 || n > 90 || w < -180 || e > 180) {
+  if (boundsRequested) {
+    if (![w, so, e, n].every(Number.isFinite)
+      || w >= e || so >= n || so < -90 || n > 90
+      || w < -360 || w > 360 || e < -360 || e > 360 || e - w > 360) {
       return res.status(400).json({ error: 'Area peta tidak valid.' });
     }
-    // Tidak dijepit ke Indonesia supaya angin tetap menyambung saat
-    // pengguna menggeser peta keluar, hanya dibatasi lintang agar kutub
-    // tidak memenuhi hasil.
+    // Longitude dapat melewati ±180 pada viewport yang melintasi antimeridian.
+    // Rentang satu dunia diterima, lalu grid mengubahnya ke longitude model.
     box = { west: w, south: Math.max(-85, so), east: e, north: Math.min(85, n) };
   } else {
-    // Tanpa kotak pandang, sebelumnya seluruh grid global dikirim: 15.189
-    // titik, 800 KB, dan hanya 1,4% di antaranya berada di Indonesia.
-    // Muatan awal itu 68% dari seluruh payload aplikasi, di jaringan yang
-    // justru sedang buruk saat bencana. Default kini kawasan Indonesia
-    // beserta margin 10 derajat supaya partikel tidak terpotong di tepi.
+    // Tanpa bounds klien, pertahankan permintaan awal yang regional agar
+    // payload tetap ringan. Klien peta mengirim viewport pada setiap zoom.
     box = { west: 84.5, south: -21.5, east: 151.5, north: 16.5 };
   }
   // Aras angin. Nilai di luar daftar ditolak, bukan diabaikan diam-diam:
@@ -2646,7 +2684,7 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
  * menghasilkan URL baru, peramban pengguna tidak akan lagi memakai
  * berkas lama dari cache tanpa perlu hard-refresh manual.
  */
-const ASSET_FILES = ['app.js', 'app.css', 'smoke-geometry.js', 'wind-particles.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css'];
+const ASSET_FILES = ['app.js', 'app.css', 'smoke-geometry.js', 'wind-particles.js', 'wind-viewport.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css'];
 let assetVersion = null;
 
 function getAssetVersion() {
@@ -2668,7 +2706,7 @@ function renderIndex() {
   // Fase 2.1: label sudut peta dari BBOX config, bukan hardcoded
   const corners = BBOX_CORNERS; // { nw, ne, sw, se } dari lib/config.js
   let html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
-    .replace(/(href|src)="\/(app\.css|app\.js|smoke-geometry\.js|wind-particles\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css)"/g,
+    .replace(/(href|src)="\/(app\.css|app\.js|smoke-geometry\.js|wind-particles\.js|wind-viewport\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css)"/g,
       (_m, attr, file) => `${attr}="${file}?v=${v}"`);
   // Inject BBOX corners ke HTML (fallback jika JS belum load)
   try {
