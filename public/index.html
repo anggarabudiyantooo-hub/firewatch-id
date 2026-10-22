@@ -432,14 +432,14 @@
           <article class="ev"><time>13:52 WIB</time><b><span>Titik api</span> Jambi</b></article>
         </div>
         <div class="smoke-playback" role="group" aria-label="Linimasa prakiraan asap dan PM2.5">
-          <button id="smokePlay" class="smoke-play-btn" type="button" aria-label="Putar prakiraan layer aktif" aria-pressed="false">▶</button>
+          <button id="smokePlay" class="smoke-play-btn" type="button" aria-label="Putar linimasa layer aktif" aria-pressed="false">▶</button>
           <div class="smoke-play-track">
-            <input id="tlSel" class="smoke-play-range" type="range" min="0" max="18" step="6" value="0" aria-label="Waktu prakiraan layer aktif" aria-valuetext="Frame 0" aria-describedby="smokePlaybackStatus" />
-            <div class="smoke-play-ticks" aria-hidden="true"><span>Frame 0</span><span>+6j</span><span>+12j</span><span>+18j</span></div>
+            <input id="tlSel" class="smoke-play-range" type="range" min="-24" max="18" step="6" value="0" aria-label="Riwayat dan prakiraan layer asap atau PM2.5 model" aria-valuetext="Frame 0" aria-describedby="smokePlaybackStatus" />
+            <div class="smoke-play-ticks" aria-hidden="true"><span>24-18</span><span>18-12</span><span>12-6</span><span>6-0</span><span>0</span><span>+6</span><span>+12</span><span>+18</span></div>
           </div>
           <output id="smokeTimeLabel" class="smoke-time-label">SEKARANG</output>
         </div>
-        <div id="smokePlaybackStatus" class="smoke-playback-status" role="status" aria-live="polite">Frame 0 · plume angin dan intensitas titik api, bukan ukuran PM2.5.</div>
+        <div id="smokePlaybackStatus" class="smoke-playback-status" role="status" aria-live="polite">Riwayat plume indikatif 24 jam hingga prakiraan +18 jam. Bukan ukuran PM2.5.</div>
       </div>
 
       <!-- 01 Kejadian aktif -->
