@@ -13,6 +13,12 @@
 (function () {
 // Audit v3, dock 8 tabs + inspector 3 tabs + sub-tabs
 (function(){
+  function invalidateMapSize(delay){
+    if(window.MapResize && typeof window.MapResize.invalidate === 'function'){
+      window.MapResize.invalidate(delay);
+    }
+  }
+
   // inspector seg
   const itabs=[...document.querySelectorAll('.seg [role="tab"]')];
   function iselect(i,focus){
@@ -48,8 +54,8 @@
     const toggle=document.getElementById("dockToggle");
     if(toggle) toggle.setAttribute("aria-expanded","true");
     if(focus) dtabs[i].focus();
-    // resize map if needed
-    if(window.map && window.map.invalidateSize) setTimeout(()=>window.map.invalidateSize(), 180);
+    // Dock mengubah ukuran area peta tanpa mengubah ukuran jendela.
+    invalidateMapSize(180);
   }
   dtabs.forEach((t,i)=>{
     t.addEventListener("click",()=>dselect(i));
@@ -66,7 +72,7 @@
       if(!d) return;
       const c=d.classList.toggle("collapsed");
       dockToggle.setAttribute("aria-expanded",String(!c));
-      if(window.map && window.map.invalidateSize) setTimeout(()=>window.map.invalidateSize(), 240);
+      invalidateMapSize(240);
     });
   }
 
