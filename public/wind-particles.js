@@ -13,6 +13,11 @@
 (function (global) {
   var L = global.L;
 
+  function wrapLongitude(lon, center) {
+    var offset = ((lon - center + 180) % 360 + 360) % 360 - 180;
+    return center + offset;
+  }
+
   function WindParticles(map, opts) {
     this.map = map;
     this.opts = opts || {};
@@ -77,10 +82,17 @@
     if (!field || !field.points || !field.points.length) { this.grid = null; return; }
     var pts = field.points;
     var lats = [], lons = [];
+    var wrapCenter = Number(field.wrapCenter);
+    var hasWrapCenter = field.wrapCenter !== undefined && field.wrapCenter !== null
+      && Number.isFinite(wrapCenter);
+    var pointLons = new Array(pts.length);
     var i;
     for (i = 0; i < pts.length; i++) {
+      var lon = Number(pts[i].lon);
+      if (hasWrapCenter) lon = wrapLongitude(lon, wrapCenter);
+      pointLons[i] = lon;
       if (lats.indexOf(pts[i].lat) < 0) lats.push(pts[i].lat);
-      if (lons.indexOf(pts[i].lon) < 0) lons.push(pts[i].lon);
+      if (lons.indexOf(lon) < 0) lons.push(lon);
     }
     lats.sort(function (a, b) { return a - b; });
     lons.sort(function (a, b) { return a - b; });
@@ -96,7 +108,7 @@
 
     for (i = 0; i < pts.length; i++) {
       var p = pts[i];
-      var yi = li[p.lat], xi = oi[p.lon];
+      var yi = li[p.lat], xi = oi[pointLons[i]];
       if (yi === undefined || xi === undefined) continue;
       // arah "to" = arah tujuan angin, 0 = utara, searah jarum jam
       var rad = (p.to * Math.PI) / 180;
@@ -107,7 +119,7 @@
     }
     this.grid = {
       lats: lats, lons: lons, nx: nx, ny: ny, u: u, v: v, have: have,
-      lat0: lats[0], lon0: lons[0],
+      lat0: lats[0], lon0: lons[0], wrapCenter: hasWrapCenter ? wrapCenter : null,
       dLat: (lats[ny - 1] - lats[0]) / (ny - 1),
       dLon: (lons[nx - 1] - lons[0]) / (nx - 1)
     };
@@ -118,6 +130,7 @@
   WindParticles.prototype._lookup = function (lat, lon) {
     var g = this.grid;
     if (!g) return null;
+    if (Number.isFinite(g.wrapCenter)) lon = wrapLongitude(lon, g.wrapCenter);
     var fx = (lon - g.lon0) / g.dLon;
     var fy = (lat - g.lat0) / g.dLat;
     if (fx < 0 || fy < 0 || fx > g.nx - 1 || fy > g.ny - 1) return null;

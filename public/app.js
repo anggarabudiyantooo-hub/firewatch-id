@@ -2712,13 +2712,12 @@
     var b = map.getBounds();
     var lvl = resolveWindLevel();
     state.windLevelUsed = lvl;
-    var q = 'step=' + step + '&level=' + lvl;
-    // Medan angin GFS mencakup seluruh dunia. Saat diperbesar kita minta
-    // hanya area yang terlihat agar kerapatannya naik tanpa memperbesar hasil;
-    // saat menjauh, ambil global supaya angin tidak terpotong di tepi peta.
-    if (step < 2) {
-      q += '&west=' + b.getWest().toFixed(2) + '&south=' + b.getSouth().toFixed(2) +
-           '&east=' + b.getEast().toFixed(2) + '&north=' + b.getNorth().toFixed(2);
+    var q = window.WindViewport && window.WindViewport.buildQuery({
+      west: b.getWest(), south: b.getSouth(), east: b.getEast(), north: b.getNorth()
+    }, step, lvl);
+    if (!q) {
+      showHint('Batas tampilan peta tidak valid.', 5000);
+      return Promise.resolve();
     }
     if (state.windKey === q) {
       // Data yang sama masih tersimpan, jadi tidak perlu diambil ulang -
