@@ -54,6 +54,16 @@ check('cakupan spasial disebut perkiraan, bukan kontur resmi',
   /not official boundaries/i.test(report.meta.spatialNote), true);
 check('ringkasan ASMC tersedia dalam bahasa Indonesia untuk antarmuka',
   /Semenanjung Malaysia.*Sarawak selatan/i.test(report.meta.asmc.summaryId), true);
+check('ringkasan ASMC tersedia dalam bahasa Inggris untuk antarmuka',
+  /Peninsular Malaysia.*southern Sarawak/i.test(report.meta.asmc.summary), true);
+check('catatan kesehatan memiliki padanan bahasa Inggris tanpa mengubah hitungan',
+  /cumulative health reports/i.test(report.meta.kemenkes.noteEn), true);
+check('ringkasan BMKG bahasa Inggris menyatakan ketidakpastian tanggal dan batas PM2.5',
+  /source uncertainty/i.test(report.meta.bmkg.dateAttributionNoteEn)
+    && /neither statement is a PM2\.5 measurement/i.test(report.meta.bmkg.surfaceNoteEn), true);
+check('marker Jakarta memiliki label dan catatan bahasa Inggris terpisah',
+  /BMKG report/i.test(report.markers.find(marker => marker.id === 'jakarta-bmkg-observation').labelEn)
+    && /not a measurement point/i.test(report.markers.find(marker => marker.id === 'jakarta-bmkg-observation').noteEn), true);
 check('peringatan bentuk peta tersedia dalam bahasa Indonesia',
   /bukan batas resmi.*pengukuran konsentrasi/i.test(report.meta.spatialNoteId), true);
 check('overlay regional meliputi Sumatra, Kalimantan, Malaysia, Sarawak, Sulawesi, Maluku dan Papua',
