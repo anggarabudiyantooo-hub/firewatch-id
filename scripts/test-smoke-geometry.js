@@ -37,6 +37,7 @@ const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
 const app = fs.readFileSync(path.join(root, 'public/app.js'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'public/app.css'), 'utf8');
+const smokeCloud = fs.readFileSync(path.join(root, 'public/smoke-cloud-layer.js'), 'utf8');
 const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 const ui = fs.readFileSync(path.join(root, 'public/v3-ui.js'), 'utf8');
 check('modul geometri dimuat sebelum app.js',
@@ -78,11 +79,22 @@ check('geser manual menjeda playback sebelum mengubah frame',
 check('keterangan waktu membedakan plume dari ukuran PM2.5',
   /bukan ukuran PM2\.5/i.test(html) && /bukan ukuran PM2\.5/i.test(app)
     && app.includes('PM2.5 total model CAMS Global'), true);
-check('plume memakai tiga tingkat kabut arang transparan',
-  app.includes("fillColor: '#262a28'") && app.includes("fillColor: '#151816'")
-    && app.includes("fillColor: '#080a09'") && css.includes('.smoke-haze{filter:blur(14px)}'), true);
-check('gelapnya plume dijelaskan sebagai gaya visual, bukan konsentrasi',
-  app.includes('Rona gelap hanya gaya visual') && app.includes('Rona gelap bukan ukuran konsentrasi.'), true);
+check('modul raster kabut dimuat setelah Leaflet dan sebelum app.js',
+  html.indexOf('<script src="/smoke-cloud-layer.js">') > html.indexOf('<script src="/vendor/leaflet.js">')
+    && html.indexOf('<script src="/smoke-cloud-layer.js">') < html.indexOf('<script src="/app.js">'), true);
+check('renderer kabut masuk daftar versi aset server', server.includes("'smoke-cloud-layer.js'"), true);
+check('drawSmoke memakai kanvas gabungan dan poligon transparan untuk interaksi',
+  app.includes('SiagaSmokeCloudLayer.create') && app.includes("className: 'smoke-hit-area'")
+    && !app.includes('middlePolygon') && !app.includes("className: 'smoke-core'")
+    && !app.includes("className: 'smoke-plume-outline'"), true);
+check('renderer menggabungkan plume dan melembutkan badan serta tepinya',
+  smokeCloud.includes('drawMask(maskContext, this._map, coords, size, this._plumes, PADDING)')
+    && smokeCloud.includes("filter = 'blur(' + BROAD_BLUR + 'px)'")
+    && smokeCloud.includes("filter = 'blur(' + BODY_BLUR + 'px)'")
+    && css.includes('.leaflet-container .smoke-cloud-tile{pointer-events:none}'), true);
+check('renderer tidak mengubah layer PM2.5 dan gaya tetap diberi batas interpretasi',
+  !app.includes('smoke-haze') && !app.includes('smoke-body') && !app.includes('smoke-core')
+    && app.includes('Rona gelap hanya gaya visual') && app.includes('Rona gelap bukan ukuran konsentrasi.'), true);
 
 console.log('\n' + '='.repeat(40));
 console.log('  ' + passed + ' lulus, ' + failed + ' gagal');

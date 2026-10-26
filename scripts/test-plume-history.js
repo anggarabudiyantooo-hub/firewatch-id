@@ -57,13 +57,17 @@ check('plume historis memakai arah dari angin GFS, bukan fallback',
   built.plumes[0] && built.plumes[0].wind.estimated, false);
 check('arah geometri mengikuti komponen angin', built.plumes[0] && built.plumes[0].bearingTo, 180);
 check('poligon luar dan inti dihitung dari data frame', polygonCalls.length, 2);
-const manyDetections = Array.from({ length: 15 }, (_, index) => ({
-  lat: -10 + index, lon: 100, frp: index + 1, acq: '2026-10-21T13:15:00.000Z'
+const manyDetections = Array.from({ length: 12 }, (_, index) => ({
+  lat: -1.8 + Math.floor(index / 4) * 0.5,
+  lon: 100.1 + (index % 4) * 0.5,
+  frp: index + 1,
+  acq: '2026-10-21T13:15:00.000Z'
 }));
 const capped = buildFramePlumes({ detections: manyDetections }, field, polygon);
-check('jumlah plume historis dibatasi ke 14 klaster', capped.plumes.length, 14);
-check('total klaster yang terpotong tetap dilaporkan', capped.totalClusterCount, 15);
+check('plume historis dibatasi tiga klaster per sel wilayah', capped.plumes.length, 3);
+check('total klaster sumber yang terpotong tetap dilaporkan', capped.totalClusterCount, 12);
 check('metadata pemotongan menyatakan daftar tidak utuh', capped.truncated, true);
+check('jumlah wilayah sumber yang terwakili tetap tersedia', capped.selectedRegionCount, 1);
 
 const missingWind = buildFramePlumes(frames[0], {
   ni: 360, nj: 181, la1: 90, lo1: 0, di: 1, dj: 1,

@@ -84,7 +84,7 @@ if (typeof app === 'function') {
   const http = require('http');
   const srv = http.createServer(app).listen(0, '127.0.0.1', async () => {
     const port = srv.address().port;
-    const paths = ['/api/health', '/', '/app.css', '/smoke-geometry.js', '/wind-particles.js', '/wind-viewport.js', '/map-resize.js', '/vendor/leaflet.js'];
+    const paths = ['/api/health', '/', '/app.css', '/smoke-geometry.js', '/smoke-cloud-layer.js', '/wind-particles.js', '/wind-viewport.js', '/map-resize.js', '/vendor/leaflet.js'];
     for (const p of paths) {
       try {
         const r = await fetch(`http://127.0.0.1:${port}${p}`);
@@ -94,6 +94,8 @@ if (typeof app === 'function') {
             const html = await r.text();
             if (/src="smoke-geometry\.js\?v=[a-f0-9]{10}"/.test(html)) ok('HTML memberi versi aset pada modul geometri asap');
             else bad('HTML tidak memberi versi aset pada modul geometri asap');
+            if (/src="smoke-cloud-layer\.js\?v=[a-f0-9]{10}"/.test(html)) ok('HTML memberi versi aset pada renderer kabut asap');
+            else bad('HTML tidak memberi versi aset pada renderer kabut asap');
             if (/src="wind-viewport\.js\?v=[a-f0-9]{10}"/.test(html)) ok('HTML memberi versi aset pada modul viewport angin');
             else bad('HTML tidak memberi versi aset pada modul viewport angin');
             if (/src="map-resize\.js\?v=[a-f0-9]{10}"/.test(html)) ok('HTML memberi versi aset pada controller ukuran peta');

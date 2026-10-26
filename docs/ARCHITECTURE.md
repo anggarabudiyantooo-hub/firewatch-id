@@ -58,6 +58,9 @@ dinormalkan. Tidak ada modul yang menyentuh Express.
 | `hazard.js` | BMKG, NOAA PTWC, BNPB GIS | Katalog BNPB dipindai otomatis; ambang kesegaran 10 hari |
 | `concession.js` | GFW vector tiles | Titik-dalam-poligon, sampel 220 titik ber-FRP tertinggi |
 | `wind-gfs.js` + `grib2.js` | NOAA GFS | Pembacaan GRIB2 sendiri |
+| `plume-model.js` | turunan FIRMS + GFS | Semua klaster berangin untuk indeks pusat; uji memakai poligon model aktual, bukan observasi |
+| `plume-selection.js` + `plume-history.js` | turunan | Sampling visual lintas wilayah dan rekonstruksi historis yang mencatat pemotongan |
+| `regional-haze.js` | ASMC, NEA, BMKG, Kemenkes | Snapshot laporan bertanggal; jejak Jakarta adalah marker historis, bukan footprint/asap permukaan |
 | `relevance.js` | turunan | Gerbang relevansi, skor 0-10, kategori berita |
 | `drought.js` | NOAA CPC + Open-Meteo | ONI dan curah hujan dipisah tegas; kegagalan salah satu tidak menjatuhkan keduanya |
 | `sentinel.js` | Copernicus CDSE | OAuth2 client_credentials; evalscript disimpan di server sebagai allowlist |
@@ -183,8 +186,11 @@ GitHub Actions ──GET /api/cron──▶ scheduler.tick()
        ▼                       ▼                  ▼
   clusterHotspots()      attributeHotspots()   provinceRanking
        │                  (sampel 220)
-       ▼
-  buildPlumes() ──▶ impactedRegions() ──▶ peopleExposed
+       ├─ seluruh klaster + sampel NOAA GFS 10 m
+       │       → geometri model → cocokkan pusat tepat dengan poligon
+       │         (indikatif; bukan observasi atau dampak resmi)
+       └─ sampel visual lintas wilayah, maksimum 36 plume raster
+               (batas performa; tidak membatasi hitungan model)
 ```
 
 ## 4. Keputusan teknis dan alasannya
