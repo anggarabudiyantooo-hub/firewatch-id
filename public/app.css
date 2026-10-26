@@ -113,6 +113,20 @@ button,input,select{font-family:var(--font-data)}
   font:600 10px/1 var(--font-data);letter-spacing:.04em;color:var(--text-secondary);cursor:pointer;
   transition:background var(--dur-state),border-color var(--dur-state),color var(--dur-state)}
 .chipbtn:hover{background:var(--surface-3);color:var(--text-primary)}
+.language-switch{
+  display:inline-flex;align-items:center;gap:2px;padding:2px;
+  border:1px solid var(--hairline-strong);border-radius:var(--radius-chip);
+  background:var(--surface-1);flex:0 0 auto
+}
+.language-switch button{
+  position:relative;min-width:32px;min-height:28px;padding:0 6px;
+  border:0;border-radius:4px;background:transparent;color:var(--text-tertiary);
+  font:700 10px/1 var(--font-data);letter-spacing:.05em;cursor:pointer
+}
+.language-switch button.active{background:var(--surface-3);color:var(--status-info)}
+.language-switch button:hover{color:var(--text-primary)}
+.language-switch button:focus-visible{outline:2px solid var(--status-info);outline-offset:2px;z-index:1}
+.language-switch button::after{content:"";position:absolute;left:50%;top:50%;width:44px;height:44px;transform:translate(-50%,-50%)}
 .btn-primary{height:32px;padding:0 14px;border:0;border-radius:var(--radius-field);
   background:var(--alert);color:#0A0A0C;font:700 11px/1 var(--font-data);letter-spacing:.06em;
   text-transform:uppercase;cursor:pointer;transition:transform var(--dur-state),filter var(--dur-state)}

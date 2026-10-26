@@ -82,9 +82,10 @@
     var ms = Date.parse(iso);
     if (!isFinite(ms)) return String(iso);
     var d = new Date(ms);
-    var p = function (n) { return (n < 10 ? '0' : '') + n; };
-    var utc = d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate())
-      + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ' UTC';
+    var utc = d.toLocaleString(getLocale(), {
+      timeZone: 'UTC', day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    }) + ' UTC';
     var rel = timeAgo(ms);
     return rel ? utc + ' (' + rel + ')' : utc;
   }
@@ -107,7 +108,13 @@
       }
     });
   }
-  var nf = new Intl.NumberFormat('id-ID');
+  function getLanguage() {
+    return window.SiagaI18n ? window.SiagaI18n.getLanguage() : 'id';
+  }
+  function getLocale() {
+    return window.SiagaI18n ? window.SiagaI18n.getLocale() : 'id-ID';
+  }
+  var nf = new Intl.NumberFormat(getLocale());
 
   /* ---------- peta ---------- */
   // Fase 2.1: BBOX dari config terpusat (harus sinkron dengan server lib/config.js)
@@ -362,9 +369,10 @@
     // Sentinel-2: ambang tutupan awan 30% memberi keseimbangan antara
     // citra yang cukup jernih dan cukup sering tersedia di iklim tropis.
     s2Product: null, s2Layer: null, s2Meta: null, s2MetaKey: null, s2Cloud: 30,
-    hazard: null, hazardAt: null, quakeOn: false, shelterOn: false,
+    hazard: null, hazardAt: null, hazardFetchedAt: null, quakeOn: false, shelterOn: false,
     flightsOn: false, flights: null, flightsAt: null,
-    casualties: null, status: null, eruptions: null, newsFetchedAt: null
+    casualties: null, status: null, eruptions: null, newsFetchedAt: null,
+    streams: null, windy: null, so2: null, streamOpenId: null
   };
 
   /* ---------- util DOM ---------- */
@@ -736,65 +744,133 @@
     var windowHours = Number(asmc.freshnessHours) || 30;
     status.dataset.state = fresh ? 'fresh' : 'stale';
     status.setAttribute('aria-busy', 'false');
-    status.textContent = 'Snapshot ASMC ' + reportDate + ' (' + (ageText || 'waktu tidak diketahui') + '). '
-      + (fresh ? 'Sapuan laporan ditampilkan; bentuknya perkiraan.'
-        : 'Snapshot melewati batas ' + windowHours + ' jam; sapuan ASMC disembunyikan. Marker laporan historis BMKG tetap tersedia.');
+    status.textContent = getLanguage() === 'en'
+      ? 'ASMC snapshot ' + reportDate + ' (' + (ageText || 'time unknown') + '). '
+        + (fresh ? 'The reported-area overlay is shown; its shape is approximate.'
+          : 'The snapshot is older than ' + windowHours + ' hours, so the ASMC overlay is hidden. The historical BMKG report marker remains available.')
+      : 'Snapshot ASMC ' + reportDate + ' (' + (ageText || 'waktu tidak diketahui') + '). '
+        + (fresh ? 'Sapuan laporan ditampilkan; bentuknya perkiraan.'
+          : 'Snapshot melewati batas ' + windowHours + ' jam; sapuan ASMC disembunyikan. Marker laporan historis BMKG tetap tersedia.');
 
     box.appendChild(el('strong', null, 'ASMC regional haze · ' + (asmc.reportDate || 'tanggal tidak tersedia')));
-    box.appendChild(el('p', null, asmc.summaryId || asmc.summary || 'Ringkasan ASMC tidak tersedia.'));
+    box.appendChild(el('p', null, getLanguage() === 'en'
+      ? (asmc.summary || asmc.summaryId || 'ASMC summary is unavailable.')
+      : (asmc.summaryId || asmc.summary || 'Ringkasan ASMC tidak tersedia.')));
     if (meta.kemenkes) {
-      var healthCount = health.cumulativeIspaCases != null
-        ? nf.format(health.cumulativeIspaCases) + ' kasus ISPA' : 'Angka ISPA tidak tersedia';
-      var healthDistricts = health.districtCount != null
-        ? nf.format(health.districtCount) + ' kabupaten/kota' : 'jumlah kabupaten/kota tidak tersedia';
-      var healthProvinces = health.provinceCount != null
-        ? nf.format(health.provinceCount) + ' provinsi' : 'jumlah provinsi tidak tersedia';
-      box.appendChild(el('strong', null,
-        healthCount + ' dilaporkan di ' + healthDistricts + ', ' + healthProvinces));
-      var publishedLabel = health.publishedAt ? ' (laporan ' + formatPm25Time(health.publishedAt) + ')' : '';
-      box.appendChild(el('p', null,
-        'Data kumulatif sampai ' + (health.dataThrough || 'tanggal tidak tersedia') + publishedLabel
-        + (health.currentlyIllIspaCases != null
-          ? '; ' + nf.format(health.currentlyIllIspaCases) + ' masih tercatat menderita ISPA, bukan kasus baru harian.' : '')
-        + ' Bukan jumlah orang terpapar plume. Provinsi: '
-        + (Array.isArray(health.provinces) ? health.provinces.join(', ') : 'tidak tersedia') + '.'));
+      var publishedLabel = health.publishedAt ? formatPm25Time(health.publishedAt) : '';
+      var provinceNames = Array.isArray(health.provinces)
+        ? health.provinces.map(function (name) {
+          return getLanguage() === 'en' && window.SiagaI18n
+            ? window.SiagaI18n.translate(name, 'en') : name;
+        }).join(', ')
+        : getLanguage() === 'en' ? 'unavailable' : 'tidak tersedia';
+      if (getLanguage() === 'en') {
+        var healthCountEn = health.cumulativeIspaCases != null
+          ? nf.format(health.cumulativeIspaCases) + ' cumulative ARI cases'
+          : 'ARI case count unavailable';
+        var healthDistrictsEn = health.districtCount != null
+          ? nf.format(health.districtCount) + ' districts/cities'
+          : 'district/city count unavailable';
+        var healthProvincesEn = health.provinceCount != null
+          ? nf.format(health.provinceCount) + ' provinces'
+          : 'province count unavailable';
+        box.appendChild(el('strong', null, 'Ministry of Health report: ' + healthCountEn
+          + ' across ' + healthDistrictsEn + ' in ' + healthProvincesEn));
+        box.appendChild(el('p', null,
+          'Cumulative data through ' + formatIsoDateOnly(health.dataThrough) + (publishedLabel ? ' · published ' + publishedLabel : '')
+          + (health.currentlyIllIspaCases != null
+            ? '; ' + nf.format(health.currentlyIllIspaCases) + ' people are still recorded with ARI, not new daily cases.' : '')
+          + ' This is not a count of people exposed to smoke. Provinces listed: ' + provinceNames + '.'));
+        box.appendChild(el('p', null, health.noteEn
+          || 'ARI case counts are cumulative health reports, not counts of exposed people or plume boundaries.'));
+      } else {
+        var healthCount = health.cumulativeIspaCases != null
+          ? nf.format(health.cumulativeIspaCases) + ' kasus ISPA' : 'Angka ISPA tidak tersedia';
+        var healthDistricts = health.districtCount != null
+          ? nf.format(health.districtCount) + ' kabupaten/kota' : 'jumlah kabupaten/kota tidak tersedia';
+        var healthProvinces = health.provinceCount != null
+          ? nf.format(health.provinceCount) + ' provinsi' : 'jumlah provinsi tidak tersedia';
+        box.appendChild(el('strong', null,
+          healthCount + ' dilaporkan di ' + healthDistricts + ', ' + healthProvinces));
+        box.appendChild(el('p', null,
+          'Data kumulatif sampai ' + (health.dataThrough || 'tanggal tidak tersedia')
+          + (publishedLabel ? ' (laporan ' + publishedLabel + ')' : '')
+          + (health.currentlyIllIspaCases != null
+            ? '; ' + nf.format(health.currentlyIllIspaCases) + ' masih tercatat menderita ISPA, bukan kasus baru harian.' : '')
+          + ' Bukan jumlah orang terpapar plume. Provinsi: ' + provinceNames + '.'));
+      }
     } else {
-      box.appendChild(el('p', null, 'Laporan kesehatan Kemenkes tidak tersedia pada snapshot ini.'));
+      box.appendChild(el('p', null, getLanguage() === 'en'
+        ? 'The Ministry of Health report is not available in this snapshot.'
+        : 'Laporan kesehatan Kemenkes tidak tersedia pada snapshot ini.'));
     }
     if (nea.statement) {
-      box.appendChild(el('p', null,
-        'NEA Singapura ' + (nea.reportDate || '') + ': sebagian haze berada di lapisan lebih tinggi, dengan pencampuran ke permukaan terbatas.'));
+      box.appendChild(el('p', null, getLanguage() === 'en'
+        ? 'Singapore NEA, ' + (nea.reportDate || '') + ': ' + nea.statement
+        : 'NEA Singapura ' + (nea.reportDate || '') + ': sebagian haze berada di lapisan lebih tinggi, dengan pencampuran ke permukaan terbatas.'));
     }
     if (nea.pm25OneHour && nea.psi24Hour) {
-      box.appendChild(el('p', null,
-        'NEA, ' + nea.pm25OneHour.period + ': PM2.5 '
-        + nea.pm25OneHour.min + '-' + nea.pm25OneHour.max + ' ' + nea.pm25OneHour.unit
-        + '; PSI 24 jam ' + nea.psi24Hour.min + '-' + nea.psi24Hour.max + ' (' + nea.psi24Hour.category + '). '
-        + (nea.airQualityNoteId || nea.airQualityNote || 'Data kualitas udara ambien, bukan konsentrasi asap spesifik.')));
+      box.appendChild(el('p', null, getLanguage() === 'en'
+        ? 'NEA, ' + nea.pm25OneHour.period + ': PM2.5 '
+          + nea.pm25OneHour.min + '-' + nea.pm25OneHour.max + ' ' + nea.pm25OneHour.unit
+          + '; 24-hour PSI ' + nea.psi24Hour.min + '-' + nea.psi24Hour.max + ' (' + nea.psi24Hour.category + '). '
+          + (nea.airQualityNote || nea.airQualityNoteId || 'Ambient air-quality data, not smoke-specific concentration.')
+        : 'NEA, ' + nea.pm25OneHour.period + ': PM2.5 '
+          + nea.pm25OneHour.min + '-' + nea.pm25OneHour.max + ' ' + nea.pm25OneHour.unit
+          + '; PSI 24 jam ' + nea.psi24Hour.min + '-' + nea.psi24Hour.max + ' (' + nea.psi24Hour.category + '). '
+          + (nea.airQualityNoteId || nea.airQualityNote || 'Data kualitas udara ambien, bukan konsentrasi asap spesifik.')));
     }
     if (meta.bmkg) {
       var bmkg = meta.bmkg;
       var mediaSummaryDateLabel = formatIsoDateOnly(bmkg.mediaSummaryDate);
       var mediaBodyDateLabel = formatIsoDateOnly(bmkg.mediaBodyDate);
       var duration = bmkg.durationHours || {};
-      var durationLabel = Number.isFinite(Number(duration.minimum)) && Number.isFinite(Number(duration.maximum))
-        ? Number(duration.minimum) + '-' + Number(duration.maximum) + ' jam' : 'durasi tidak tersedia';
+      var durationValue = Number.isFinite(Number(duration.minimum)) && Number.isFinite(Number(duration.maximum))
+        ? Number(duration.minimum) + '-' + Number(duration.maximum) : null;
+      var durationLabel = durationValue
+        ? durationValue + (getLanguage() === 'en' ? ' hours' : ' jam')
+        : (getLanguage() === 'en' ? 'duration unavailable' : 'durasi tidak tersedia');
       var altitudeLabel = Number.isFinite(Number(bmkg.altitudeMinimumKm))
-        ? 'lebih dari ' + Number(bmkg.altitudeMinimumKm) + ' km' : 'ketinggian tidak tersedia';
+        ? (getLanguage() === 'en' ? 'above ' : 'lebih dari ') + Number(bmkg.altitudeMinimumKm) + ' km'
+        : (getLanguage() === 'en' ? 'altitude unavailable' : 'ketinggian tidak tersedia');
       var officialDateLabel = formatIsoDateOnly(bmkg.officialObservationDate);
-      box.appendChild(el('strong', null, 'BMKG Jakarta · laporan historis'));
-      box.appendChild(el('p', null,
-        'Siaran resmi BMKG: ' + officialDateLabel + '; cuplikan ringkasan Kompas: '
-        + mediaSummaryDateLabel + '; badan artikel Kompas: ' + mediaBodyDateLabel + '.'));
-      box.appendChild(el('p', null, bmkg.officialSummaryId || 'Laporan BMKG tentang asap di Jabodetabek tidak tersedia.'));
-      box.appendChild(el('p', null,
-        (bmkg.quotedStatementId || 'Rincian durasi dan ketinggian tidak tersedia.')
-        + ' Durasi yang dikutip: ' + durationLabel + '; ketinggian: ' + altitudeLabel + '.'));
-      if (bmkg.dateAttributionNoteId) box.appendChild(el('p', null, bmkg.dateAttributionNoteId));
-      box.appendChild(el('p', null, bmkg.surfaceNoteId || 'Laporan atmosfer bukan pengukuran kualitas udara permukaan.'));
-      box.appendChild(el('p', null, bmkg.spatialNoteId || 'Marker menunjukkan lokasi laporan, bukan area asap terukur.'));
+      if (getLanguage() === 'en') {
+        box.appendChild(el('strong', null, 'BMKG Jakarta · historical report'));
+        box.appendChild(el('p', null,
+          'Dates: official BMKG satellite observation ' + officialDateLabel
+          + '; Kompas search snippet ' + mediaSummaryDateLabel
+          + '; accessible Kompas article body ' + mediaBodyDateLabel
+          + '. The quoted event date remains unresolved.'));
+        box.appendChild(el('p', null, 'Official BMKG report, English summary: '
+          + (bmkg.officialSummaryEn || bmkg.officialSummaryId || 'The BMKG report about smoke over Greater Jakarta is unavailable.')));
+        box.appendChild(el('p', null, 'Media report summary in English, paraphrased and not a direct quote: '
+          + (bmkg.quotedStatementEn || bmkg.quotedStatementId || 'Details on duration and altitude are unavailable.')
+          + ' Reported duration: ' + durationLabel + '; altitude: ' + altitudeLabel + '.'));
+        if (bmkg.dateAttributionNoteEn || bmkg.dateAttributionNoteId) {
+          box.appendChild(el('p', null, 'Source-date note, English rendering: '
+            + (bmkg.dateAttributionNoteEn || bmkg.dateAttributionNoteId)));
+        }
+        box.appendChild(el('p', null, 'Surface-air note, English rendering: '
+          + (bmkg.surfaceNoteEn || bmkg.surfaceNoteId || 'An atmospheric report is not a surface air-quality measurement.')));
+        box.appendChild(el('p', null, 'Map marker note: '
+          + (bmkg.spatialNoteEn || bmkg.spatialNoteId || 'The marker shows the report location, not measured smoke extent.')));
+      } else {
+        box.appendChild(el('strong', null, 'BMKG Jakarta · laporan historis'));
+        box.appendChild(el('p', null,
+          'Siaran resmi BMKG: ' + officialDateLabel + '; cuplikan ringkasan Kompas: '
+          + mediaSummaryDateLabel + '; badan artikel Kompas: ' + mediaBodyDateLabel + '.'));
+        box.appendChild(el('p', null, bmkg.officialSummaryId || 'Laporan BMKG tentang asap di Jabodetabek tidak tersedia.'));
+        box.appendChild(el('p', null,
+          (bmkg.quotedStatementId || 'Rincian durasi dan ketinggian tidak tersedia.')
+          + ' Durasi yang dikutip: ' + durationLabel + '; ketinggian: ' + altitudeLabel + '.'));
+        if (bmkg.dateAttributionNoteId) box.appendChild(el('p', null, bmkg.dateAttributionNoteId));
+        box.appendChild(el('p', null, bmkg.surfaceNoteId || 'Laporan atmosfer bukan pengukuran kualitas udara permukaan.'));
+        box.appendChild(el('p', null, bmkg.spatialNoteId || 'Marker menunjukkan lokasi laporan, bukan area asap terukur.'));
+      }
     }
-    box.appendChild(el('p', null, meta.spatialNoteId || meta.spatialNote || 'Sapuan regional bukan batas resmi atau kontur konsentrasi.'));
+    box.appendChild(el('p', null, getLanguage() === 'en'
+      ? meta.spatialNoteEn || meta.spatialNote || 'The regional overlay is not an official boundary or concentration contour.'
+      : meta.spatialNoteId || meta.spatialNote || 'Sapuan regional bukan batas resmi atau kontur konsentrasi.'));
 
     var links = el('div', 'regional-haze-links');
     [
@@ -860,46 +936,73 @@
       if (marker.source !== 'bmkg' && !fresh) return;
       var lat = Number(marker.lat), lon = Number(marker.lon);
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-      var rows = [marker.noteId || marker.note
-        || 'Lokasi yang disebut dalam laporan, bukan pengukuran di titik marker.'];
+      var english = getLanguage() === 'en';
+      var markerLabel = english ? marker.labelEn || marker.label : marker.label;
+      var rows = [english
+        ? marker.noteEn || marker.note || 'This is a reported location, not a measurement point.'
+        : marker.noteId || marker.note || 'Lokasi yang disebut dalam laporan, bukan pengukuran di titik marker.'];
       if (marker.source === 'bmkg' && meta.bmkg) {
         var bmkg = meta.bmkg;
-        if (bmkg.officialSummaryId) rows.push(bmkg.officialSummaryId);
-        if (bmkg.quotedStatementId) rows.push(bmkg.quotedStatementId);
-        if (bmkg.dateAttributionNoteId) rows.push(bmkg.dateAttributionNoteId);
-        if (bmkg.durationHours && bmkg.altitudeMinimumKm != null) {
-          rows.push('Durasi yang dikutip: ' + bmkg.durationHours.minimum + '-'
-            + bmkg.durationHours.maximum + ' jam; ketinggian lebih dari '
-            + bmkg.altitudeMinimumKm + ' km.');
+        if (english) {
+          if (bmkg.officialSummaryEn || bmkg.officialSummaryId) rows.push('Official BMKG report, English summary: ' + (bmkg.officialSummaryEn || bmkg.officialSummaryId));
+          if (bmkg.quotedStatementEn || bmkg.quotedStatementId) rows.push('Media report summary in English, paraphrased and not a direct quote: ' + (bmkg.quotedStatementEn || bmkg.quotedStatementId));
+          if (bmkg.dateAttributionNoteEn || bmkg.dateAttributionNoteId) rows.push('Source-date note, English rendering: ' + (bmkg.dateAttributionNoteEn || bmkg.dateAttributionNoteId));
+          if (bmkg.durationHours && bmkg.altitudeMinimumKm != null) {
+            rows.push('Reported duration: ' + bmkg.durationHours.minimum + '-'
+              + bmkg.durationHours.maximum + ' hours; altitude above '
+              + bmkg.altitudeMinimumKm + ' km.');
+          }
+          if (bmkg.surfaceNoteEn || bmkg.surfaceNoteId) rows.push('Surface-air note, English rendering: ' + (bmkg.surfaceNoteEn || bmkg.surfaceNoteId));
+        } else {
+          if (bmkg.officialSummaryId) rows.push(bmkg.officialSummaryId);
+          if (bmkg.quotedStatementId) rows.push(bmkg.quotedStatementId);
+          if (bmkg.dateAttributionNoteId) rows.push(bmkg.dateAttributionNoteId);
+          if (bmkg.durationHours && bmkg.altitudeMinimumKm != null) {
+            rows.push('Durasi yang dikutip: ' + bmkg.durationHours.minimum + '-'
+              + bmkg.durationHours.maximum + ' jam; ketinggian lebih dari '
+              + bmkg.altitudeMinimumKm + ' km.');
+          }
+          if (bmkg.surfaceNoteId) rows.push(bmkg.surfaceNoteId);
         }
-        if (bmkg.surfaceNoteId) rows.push(bmkg.surfaceNoteId);
       } else if (marker.source === 'nea' && meta.nea) {
         var nea = meta.nea;
-        if (nea.statementId || nea.statement) rows.push(nea.statementId || nea.statement);
-        if (nea.pm25OneHour) rows.push('NEA PM2.5 1 jam (' + nea.pm25OneHour.period + '): '
-          + nea.pm25OneHour.min + '-' + nea.pm25OneHour.max + ' ' + nea.pm25OneHour.unit + '.');
-        if (nea.psi24Hour) rows.push('NEA PSI 24 jam (' + nea.psi24Hour.period + '): '
-          + nea.psi24Hour.min + '-' + nea.psi24Hour.max + ' (' + nea.psi24Hour.category + ').');
-        if (nea.nextDayPsiForecast) rows.push('Prakiraan NEA ' + nea.nextDayPsiForecast.date + ': PSI '
-          + nea.nextDayPsiForecast.min + '-' + nea.nextDayPsiForecast.max + ' (' + nea.nextDayPsiForecast.category + ').');
-        if (nea.airQualityNoteId) rows.push(nea.airQualityNoteId);
+        if (nea.statement || nea.statementId) rows.push(english ? nea.statement || nea.statementId : nea.statementId || nea.statement);
+        if (nea.pm25OneHour) rows.push(english
+          ? 'NEA 1-hour PM2.5 (' + nea.pm25OneHour.period + '): '
+            + nea.pm25OneHour.min + '-' + nea.pm25OneHour.max + ' ' + nea.pm25OneHour.unit + '.'
+          : 'NEA PM2.5 1 jam (' + nea.pm25OneHour.period + '): '
+            + nea.pm25OneHour.min + '-' + nea.pm25OneHour.max + ' ' + nea.pm25OneHour.unit + '.');
+        if (nea.psi24Hour) rows.push(english
+          ? 'NEA 24-hour PSI (' + nea.psi24Hour.period + '): '
+            + nea.psi24Hour.min + '-' + nea.psi24Hour.max + ' (' + nea.psi24Hour.category + ').'
+          : 'NEA PSI 24 jam (' + nea.psi24Hour.period + '): '
+            + nea.psi24Hour.min + '-' + nea.psi24Hour.max + ' (' + nea.psi24Hour.category + ').');
+        if (nea.nextDayPsiForecast) rows.push(english
+          ? 'NEA forecast for ' + nea.nextDayPsiForecast.date + ': PSI '
+            + nea.nextDayPsiForecast.min + '-' + nea.nextDayPsiForecast.max + ' (' + nea.nextDayPsiForecast.category + ').'
+          : 'Prakiraan NEA ' + nea.nextDayPsiForecast.date + ': PSI '
+            + nea.nextDayPsiForecast.min + '-' + nea.nextDayPsiForecast.max + ' (' + nea.nextDayPsiForecast.category + ').');
+        if (nea.airQualityNote || nea.airQualityNoteId) rows.push(english ? nea.airQualityNote || nea.airQualityNoteId : nea.airQualityNoteId || nea.airQualityNote);
       } else if (meta.asmc && (meta.asmc.summaryId || meta.asmc.summary)) {
-        rows.push(meta.asmc.summaryId || meta.asmc.summary);
+        rows.push(english ? meta.asmc.summary || meta.asmc.summaryId : meta.asmc.summaryId || meta.asmc.summary);
       }
 
       var isBmkg = marker.source === 'bmkg';
       var isNea = marker.source === 'nea';
-      var markerTitle = isBmkg ? 'Observasi historis BMKG: ' + marker.label
-        : isNea ? 'Laporan NEA: ' + marker.label : 'Laporan ASMC: ' + marker.label;
+      var markerTitle = isBmkg ? (english ? 'Historical BMKG observation: ' : 'Observasi historis BMKG: ') + markerLabel
+        : isNea ? (english ? 'NEA report: ' : 'Laporan NEA: ') + markerLabel
+          : (english ? 'ASMC report: ' : 'Laporan ASMC: ') + markerLabel;
       var warning = isBmkg && meta.bmkg
-        ? meta.bmkg.spatialNoteId
-        : meta.spatialNoteId || meta.spatialNote
-          || 'Marker tidak menunjukkan konsentrasi atau batas terdampak.';
+        ? english ? meta.bmkg.spatialNoteEn || meta.bmkg.spatialNoteId : meta.bmkg.spatialNoteId
+        : english ? meta.spatialNoteEn || meta.spatialNote
+          || 'The marker does not show a concentration or affected-area boundary.'
+          : meta.spatialNoteId || meta.spatialNote
+            || 'Marker tidak menunjukkan konsentrasi atau batas terdampak.';
       L.circleMarker([lat, lon], {
         pane: 'markerPane', radius: isBmkg ? 6 : 5,
         color: isBmkg ? '#c4b5fd' : isNea ? '#80d8ff' : '#f4c875',
         weight: 1.5, fillColor: '#172027', fillOpacity: 0.95
-      }).bindTooltip(marker.label || 'Lokasi laporan regional', { direction: 'top', className: 'zone-tip' })
+      }).bindTooltip(markerLabel || (english ? 'Regional report location' : 'Lokasi laporan regional'), { direction: 'top', className: 'zone-tip' })
         .bindPopup(popupNode(markerTitle, rows, { warn: warning }))
         .addTo(gRegionalHaze);
     });
@@ -1114,9 +1217,9 @@
   function formatPm25Time(value) {
     var date = new Date(value);
     if (!Number.isFinite(date.getTime())) return 'waktu model tidak tersedia';
-    return date.toLocaleString('id-ID', {
+    return date.toLocaleString(getLocale(), {
       timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short',
-      hour: '2-digit', minute: '2-digit', hour12: false
+      hour: '2-digit', minute: '2-digit'
     }) + ' WIB';
   }
 
@@ -1124,9 +1227,32 @@
     if (!value) return 'tanggal tidak tersedia';
     var date = new Date(value + 'T12:00:00Z');
     if (!Number.isFinite(date.getTime())) return 'tanggal tidak tersedia';
-    return date.toLocaleDateString('id-ID', {
+    return date.toLocaleDateString(getLocale(), {
       timeZone: 'UTC', day: '2-digit', month: 'short', year: 'numeric'
     });
+  }
+
+  function formatSourceDateTime(value) {
+    var raw = String(value || '');
+    var match = /^\s*(\d{1,2})[-\s/]([A-Za-zÀ-ÿ]{3,9})[-\s/](\d{2,4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(WIB|WITA|WIT|UTC)?\s*$/i.exec(raw);
+    if (!match) return raw;
+    var months = {
+      jan: 1, january: 1, feb: 2, februari: 2, february: 2, mar: 3, maret: 3, march: 3,
+      apr: 4, april: 4, mei: 5, may: 5, jun: 6, juni: 6, june: 6, jul: 7, juli: 7, july: 7,
+      agu: 8, agustus: 8, aug: 8, august: 8, sep: 9, september: 9, okt: 10, oktober: 10,
+      oct: 10, october: 10, nov: 11, november: 11, des: 12, desember: 12, dec: 12, december: 12
+    };
+    var month = months[match[2].toLowerCase()];
+    if (!month) return raw;
+    var year = Number(match[3]);
+    if (year < 100) year += year >= 70 ? 1900 : 2000;
+    var zone = String(match[7] || 'WIB').toUpperCase();
+    var zoneInfo = { WIB: ['Asia/Jakarta', 7], WITA: ['Asia/Makassar', 8], WIT: ['Asia/Jayapura', 9], UTC: ['UTC', 0] }[zone];
+    var instant = new Date(Date.UTC(year, month - 1, Number(match[1]), Number(match[4]) - zoneInfo[1], Number(match[5]), Number(match[6] || 0)));
+    return instant.toLocaleString(getLocale(), {
+      timeZone: zoneInfo[0], day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    }) + ' ' + zone;
   }
 
   function pm25Color(value) {
@@ -1452,6 +1578,11 @@
   /** Tanggal perekaman dalam WIB. Zona dihitung eksplisit, bukan zona perangkat. */
   function fmtTanggal(d) {
     var w = new Date(d.getTime() + 7 * 3600000);
+    if (getLanguage() === 'en') {
+      return w.toLocaleDateString(getLocale(), {
+        timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric'
+      });
+    }
     return w.getUTCDate() + ' ' + BULAN[w.getUTCMonth()] + ' ' + w.getUTCFullYear();
   }
 
@@ -1616,11 +1747,12 @@
     // sedang diputar, bukan waktu slot terbaru.
     var shown = state.himaFrame ? new Date(state.himaFrame) : t;
     if (shown) {
-      // toLocaleTimeString memakai zona perangkat, sehingga label "WIB" bisa
-      // salah bagi pengguna di luar WIB. Offset dihitung manual dari UTC.
+      // Geser ke WIB secara eksplisit, lalu format jam dengan locale aktif.
       var wib = new Date(shown.getTime() + 7 * 3600000);
-      box.appendChild(el('span', 'hi-time',
-        pad2(wib.getUTCHours()) + '.' + pad2(wib.getUTCMinutes()) + ' WIB'));
+      var wibTime = wib.toLocaleTimeString(getLocale(), {
+        timeZone: 'UTC', hour: '2-digit', minute: '2-digit'
+      });
+      box.appendChild(el('span', 'hi-time', wibTime + ' WIB'));
       var mins = Math.max(0, Math.round((Date.now() - shown.getTime()) / 60000));
       box.appendChild(el('span', 'hi-age', mins < 1 ? 'baru saja' : mins + ' mnt lalu'));
     }
@@ -1835,7 +1967,7 @@
       $('sShelter').classList.remove('skel');
       var tot = sh && sh.totalPeople ? sh.totalPeople : 0;
       $('sShelter').textContent = tot >= 1e6
-        ? (tot / 1e6).toFixed(1).replace('.', ',') + ' jt'
+        ? new Intl.NumberFormat(getLocale(), { notation: 'compact', maximumFractionDigits: 1 }).format(tot)
         : nf.format(tot);
       var ev = (sh && sh.events && sh.events[0]) || null;
       var top = ev && ev.topAreas && ev.topAreas[0];
@@ -1898,7 +2030,7 @@
         }
         isi.appendChild(gt);
         isi.appendChild(el('span', 's',
-          [L.area, L.dateLabel,
+          [L.area, formatSourceDateTime(L.dateLabel),
             L.depthKm !== null && L.depthKm !== undefined ? 'kedalaman ' + L.depthKm + ' km' : null]
             .filter(Boolean).join(' · ')));
         if (L.felt) isi.appendChild(el('span', 'm', 'Dirasakan: ' + L.felt));
@@ -1939,9 +2071,14 @@
         t.bulletins.slice(0, 3).forEach(function (b) {
           var row = el('div', 'hz-bul');
           var a = el('a', 'hz-bul-t', b.title);
+          a.setAttribute('data-i18n-skip', '');
           if (b.url) { a.href = b.url; a.target = '_blank'; a.rel = 'noopener noreferrer'; }
           row.appendChild(a);
-          if (b.summary) row.appendChild(el('div', 'hz-bul-s', b.summary.slice(0, 190)));
+          if (b.summary) {
+            var summary = el('div', 'hz-bul-s', b.summary.slice(0, 190));
+            summary.setAttribute('data-i18n-skip', '');
+            row.appendChild(summary);
+          }
           tb.appendChild(row);
         });
       }
@@ -1970,7 +2107,7 @@
           });
         }
         sb.appendChild(el('div', 'hz-note',
-          'Sumber: ' + sh.source + (ev.updatedAt ? ' · diperbarui ' + ev.updatedAt.slice(0, 10) : '')));
+          'Sumber: ' + sh.source + (ev.updatedAt ? ' · diperbarui ' + formatIsoDateOnly(ev.updatedAt.slice(0, 10)) : '')));
         foot.appendChild(sb);
       });
     } else if (sh) {
@@ -2011,28 +2148,31 @@
    * empat panel terpisah satu per satu.
    * ============================================================ */
 
-  /** Jam terbit dalam WIB. Zona dihitung eksplisit, bukan zona perangkat. */
+  /** Jam terbit dalam WIB, diformat menurut locale tanpa memakai zona perangkat. */
   function fmtJamWib(ms) {
-    var d = new Date(ms + 7 * 3600000);
-    var p = function (n) { return (n < 10 ? '0' : '') + n; };
-    return p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + ' '
-      + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ' WIB';
+    var wib = new Date(ms + 7 * 3600000);
+    return wib.toLocaleString(getLocale(), {
+      timeZone: 'UTC', day: '2-digit', month: 'short',
+      hour: '2-digit', minute: '2-digit'
+    }) + ' WIB';
   }
 
   function timeAgo(iso) {
     var t = new Date(iso).getTime();
     if (!isFinite(t)) return '';
     var m = Math.round((Date.now() - t) / 60000);
-    if (m < 1) return 'baru saja';
-    if (m < 60) return m + ' menit lalu';
+    if (m < 1) return getLanguage() === 'en' ? 'just now' : 'baru saja';
+    if (m < 60) return getLanguage() === 'en' ? m + ' min ago' : m + ' menit lalu';
     var h = Math.round(m / 60);
-    if (h < 24) return h + ' jam lalu';
-    return Math.round(h / 24) + ' hari lalu';
+    if (h < 24) return getLanguage() === 'en' ? h + ' hr ago' : h + ' jam lalu';
+    var days = Math.round(h / 24);
+    return getLanguage() === 'en' ? days + (days === 1 ? ' day ago' : ' days ago') : days + ' hari lalu';
   }
 
   /** Kumpulkan kejadian dari semua sumber yang sudah dimuat. */
   function collectEvents() {
     var ev = [];
+    var english = getLanguage() === 'en';
 
     // -- letusan gunung api (laporan pos pengamatan) --
     var er = state.eruptions;
@@ -2059,7 +2199,7 @@
       hz.quakes.quakes.slice(0, 6).forEach(function (q) {
         if (!(q.magnitude >= 5) && !q.tsunami) return;
         ev.push({
-          kind: 'Gempa', tone: 'quake',
+          kind: english ? 'Earthquake' : 'Gempa', tone: 'quake',
           severity: 40 + q.magnitude * 8 + (q.tsunami ? 40 : 0),
           title: 'M ' + q.magnitude + ', ' + (q.area || 'wilayah tidak disebut'),
           detail: 'kedalaman ' + (q.depthKm !== undefined && q.depthKm !== null ? q.depthKm + ' km' : '-')
@@ -2076,6 +2216,7 @@
         ev.push({
           kind: 'Tsunami', tone: 'tsunami', severity: 95,
           title: b.title || 'Buletin tsunami',
+          sourceTitle: !!b.title,
           detail: b.region || b.category || 'NOAA PTWC',
           at: b.updated
         });
@@ -2088,7 +2229,7 @@
         if (!e.total) return;
         var top = (e.topAreas && e.topAreas[0]) ? e.topAreas[0].area : null;
         ev.push({
-          kind: 'Pengungsi', tone: 'shelter',
+          kind: english ? 'Displacement' : 'Pengungsi', tone: 'shelter',
           severity: 50 + Math.min(35, e.total / 6000),
           title: nf.format(e.total) + ' jiwa mengungsi',
           detail: e.label + (top ? ' · terbanyak ' + top : '') + ' · ' + nf.format(e.sites) + ' titik',
@@ -2146,23 +2287,33 @@
       var officialDateLabel = formatIsoDateOnly(bmkg.officialObservationDate);
       var mediaSummaryDateLabel = formatIsoDateOnly(bmkg.mediaSummaryDate);
       var mediaBodyDateLabel = formatIsoDateOnly(bmkg.mediaBodyDate);
-      var eventDateLabel = 'BMKG resmi ' + officialDateLabel + '; cuplikan Kompas '
-        + mediaSummaryDateLabel + ', isi ' + mediaBodyDateLabel;
+      var eventDateLabel = english
+        ? 'BMKG official ' + officialDateLabel + '; Kompas snippet ' + mediaSummaryDateLabel + ', article body ' + mediaBodyDateLabel
+        : 'BMKG resmi ' + officialDateLabel + '; cuplikan Kompas '
+          + mediaSummaryDateLabel + ', isi ' + mediaBodyDateLabel;
       var hours = bmkg.durationHours || {};
       var durationText = hours.minimum != null && hours.maximum != null
-        ? hours.minimum + '-' + hours.maximum + ' jam' : 'durasi tidak tersedia';
+        ? hours.minimum + '-' + hours.maximum + (english ? ' hours' : ' jam')
+        : (english ? 'duration unavailable' : 'durasi tidak tersedia');
       var altitudeText = bmkg.altitudeMinimumKm != null
-        ? 'lebih dari ' + bmkg.altitudeMinimumKm + ' km' : 'ketinggian tidak tersedia';
+        ? (english ? 'above ' : 'lebih dari ') + bmkg.altitudeMinimumKm + ' km'
+        : (english ? 'altitude unavailable' : 'ketinggian tidak tersedia');
       ev.push({
         kind: 'Observasi atmosfer BMKG', tone: 'fire', severity: 36,
-        title: 'Asap karhutla sempat terpantau di atas Jakarta',
-        detail: eventDateLabel + ' · tanggal sumber tidak konsisten · '
-          + durationText + ' · ' + altitudeText,
+        title: english ? 'Wildfire smoke was briefly observed above Jakarta' : 'Asap karhutla sempat terpantau di atas Jakarta',
+        detail: english
+          ? eventDateLabel + ' · source dates are inconsistent · ' + durationText + ' · ' + altitudeText
+          : eventDateLabel + ' · tanggal sumber tidak konsisten · ' + durationText + ' · ' + altitudeText,
         at: bmkg.officialObservationDate ? bmkg.officialObservationDate + 'T12:00:00.000Z' : null,
-        timeLabel: officialDateLabel + ' · historis, tanggal media berbeda',
-        note: (bmkg.dateAttributionNoteId ? bmkg.dateAttributionNoteId + ' ' : '')
-          + (bmkg.surfaceNoteId || 'Laporan atmosfer bukan pengukuran kualitas udara permukaan.')
-          + ' Lihat marker dan sumber BMKG pada layer laporan.'
+        timeLabel: english ? officialDateLabel + ' · historical, media dates differ'
+          : officialDateLabel + ' · historis, tanggal media berbeda',
+        note: english
+          ? (bmkg.dateAttributionNoteEn ? bmkg.dateAttributionNoteEn + ' ' : '')
+            + (bmkg.surfaceNoteEn || 'An atmospheric report is not a surface air-quality measurement.')
+            + ' See the BMKG marker and sources in the reports layer.'
+          : (bmkg.dateAttributionNoteId ? bmkg.dateAttributionNoteId + ' ' : '')
+            + (bmkg.surfaceNoteId || 'Laporan atmosfer bukan pengukuran kualitas udara permukaan.')
+            + ' Lihat marker dan sumber BMKG pada layer laporan.'
       });
     }
     if (reports && reports.asmc) {
@@ -2172,10 +2323,12 @@
       if (Number.isFinite(asmcAt) && Date.now() - asmcAt <= freshnessMs && asmcAt <= Date.now() + 3600000) {
         ev.push({
           kind: 'Laporan regional ASMC', tone: 'fire', severity: 48,
-          title: 'Haze lintas batas dilaporkan di Asia Tenggara',
-          detail: asmc.summaryId || asmc.summary,
+          title: english ? 'Transboundary haze reported in Southeast Asia' : 'Haze lintas batas dilaporkan di Asia Tenggara',
+          detail: english ? (asmc.summary || asmc.summaryId) : (asmc.summaryId || asmc.summary),
           at: asmc.reportAt,
-          note: reports.spatialNoteId || 'Sapuan peta merupakan representasi umum, bukan batas resmi.'
+          note: english
+            ? reports.spatialNote || 'The map overlay is generalized and is not an official boundary.'
+            : reports.spatialNoteId || 'Sapuan peta merupakan representasi umum, bukan batas resmi.'
         });
       }
     }
@@ -2183,15 +2336,26 @@
       var healthReport = reports.kemenkes;
       ev.push({
         kind: 'Laporan kesehatan Kemenkes', tone: 'shelter', severity: 42,
-        title: healthReport.cumulativeIspaCases != null
-          ? nf.format(healthReport.cumulativeIspaCases) + ' kasus ISPA kumulatif dilaporkan'
-          : 'Laporan ISPA Kemenkes tersedia; angka tidak tersedia',
-        detail: (healthReport.districtCount != null ? nf.format(healthReport.districtCount) : 'Jumlah tidak tersedia')
-          + ' kabupaten/kota di '
-          + (healthReport.provinceCount != null ? nf.format(healthReport.provinceCount) : 'jumlah tidak tersedia')
-          + ' provinsi; data sampai ' + (healthReport.dataThrough || 'tanggal tidak tersedia') + '.',
+        title: english
+          ? healthReport.cumulativeIspaCases != null
+            ? nf.format(healthReport.cumulativeIspaCases) + ' cumulative ARI cases reported'
+            : 'Ministry of Health ARI report available; case count unavailable'
+          : healthReport.cumulativeIspaCases != null
+            ? nf.format(healthReport.cumulativeIspaCases) + ' kasus ISPA kumulatif dilaporkan'
+            : 'Laporan ISPA Kemenkes tersedia; angka tidak tersedia',
+        detail: english
+          ? (healthReport.districtCount != null ? nf.format(healthReport.districtCount) : 'district/city count unavailable')
+            + ' districts/cities across '
+            + (healthReport.provinceCount != null ? nf.format(healthReport.provinceCount) : 'province count unavailable')
+            + ' provinces; data through ' + formatIsoDateOnly(healthReport.dataThrough) + '.'
+          : (healthReport.districtCount != null ? nf.format(healthReport.districtCount) : 'Jumlah tidak tersedia')
+            + ' kabupaten/kota di '
+            + (healthReport.provinceCount != null ? nf.format(healthReport.provinceCount) : 'jumlah tidak tersedia')
+            + ' provinsi; data sampai ' + (healthReport.dataThrough ? formatIsoDateOnly(healthReport.dataThrough) : 'tanggal tidak tersedia') + '.',
         at: healthReport.publishedAt,
-        note: healthReport.note || 'Angka kesehatan bukan hitungan penduduk terpapar plume.'
+        note: english
+          ? healthReport.noteEn || 'Health figures are not a count of people exposed to a plume.'
+          : healthReport.note || 'Angka kesehatan bukan hitungan penduduk terpapar plume.'
       });
     }
 
@@ -2228,7 +2392,9 @@
         top.appendChild(el('span', 'ev-kind', e.kind));
         if (e.at) top.appendChild(el('span', 'ev-age', e.timeLabel || timeAgo(e.at)));
         row.appendChild(top);
-        row.appendChild(el('h3', 'ev-title', e.title));
+        var eventTitle = el('h3', 'ev-title', e.title);
+        if (e.sourceTitle) eventTitle.setAttribute('data-i18n-skip', '');
+        row.appendChild(eventTitle);
         row.appendChild(el('p', 'ev-detail', e.detail));
         if (e.note) row.appendChild(el('p', 'ev-note', e.note));
         body.appendChild(row);
@@ -2249,7 +2415,9 @@
         var dot = el('span', 'dot ' + dotTone);
         dot.style.marginTop = '4px';
         var content = el('span');
-        content.appendChild(el('span', 'a-name', e.title));
+        var compactTitle = el('span', 'a-name', e.title);
+        if (e.sourceTitle) compactTitle.setAttribute('data-i18n-skip', '');
+        content.appendChild(compactTitle);
         content.appendChild(el('span', 'a-sub', e.kind + ' · ' + e.detail
           + (e.note ? ' · ' + e.note : '')));
         row.appendChild(dot);
@@ -2271,7 +2439,9 @@
         card.appendChild(el('time', null, e.timeLabel || (Number.isFinite(atMs) ? fmtJamWib(atMs) : 'Waktu tidak tersedia')));
         var title = el('b');
         title.appendChild(el('span', null, e.kind));
-        title.appendChild(document.createTextNode(' ' + e.title));
+        var timelineTitle = el('span', null, ' ' + e.title);
+        if (e.sourceTitle) timelineTitle.setAttribute('data-i18n-skip', '');
+        title.appendChild(timelineTitle);
         card.appendChild(title);
         timeline.appendChild(card);
       });
@@ -2311,7 +2481,9 @@
       var card = el('div', 'cas-item');
       card.appendChild(el('div', 'cas-n', nf.format(i.value)));
       card.appendChild(el('div', 'cas-l', i.label));
-      card.appendChild(el('div', 'cas-q', '“' + i.quote + '”'));
+      var quote = el('div', 'cas-q', '“' + i.quote + '”');
+      quote.setAttribute('data-i18n-skip', '');
+      card.appendChild(quote);
       var a = el('a', 'cas-src', (i.domain || 'sumber') + ' →');
       if (i.url) { a.href = i.url; a.target = '_blank'; a.rel = 'noopener noreferrer'; }
       a.title = i.title || '';
@@ -2329,6 +2501,14 @@
   }
 
   /** Panel transparansi: kapan tiap sumber terakhir berhasil diperbarui. */
+  function fmtUtcClock(value) {
+    var date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return String(value || '').slice(11, 19) + ' UTC';
+    return date.toLocaleTimeString(getLocale(), {
+      timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit'
+    }) + ' UTC';
+  }
+
   function renderStatus() {
     var panel = $('statusPanel');
     var body = $('statusBody');
@@ -2405,7 +2585,7 @@
         quake: (hz && hz.quakes && hz.quakes.quakes && hz.quakes.quakes.length) ? hzt : null,
         tsunami: (hz && hz.tsunami) ? hzt : null,
         shelter: (hz && hz.shelters && hz.shelters.events && hz.shelters.events.length) ? hzt : null,
-        news: state.newsAt || null,
+        news: state.newsFetchedAt || null,
         drought: state.droughtAt ? new Date(state.droughtAt).toISOString() : null
       };
       var v = m[id];
@@ -2414,6 +2594,12 @@
     }
     function agoLabel(ms) {
       var sc = Math.round(ms / 1000);
+      if (getLanguage() === 'en') {
+        if (sc < 90) return sc + ' sec ago';
+        var minutes = Math.round(sc / 60);
+        if (minutes < 90) return minutes + ' min ago';
+        return Math.round(minutes / 60) + ' hr ago';
+      }
       if (sc < 90) return sc + ' detik lalu';
       var mi = Math.round(sc / 60);
       if (mi < 90) return mi + ' menit lalu';
@@ -2453,7 +2639,7 @@
       row.appendChild(rightEl);
       row.title = t.everyLabel + ' · run ' + t.runs + '/' + t.fails +
         (fAge != null ? ' · data di halaman ' + agoLabel(fAge) : '') +
-        (t.lastErrorAt ? ' · galat terakhir ' + t.lastErrorAt.slice(11, 19) + ' UTC' : '');
+        (t.lastErrorAt ? ' · galat terakhir ' + fmtUtcClock(t.lastErrorAt) : '');
       body.appendChild(row);
       if (t.alert) body.appendChild(el('div', 'st-task-alert', t.alert));
       if (t.errorNote && (!t.healthy || !t.hasData)) {
@@ -2479,7 +2665,8 @@
       s.recentLogs.slice(0,10).forEach(function (lg) {
         var l = el('div', 'st-log');
       l.className = 'st-log st-log-' + (lg.level || 'info');
-        l.textContent = (lg.at?lg.at.slice(11,19):'') + ' [' + (lg.level||'info') + '] ' + (lg.task||'') + ' ' + (lg.message||'').slice(0,120);
+        l.textContent = (lg.at ? fmtUtcClock(lg.at) : '') + ' [' + (lg.level || 'info') + '] '
+          + (lg.task || '') + ' ' + (lg.message || '').slice(0, 120);
         l.title = JSON.stringify(lg);
         logBox.appendChild(l);
       });
@@ -2546,8 +2733,10 @@
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('hz')); })
       .then(function (d) {
         state.hazard = d;
-        state.hazardAt = new Date().toLocaleTimeString('id-ID',
-          { hour: '2-digit', minute: '2-digit' });
+        state.hazardFetchedAt = Date.now();
+        state.hazardAt = new Date(state.hazardFetchedAt).toLocaleTimeString(getLocale(), {
+          timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit'
+        }) + ' WIB';
         renderHazard();
         renderEvents();
         drawQuakes();
@@ -2569,7 +2758,7 @@
         fillColor: q.color, fillOpacity: 0.22
       }).bindPopup(popupNode('Gempa M ' + q.magnitude, [
         q.area,
-        q.dateLabel,
+        formatSourceDateTime(q.dateLabel),
         q.depthKm !== null ? 'Kedalaman: ' + q.depthKm + ' km' : null,
         q.potensi ? 'Status: ' + q.potensi : null,
         q.felt ? 'Dirasakan: ' + q.felt : null
@@ -2839,7 +3028,9 @@
     foot.style.cssText = 'margin-top:8px;padding-top:6px;border-top:1px solid var(--line);font-size:9.5px;color:var(--tx-faint);line-height:1.4';
     if (state.air.updatedAt) {
       var upd = new Date(state.air.updatedAt);
-      foot.appendChild(el('div', '', 'Update: ' + upd.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB · CAMS via Open-Meteo'));
+      foot.appendChild(el('div', '', 'Update: ' + upd.toLocaleTimeString(getLocale(), {
+        timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit'
+      }) + ' WIB · CAMS via Open-Meteo'));
     } else {
       foot.appendChild(el('div', '', 'Sumber: CAMS via Open-Meteo · Skala US EPA'));
     }
@@ -3474,7 +3665,7 @@
     if (!list.length) { pane.appendChild(el('p', 'empty', 'Data curah hujan tidak tersedia.')); return; }
 
     pane.appendChild(el('p', 'pane-note',
-      'Hari tanpa hujan beruntun sampai ' + (d.lastDate || '-')
+      'Hari tanpa hujan beruntun sampai ' + (d.lastDate ? formatIsoDateOnly(d.lastDate) : '-')
       + ' · jendela ' + (d.windowDays || 90) + ' hari · sumber Open-Meteo (ERA5). '
       + 'Tombol "citra" memindahkan peta ke provinsi itu dan menyalakan '
       + 'lapisan kelembapan tanaman.'));
@@ -3640,7 +3831,9 @@
       var src = el('span', 'src', a.domain || '');
       if (a.domain) src.title = a.domain;
       link.appendChild(src);
-      link.appendChild(el('span', 'hl', a.title || '(tanpa judul)'));
+      var headline = el('span', 'hl', a.title || '(tanpa judul)');
+      headline.setAttribute('data-i18n-skip', '');
+      link.appendChild(headline);
 
       // Waktu terbit ditampilkan lengkap dengan jam WIB dan usia relatif -
       // pada pemantauan bencana, "2 jam lalu" jauh lebih berarti daripada
@@ -3652,7 +3845,7 @@
       if (isFinite(ts)) {
         bagian.push(timeAgo(new Date(ts).toISOString()));
         bagian.push(fmtJamWib(ts));
-        meta.title = new Date(ts).toLocaleString('id-ID', {
+        meta.title = new Date(ts).toLocaleString(getLocale(), {
           day: '2-digit', month: 'short', year: 'numeric',
           hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta'
         }) + ' WIB';
@@ -3701,15 +3894,17 @@
      toLocaleString tanpa label zona: pengguna di luar WIB melihat jam zona
      perangkat sendiri, dan tak ada jaminan zona. Kini UTC+7 dihitung
      eksplisit, konvensi yang sama dengan penanggalan lain di halaman. */
-  var NAMA_BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
   function stampWIB(iso) {
     var ms = Date.parse(iso);
     if (isNaN(ms)) return null;
     var w = new Date(ms + 7 * 3600000);
-    var p = function (n) { return n < 10 ? '0' + n : '' + n; };
-    return p(w.getUTCDate()) + ' ' + NAMA_BULAN[w.getUTCMonth()] + ' ' +
-      p(w.getUTCHours()) + '.' + p(w.getUTCMinutes()) + ' WIB';
+    var dateLabel = w.toLocaleDateString(getLocale(), {
+      timeZone: 'UTC', day: '2-digit', month: 'short'
+    });
+    var timeLabel = w.toLocaleTimeString(getLocale(), {
+      timeZone: 'UTC', hour: '2-digit', minute: '2-digit'
+    });
+    return dateLabel + ' ' + timeLabel + ' WIB';
   }
 
   function loadOverview() {
@@ -3879,14 +4074,11 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         state.news = Array.isArray(d.articles) ? d.articles : [];
-        state.newsAt = d.fetchedAt || new Date().toISOString();
+        state.newsFetchedAt = d.fetchedAt || new Date().toISOString();
         state.newsTopics = Array.isArray(d.topics) ? d.topics : [];
         // Tampilkan kapan DATA-nya ditarik dari sumber, bukan kapan browser
         // memanggil API, keduanya bisa berbeda beberapa menit karena cache.
-        state.newsFetchedAt = d.fetchedAt || null;
-        state.newsAt = d.fetchedAt
-          ? fmtJamWib(Date.parse(d.fetchedAt))
-          : new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        state.newsAt = fmtJamWib(Date.parse(state.newsFetchedAt));
         renderNewsTopics();
         renderNews();
         buildTicker();
@@ -4009,7 +4201,7 @@
 
   function aerosolDateLabel(date) {
     var value = new Date(date + 'T00:00:00Z');
-    return isNaN(value.getTime()) ? date : value.toLocaleDateString('id-ID', {
+    return isNaN(value.getTime()) ? date : value.toLocaleDateString(getLocale(), {
       timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric'
     }) + ' UTC';
   }
@@ -4741,10 +4933,14 @@
         navigator.clipboard.writeText(raw).then(function(){
           showHint('JSON layout disalin ke clipboard, paste ke docs/layout-default.json untuk dipatenkan', 4000);
         }).catch(function(){
-          prompt('Copy JSON layout ini untuk dipatenkan sebagai default:', raw);
+          prompt(getLanguage() === 'en'
+            ? 'Copy this layout JSON to save it as the default:'
+            : 'Copy JSON layout ini untuk dipatenkan sebagai default:', raw);
         });
       } else {
-        prompt('Copy JSON layout ini untuk dipatenkan sebagai default:', raw);
+        prompt(getLanguage() === 'en'
+          ? 'Copy this layout JSON to save it as the default:'
+          : 'Copy JSON layout ini untuk dipatenkan sebagai default:', raw);
       }
       console.log('LAYOUT EXPORT:', raw);
     }
@@ -5161,15 +5357,15 @@
 
 
   /* ---------- jam terminal ---------- */
-  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
-  // WIB = UTC+7 dihitung eksplisit agar benar walau zona browser berbeda.
   function tickClock() {
     // Waktu server (jam perangkat + selisih terukur), lihat noteServerTime.
     var d = new Date(Date.now() + clockSkewMs);
-    var wib = new Date(d.getTime() + (7 * 60 + d.getTimezoneOffset()) * 60000);
+    var clockOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
     var lo = $('clockLocal'), ut = $('clockUtc');
-    if (lo) lo.textContent = pad2(wib.getHours()) + ':' + pad2(wib.getMinutes()) + ':' + pad2(wib.getSeconds());
-    if (ut) ut.textContent = pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes()) + ':' + pad2(d.getUTCSeconds());
+    if (lo) lo.textContent = d.toLocaleTimeString(getLocale(),
+      Object.assign({ timeZone: 'Asia/Jakarta' }, clockOptions));
+    if (ut) ut.textContent = d.toLocaleTimeString(getLocale(),
+      Object.assign({ timeZone: 'UTC' }, clockOptions));
   }
 
   /* ---------- ticker berjalan ---------- */
@@ -5245,18 +5441,27 @@
       var cls = 'ask-line';
       if (i === 0) cls += ' ask-head';
       else if (/^Catatan:|indikatif|bukan advisory|bukan sertifikat/i.test(line)) cls += ' ask-note';
-      box.appendChild(el('div', cls, line));
+      var answerLine = el('div', cls, line);
+      if (/Original headline:|Original-language media quote:|Relevant source title, original wording:/i.test(line)) {
+        answerLine.setAttribute('data-i18n-skip', '');
+      }
+      box.appendChild(answerLine);
     });
     if (d.sources && d.sources.length) {
       var srcWrap = el('div', 'ask-src');
-      srcWrap.appendChild(el('span', 'ask-src-lab', 'SUMBER (' + d.indexed + ' dokumen terindeks)'));
+      var sourceLabel = getLanguage() === 'en' ? 'SOURCES (' : 'SUMBER (';
+      var sourceCountLabel = getLanguage() === 'en' ? ' indexed documents)' : ' dokumen terindeks)';
+      srcWrap.appendChild(el('span', 'ask-src-lab', sourceLabel + d.indexed + sourceCountLabel));
       d.sources.forEach(function (s) {
         if (s.url) {
           var a = el('a', 'src-pill', s.title.slice(0, 46));
+          a.setAttribute('data-i18n-skip', '');
           a.href = s.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
           srcWrap.appendChild(a);
         } else {
-          srcWrap.appendChild(el('span', 'src-pill', s.title.slice(0, 46)));
+          var source = el('span', 'src-pill', s.title.slice(0, 46));
+          source.setAttribute('data-i18n-skip', '');
+          srcWrap.appendChild(source);
         }
       });
       box.appendChild(srcWrap);
@@ -5280,7 +5485,7 @@
     // dirinya 20 dtk per sumber saat instance dingin (lihat ASK_SOURCE_
     // DEADLINE_MS), jadi 12 dtk membuat klien menyerah sebelum jawaban
     // yang sebenarnya tersedia sempat tiba.
-    fetchT('/api/ask?q=' + encodeURIComponent(q), { headers: { Accept: 'application/json' } }, 30000)
+    fetchT('/api/ask?q=' + encodeURIComponent(q) + '&lang=' + encodeURIComponent(getLanguage()), { headers: { Accept: 'application/json' } }, 30000)
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('ask')); })
       .then(function (d) {
         stopTick();
@@ -5471,42 +5676,53 @@
   updateSmokePlaybackButton();
 
   // Panel SO2: hanya muncul bila ada gunung yang sedang erupsi.
+  function renderSo2(d) {
+    if (!d || !d.volcanoes || !d.volcanoes.length) return;
+    var grid = $('so2Grid'); clear(grid);
+    d.volcanoes.forEach(function (v) {
+      var card = el('div', 'so2card');
+      var hd = el('div', 'so2hd');
+      hd.appendChild(el('h3', null, (getLanguage() === 'en' ? 'Mount ' : 'G. ') + v.name));
+      var b = el('span', 'so2badge', v.band.label);
+      b.style.color = v.band.color;
+      b.style.borderColor = v.band.color;
+      hd.appendChild(b);
+      card.appendChild(hd);
+
+      var val = el('div', 'so2val');
+      val.appendChild(el('b', null, v.so2 === null ? '-' : String(v.so2)));
+      val.appendChild(el('span', null, ' µg/m³'));
+      card.appendChild(val);
+
+      card.appendChild(el('p', 'so2note', v.band.note));
+      if (v.activity && v.activity.summary) {
+        var act = el('p', 'so2act');
+        if (v.activity.period) act.appendChild(el('b', null,
+          (getLanguage() === 'en' ? 'GVP report ' : 'Laporan GVP ') + v.activity.period + ': '));
+        var activitySummary = document.createElement('span');
+        activitySummary.textContent = v.activity.summary;
+        activitySummary.setAttribute('data-i18n-skip', '');
+        act.appendChild(activitySummary);
+        card.appendChild(act);
+      }
+      card.appendChild(el('p', 'so2meta',
+        'Puncak ' + nf.format(v.elevM) + ' m' + (v.aqi !== null ? ' · US AQI sekitar ' + v.aqi : '')));
+
+      card.addEventListener('click', function () { map.setView([v.lat, v.lon], 9); });
+      card.title = getLanguage() === 'en'
+        ? 'Click to center the map on Mount ' + v.name
+        : 'Klik untuk memusatkan peta ke G. ' + v.name;
+      grid.appendChild(card);
+    });
+    $('so2Panel').hidden = false;
+  }
+
   function loadSo2() {
     fetchT('/api/volcano-so2', { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
-        if (!d || !d.volcanoes || !d.volcanoes.length) return;
-        var grid = $('so2Grid'); clear(grid);
-        d.volcanoes.forEach(function (v) {
-          var card = el('div', 'so2card');
-          var hd = el('div', 'so2hd');
-          hd.appendChild(el('h3', null, 'G. ' + v.name));
-          var b = el('span', 'so2badge', v.band.label);
-          b.style.color = v.band.color;
-          b.style.borderColor = v.band.color;
-          hd.appendChild(b);
-          card.appendChild(hd);
-
-          var val = el('div', 'so2val');
-          val.appendChild(el('b', null, v.so2 === null ? '-' : String(v.so2)));
-          val.appendChild(el('span', null, ' µg/m³'));
-          card.appendChild(val);
-
-          card.appendChild(el('p', 'so2note', v.band.note));
-          if (v.activity && v.activity.summary) {
-            var act = el('p', 'so2act');
-            if (v.activity.period) act.appendChild(el('b', null, 'Laporan GVP ' + v.activity.period + ': '));
-            act.appendChild(document.createTextNode(v.activity.summary));
-            card.appendChild(act);
-          }
-          card.appendChild(el('p', 'so2meta',
-            'Puncak ' + nf.format(v.elevM) + ' m' + (v.aqi !== null ? ' · US AQI sekitar ' + v.aqi : '')));
-
-          card.addEventListener('click', function () { map.setView([v.lat, v.lon], 9); });
-          card.title = 'Klik untuk memusatkan peta ke G. ' + v.name;
-          grid.appendChild(card);
-        });
-        $('so2Panel').hidden = false;
+        state.so2 = d;
+        renderSo2(d);
       })
       .catch(function () {
         // Kuota model CAMS bisa habis; panel disembunyikan, bukan menampilkan
@@ -5541,14 +5757,10 @@
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
       })
-      .then(function (d) { renderSiaran(d); })
+      .then(function (d) { state.streams = d; renderSiaran(d); })
       .catch(function (e) {
-        box.textContent = '';
-        box.appendChild(el('p', 'empty', 'Daftar siaran tidak dapat dimuat ('
-          + ((e && e.message) || 'galat') + '). Kanalnya tetap ada di YouTube; '
-          + 'aplikasi ini tidak menyimpan salinan siaran.'));
-        var m = $('siaranMeta');
-        if (m) m.textContent = 'gagal dimuat';
+        state.streams = { error: (e && e.message) || 'galat' };
+        renderSiaran(state.streams);
       });
   }
 
@@ -5556,22 +5768,43 @@
     var box = $('daftarSiaran');
     if (!box) return;
     box.textContent = '';
+    var english = getLanguage() === 'en';
     var items = (d && d.item) || [];
     var meta = $('siaranMeta');
-    if (meta) {
-      var r = (d && d.ringkas) || {};
-      meta.textContent = items.length
-        ? items.length + ' sumber (' + (r.resmi || 0) + ' resmi, ' + (r.komunitas || 0)
-          + ' komunitas), kurasi manual, diperiksa '
-          + (r.diperiksa ? fmtTanggal(new Date(r.diperiksa + 'T00:00:00Z')) : 'tidak dicatat')
-          + ' · status siaran milik sumber, bukan diukur di sini'
-        : 'belum ada sumber terdaftar';
-    }
-    if (!items.length) {
-      box.appendChild(el('p', 'empty', 'Belum ada sumber siaran yang terdaftar.'));
+    if (d && d.error) {
+      if (meta) meta.textContent = english ? 'failed to load' : 'gagal dimuat';
+      box.appendChild(el('p', 'empty', english
+        ? 'The stream list could not be loaded (' + d.error + '). The channels remain available on YouTube; this app does not store copies of streams.'
+        : 'Daftar siaran tidak dapat dimuat (' + d.error + '). Kanalnya tetap ada di YouTube; aplikasi ini tidak menyimpan salinan siaran.'));
       return;
     }
-    items.forEach(function (k) { box.appendChild(kartuSiaran(k)); });
+    if (meta) {
+      var r = (d && d.ringkas) || {};
+      var checked = r.diperiksa ? fmtTanggal(new Date(r.diperiksa + 'T00:00:00Z'))
+        : (english ? 'not recorded' : 'tidak dicatat');
+      meta.textContent = items.length
+        ? english
+          ? items.length + ' sources (' + (r.resmi || 0) + ' official, ' + (r.komunitas || 0)
+            + ' community), manually curated, checked ' + checked
+            + ' · stream status is controlled by the source and is not measured here'
+          : items.length + ' sumber (' + (r.resmi || 0) + ' resmi, ' + (r.komunitas || 0)
+            + ' komunitas), kurasi manual, diperiksa ' + checked
+            + ' · status siaran milik sumber, bukan diukur di sini'
+        : english ? 'no sources registered yet' : 'belum ada sumber terdaftar';
+    }
+    if (!items.length) {
+      box.appendChild(el('p', 'empty', english
+        ? 'No registered streams are available yet.'
+        : 'Belum ada sumber siaran yang terdaftar.'));
+      return;
+    }
+    items.forEach(function (k) {
+      var card = kartuSiaran(k);
+      box.appendChild(card);
+      if (state.streamOpenId && state.streamOpenId === k.kanal) {
+        sematSiaran(k, card, card.querySelector('button'));
+      }
+    });
   }
 
   /* ---------- kamera web komunitas (Windy) ----------
@@ -5589,13 +5822,10 @@
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
       })
-      .then(function (d) { renderWindy(d); })
+      .then(function (d) { state.windy = d; renderWindy(d); })
       .catch(function (e) {
-        var m = $('windyMeta');
-        if (m) m.textContent = 'gagal dimuat';
-        box.textContent = '';
-        box.appendChild(el('p', 'empty', 'Keadaan sumber kamera Windy tidak dapat diperiksa ('
-          + ((e && e.message) || 'galat') + '). Daftar kamera Windy tetap ada di situsnya.'));
+        state.windy = { ok: false, galat: (e && e.message) || 'galat' };
+        renderWindy(state.windy);
       });
   }
 
@@ -5603,18 +5833,20 @@
     var box = $('daftarWindy');
     if (!box) return;
     box.textContent = '';
+    var english = getLanguage() === 'en';
     var meta = $('windyMeta');
     var item = (d && d.item) || [];
 
     if (!d || d.aktif === false) {
-      if (meta) meta.textContent = 'belum aktif';
-      var p = el('p', 'empty',
-        'Belum aktif: kunci API Windy belum dipasang pada lingkungan ini, jadi daftar kamera tidak diambil. '
-        + 'Windy tidak menyediakan daftar kamera tanpa kunci (permintaan tanpa kunci dijawab 403), '
-        + 'sehingga halaman ini menyatakan keadaannya apa adanya alih-alih menampilkan kotak kosong.');
+      if (meta) meta.textContent = english ? 'inactive' : 'belum aktif';
+      var p = el('p', 'empty', english
+        ? 'Inactive: a Windy API key is not configured in this environment, so the webcam list is not requested. Windy does not provide a webcam list without an API key (unauthenticated requests return 403), so this page explains the limitation instead of showing an empty box.'
+        : 'Belum aktif: kunci API Windy belum dipasang pada lingkungan ini, jadi daftar kamera tidak diambil. '
+          + 'Windy tidak menyediakan daftar kamera tanpa kunci (permintaan tanpa kunci dijawab 403), '
+          + 'sehingga halaman ini menyatakan keadaannya apa adanya alih-alih menampilkan kotak kosong.');
       box.appendChild(p);
       var baris = el('div', 'siaran-aksi');
-      var a = el('a', 'btn btn-ghost', 'BUKA PETA KAMERA DI WINDY');
+      var a = el('a', 'btn btn-ghost', english ? 'OPEN WINDY WEBCAM MAP' : 'BUKA PETA KAMERA DI WINDY');
       a.href = PETA_WINDY;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
@@ -5624,47 +5856,55 @@
     }
 
     if (!d.ok) {
-      if (meta) meta.textContent = 'sumber sedang gagal';
-      box.appendChild(el('p', 'empty', 'Sumber kamera Windy sedang gagal ('
-        + ((d.galat) || 'sebab tidak diketahui') + '). Tidak ada kamera yang ditampilkan, '
-        + 'bukan berarti tidak ada kamera di sana.'));
+      if (meta) meta.textContent = english ? 'source unavailable' : 'sumber sedang gagal';
+      box.appendChild(el('p', 'empty', english
+        ? 'The Windy webcam source is unavailable (' + (d.galat || 'cause unknown') + '). No cameras are shown; this does not mean there are no cameras at that location.'
+        : 'Sumber kamera Windy sedang gagal (' + ((d.galat) || 'sebab tidak diketahui') + '). Tidak ada kamera yang ditampilkan, '
+          + 'bukan berarti tidak ada kamera di sana.'));
       return;
     }
 
     if (meta) {
-      var bagian = [item.length + ' kamera komunitas'];
-      bagian.push('sumber Windy.com');
-      bagian.push('diperbarui ' + umurTeks(d.umurMs));
-      if (d.basi) bagian.push('salinan lama, sumber sedang gagal');
-      bagian.push('waktu foto milik sumber, bukan siaran langsung yang diukur di sini');
+      var bagian = english
+        ? [item.length + ' community webcams', 'source: Windy.com', 'updated ' + umurTeks(d.umurMs)]
+        : [item.length + ' kamera komunitas', 'sumber Windy.com', 'diperbarui ' + umurTeks(d.umurMs)];
+      if (d.basi) bagian.push(english ? 'stale cache, source unavailable' : 'salinan lama, sumber sedang gagal');
+      bagian.push(english
+        ? 'photo timestamp comes from the source; live-stream status is not measured here'
+        : 'waktu foto milik sumber, bukan siaran langsung yang diukur di sini');
       meta.textContent = bagian.join(' · ');
     }
     if (!item.length) {
-      box.appendChild(el('p', 'empty', 'Windy menjawab, tetapi tidak ada kamera komunitas untuk Indonesia.'));
+      box.appendChild(el('p', 'empty', english
+        ? 'Windy responded, but no community webcams are available for Indonesia.'
+        : 'Windy menjawab, tetapi tidak ada kamera komunitas untuk Indonesia.'));
       return;
     }
     item.forEach(function (c) { box.appendChild(kartuWindy(c)); });
   }
 
   function kartuWindy(c) {
+    var english = getLanguage() === 'en';
     var card = el('div', 'siaran-card');
     var head = el('div', 'siaran-card-head');
-    head.appendChild(el('b', null, c.judul));
-    head.appendChild(el('span', 'siaran-badge komunitas', 'KOMUNITAS'));
+    var cameraTitle = el('b', null, c.judul);
+    cameraTitle.setAttribute('data-i18n-skip', '');
+    head.appendChild(cameraTitle);
+    head.appendChild(el('span', 'siaran-badge komunitas', english ? 'COMMUNITY' : 'KOMUNITAS'));
     card.appendChild(head);
     card.appendChild(el('div', 'siaran-owner',
-      [c.kota, c.wilayah, c.negara].filter(Boolean).join(', ') || 'lokasi tidak dicatat sumber'));
+      [c.kota, c.wilayah, c.negara].filter(Boolean).join(', ') || (english ? 'location not recorded by source' : 'lokasi tidak dicatat sumber')));
 
     if (c.adaFoto) {
       var bingkai = el('div', 'siaran-thumb');
       var img = document.createElement('img');
       img.loading = 'lazy';
-      img.alt = 'Pratinjau kamera ' + c.judul;
+      img.alt = (english ? 'Webcam preview: ' : 'Pratinjau kamera ') + c.judul;
       // Gambar dialirkan lewat server; daftar CSP tidak perlu dibuka ke CDN
       // pihak ketiga hanya untuk pratinjau.
       img.src = '/api/webcams/foto?id=' + encodeURIComponent(c.id);
       img.addEventListener('error', function () {
-        bingkai.textContent = 'pratinjau tidak dapat dimuat';
+        bingkai.textContent = english ? 'Preview could not be loaded' : 'pratinjau tidak dapat dimuat';
         bingkai.classList.add('gagal');
       });
       bingkai.appendChild(img);
@@ -5672,11 +5912,12 @@
     }
 
     card.appendChild(el('div', 'siaran-bukti', c.waktuFoto
-      ? 'Foto terakhir menurut sumber: ' + fmtJamWib(Date.parse(c.waktuFoto)) + ' · Windy.com'
-      : 'Waktu foto tidak dicatat sumber · Windy.com'));
+      ? (english ? 'Latest photo according to source: ' : 'Foto terakhir menurut sumber: ')
+        + fmtJamWib(Date.parse(c.waktuFoto)) + ' · Windy.com'
+      : (english ? 'Photo time not recorded by source · Windy.com' : 'Waktu foto tidak dicatat sumber · Windy.com')));
 
     var aksi = el('div', 'siaran-aksi');
-    var a = el('a', 'btn btn-ghost', 'BUKA DI WINDY');
+    var a = el('a', 'btn btn-ghost', english ? 'OPEN IN WINDY' : 'BUKA DI WINDY');
     a.href = c.tautan;
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
@@ -5686,29 +5927,31 @@
   }
 
   function kartuSiaran(k) {
+    var english = getLanguage() === 'en';
     var card = el('div', 'siaran-card');
     var head = el('div', 'siaran-card-head');
-    head.appendChild(el('b', null, k.nama));
+    head.appendChild(el('b', null, english ? (k.namaEn || k.nama) : k.nama));
     head.appendChild(el('span', 'siaran-badge ' + (k.sifat === 'resmi' ? 'resmi' : 'komunitas'),
-      k.sifat === 'resmi' ? 'RESMI' : 'KOMUNITAS'));
+      english ? (k.sifat === 'resmi' ? 'OFFICIAL' : 'COMMUNITY') : (k.sifat === 'resmi' ? 'RESMI' : 'KOMUNITAS')));
     card.appendChild(head);
-    card.appendChild(el('div', 'siaran-owner', k.pemilik + ' · ' + k.wilayah));
-    card.appendChild(el('div', 'siaran-note-body', k.catatan));
+    card.appendChild(el('div', 'siaran-owner', k.pemilik + ' · ' + (english ? (k.wilayahEn || k.wilayah) : k.wilayah)));
+    card.appendChild(el('div', 'siaran-note-body', english ? (k.catatanEn || k.catatan) : k.catatan));
 
     var aksi = el('div', 'siaran-aksi');
     if (k.kanal) {
-      var tombol = el('button', 'btn btn-ghost', 'TAMPILKAN SIARAN');
+      var tombol = el('button', 'btn btn-ghost', english ? 'SHOW STREAM' : 'TAMPILKAN SIARAN');
       tombol.type = 'button';
       tombol.addEventListener('click', function () { sematSiaran(k, card, tombol); });
       aksi.appendChild(tombol);
     }
-    var tautan = el('a', 'btn btn-ghost', 'BUKA DI YOUTUBE');
+    var tautan = el('a', 'btn btn-ghost', english ? 'OPEN ON YOUTUBE' : 'BUKA DI YOUTUBE');
     tautan.href = k.tautan;
     tautan.target = '_blank';
     tautan.rel = 'noopener noreferrer';
     aksi.appendChild(tautan);
     card.appendChild(aksi);
-    card.appendChild(el('div', 'siaran-bukti', 'Dasar pemeriksaan: ' + k.bukti));
+    card.appendChild(el('div', 'siaran-bukti', (english ? 'Verification basis: ' : 'Dasar pemeriksaan: ')
+      + (english ? (k.buktiEn || k.bukti) : k.bukti)));
     return card;
   }
 
@@ -5716,19 +5959,21 @@
     // Sekali semat per kartu: menekan berulang dulu akan menumpuk bingkai
     // dan menyalakan beberapa pemutar sekaligus di dalam satu panel.
     if (card.querySelector('iframe')) return;
+    state.streamOpenId = k.kanal;
     var wrap = el('div', 'siaran-frame');
     var f = document.createElement('iframe');
     f.src = 'https://www.youtube-nocookie.com/embed/live_stream?channel=' + encodeURIComponent(k.kanal);
-    f.title = 'Siaran ' + k.kanalNama;
+    f.title = (getLanguage() === 'en' ? 'Stream from ' : 'Siaran ') + k.kanalNama;
     f.loading = 'lazy';
     f.setAttribute('allow', 'encrypted-media; picture-in-picture');
     f.setAttribute('allowfullscreen', '');
     wrap.appendChild(f);
     card.appendChild(wrap);
-    card.appendChild(el('div', 'siaran-frame-note',
-      'Bila kotak di atas kosong atau berbunyi tidak ada siaran, berarti kanal '
-      + 'sedang tidak menyiarkan. Status siaran diatur YouTube, bukan diukur aplikasi ini.'));
-    if (tombol) { tombol.disabled = true; tombol.textContent = 'SIARAN DISEMATKAN'; }
+    card.appendChild(el('div', 'siaran-frame-note', getLanguage() === 'en'
+      ? 'If the player above is blank or says there is no stream, the channel is not broadcasting. YouTube controls stream status; this app does not measure it.'
+      : 'Bila kotak di atas kosong atau berbunyi tidak ada siaran, berarti kanal '
+        + 'sedang tidak menyiarkan. Status siaran diatur YouTube, bukan diukur aplikasi ini.'));
+    if (tombol) { tombol.disabled = true; tombol.textContent = getLanguage() === 'en' ? 'STREAM EMBEDDED' : 'SIARAN DISEMATKAN'; }
   }
 
 
@@ -5771,11 +6016,13 @@
   }
 
   function umurTeks(ms) {
-    if (ms == null) return 'umur tidak diketahui';
+    var english = getLanguage() === 'en';
+    if (ms == null) return english ? 'age unknown' : 'umur tidak diketahui';
     var mnt = Math.round(ms / 60000);
-    if (mnt < 1) return 'baru saja';
-    if (mnt < 60) return mnt + ' mnt lalu';
-    return Math.round(mnt / 60) + ' jam lalu';
+    if (mnt < 1) return english ? 'just now' : 'baru saja';
+    if (mnt < 60) return english ? mnt + ' min ago' : mnt + ' mnt lalu';
+    var hours = Math.round(mnt / 60);
+    return english ? hours + ' hr ago' : hours + ' jam lalu';
   }
 
   function drawFlights() {
@@ -5793,7 +6040,7 @@
       return;
     }
 
-    items.forEach(function (p) {
+    if (state.flightsOn) items.forEach(function (p) {
       var warna = warnaPesawat(p);
       var mk = L.circleMarker([p.lat, p.lon], {
         radius: p.diDarat ? 2.8 : 3.6,
@@ -5966,6 +6213,76 @@
 
   // Citra Himawari terbit tiap 10 menit; periksa tiap menit agar slot baru
   // langsung tampil tanpa perlu memuat ulang halaman.
+
+  window.addEventListener('siaga:languagechange', function () {
+    nf = new Intl.NumberFormat(getLocale());
+    if (state.data) {
+      var data = state.data;
+      if (data.stats && $('sHot')) $('sHot').textContent = nf.format(data.stats.hotspots || 0);
+      var impactCount = data.stats && data.stats.modeledCenterCount != null
+        ? Number(data.stats.modeledCenterCount)
+        : Number(data.stats && data.stats.impactedRegions);
+      var windMissing = data.impactModel && data.impactModel.status === 'wind-unavailable';
+      if ($('sImp')) $('sImp').textContent = windMissing || !Number.isFinite(impactCount) ? '-' : nf.format(impactCount);
+      if (data.volcano) {
+        if ($('sErupt')) $('sErupt').textContent = data.volcano.eruptionReports == null
+          ? '-' : nf.format(data.volcano.erupting || 0);
+        var levels = data.volcano.counts || {};
+        if ($('sVolLvl')) $('sVolLvl').textContent = nf.format((levels.Siaga || 0) + (levels.Awas || 0));
+      }
+      if (data.worstAir && $('sAir')) $('sAir').textContent = nf.format(data.worstAir.aqi);
+      if (data.meta && $('updated')) {
+        var updatedAt = stampWIB(data.meta.updatedAt);
+        $('updated').textContent = updatedAt ? 'diperbarui ' + updatedAt : 'diperbarui -';
+      }
+      drawFires();
+      drawSmoke();
+      drawRegionalHaze();
+      drawImpact();
+      renderImpactList();
+      renderAshList();
+      renderProvList();
+      renderClusterList();
+      updateForecastStatus();
+    }
+    if (state.hazard) {
+      if (state.hazardFetchedAt) {
+        state.hazardAt = new Date(state.hazardFetchedAt).toLocaleTimeString(getLocale(), {
+          timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit'
+        }) + ' WIB';
+      }
+      renderHazard();
+      if (state.quakeOn) drawQuakes();
+      if (state.shelterOn) drawShelters();
+    }
+    if (state.attr) renderAttribution();
+    if (state.news) {
+      if (state.newsFetchedAt) state.newsAt = fmtJamWib(Date.parse(state.newsFetchedAt));
+      renderNewsTopics();
+      renderNews();
+    }
+    if (state.casualties) renderCasualties();
+    if (state.streams) renderSiaran(state.streams);
+    if (state.windy) renderWindy(state.windy);
+    if (state.flights) drawFlights();
+    if (state.drought) { renderDroughtCard(); renderDryList(); }
+    if (state.air) {
+      renderAirLegend();
+      renderPm25Legend();
+      if (state.airOn) drawAir();
+      if (state.pm25On) drawPm25();
+    }
+    if (state.ash) renderAshInfo();
+    if (state.so2) renderSo2(state.so2);
+    renderHimaInfo();
+    renderEvents();
+    renderStatus();
+    updateLegend();
+    buildTicker();
+    var askQuery = $('askQ') && $('askQ').value.trim();
+    var askPopup = $('aiPopup');
+    if (askQuery && askPopup && !askPopup.hidden) runAsk(askQuery);
+  });
 
   // Lapisan peta harus mengikuti keadaan kotak centang saat halaman dibuka.
   // Sebelum ini setiap map.addLayer() hanya hidup di dalam change handler,

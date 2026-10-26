@@ -45,7 +45,7 @@ check('kartu BMKG menautkan sumber resmi dan kutipan Kepala BMKG',
     && /durationHours/.test(app) && /altitudeMinimumKm/.test(app), true);
 check('observasi Jakarta muncul sebagai kejadian historis dengan ambiguitas tanggal yang eksplisit',
   /Observasi atmosfer BMKG/.test(app)
-    && /timeLabel: officialDateLabel \+ ' · historis, tanggal media berbeda'/.test(app)
+    && /timeLabel: english \? officialDateLabel \+ ' · historical, media dates differ'[\s\S]*?: officialDateLabel \+ ' · historis, tanggal media berbeda'/.test(app)
     && /eventDateStatus: 'source-conflict'/.test(fs.readFileSync(require.resolve('../lib/regional-haze.js'), 'utf8'))
     && /dateAttributionNoteId/.test(app), true);
 check('lapisan regional memakai radial cloud, plume angin tetap directional',

@@ -114,6 +114,63 @@ check('jawaban tanpa deteksi menjelaskan sumber data, bukan hanya angka nol',
   noDetections.answer.join(' ').includes('Tidak ada klaster FIRMS')
     && !noDetections.answer.join(' ').includes('0 pusat kota/kabupaten'), true);
 
+console.log('\n== English RAG preserves source-language content and uncertainty ==');
+const healthEnglish = answer('How many ARI cases were reported by the Ministry of Health?', context, 'en');
+check('English answer reports cumulative ARI figures and the data-through date',
+  healthEnglish.language === 'en'
+    && healthEnglish.answer.some(line => line.includes('333,470 cumulative acute respiratory infection (ARI) cases')
+      && line.includes('2026-10-21')), true);
+check('English health answer keeps the exposed-population caveat',
+  healthEnglish.answer.join(' ').includes('not counts of exposed people'), true);
+
+const regionalEnglish = answer('What did BMKG report about smoke over Jakarta?', context, 'en');
+check('English BMKG smoke query is detected as a regional report', regionalEnglish.intent, 'regional');
+check('English BMKG summary keeps the conflicting dates visible',
+  regionalEnglish.answer.join(' ').includes('2026-10-20')
+    && regionalEnglish.answer.join(' ').includes('2026-10-16')
+    && regionalEnglish.answer.join(' ').includes('not confirmed'), true);
+check('English BMKG summary clearly labels paraphrase and surface-air limitation',
+  regionalEnglish.answer.join(' ').includes('paraphrased, not a direct quote')
+    && regionalEnglish.answer.join(' ').includes('Neither statement is a PM2.5 measurement'), true);
+
+const modeledEnglish = answer('How many city centers intersect the modeled smoke plume?', context, 'en');
+check('English modeled-impact answer uses English numeric formatting and caveats',
+  modeledEnglish.language === 'en'
+    && modeledEnglish.answer.some(line => line.includes('1 city or regency centers intersect indicative plume geometry'))
+    && modeledEnglish.answer.join(' ').includes('not a count of people exposed'), true);
+check('English modeled-impact answer does not expose population as an exposed-person count',
+  modeledEnglish.answer.join(' ').includes('999,999'), false);
+
+const unavailableEnglish = answer('How many cities are in the smoke plume?', {
+  overview: {
+    ...context.overview,
+    stats: { ...context.overview.stats, modeledCenterCount: 0, impactedRegions: 0 },
+    impacted: [],
+    impactModel: { status: 'wind-unavailable', inputClusters: 12, modeledClusters: 0 }
+  }
+}, 'en');
+check('English answer does not treat missing wind as zero affected centers',
+  unavailableEnglish.answer.join(' ').includes('not been calculated')
+    && unavailableEnglish.answer.join(' ').includes('not evidence that there is no smoke')
+    && !unavailableEnglish.answer.join(' ').includes('0 city or regency centers'), true);
+
+const sourceLanguageNews = answer('Show the latest news headlines', {
+  ...context,
+  news: [{ title: 'BMKG: Kabut asap terpantau di Jakarta', domain: 'Kompas.com', url: 'https://example.test/news' }]
+}, 'en');
+check('English news answer labels the headline as original-language text',
+  sourceLanguageNews.answer.some(line => line.includes('Original headline: BMKG: Kabut asap terpantau di Jakarta')), true);
+
+const sourceLanguageQuote = answer('How many casualties have been reported?', {
+  ...context,
+  casualties: {
+    items: [{ label: 'meninggal', value: 2, quote: 'Dua warga meninggal dunia.', domain: 'Contoh', url: 'https://example.test/report' }],
+    caution: 'Angka berasal dari laporan media.'
+  }
+}, 'en');
+check('English casualty answer labels and retains the original-language media quote',
+  sourceLanguageQuote.answer.join(' ').includes('Original-language media quote: "Dua warga meninggal dunia."'), true);
+
 console.log('\n========================================');
 console.log('  ' + passed + ' lulus, ' + failed + ' gagal');
 console.log('========================================');
