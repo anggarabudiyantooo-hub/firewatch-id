@@ -886,11 +886,8 @@ button:focus-visible,a:focus-visible{outline:1px solid rgba(100,210,255,0.55);ou
 
 /* === Leaflet dark === */
 .leaflet-container{background:var(--map-ocean) !important}
-.leaflet-container .smoke-haze{filter:blur(14px)}
-.leaflet-container .smoke-body{filter:blur(5px)}
-.leaflet-container .smoke-core{filter:drop-shadow(0 0 7px rgba(0,0,0,.58))}
+.leaflet-container .smoke-cloud-tile{pointer-events:none}
 .leaflet-container .smoke-affected-zone{filter:drop-shadow(0 0 5px rgba(255,214,10,.5))}
-.leaflet-container .smoke-plume-outline{pointer-events:none}
 .smoke-filter-reset{margin:2px 0 8px}
 .leaflet-control-zoom a{background:var(--surface-1) !important;color:var(--text-primary) !important;border-color:var(--hairline) !important}
 
@@ -1425,6 +1422,16 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
 .pm25-status[hidden],.pm25-legend[hidden]{display:none!important}
 .pm25-status[data-state="error"]{border-left-color:var(--status-alert);color:var(--status-alert)}
 .pm25-status[data-state="loading"]::before{content:"";display:inline-block;width:9px;height:9px;margin:0 6px 0 0;vertical-align:-1px;border:1.5px solid rgba(100,210,255,.28);border-top-color:var(--status-info);border-radius:50%;animation:aerosol-spin .8s linear infinite}
+.regional-haze-status,.plume-coverage-status{margin:4px 0 6px;padding:6px 8px;border-left:2px solid var(--status-info);background:var(--surface-1);font:400 9.5px/1.45 var(--font-prose);color:var(--text-secondary)}
+.plume-coverage-status{margin-top:0}
+
+.regional-haze-status[data-state="stale"],.regional-haze-status[data-state="error"]{border-left-color:var(--status-caution);color:var(--status-caution)}
+.regional-haze-report{margin:0 0 8px;padding:7px 8px;border:1px solid var(--hairline);border-radius:var(--radius-field);background:var(--surface-1);font:400 9.5px/1.45 var(--font-prose);color:var(--text-secondary)}
+.regional-haze-report:empty{display:none}
+.regional-haze-report strong{display:block;margin:0 0 3px;color:var(--text-primary);font:600 10px/1.35 var(--font-prose)}
+.regional-haze-report p{margin:3px 0}
+.regional-haze-report .regional-haze-links{display:flex;flex-wrap:wrap;gap:4px 9px;margin-top:5px}
+.regional-haze-report a{color:var(--status-info);text-decoration:underline;text-underline-offset:2px}
 .pm25-legend{margin:0 0 8px;padding:7px 8px;background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-field)}
 .pm25-legend-title{margin-bottom:6px;color:var(--text-secondary);font:600 10px/1.2 var(--font-prose)}
 .pm25-legend-bands{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 6px}

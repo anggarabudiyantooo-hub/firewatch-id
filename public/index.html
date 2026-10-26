@@ -54,33 +54,33 @@
   <section class="kpi-rail" id="statsPanel" aria-label="Ringkasan situasi" aria-live="polite">
     <article class="kpi">
       <div class="kpi-top"><span class="micro">Gunung api</span><span class="dot d-alert"></span></div>
-      <div class="kpi-num" id="sErupt">3</div>
-      <div class="kpi-sub" id="sEruptSub">Awas 1 · Siaga 2</div>
+      <div class="kpi-num" id="sErupt">-</div>
+      <div class="kpi-sub" id="sEruptSub">menunggu laporan pos pengamatan</div>
     </article>
     <article class="kpi">
       <div class="kpi-top"><span class="micro">Gempa</span><span class="dot d-caution"></span></div>
-      <div class="kpi-num" id="sQuake">M 4.1</div>
-      <div class="kpi-sub" id="sQuakeSub">dirasakan</div>
+      <div class="kpi-num" id="sQuake">-</div>
+      <div class="kpi-sub" id="sQuakeSub">menunggu data BMKG</div>
     </article>
     <article class="kpi">
       <div class="kpi-top"><span class="micro">Titik api</span><span class="dot d-caution"></span></div>
-      <div class="kpi-num" id="sHot">14.365</div>
-      <div class="kpi-sub" id="sHotSub">24 jam</div>
+      <div class="kpi-num" id="sHot">-</div>
+      <div class="kpi-sub" id="sHotSub">menunggu data NASA FIRMS</div>
     </article>
     <article class="kpi">
       <div class="kpi-top"><span class="micro">Pengungsi</span><span class="dot d-nominal"></span></div>
-      <div class="kpi-num" id="sShelter">0</div>
-      <div class="kpi-sub" id="sShelterSub">tidak ada pengungsian</div>
+      <div class="kpi-num" id="sShelter">-</div>
+      <div class="kpi-sub" id="sShelterSub">menunggu laporan BNPB</div>
     </article>
     <article class="kpi">
-      <div class="kpi-top"><span class="micro">Terdampak asap</span><span class="dot d-info"></span></div>
-      <div class="kpi-num" id="sImp">6</div>
-      <div class="kpi-sub">kota / kabupaten</div>
+      <div class="kpi-top"><span class="micro">Dalam plume model</span><span class="dot d-info"></span></div>
+      <div class="kpi-num" id="sImp">-</div>
+      <div class="kpi-sub" id="sImpSub">menunggu plume indikatif</div>
     </article>
     <article class="kpi">
       <div class="kpi-top"><span class="micro">AQI terburuk</span><span class="dot d-danger"></span></div>
-      <div class="kpi-num t-danger" id="sAir">322</div>
-      <div class="kpi-sub t-danger" id="sAirSub">Berbahaya · Papua Selatan</div>
+      <div class="kpi-num t-danger" id="sAir">-</div>
+      <div class="kpi-sub t-danger" id="sAirSub">menunggu data kualitas udara</div>
     </article>
     <!-- hidden compat -->
   </section>
@@ -98,7 +98,7 @@
   <section class="map-card" id="mapCard" aria-label="Peta interaktif Indonesia">
       <div class="map-head">
         <span class="micro">Peta interaktif, Indonesia · EPSG:4326 · WGS84</span>
-        <span class="micro" id="mapCount">14.365 titik</span>
+        <span class="micro" id="mapCount">NASA FIRMS · 24 jam</span>
         <span class="micro" id="legendPoints"></span>
         <button id="mapFullscreenBtn" class="btn-fullscreen" type="button" aria-label="Peta layar penuh" aria-pressed="false" title="Layar penuh (F), ESC untuk keluar"><span class="fs-ic" aria-hidden="true">⛶</span><span class="fs-txt">FULL</span></button>
       </div>
@@ -328,7 +328,7 @@
   </div>
 
   <div class="tabpanel" id="p-perhatian" role="tabpanel" aria-labelledby="t-perhatian">
-    <h2 class="sec-title micro" id="eventsMeta" style="padding:0 12px 6px">Perlu perhatian · 5 peristiwa</h2>
+    <h2 class="sec-title micro" id="eventsMeta" style="padding:0 12px 6px">Perlu perhatian · menunggu data sumber</h2>
     <div id="eventsBody" class="alerts scroll" style="list-style:none;padding:0 12px 12px;overflow-y:auto;max-height:60vh"><p class="empty">Memuat…</p></div>
   </div>
 
@@ -337,10 +337,14 @@
         <div class="micro grp">LAPISAN PETA</div>
         <div class="row"><span class="rl">Letusan gunung api</span><label class="chk" style="margin:0"><input type="checkbox" id="lyVolcano" checked /><span class="sr-only">Letusan gunung api</span></label></div>
         <div class="row"><span class="rl">Titik api</span><label class="chk" style="margin:0"><input type="checkbox" id="lyFire" checked /><span class="sr-only">Titik api</span></label></div>
-        <div class="row"><span class="rl">Sebaran asap</span><label class="chk" style="margin:0"><input type="checkbox" id="lySmoke" /><span class="sr-only">Sebaran asap</span></label></div>
+        <div class="row"><span class="rl">Sebaran asap indikatif (FIRMS + GFS)</span><label class="chk" style="margin:0"><input type="checkbox" id="lySmoke" /><span class="sr-only">Sebaran asap indikatif FIRMS dan NOAA GFS</span></label></div>
+        <div id="plumeCoverageStatus" class="plume-coverage-status" role="status" aria-live="polite">Cakupan klaster plume akan muncul setelah data dimuat.</div>
+        <div class="row"><span class="rl">Laporan kabut &amp; observasi asap (ASMC / NEA / BMKG)</span><label class="chk" style="margin:0"><input type="checkbox" id="lyRegionalHaze" checked aria-describedby="regionalHazeStatus" /><span class="sr-only">Sapuan regional ASMC, marker laporan NEA, dan observasi historis asap atmosfer BMKG di Jakarta</span></label></div>
+        <div id="regionalHazeStatus" class="regional-haze-status" role="status" aria-live="polite" aria-busy="false">Memuat laporan regional kabut asap...</div>
+        <div id="regionalHazeReport" class="regional-haze-report" role="note"></div>
         <div class="row"><span class="rl">Aerosol satelit (NASA)</span><label class="chk" style="margin:0"><input type="checkbox" id="lyAerosol" /><span class="sr-only">Indeks aerosol satelit NASA OMPS NOAA-21</span></label></div>
         <div id="aerosolStatus" class="aerosol-status" role="status" aria-live="polite" aria-busy="false" hidden></div>
-        <div class="row"><span class="rl">Wilayah terdampak</span><label class="chk" style="margin:0"><input type="checkbox" id="lyImpact" /><span class="sr-only">Wilayah terdampak</span></label></div>
+        <div class="row"><span class="rl">Pusat kota dalam plume model</span><label class="chk" style="margin:0"><input type="checkbox" id="lyImpact" /><span class="sr-only">Pusat kota/kabupaten dalam plume indikatif, bukan laporan dampak resmi</span></label></div>
         <div class="row"><span class="rl">Abu vulkanik</span><label class="chk" style="margin:0"><input type="checkbox" id="lyAsh" /><span class="sr-only">Abu vulkanik</span></label></div>
         <div class="row"><span class="rl">Kualitas udara (US AQI)</span><label class="chk" style="margin:0"><input type="checkbox" id="lyAir" /><span class="sr-only">Kualitas udara US AQI</span></label></div>
         <div class="row"><span class="rl">PM2.5 total model (CAMS)</span><label class="chk" style="margin:0"><input type="checkbox" id="lyPm25" /><span class="sr-only">PM2.5 total model CAMS Global, bukan khusus asap</span></label></div>
@@ -424,12 +428,7 @@
       <!-- 00 Linimasa -->
       <div class="dock-panel on" id="d-linimasa" role="tabpanel" aria-labelledby="dt-linimasa">
         <div class="grid4 grid3" id="timelineCards">
-          <article class="ev"><time>06:03 WIB</time><b><span>Gempa</span> Aceh</b></article>
-          <article class="ev"><time>09:14 WIB</time><b><span>Asap</span> Riau</b></article>
-          <article class="ev"><time>11:38 WIB</time><b><span>Erupsi</span> Semeru</b></article>
-          <article class="ev"><time>13:07 WIB</time><b><span>Karhutla</span> Kalteng</b></article>
-          <article class="ev"><time>13:41 WIB</time><b><span>AQI</span> Papua</b></article>
-          <article class="ev"><time>13:52 WIB</time><b><span>Titik api</span> Jambi</b></article>
+          <article class="ev"><time>DATA LANGSUNG</time><b>Menunggu kejadian dan laporan dari sumber.</b></article>
         </div>
         <div class="smoke-playback" role="group" aria-label="Linimasa prakiraan asap dan PM2.5">
           <button id="smokePlay" class="smoke-play-btn" type="button" aria-label="Putar linimasa layer aktif" aria-pressed="false">▶</button>
@@ -444,15 +443,8 @@
 
       <!-- 01 Kejadian aktif -->
       <div class="dock-panel" id="d-kejadian" role="tabpanel" aria-labelledby="dt-kejadian" hidden>
-        <div class="micro" style="padding-bottom:8px">5 kejadian dipantau · urut keparahan, lalu kebaruan</div>
-        <div id="kejadianList">
-          <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-danger" style="margin-top:4px"></span><span><span class="a-name">Papua Selatan, udara berbahaya</span><span class="a-sub">AQI 322 (Berbahaya). 6 kota/kabupaten terdampak asap. Titik api terbanyak nasional: 5.149.</span></span><span class="a-ago">12 menit lalu</span></div>
-          <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-alert" style="margin-top:4px"></span><span><span class="a-name">Erupsi Semeru</span><span class="a-sub">9× letusan, kolom 1.000 m di atas puncak, condong ke timur laut.</span></span><span class="a-ago">6 jam lalu</span></div>
-          <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-alert" style="margin-top:4px"></span><span><span class="a-name">Erupsi Ibu</span><span class="a-sub">7× letusan, kolom 800 m di atas puncak, condong ke timur laut.</span></span><span class="a-ago">23 menit lalu</span></div>
-          <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-caution" style="margin-top:4px"></span><span><span class="a-name">Karhutla, 14.365 titik api</span><span class="a-sub">Terbanyak: Papua Selatan 5.149 · Sumatera Selatan 2.087 · Kalimantan Barat 1.390 · Kalimantan Tengah 1.243 · Jambi 1.140 · Maluku 875.</span></span><span class="a-ago">24 jam</span></div>
-          <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-caution" style="margin-top:4px"></span><span><span class="a-name">Kekeringan, 4 provinsi</span><span class="a-sub">Terkering Gorontalo, 68 hari tanpa hujan. El Niño kuat (ONI 1,8).</span></span><span class="a-ago">30 hari</span></div>
-          <div class="listrow" style="grid-template-columns:6px 1fr auto;display:grid"><span class="dot d-neutral" style="margin-top:4px"></span><span><span class="a-name">Gempa M 4.1, Calang, Aceh Jaya</span><span class="a-sub">Pusat di laut 54 km barat laut Calang. Kedalaman 5 km. Dirasakan III-IV Calang, III Aceh Besar, III Banda Aceh, II Sigli.</span></span><span class="a-ago">09:35 WIB</span></div>
-        </div>
+        <div class="micro" style="padding-bottom:8px">Kejadian dan laporan dipantau · data resmi dan keluaran model dibedakan</div>
+        <div id="kejadianList"><p class="empty">Menunggu data dari sumber.</p></div>
         <!-- JS compat -->
         <section class="panel panel-events" id="eventsPanel" hidden><div id="eventsBody2" class="ev-body"></div></section>
       </div>
@@ -460,7 +452,7 @@
       <!-- 02 Wilayah, 5 sub-tab -->
       <div class="dock-panel" id="d-wilayah" role="tabpanel" aria-labelledby="dt-wilayah" hidden>
         <div class="subtabs" role="tablist" aria-label="Analisis wilayah">
-          <button role="tab" aria-selected="true" data-sub="w-terdampak" tabindex="0">Terdampak</button>
+          <button role="tab" aria-selected="true" data-sub="w-terdampak" tabindex="0">Pusat dalam plume</button>
           <button role="tab" aria-selected="false" data-sub="w-provinsi" tabindex="-1">Provinsi</button>
           <button role="tab" aria-selected="false" data-sub="w-abu" tabindex="-1">Abu vulkanik</button>
           <button role="tab" aria-selected="false" data-sub="w-klaster" tabindex="-1">Klaster</button>
@@ -472,7 +464,7 @@
         <div class="subpanel" id="w-klaster"><div id="paneCluster" class="pane" hidden><p class="empty">Memuat…</p></div></div>
         <div class="subpanel" id="w-kering"><div id="paneDry" class="pane" hidden><p class="empty">Memuat…</p></div></div>
         <!-- legacy tabs compat -->
-        <div class="tabs" hidden><button class="tab active" id="tabImpact">Terdampak</button><button class="tab" id="tabProv">Provinsi</button><button class="tab" id="tabAsh">Abu vulkanik</button><button class="tab" id="tabCluster">Klaster</button><button class="tab" id="tabDry">Kekeringan</button></div>
+        <div class="tabs" hidden><button class="tab active" id="tabImpact">Pusat dalam plume</button><button class="tab" id="tabProv">Provinsi</button><button class="tab" id="tabAsh">Abu vulkanik</button><button class="tab" id="tabCluster">Klaster</button><button class="tab" id="tabDry">Kekeringan</button></div>
         <section class="panel" id="analysisPanel" hidden></section>
       </div>
 
@@ -538,9 +530,9 @@
           <div>
             <span class="micro" style="display:block;padding-bottom:6px">Memahami data ini</span>
             <details><summary>Apa itu titik api (hotspot)?</summary><div class="body"><b>Apa:</b> piksel yang terdeteksi satelit sebagai anomali panas di permukaan bumi. <b>Penting:</b> hotspot <b>bukan</b> berarti pasti kebakaran hutan. <b>FRP:</b> daya radiasi api dalam megawatt.</div></details>
-            <details><summary>Kenapa sebaran asap berbentuk kerucut?</summary><div class="body"><b>Cara baca:</b> ujung sempit adalah sumber api, kerucut melebar mengikuti arah angin. Tiga lapis warna dengan tepi lembut hanya membantu membaca jangkauan relatif model, bukan konsentrasi asap. Klik poligon untuk menyorot zona kota/kabupaten dari daftar terdampak yang titik pusatnya berada di dalamnya. Prakiraan menggunakan daftar dampak saat ini dan tidak menghitung ulang kota yang mungkin terdampak pada jam mendatang.</div></details>
+            <details><summary>Kenapa plume asap tampak seperti kabut?</summary><div class="body"><b>Cara baca:</b> lapisan raster yang lembut menyatukan plume dari sampel maksimal 36 klaster titik api; arah tiap plume mengikuti angin. Pemilihan visual dibagi lintas wilayah supaya FRP terbesar tidak mendominasi seluruh peta. Perhitungan pusat model memeriksa seluruh klaster FIRMS yang memiliki sampel angin, sehingga cakupan hitungan dapat lebih luas dari selubung yang sedang digambar. Rona dan kelembutan hanya gaya visual, bukan ketebalan atau konsentrasi asap. Klik hit-area transparan plume untuk menyorot pusat kota/kabupaten yang masuk perkiraan model.</div></details>
             <details><summary>Linimasa asap dan PM2.5 (+6 / +12 / +18 jam)</summary><div class="body"><b>Cara pakai:</b> tombol di linimasa bawah memutar layer prakiraan yang sedang aktif. Plume asap tetap model indikatif angin dan titik api. Jika layer PM2.5 CAMS aktif, nilai berwarna adalah prakiraan total dari semua sumber pada waktu berlaku yang ditampilkan, bukan kontribusi khusus asap.</div></details>
-            <details><summary>Arti “daerah terdampak”</summary><div class="body">Perkiraan kota yang berada di jalur sebaran asap, dihitung dari arah angin dan intensitas api. Indeks 0-100 menandakan seberapa kuat paparan, <b>bukan angka ISPU resmi.</b></div></details>
+            <details><summary>Arti pusat kota dalam plume model</summary><div class="body">Angka ini mencocokkan daftar 226 pusat permukiman Indonesia dengan poligon plume indikatif dari seluruh klaster hasil pengelompokan deteksi FIRMS yang memiliki sampel angin NOAA GFS 10 m. Selubung visual di peta dibatasi maksimal 36 klaster dan tidak selalu menggambar semua sumber yang dipakai hitungan. Ini bukan lintasan asap teramati, laporan resmi daerah terdampak, batas administratif, jumlah orang terpapar, atau pengukuran ISPU. Angin 10 m tidak mewakili asap di ketinggian sekitar 4 km atau lebih. Laporan BMKG yang bertanggal ditampilkan sebagai observasi historis terpisah; laporan kesehatan, haze regional, dan PM2.5 ambien juga tidak dicampur dengan hitungan model.</div></details>
             <details><summary>Angin &amp; kenapa ia menentukan segalanya</summary><div class="body">Layer <b>ketinggian angin</b> memilih level tekanan: permukaan 10 m hingga 300 hPa (~9,2 km).</div></details>
             <details><summary>Kenapa kepemilikan lahan dipetakan</summary><div class="body">Untuk atribusi awal: titik api yang jatuh di dalam batas konsesi membantu mengarahkan verifikasi, <b>bukan menetapkan kesalahan.</b></div></details>
             <details><summary>Abu vulkanik: bahaya yang berbeda</summary><div class="body">Abu adalah partikel padat, dipantau terutama untuk <b>keselamatan penerbangan</b>; SO₂ adalah gas tak kasat mata yang bisa terbawa terpisah dari abu.</div></details>
@@ -549,7 +541,8 @@
             <details><summary>Letusan gunung api: PVMBG / MAGMA</summary><div class="body">Laporan Pos Pengamatan Gunung Api, ditulis petugas yang berjaga di lapangan. Memuat waktu erupsi, tinggi kolom abu, arah condong, amplitudo dan durasi seismograf. <b>Inilah acuan yang menentukan apakah sebaran abu digambar di peta.</b> Jendela pantau 24 jam terakhir.</div></details>
             <details><summary>Tingkat aktivitas: PVMBG &amp; Smithsonian GVP</summary><div class="body">Normal / Waspada / Siaga / Awas. Status menyatakan <b>kewaspadaan</b>, bukan bahwa gunung sedang meletus.</div></details>
             <details><summary>Titik api: NASA FIRMS VIIRS</summary><div class="body">24 jam dari tiga satelit: Suomi-NPP, NOAA-20, NOAA-21. Hotspot adalah <b>anomali suhu permukaan</b>: tidak semuanya kebakaran hutan.</div></details>
-            <details><summary>Sebaran asap: NOAA GFS</summary><div class="body">Model kerucut dari medan angin 10 m (grid global 1°) dikombinasi daya radiasi api. <b>Bukan</b> model dispersi atmosfer maupun pengukuran kualitas udara.</div></details>
+            <details><summary>Sebaran asap indikatif: FIRMS + NOAA GFS</summary><div class="body">Indeks pusat permukiman dihitung dari seluruh klaster hasil pengelompokan deteksi panas NASA FIRMS yang memiliki sampel angin permukaan NOAA GFS 10 m (grid global 1°). Demi performa, selubung raster di peta hanya menampilkan sampel maksimal 36 klaster yang dipilih lintas wilayah; status layer memisahkan jumlah sumber yang dihitung dan yang digambar. Geometri ini bukan model dispersi atmosfer, lintasan asap teramati, pengukuran kualitas udara, atau konsentrasi asap. Angin 10 m tidak mewakili asap di lapisan atmosfer lebih tinggi.</div></details>
+            <details><summary>Laporan haze regional dan observasi: ASMC, NEA, BMKG</summary><div class="body">Laporan regional, observasi atmosfer, hitungan kesehatan, dan pengukuran kualitas udara memiliki waktu serta definisi berbeda dari pusat kota yang beririsan dengan plume model. Sapuan difus ASMC hanya representasi visual area yang disebut laporan, bukan batas observasi atau konsentrasi. Marker BMKG di Jakarta merangkum laporan historis. Siaran resmi BMKG mencatat asap satelit pada 16 Okt; cuplikan ringkasan Kompas mengaitkan kutipan 5-6 jam di atas 4 km dengan 20 Okt, tetapi badan artikel menyebut 16 Okt. Tanggal kutipan ditandai tidak konsisten, bukan dipastikan. Marker bukan jejak sebaran atau kondisi saat ini. BMKG menyatakan pengamatan satelit 16 Okt tidak berdampak pada kualitas udara permukaan. NEA melaporkan sebagian haze berada di atas Singapura dengan pencampuran permukaan terbatas. PM2.5/PSI adalah kualitas udara ambien, bukan konsentrasi asap spesifik. Sumber dan tanggal ada pada kartu laporan.</div></details>
             <details><summary>Aerosol satelit: NASA OMPS NOAA-21</summary><div class="body">Raster harian Aerosol Index (380 nm), resolusi sekitar 12 × 10 km, dari NASA GIBS. Indeks ini menandai aerosol penyerap UV yang dapat mencakup asap, debu, atau abu vulkanik di kolom atmosfer; tidak memastikan sumbernya dan bukan PM2.5 permukaan. Data dapat terputus oleh awan, lintasan satelit, atau ketiadaan retrieval. Area transparan bukan bukti udara bersih. Atribusi: NASA GIBS / OMPS NOAA-21.</div></details>
             <details><summary>Batas konsesi: Global Forest Watch</summary><div class="body">Sawit, HTI serat kayu, konsesi tebang, tambang, dan anggota RSPO. Kompilasi dapat tidak lengkap dan tahun sumbernya beragam.</div></details>
             <details><summary>Kota &amp; penduduk: GeoNames (CC BY 4.0)</summary><div class="body">226 permukiman Indonesia berpenduduk ≥ 50.000 jiwa di 38 provinsi.</div></details>
@@ -668,6 +661,7 @@
 
 <script src="/vendor/leaflet.js"></script>
 <script src="/smoke-geometry.js"></script>
+<script src="/smoke-cloud-layer.js"></script>
 <script src="/wind-particles.js"></script>
 <script src="/wind-viewport.js"></script>
 <script src="/map-resize.js"></script>

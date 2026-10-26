@@ -83,15 +83,28 @@ memutuskan apakah harus mengungsi, kekeliruan semacam ini berkonsekuensi nyata.
 ## 6. Persyaratan fungsional
 
 ### F1: Ringkasan situasi nasional
-Delapan kartu metrik: gunung meletus, status Siaga dan Awas, gempa dirasakan, warga
-mengungsi, titik api, daerah terdampak asap, titik dalam konsesi, dan udara terburuk.
-Tiap kartu menampilkan angka utama dan keterangan pendukung. Sumber yang belum pernah
-berhasil dimuat menampilkan `-`, bukan `0`.
+Kartu metrik meringkas gunung meletus, status Siaga dan Awas, gempa dirasakan, warga
+mengungsi, titik api, pusat permukiman yang beririsan dengan plume indikatif, konsesi,
+dan kualitas udara terburuk. Hitungan pusat model menggunakan seluruh klaster hasil
+pengelompokan FIRMS yang memiliki sampel angin GFS 10 m, lalu mencocokkan pusat dengan
+poligon yang sama seperti layer raster. Selubung visual dibatasi maksimal 36 klaster
+untuk performa, sehingga sumber yang dihitung bisa lebih banyak daripada yang digambar.
+Hitungan itu bukan lintasan asap teramati, dampak resmi, jumlah penduduk terpapar,
+atau pengukuran kualitas udara. Laporan BMKG tentang asap Jakarta harus ditampilkan
+sebagai observasi atmosfer bertanggal, terpisah dari plume model dan PM2.5 ambien.
+Untuk laporan Jakarta ini, BMKG mengaitkan deteksi satelit resmi dengan 16 Okt 2026;
+cuplikan ringkasan Kompas 21 Okt mengarah ke 20 Okt untuk kutipan 5-6 jam, sedangkan isi
+halamannya menyebut 16 Okt. UI dan RAG harus mempertahankan ketidakpastian tanggal itu,
+bukan menyatukannya sebagai satu tanggal pasti. Laporan kesehatan dan haze regional
+memakai kartu/sumber tersendiri. Bila angin GFS
+tidak tersedia, UI menampilkan `-` dan bukan nol yang menyesatkan.
 
 ### F2: Peta interaktif
 Layer peta dapat dinyalakan sendiri-sendiri, tersedia tiga peta dasar, lima produk
 Himawari, dan linimasa prakiraan. Linimasa dapat menyelaraskan plume asap indikatif
 dan PM2.5 total model CAMS Global, tetapi status kedua produk harus tetap terpisah.
+Layer laporan regional menampilkan sapuan ASMC, marker NEA, dan observasi historis BMKG
+Jakarta bertanggal tanpa membuat kontur asap atau klaim kualitas udara permukaan.
 PM2.5 CAMS bukan atribusi khusus asap, bukan pengukuran stasiun, dan bukan US AQI.
 Mengeklik titik mana pun menampilkan wilayah administratif, status lahan, dan
 kualitas udara di titik tersebut.

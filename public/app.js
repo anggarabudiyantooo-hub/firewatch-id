@@ -289,6 +289,14 @@
   map.createPane('pm25Pane');
   map.getPane('pm25Pane').style.zIndex = 340;
   map.getPane('pm25Pane').style.pointerEvents = 'auto';
+  map.createPane('regionalHazePane');
+  map.getPane('regionalHazePane').style.zIndex = 390;
+  map.getPane('regionalHazePane').style.pointerEvents = 'none';
+  // Kabut indikatif lokal berada di atas titik api agar tidak tenggelam di bawah klaster
+  // marker. Pane kanvas tetap mengabaikan pointer; area klik plume tetap aktif.
+  map.createPane('smokeCloudPane');
+  map.getPane('smokeCloudPane').style.zIndex = 410;
+  map.getPane('smokeCloudPane').style.pointerEvents = 'none';
   map.createPane('airPane');
   map.getPane('airPane').style.zIndex = 350;      // di bawah overlayPane (400)
   map.getPane('airPane').style.pointerEvents = 'auto';
@@ -313,15 +321,13 @@
   // ikut padam saat lapisan Abu vulkanik dimatikan - padahal data status tetap
   // relevan dan justru itu yang diminta prototipe (baris 'Letusan gunung api').
   var gVolcano = L.layerGroup();
-  // Lapisan data mulai dalam keadaan mati.
-  //
-  // Sebelumnya empat lapisan menyala otomatis, sehingga peta langsung
-  // penuh ribuan titik dan kerucut asap sebelum pengguna sempat melihat
-  // bentang alamnya. Memulai dari peta bersih membuat orang memilih
-  // sendiri apa yang ingin dilihat, dan membuat setiap lapisan yang
-  // dinyalakan terbaca jelas karena tidak bertumpuk dengan yang lain.
+  // Layer model detail mulai mati agar peta tidak tertutup titik dan plume.
+  // Pengecualian: laporan haze regional ASMC aktif secara default untuk
+  // memberi konteks lintas batas yang luas; tampilan ini dibatasi freshness
+  // window dan bukan kontur pengukuran.
   var gWind = L.layerGroup();
   var gSmoke = L.layerGroup();
+  var gRegionalHaze = L.layerGroup();
   var gConc = L.layerGroup();
   var gFire = L.layerGroup();
   var gImpact = L.layerGroup();
@@ -480,7 +486,12 @@
     } else {
       txt = nf.format(total) + ' titik' + age;
     }
-    $('sHotSub').textContent = txt;
+    var latestAcqNote = m.newestAcq
+      ? ' · akuisisi terbaru ' + formatPm25Time(m.newestAcq)
+        + (m.latestAcqAgeHours != null && Number.isFinite(Number(m.latestAcqAgeHours))
+          ? ' (' + nf.format(Number(m.latestAcqAgeHours)) + ' jam lalu)' : '')
+      : ' · waktu akuisisi terbaru tidak tersedia';
+    $('sHotSub').textContent = txt + latestAcqNote;
     renderConfSummary(hs);
   }
 
@@ -565,16 +576,6 @@
     });
   }
 
-  function scaleSmokePolygon(ring, originLat, originLon, factor) {
-    if (!Array.isArray(ring)) return [];
-    return ring.map(function (point) {
-      return [
-        originLat + (Number(point[0]) - originLat) * factor,
-        originLon + (Number(point[1]) - originLon) * factor
-      ];
-    });
-  }
-
   function drawSmoke() {
     var clearSelection = !!state.smokeSelection;
     state.smokeSelection = null;
@@ -589,7 +590,7 @@
     function selectPlume(polygon, hour) {
       if (hour < 0) {
         state.smokeSelection = null;
-        showHint('Wilayah terdampak tidak dihitung ulang untuk frame historis.', 7000);
+        showHint('Pusat kota tidak dicocokkan ulang untuk frame plume historis.', 7000);
         return;
       }
       var matches = smokeRegionsWithin(polygon);
@@ -621,13 +622,14 @@
       if (terdampakTab) terdampakTab.click();
 
       showHint(matches.length
-        ? nf.format(matches.length) + ' zona kota/kabupaten disorot; daftar dibuka di Wilayah > Terdampak.'
-        : 'Tidak ada titik pusat dari daftar dampak saat ini di dalam poligon ini. Lihat Wilayah > Terdampak untuk rinciannya.', 7000);
+        ? nf.format(matches.length) + ' pusat kota/kabupaten disorot; daftar dibuka di Wilayah > Pusat dalam plume.'
+        : 'Tidak ada pusat kota dari daftar model saat ini di dalam plume ini. Lihat Wilayah > Pusat dalam plume untuk rinciannya.', 7000);
     }
 
     var plumes = h < 0
       ? (historyFrame && Array.isArray(historyFrame.plumes) ? historyFrame.plumes : [])
       : (Array.isArray(state.data.plumes) ? state.data.plumes : []);
+    var visualPlumes = [];
     plumes.forEach(function (p) {
       // Pada jam > 0, pakai bentuk hasil prakiraan angin; jika tak tersedia, lewati.
       var f = p;
@@ -644,11 +646,11 @@
       var intensity = Number(p.intensity);
       if (!Number.isFinite(intensity)) intensity = 0;
       intensity = Math.max(0, Math.min(1, intensity));
+      visualPlumes.push({ kind: 'modeled-plume', polygon: f.polygon, lat: p.lat, lon: p.lon, intensity: intensity });
       var speed = h > 0 ? Number(f.windSpeed) : Number(p.wind && p.wind.speed);
       if (!Number.isFinite(speed)) speed = 0;
 
-      // Tiga selubung arang memberi tampilan kabut dengan tepi lembut.
-      // Rona gelap adalah gaya visual, bukan ukuran kepadatan asap.
+      // Rona gelap pada kanvas adalah gaya visual, bukan ukuran kepadatan asap.
       var matches = h < 0 ? null : smokeRegionsWithin(f.polygon);
       var matchLine = h < 0
         ? 'Wilayah terdampak tidak dihitung ulang untuk frame historis.'
@@ -685,7 +687,7 @@
       if (h < 0) {
         warning = 'Rekonstruksi indikatif dari deteksi FIRMS dan angin arsip NOAA GFS, bukan lintasan asap teramati atau ukuran PM2.5. Rona gelap hanya gaya visual, bukan ketebalan asap terukur. FRP adalah agregat deteksi pada interval enam jam, bukan daya api sesaat.';
       } else if (h > 0) {
-        warning += ' Daftar kota yang dicocokkan berasal dari hitungan dampak saat ini; kota terdampak baru pada jam prakiraan tidak dihitung ulang.';
+        warning += ' Pencocokan memakai daftar pusat kota dan plume model saat ini; kota baru yang mungkin masuk jalur pada jam prakiraan tidak dihitung ulang.';
       } else {
         warning += ' Klik selubung untuk menyorot zona kota yang pusatnya berada di dalam poligon.';
       }
@@ -694,48 +696,219 @@
           : 'Prakiraan sebaran +' + h + ' jam';
       var info = popupNode(title, lines, { warn: warning });
 
-      // Lapisan luar menangani klik. Dua lapisan di dalamnya hanya visual,
-      // sehingga klik tetap dapat mencapai poligon yang membuka rincian.
-      var haze = L.polygon(f.polygon, {
-        stroke: false, fillColor: '#262a28',
-        fillOpacity: h > 0 ? 0.08 + intensity * 0.04 : 0.1 + intensity * 0.06,
-        smoothFactor: 1, className: 'smoke-haze',
+      // Area transparan menjaga popup dan seleksi tanpa menggambar batas poligon.
+      var hitArea = L.polygon(f.polygon, {
+        stroke: false, fillColor: '#080a09', fillOpacity: 0.001,
+        smoothFactor: 1, className: 'smoke-hit-area',
         interactive: true, bubblingMouseEvents: false
       });
-      haze.on('click', function () { selectPlume(f.polygon, h); });
-      haze.bindPopup(info).addTo(gSmoke);
-
-      var middlePolygon = scaleSmokePolygon(f.polygon, p.lat, p.lon, 0.72);
-      L.polygon(middlePolygon, {
-        stroke: false, fillColor: '#151816',
-        fillOpacity: h > 0 ? 0.11 + intensity * 0.05 : 0.14 + intensity * 0.06,
-        smoothFactor: 1, className: 'smoke-body', interactive: false
-      }).addTo(gSmoke);
-
-      var core = Array.isArray(f.corePolygon) && f.corePolygon.length >= 3
-        ? f.corePolygon : scaleSmokePolygon(f.polygon, p.lat, p.lon, 0.45);
-      L.polygon(core, {
-        stroke: false, fillColor: '#080a09',
-        fillOpacity: h > 0 ? 0.17 + intensity * 0.07 : 0.21 + intensity * 0.08,
-        smoothFactor: 1, className: 'smoke-core', interactive: false
-      }).addTo(gSmoke);
-
-      L.polygon(f.polygon, {
-        color: h > 0 ? '#9aabb2' : '#626865', weight: 0.8,
-        opacity: h > 0 ? 0.48 : 0.36, fill: false,
-        smoothFactor: 1, dashArray: h > 0 ? '4,3' : null,
-        className: 'smoke-plume-outline', interactive: false
-      }).addTo(gSmoke);
+      hitArea.on('click', function () { selectPlume(f.polygon, h); });
+      hitArea.bindPopup(info).addTo(gSmoke);
     });
+
+    if (visualPlumes.length && window.SiagaSmokeCloudLayer) {
+      window.SiagaSmokeCloudLayer.create(L, visualPlumes, {
+        pane: 'smokeCloudPane',
+        maxZoom: map.getMaxZoom() || 18
+      }).addTo(gSmoke);
+    }
 
     gSmoke.addLayer(selectionLayer);
   }
 
+  function renderRegionalHazeReport(report, fresh, ageText) {
+    var status = $('regionalHazeStatus');
+    var box = $('regionalHazeReport');
+    if (!status || !box) return;
+    clear(box);
+    if (!report || !report.meta || !report.meta.asmc) {
+      status.dataset.state = 'error';
+      status.setAttribute('aria-busy', 'false');
+      status.textContent = 'Metadata laporan regional tidak tersedia.';
+      return;
+    }
 
-  // Zona terdampak digambar sebagai POLIGON area, bukan titik. Bentuknya
-  // buffer melingkar berjari-jari tetap per tingkat paparan, bukan batas
-  // administratif dan bukan data kerusakan; tujuannya pembaca melihat luas
-  // wilayah yang terpapar, bukan sebuah koordinat.
+    var meta = report.meta;
+    var asmc = meta.asmc;
+    var health = meta.kemenkes || {};
+    var nea = meta.nea || {};
+    var reportDate = formatPm25Time(asmc.reportAt);
+    var windowHours = Number(asmc.freshnessHours) || 30;
+    status.dataset.state = fresh ? 'fresh' : 'stale';
+    status.setAttribute('aria-busy', 'false');
+    status.textContent = 'Snapshot ASMC ' + reportDate + ' (' + (ageText || 'waktu tidak diketahui') + '). '
+      + (fresh ? 'Sapuan laporan ditampilkan; bentuknya perkiraan.'
+        : 'Snapshot melewati batas ' + windowHours + ' jam; sapuan ASMC disembunyikan. Marker laporan historis BMKG tetap tersedia.');
+
+    box.appendChild(el('strong', null, 'ASMC regional haze · ' + (asmc.reportDate || 'tanggal tidak tersedia')));
+    box.appendChild(el('p', null, asmc.summaryId || asmc.summary || 'Ringkasan ASMC tidak tersedia.'));
+    if (meta.kemenkes) {
+      var healthCount = health.cumulativeIspaCases != null
+        ? nf.format(health.cumulativeIspaCases) + ' kasus ISPA' : 'Angka ISPA tidak tersedia';
+      var healthDistricts = health.districtCount != null
+        ? nf.format(health.districtCount) + ' kabupaten/kota' : 'jumlah kabupaten/kota tidak tersedia';
+      var healthProvinces = health.provinceCount != null
+        ? nf.format(health.provinceCount) + ' provinsi' : 'jumlah provinsi tidak tersedia';
+      box.appendChild(el('strong', null,
+        healthCount + ' dilaporkan di ' + healthDistricts + ', ' + healthProvinces));
+      var publishedLabel = health.publishedAt ? ' (laporan ' + formatPm25Time(health.publishedAt) + ')' : '';
+      box.appendChild(el('p', null,
+        'Data kumulatif sampai ' + (health.dataThrough || 'tanggal tidak tersedia') + publishedLabel
+        + (health.currentlyIllIspaCases != null
+          ? '; ' + nf.format(health.currentlyIllIspaCases) + ' masih tercatat menderita ISPA, bukan kasus baru harian.' : '')
+        + ' Bukan jumlah orang terpapar plume. Provinsi: '
+        + (Array.isArray(health.provinces) ? health.provinces.join(', ') : 'tidak tersedia') + '.'));
+    } else {
+      box.appendChild(el('p', null, 'Laporan kesehatan Kemenkes tidak tersedia pada snapshot ini.'));
+    }
+    if (nea.statement) {
+      box.appendChild(el('p', null,
+        'NEA Singapura ' + (nea.reportDate || '') + ': sebagian haze berada di lapisan lebih tinggi, dengan pencampuran ke permukaan terbatas.'));
+    }
+    if (nea.pm25OneHour && nea.psi24Hour) {
+      box.appendChild(el('p', null,
+        'NEA, ' + nea.pm25OneHour.period + ': PM2.5 '
+        + nea.pm25OneHour.min + '-' + nea.pm25OneHour.max + ' ' + nea.pm25OneHour.unit
+        + '; PSI 24 jam ' + nea.psi24Hour.min + '-' + nea.psi24Hour.max + ' (' + nea.psi24Hour.category + '). '
+        + (nea.airQualityNoteId || nea.airQualityNote || 'Data kualitas udara ambien, bukan konsentrasi asap spesifik.')));
+    }
+    if (meta.bmkg) {
+      var bmkg = meta.bmkg;
+      var mediaSummaryDateLabel = formatIsoDateOnly(bmkg.mediaSummaryDate);
+      var mediaBodyDateLabel = formatIsoDateOnly(bmkg.mediaBodyDate);
+      var duration = bmkg.durationHours || {};
+      var durationLabel = Number.isFinite(Number(duration.minimum)) && Number.isFinite(Number(duration.maximum))
+        ? Number(duration.minimum) + '-' + Number(duration.maximum) + ' jam' : 'durasi tidak tersedia';
+      var altitudeLabel = Number.isFinite(Number(bmkg.altitudeMinimumKm))
+        ? 'lebih dari ' + Number(bmkg.altitudeMinimumKm) + ' km' : 'ketinggian tidak tersedia';
+      var officialDateLabel = formatIsoDateOnly(bmkg.officialObservationDate);
+      box.appendChild(el('strong', null, 'BMKG Jakarta · laporan historis'));
+      box.appendChild(el('p', null,
+        'Siaran resmi BMKG: ' + officialDateLabel + '; cuplikan ringkasan Kompas: '
+        + mediaSummaryDateLabel + '; badan artikel Kompas: ' + mediaBodyDateLabel + '.'));
+      box.appendChild(el('p', null, bmkg.officialSummaryId || 'Laporan BMKG tentang asap di Jabodetabek tidak tersedia.'));
+      box.appendChild(el('p', null,
+        (bmkg.quotedStatementId || 'Rincian durasi dan ketinggian tidak tersedia.')
+        + ' Durasi yang dikutip: ' + durationLabel + '; ketinggian: ' + altitudeLabel + '.'));
+      if (bmkg.dateAttributionNoteId) box.appendChild(el('p', null, bmkg.dateAttributionNoteId));
+      box.appendChild(el('p', null, bmkg.surfaceNoteId || 'Laporan atmosfer bukan pengukuran kualitas udara permukaan.'));
+      box.appendChild(el('p', null, bmkg.spatialNoteId || 'Marker menunjukkan lokasi laporan, bukan area asap terukur.'));
+    }
+    box.appendChild(el('p', null, meta.spatialNoteId || meta.spatialNote || 'Sapuan regional bukan batas resmi atau kontur konsentrasi.'));
+
+    var links = el('div', 'regional-haze-links');
+    [
+      { url: asmc.productUrl || asmc.sourceUrl, label: 'ASMC' },
+      { url: health.officialSourceUrl, label: 'Kemenkes' },
+      { url: health.sourceUrl, label: 'Rincian data ISPA' },
+      { url: nea.sourceUrl, label: 'NEA Singapura' },
+      { url: meta.bmkg && meta.bmkg.officialSourceUrl, label: 'Siaran BMKG · 17 Okt' },
+      { url: meta.bmkg && meta.bmkg.quotedSourceUrl, label: 'Kutipan BMKG · Kompas 21 Okt' }
+    ].forEach(function (item) {
+      if (!item.url) return;
+      var link = el('a', null, item.label);
+      link.href = item.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      links.appendChild(link);
+    });
+    if (links.childNodes.length) box.appendChild(links);
+  }
+
+  function drawRegionalHaze() {
+    gRegionalHaze.clearLayers();
+    var report = state.data && state.data.regionalHaze;
+    var meta = report && report.meta;
+    var asmc = meta && meta.asmc;
+    if (!asmc || !asmc.reportAt) {
+      renderRegionalHazeReport(null, false, '');
+      return;
+    }
+
+    var reportMs = new Date(asmc.reportAt).getTime();
+    var ageMs = Date.now() - reportMs;
+    var maxAgeMs = (Number(asmc.freshnessHours) || 30) * 3600000;
+    var fresh = Number.isFinite(reportMs) && ageMs >= -3600000 && ageMs <= maxAgeMs;
+    var ageText = timeAgo(asmc.reportAt) || 'waktu tidak diketahui';
+    renderRegionalHazeReport(report, fresh, ageText);
+    if (!$('lyRegionalHaze').checked) return;
+
+    if (fresh) {
+      var visualAreas = (report.reportedAreas || []).filter(function (area) {
+        return area && Array.isArray(area.polygon) && area.polygon.length >= 4
+          && Array.isArray(area.center) && Number.isFinite(Number(area.center[0]))
+          && Number.isFinite(Number(area.center[1]));
+      }).map(function (area) {
+        return {
+          kind: 'reported-region',
+          polygon: area.polygon,
+          lat: Number(area.center[0]),
+          lon: Number(area.center[1])
+        };
+      });
+      if (visualAreas.length && window.SiagaSmokeCloudLayer) {
+        window.SiagaSmokeCloudLayer.create(L, visualAreas, {
+          pane: 'regionalHazePane',
+          maxZoom: map.getMaxZoom() || 18
+        }).addTo(gRegionalHaze);
+      }
+    }
+
+    (report.markers || []).forEach(function (marker) {
+      // Marker BMKG adalah observasi historis beratribusi. Marker ASMC dan
+      // NEA hanya dipakai bersama sapuan regional yang masih segar.
+      if (marker.source !== 'bmkg' && !fresh) return;
+      var lat = Number(marker.lat), lon = Number(marker.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+      var rows = [marker.noteId || marker.note
+        || 'Lokasi yang disebut dalam laporan, bukan pengukuran di titik marker.'];
+      if (marker.source === 'bmkg' && meta.bmkg) {
+        var bmkg = meta.bmkg;
+        if (bmkg.officialSummaryId) rows.push(bmkg.officialSummaryId);
+        if (bmkg.quotedStatementId) rows.push(bmkg.quotedStatementId);
+        if (bmkg.dateAttributionNoteId) rows.push(bmkg.dateAttributionNoteId);
+        if (bmkg.durationHours && bmkg.altitudeMinimumKm != null) {
+          rows.push('Durasi yang dikutip: ' + bmkg.durationHours.minimum + '-'
+            + bmkg.durationHours.maximum + ' jam; ketinggian lebih dari '
+            + bmkg.altitudeMinimumKm + ' km.');
+        }
+        if (bmkg.surfaceNoteId) rows.push(bmkg.surfaceNoteId);
+      } else if (marker.source === 'nea' && meta.nea) {
+        var nea = meta.nea;
+        if (nea.statementId || nea.statement) rows.push(nea.statementId || nea.statement);
+        if (nea.pm25OneHour) rows.push('NEA PM2.5 1 jam (' + nea.pm25OneHour.period + '): '
+          + nea.pm25OneHour.min + '-' + nea.pm25OneHour.max + ' ' + nea.pm25OneHour.unit + '.');
+        if (nea.psi24Hour) rows.push('NEA PSI 24 jam (' + nea.psi24Hour.period + '): '
+          + nea.psi24Hour.min + '-' + nea.psi24Hour.max + ' (' + nea.psi24Hour.category + ').');
+        if (nea.nextDayPsiForecast) rows.push('Prakiraan NEA ' + nea.nextDayPsiForecast.date + ': PSI '
+          + nea.nextDayPsiForecast.min + '-' + nea.nextDayPsiForecast.max + ' (' + nea.nextDayPsiForecast.category + ').');
+        if (nea.airQualityNoteId) rows.push(nea.airQualityNoteId);
+      } else if (meta.asmc && (meta.asmc.summaryId || meta.asmc.summary)) {
+        rows.push(meta.asmc.summaryId || meta.asmc.summary);
+      }
+
+      var isBmkg = marker.source === 'bmkg';
+      var isNea = marker.source === 'nea';
+      var markerTitle = isBmkg ? 'Observasi historis BMKG: ' + marker.label
+        : isNea ? 'Laporan NEA: ' + marker.label : 'Laporan ASMC: ' + marker.label;
+      var warning = isBmkg && meta.bmkg
+        ? meta.bmkg.spatialNoteId
+        : meta.spatialNoteId || meta.spatialNote
+          || 'Marker tidak menunjukkan konsentrasi atau batas terdampak.';
+      L.circleMarker([lat, lon], {
+        pane: 'markerPane', radius: isBmkg ? 6 : 5,
+        color: isBmkg ? '#c4b5fd' : isNea ? '#80d8ff' : '#f4c875',
+        weight: 1.5, fillColor: '#172027', fillOpacity: 0.95
+      }).bindTooltip(marker.label || 'Lokasi laporan regional', { direction: 'top', className: 'zone-tip' })
+        .bindPopup(popupNode(markerTitle, rows, { warn: warning }))
+        .addTo(gRegionalHaze);
+    });
+  }
+
+
+  // Penanda pusat permukiman digambar sebagai lingkaran bantu berjari-jari
+  // tetap per kategori model. Lingkaran bukan batas dampak, administratif,
+  // paparan terukur, maupun data kerusakan.
   var ZONE_RADIUS_KM = { 'Berat': 18, 'Sedang': 12, 'Ringan': 7 };
   function zoneRingKm(lat, lon, km) {
     var out = [], n = 56, kLat = 110.57, kLon = 111.32 * Math.cos(lat * Math.PI / 180);
@@ -844,28 +1017,30 @@
   function drawImpact() {
     gImpact.clearLayers();
     if (!state.data) return;
-    state.data.impacted.forEach(function (r) {
+    (state.data.impacted || []).forEach(function (r) {
       var col = r.level === 'Berat' ? '#f87171' : r.level === 'Sedang' ? '#fbbf24' : '#34d399';
       var rad = ZONE_RADIUS_KM[r.level] || 10;
       var dos = zoneDossier(r.lat, r.lon, rad);
       var head = dos.kinds.length
-        ? 'Peristiwa di lokasi sekitar zona (24 jam)'
-        : 'Peristiwa di lokasi sekitar zona';
+        ? 'Bahaya lain tercatat di sekitar pusat kota (24 jam)'
+        : 'Bahaya lain di sekitar pusat kota';
       L.polygon(zoneRingKm(r.lat, r.lon, rad), {
-        color: col, weight: 2, fillColor: col, fillOpacity: 0.16
-      }).bindTooltip(r.name + ' \u00b7 paparan ' + r.level + ' \u00b7 radius ' + rad + ' km', {
+        color: col, weight: 1.4, opacity: 0.75, dashArray: '3,5',
+        fillColor: col, fillOpacity: 0.08
+      }).bindTooltip(r.name + ' · dalam plume indikatif · kategori model ' + r.level, {
         direction: 'top', className: 'zone-tip'
-      }).bindPopup(popupNode(r.name + ' · ' + r.prov, [
-        'Zona terdampak = area terpapar dengan radius ' + rad + ' km dari pusat permukiman (bukan batas administratif, bukan data kerusakan).',
-        'Tingkat paparan: ' + r.level + ' (indeks ' + r.score + '/100)',
-        'Sumber asap terdekat: ' + nf.format(r.nearestKm) + ' km (' + r.proximity + ')',
-        'Asap datang dari arah ' + r.fromDir + ' \u00b7 angin ' + r.windSpeed + ' m/s',
-        r.etaText.charAt(0).toUpperCase() + r.etaText.slice(1),
-        'Terpapar oleh ' + r.plumes + ' pluma asap',
-        'Perkiraan penduduk: ' + nf.format(r.population) + ' jiwa',
+      }).bindPopup(popupNode('Pusat kota dalam plume model: ' + r.name + ' · ' + r.prov, [
+        'Koordinat pusat permukiman masuk area plume indikatif pada model saat ini. Lingkaran ' + rad + ' km hanya penanda visual, bukan batas terdampak.',
+        'Kategori model: ' + r.level + ' (skor kedekatan ' + r.score + '/100; bukan ukuran paparan atau konsentrasi).',
+        'Klaster titik api terdekat: ' + nf.format(r.nearestKm) + ' km (' + r.proximity + ')',
+        'Arah plume model: ' + r.fromDir + ' · angin ' + r.windSpeed + ' m/s',
+        r.etaText.charAt(0).toUpperCase() + r.etaText.slice(1) + ' (perkiraan model, bukan waktu lintasan asap teramati)',
+        'Klaster plume sumber yang berkontribusi: ' + r.plumes,
+        'Perkiraan penduduk kota: ' + nf.format(r.population) + ' jiwa; bukan jumlah orang terpapar.',
         head + ':'
-      ].concat(dos.rows).concat(['Saran: ' + r.advice]),
-        { warn: 'Indeks paparan adalah model perkiraan dari arah angin dan intensitas api, bukan hasil pengukuran ISPU di lapangan.' })).addTo(gImpact);
+      ].concat(dos.rows).concat(['Saran umum: ' + r.advice]), {
+        warn: 'Plume dihitung dari titik api dan angin, bukan model dispersi atau pengukuran ISPU. Kategori serta lingkaran bukan laporan resmi atau batas administratif.'
+      })).addTo(gImpact);
     });
   }
 
@@ -943,6 +1118,15 @@
       timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short',
       hour: '2-digit', minute: '2-digit', hour12: false
     }) + ' WIB';
+  }
+
+  function formatIsoDateOnly(value) {
+    if (!value) return 'tanggal tidak tersedia';
+    var date = new Date(value + 'T12:00:00Z');
+    if (!Number.isFinite(date.getTime())) return 'tanggal tidak tersedia';
+    return date.toLocaleDateString('id-ID', {
+      timeZone: 'UTC', day: '2-digit', month: 'short', year: 'numeric'
+    });
   }
 
   function pm25Color(value) {
@@ -1936,13 +2120,78 @@
     var ov = state.data;
     if (ov && ov.stats && ov.stats.hotspots > 0) {
       var prov = (ov.provinceRanking && ov.provinceRanking[0]) || null;
+      var model = ov.impactModel || null;
+      var centerCount = ov.stats.modeledCenterCount != null
+        ? Number(ov.stats.modeledCenterCount) : Number(ov.stats.impactedRegions);
+      var centerText = model && model.status === 'wind-unavailable'
+        ? 'pusat model tidak dihitung, angin GFS tidak tersedia'
+        : nf.format(Number.isFinite(centerCount) ? centerCount : 0) + ' pusat kota/kabupaten dalam plume indikatif';
+      if (model && model.status === 'partial') {
+        centerText += ' dari ' + nf.format(model.modeledClusters) + '/' + nf.format(model.inputClusters) + ' klaster berangin';
+      }
       ev.push({
         kind: 'Karhutla', tone: 'fire',
         severity: 30 + Math.min(35, ov.stats.hotspots / 150),
         title: nf.format(ov.stats.hotspots) + ' titik api terdeteksi',
-        detail: (prov ? 'terbanyak ' + (prov.province || prov.name) : '')
-          + ' · ' + nf.format(ov.stats.impactedRegions) + ' daerah terdampak asap',
+        detail: (prov ? 'terbanyak ' + (prov.province || prov.name) + ' · ' : '') + centerText,
         at: ov.meta ? ov.meta.updatedAt : null
+      });
+    }
+
+    // Snapshot observasi resmi dan kesehatan ditampilkan terpisah dari
+    // indeks pusat kota yang masuk geometri plume model.
+    var reports = ov && ov.regionalHaze && ov.regionalHaze.meta;
+    if (reports && reports.bmkg) {
+      var bmkg = reports.bmkg;
+      var officialDateLabel = formatIsoDateOnly(bmkg.officialObservationDate);
+      var mediaSummaryDateLabel = formatIsoDateOnly(bmkg.mediaSummaryDate);
+      var mediaBodyDateLabel = formatIsoDateOnly(bmkg.mediaBodyDate);
+      var eventDateLabel = 'BMKG resmi ' + officialDateLabel + '; cuplikan Kompas '
+        + mediaSummaryDateLabel + ', isi ' + mediaBodyDateLabel;
+      var hours = bmkg.durationHours || {};
+      var durationText = hours.minimum != null && hours.maximum != null
+        ? hours.minimum + '-' + hours.maximum + ' jam' : 'durasi tidak tersedia';
+      var altitudeText = bmkg.altitudeMinimumKm != null
+        ? 'lebih dari ' + bmkg.altitudeMinimumKm + ' km' : 'ketinggian tidak tersedia';
+      ev.push({
+        kind: 'Observasi atmosfer BMKG', tone: 'fire', severity: 36,
+        title: 'Asap karhutla sempat terpantau di atas Jakarta',
+        detail: eventDateLabel + ' · tanggal sumber tidak konsisten · '
+          + durationText + ' · ' + altitudeText,
+        at: bmkg.officialObservationDate ? bmkg.officialObservationDate + 'T12:00:00.000Z' : null,
+        timeLabel: officialDateLabel + ' · historis, tanggal media berbeda',
+        note: (bmkg.dateAttributionNoteId ? bmkg.dateAttributionNoteId + ' ' : '')
+          + (bmkg.surfaceNoteId || 'Laporan atmosfer bukan pengukuran kualitas udara permukaan.')
+          + ' Lihat marker dan sumber BMKG pada layer laporan.'
+      });
+    }
+    if (reports && reports.asmc) {
+      var asmc = reports.asmc;
+      var asmcAt = new Date(asmc.reportAt).getTime();
+      var freshnessMs = (Number(asmc.freshnessHours) || 30) * 3600000;
+      if (Number.isFinite(asmcAt) && Date.now() - asmcAt <= freshnessMs && asmcAt <= Date.now() + 3600000) {
+        ev.push({
+          kind: 'Laporan regional ASMC', tone: 'fire', severity: 48,
+          title: 'Haze lintas batas dilaporkan di Asia Tenggara',
+          detail: asmc.summaryId || asmc.summary,
+          at: asmc.reportAt,
+          note: reports.spatialNoteId || 'Sapuan peta merupakan representasi umum, bukan batas resmi.'
+        });
+      }
+    }
+    if (reports && reports.kemenkes) {
+      var healthReport = reports.kemenkes;
+      ev.push({
+        kind: 'Laporan kesehatan Kemenkes', tone: 'shelter', severity: 42,
+        title: healthReport.cumulativeIspaCases != null
+          ? nf.format(healthReport.cumulativeIspaCases) + ' kasus ISPA kumulatif dilaporkan'
+          : 'Laporan ISPA Kemenkes tersedia; angka tidak tersedia',
+        detail: (healthReport.districtCount != null ? nf.format(healthReport.districtCount) : 'Jumlah tidak tersedia')
+          + ' kabupaten/kota di '
+          + (healthReport.provinceCount != null ? nf.format(healthReport.provinceCount) : 'jumlah tidak tersedia')
+          + ' provinsi; data sampai ' + (healthReport.dataThrough || 'tanggal tidak tersedia') + '.',
+        at: healthReport.publishedAt,
+        note: healthReport.note || 'Angka kesehatan bukan hitungan penduduk terpapar plume.'
       });
     }
 
@@ -1962,33 +2211,71 @@
 
   function renderEvents() {
     var body = $('eventsBody');
+    var compactList = $('kejadianList');
+    var timeline = $('timelineCards');
     var meta = $('eventsMeta');
-    if (!body) return;
     var ev = collectEvents();
-    clear(body);
 
     if (meta) {
-      meta.textContent = ev.length
-        ? ev.length + ' kejadian dipantau'
-        : 'memuat…';
+      meta.textContent = ev.length ? ev.length + ' kejadian dan laporan dipantau' : 'menunggu data sumber';
+    }
+    if (body) {
+      clear(body);
+      if (!ev.length) body.appendChild(el('p', 'empty', 'Belum ada kejadian menonjol yang terpantau.'));
+      else ev.slice(0, 8).forEach(function (e) {
+        var row = el('article', 'ev ev-' + e.tone);
+        var top = el('div', 'ev-top');
+        top.appendChild(el('span', 'ev-kind', e.kind));
+        if (e.at) top.appendChild(el('span', 'ev-age', e.timeLabel || timeAgo(e.at)));
+        row.appendChild(top);
+        row.appendChild(el('h3', 'ev-title', e.title));
+        row.appendChild(el('p', 'ev-detail', e.detail));
+        if (e.note) row.appendChild(el('p', 'ev-note', e.note));
+        body.appendChild(row);
+      });
     }
 
-    if (!ev.length) {
-      body.appendChild(el('p', 'empty', 'Belum ada kejadian menonjol yang terpantau.'));
-      return;
+    if (compactList) {
+      clear(compactList);
+      if (!ev.length) compactList.appendChild(el('p', 'empty', 'Belum ada kejadian menonjol yang terpantau.'));
+      else ev.slice(0, 6).forEach(function (e) {
+        var row = el('div', 'listrow');
+        row.style.gridTemplateColumns = '6px 1fr auto';
+        row.style.display = 'grid';
+        var dotTone = e.tone === 'volcano' ? 'd-alert'
+          : e.tone === 'tsunami' ? 'd-danger'
+          : e.tone === 'quake' ? 'd-neutral'
+          : e.tone === 'shelter' ? 'd-info' : 'd-caution';
+        var dot = el('span', 'dot ' + dotTone);
+        dot.style.marginTop = '4px';
+        var content = el('span');
+        content.appendChild(el('span', 'a-name', e.title));
+        content.appendChild(el('span', 'a-sub', e.kind + ' · ' + e.detail
+          + (e.note ? ' · ' + e.note : '')));
+        row.appendChild(dot);
+        row.appendChild(content);
+        row.appendChild(el('span', 'a-ago', e.timeLabel || (e.at ? timeAgo(e.at) : 'waktu tidak tersedia')));
+        compactList.appendChild(row);
+      });
     }
 
-    ev.slice(0, 8).forEach(function (e) {
-      var row = el('article', 'ev ev-' + e.tone);
-      var top = el('div', 'ev-top');
-      top.appendChild(el('span', 'ev-kind', e.kind));
-      if (e.at) top.appendChild(el('span', 'ev-age', timeAgo(e.at)));
-      row.appendChild(top);
-      row.appendChild(el('h3', 'ev-title', e.title));
-      row.appendChild(el('p', 'ev-detail', e.detail));
-      if (e.note) row.appendChild(el('p', 'ev-note', e.note));
-      body.appendChild(row);
-    });
+    if (timeline) {
+      clear(timeline);
+      if (!ev.length) {
+        timeline.appendChild(el('article', 'ev', ''));
+        timeline.lastChild.appendChild(el('time', null, 'DATA LANGSUNG'));
+        timeline.lastChild.appendChild(el('b', null, 'Menunggu kejadian dan laporan dari sumber.'));
+      } else ev.slice(0, 6).forEach(function (e) {
+        var card = el('article', 'ev');
+        var atMs = e.at ? Date.parse(e.at) : NaN;
+        card.appendChild(el('time', null, e.timeLabel || (Number.isFinite(atMs) ? fmtJamWib(atMs) : 'Waktu tidak tersedia')));
+        var title = el('b');
+        title.appendChild(el('span', null, e.kind));
+        title.appendChild(document.createTextNode(' ' + e.title));
+        card.appendChild(title);
+        timeline.appendChild(card);
+      });
+    }
   }
 
   function loadEruptions() {
@@ -3039,17 +3326,22 @@
       if (!pane) return;
       clear(pane);
       var all = state.data && Array.isArray(state.data.impacted) ? state.data.impacted : [];
+      var model = state.data && state.data.impactModel;
+      if (model && model.status === 'wind-unavailable') {
+        pane.appendChild(el('p', 'empty', 'Pusat model belum dihitung karena medan angin NOAA GFS 10 m tidak tersedia. Ini bukan bukti tidak ada asap.'));
+        return;
+      }
       var selection = state.smokeSelection;
       var list = all;
       if (selection) {
         list = all.filter(function (r) { return selection.keys.indexOf(impactedRegionKey(r)) !== -1; });
         var period = selection.hour > 0 ? 'prakiraan +' + selection.hour + ' jam' : 'kondisi saat ini';
         pane.appendChild(el('div', 'micro',
-          'Zona dalam plume terpilih · ' + nf.format(list.length) + ' kota/kabupaten · ' + period));
+          'Pusat dalam plume indikatif terpilih · ' + nf.format(list.length) + ' kota/kabupaten · ' + period));
         pane.appendChild(el('p', 'pane-note', selection.hour > 0
-          ? 'Kota yang ditampilkan hanya irisan antara daftar dampak saat ini dan titik pusat yang masuk poligon prakiraan. Dampak prakiraan tidak dihitung ulang, sehingga kota baru yang mungkin masuk jalur asap tidak disimpulkan. Zona peta adalah radius estimasi, bukan batas administratif atau data kerusakan.'
-          : 'Filter memakai titik pusat kota/kabupaten pada daftar dampak saat ini yang berada di dalam poligon. Zona peta adalah radius estimasi 7-18 km, bukan batas administratif atau data kerusakan; indeks bukan pengukuran ISPU.'));
-        var resetFilter = el('button', 'chipbtn smoke-filter-reset', 'Tampilkan semua wilayah terdampak');
+          ? 'Pencocokan prakiraan memakai daftar pusat permukiman dan bentuk model saat ini; kota baru yang mungkin masuk jalur pada jam mendatang tidak dihitung. Lingkaran peta hanya penanda lokasi, bukan batas dampak.'
+          : 'Yang disorot adalah pusat kota/kabupaten dari daftar model yang berada di dalam plume terpilih. Plume dan lingkaran bukan batas administrasi, paparan terukur, atau laporan resmi dampak.'));
+        var resetFilter = el('button', 'chipbtn smoke-filter-reset', 'Tampilkan semua pusat kota');
         resetFilter.type = 'button';
         resetFilter.addEventListener('click', function () {
           state.smokeSelection = null;
@@ -3062,22 +3354,21 @@
       if (!list.length) {
         pane.appendChild(el('p', 'empty', selection
           ? (all.length
-            ? 'Tidak ada titik pusat dari daftar dampak saat ini di dalam poligon asap terpilih.'
-            : 'Daftar dampak saat ini kosong, jadi tidak ada kota yang dapat dicocokkan.')
-          : 'Tidak ada zona terdampak saat ini, tidak ada kota/kabupaten yang dijangkau paparan asap atau abu (jendela 24 jam).'));
+            ? 'Tidak ada pusat kota/kabupaten dari daftar model saat ini di dalam plume terpilih.'
+            : 'Daftar pusat permukiman untuk pencocokan belum tersedia.')
+          : model && model.status === 'no-detections'
+            ? 'Tidak ada klaster FIRMS pada jendela data untuk menghitung indikasi plume.'
+            : 'Belum ada pusat kota/kabupaten dalam daftar model yang beririsan dengan plume indikatif saat ini.'));
         return;
       }
 
       if (!selection) {
         pane.appendChild(el('div', 'micro',
-          'Zona terdampak aktif · ' + nf.format(list.length) + ' kota/kabupaten · jendela data 24 jam'));
+          'Pusat kota dalam plume indikatif · ' + nf.format(list.length) + ' lokasi'));
         pane.appendChild(el('p', 'pane-note',
-          'Wilayah terdampak = kota/kabupaten yang KINI berada di dalam jangkauan paparan: ' +
-          'jalur pluma asap dari titik api dan/atau sebaran abu vulkanik, dihitung dari arah angin ' +
-          'dan intensitas sumbernya. Yang digambar adalah ZONA PAPARAN, poligon buffer berjari-jari ' +
-          '7-18 km sesuai tingkat paparan (bukan batas administratif dan bukan data kerusakan). ' +
-          'Indeks 0-100 menandakan seberapa kuat paparan, bukan angka ISPU resmi. Klik sebuah zona di ' +
-          'peta untuk melihat semua peristiwa bahaya lain yang tercatat di lokasi sekitar zona itu.'));
+          'Daftar ini mencocokkan 226 pusat permukiman dengan poligon indikatif dari seluruh klaster FIRMS yang memiliki sampel NOAA GFS 10 m. Selubung visual di peta hanya menampilkan sampel terpilih maksimal 36 klaster, jadi sebagian sumber model tidak selalu tampak sebagai selubung tersendiri. ' +
+          'Kategori dan lingkaran adalah penanda geometri, bukan konsentrasi, ISPU, batas administratif, orang terpapar, lintasan teramati, atau laporan resmi daerah terdampak. Laporan BMKG historis, kesehatan Kemenkes, dan haze regional ASMC/NEA ditampilkan terpisah. ' +
+          'Klik lokasi untuk melihat bahaya lain yang tercatat di sekitarnya.'));
       }
 
       // Satu kartu per zona. Baris bawah memuat badge multi-bahaya: jenis
@@ -3088,8 +3379,8 @@
         var badge = dos.kinds.length ? ' · \u26a0 ' + dos.kinds.join('+') : '';
         grid.appendChild(makeCard(
           r.name, '· ' + r.prov, 't-tertiary',
-          nf.format(r.nearestKm) + ' km · dari ' + r.fromDir,
-          r.etaShort + ' · intensitas ' + r.level + badge,
+          'Klaster api terdekat ' + nf.format(r.nearestKm) + ' km · arah ' + r.fromDir,
+          'Waktu model ' + r.etaShort + ' · kategori model ' + r.level + badge,
           function () { map.setView([r.lat, r.lon], 8); }));
       });
       pane.appendChild(grid);
@@ -3447,11 +3738,51 @@
         renderEvents();
         ['sHot', 'sImp'].forEach(function (id) { $(id).classList.remove('skel'); });
         $('sHot').textContent = nf.format(d.stats.hotspots);
-        $('sImp').textContent = nf.format(d.stats.impactedRegions);
+        var impactModel = d.impactModel || null;
+        var centerCount = d.stats.modeledCenterCount != null
+          ? Number(d.stats.modeledCenterCount) : Number(d.stats.impactedRegions);
+        var impactUnavailable = impactModel && impactModel.status === 'wind-unavailable';
+        $('sImp').textContent = impactUnavailable ? '-' : nf.format(Number.isFinite(centerCount) ? centerCount : 0);
+        $('sImpSub').textContent = impactUnavailable ? 'data angin model belum tersedia'
+          : impactModel && impactModel.status === 'partial'
+            ? 'indikatif · angin GFS ' + nf.format(impactModel.modeledClusters) + '/' + nf.format(impactModel.inputClusters) + ' klaster'
+            : 'pusat kota/kabupaten · indikatif';
         // Sublabel titik api ditulis oleh drawFires() supaya angka yang
         // tampil selalu cocok dengan yang benar-benar digambar di peta.
-        $('sHotSub').textContent = nf.format(d.stats.highConfidence) + ' keyakinan tinggi · '
-          + nf.format(d.stats.totalFrp) + ' MW';
+        var coverageNode = $('plumeCoverageStatus');
+        if (coverageNode) {
+          var coverage = d.plumeCoverage || {};
+          var visualDrawn = Number(coverage.selectedClusters) || 0;
+          var visualCandidates = coverage.selectedCandidates != null
+            ? Number(coverage.selectedCandidates) : visualDrawn;
+          var clusterInput = Number(coverage.inputClusters) || 0;
+          var text = 'Plume visual: ' + nf.format(visualDrawn) + '/' + nf.format(clusterInput)
+            + ' klaster digambar dari sampel lintas wilayah';
+          if (visualCandidates > visualDrawn) {
+            text += ' (' + nf.format(visualCandidates - visualDrawn) + ' tanpa angin visual yang valid)';
+          }
+          text += ', maksimum ' + nf.format(coverage.maxClusters || 36) + ' klaster dan '
+            + nf.format(coverage.maxPerRegion || 3) + ' per wilayah.';
+          if (impactModel) {
+            if (impactModel.status === 'wind-unavailable') {
+              text += ' Pusat model tidak dihitung: angin GFS 10 m tidak tersedia untuk '
+                + nf.format(impactModel.inputClusters || 0) + ' klaster.';
+            } else if (impactModel.status === 'no-detections') {
+              text += ' Tidak ada klaster FIRMS pada jendela data.';
+            } else {
+              text += ' Pusat model dihitung dari ' + nf.format(impactModel.modeledClusters || 0)
+                + '/' + nf.format(impactModel.inputClusters || 0) + ' klaster dengan angin '
+                + (impactModel.windModel || 'NOAA GFS 10 m') + '.';
+              if (impactModel.windUnavailableClusters) {
+                text += ' Angin tidak tersedia untuk ' + nf.format(impactModel.windUnavailableClusters) + ' klaster.';
+              }
+            }
+          } else {
+            text += ' Pusat model dihitung dari subset plume yang tersedia.';
+          }
+          text += ' Geometri indikatif, bukan dispersi atau observasi; kotak wilayah hanya untuk pemerataan sampel.';
+          coverageNode.textContent = text;
+        }
 
         // Kartu gunung api diisi dari ringkasan overview supaya angka di
         // kepala halaman selalu konsisten dengan panel kejadian.
@@ -3497,7 +3828,7 @@
           $('sAir').textContent = '-';
           $('sAirSub').textContent = 'data tidak tersedia';
         }
-        drawFires(); drawSmoke(); drawImpact();
+        drawFires(); drawSmoke(); drawRegionalHaze(); drawImpact();
         updateForecastStatus();
         // Kota terdampak abu berasal dari overview, sedangkan kerucutnya
         // dari endpoint gunung api. Keduanya tiba terpisah, jadi lapisan
@@ -3590,8 +3921,14 @@
     },
     lySmoke: function () {
       var n = state.data && state.data.plumes ? state.data.plumes.length : 0;
-      return n ? nf.format(n) + ' pluma asap dimodelkan dari arah angin dan intensitas api.'
-               : 'Tidak ada pluma asap pada data saat ini.';
+      return n ? nf.format(n) + ' plume indikatif dari klaster FIRMS dan angin NOAA GFS; bukan lintasan asap teramati atau ukuran konsentrasi.'
+               : 'Belum ada plume indikatif yang tersedia pada data saat ini.';
+    },
+    lyRegionalHaze: function () {
+      var report = state.data && state.data.regionalHaze;
+      if (!report || !report.meta || !report.meta.asmc) return 'Laporan haze regional belum tersedia.';
+      return 'Laporan ASMC ' + formatPm25Time(report.meta.asmc.reportAt)
+        + '; area kabut digeneralisasi dan bukan batas resmi atau konsentrasi.';
     },
     lyPm25: function () {
       var forecast = state.air && state.air.pm25Forecast;
@@ -3602,9 +3939,8 @@
     lyImpact: function () {
       var n = state.data && state.data.impacted ? state.data.impacted.length : 0;
       return n
-        ? 'Wilayah terdampak = kota/kabupaten yang KINI berada dalam jangkauan paparan asap/abu hasil hitungan ('
-          + nf.format(n) + ' zona). Poligon = radius tetap per tingkat paparan, bukan batas administratif; klik zona untuk rincian bahaya lain di lokasi itu.'
-        : 'Belum ada kota/kabupaten yang dijangkau paparan asap atau abu (jendela 24 jam).';
+        ? nf.format(n) + ' pusat kota/kabupaten masuk area plume indikatif saat ini. Ini bukan hitungan dampak kesehatan, orang terpapar, atau batas resmi.'
+        : 'Belum ada pusat kota/kabupaten yang beririsan dengan plume indikatif saat ini.';
     },
     lyQuake: function () {
       var q = state.hazard && state.hazard.quakes;
@@ -3654,10 +3990,12 @@
         updateForecastStatus();
         updateSmokePlaybackButton();
       }
+      if (id === 'lyRegionalHaze' && e.target.checked) drawRegionalHaze();
     });
   }
   bindLayer('lyFire', gFire);
   bindLayer('lySmoke', gSmoke);
+  bindLayer('lyRegionalHaze', gRegionalHaze);
   bindLayer('lyImpact', gImpact);
 
   function setAerosolStatus(status, message) {
@@ -4854,8 +5192,9 @@
       items.push(['CONF>=80', nf.format(d.stats.highConfidence), '']);
       items.push(['FRP MW', nf.format(d.stats.totalFrp), 'tk-am']);
       items.push(['KLASTER', nf.format(d.stats.clusters), '']);
-      items.push(['TERDAMPAK', nf.format(d.stats.impactedRegions), '']);
-      items.push(['TERPAPAR', nf.format(d.stats.peopleExposed), 'tk-up']);
+      var modelUnavailable = d.impactModel && d.impactModel.status === 'wind-unavailable';
+      var centerCount = d.stats.modeledCenterCount != null ? d.stats.modeledCenterCount : d.stats.impactedRegions;
+      items.push(['PUSAT DALAM PLUME', modelUnavailable ? '-' : nf.format(Number(centerCount) || 0), '']);
     }
     if (d && d.worstAir) items.push(['AQI MAX', d.worstAir.aqi + ' ' + d.worstAir.label.toUpperCase(), 'tk-up']);
     if (at && at.analyzed) items.push(['DLM KONSESI', at.insideConcession + '/' + at.analyzed, 'tk-am']);
@@ -5654,7 +5993,7 @@
       loadAerosolRaster();
     }
     [['lyFire', gFire], ['lyAir', gAir], ['lyPm25', gPm25], ['lyQuake', gQuake],
-     ['lyShelter', gShelter], ['lySmoke', gSmoke], ['lyConc', gConc],
+     ['lyShelter', gShelter], ['lySmoke', gSmoke], ['lyRegionalHaze', gRegionalHaze], ['lyConc', gConc],
      ['lyFlights', gFlights],
      ['lyVolcano', gVolcano]
     ].forEach(function (t) {

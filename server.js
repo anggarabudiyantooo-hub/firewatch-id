@@ -87,6 +87,10 @@ const SETTLEMENTS = (() => {
 const { attributeHotspots } = require('./lib/concession');
 const { fetchWindField, fetchWindFieldAt, runForValidTime, sampleAt, gridPoints } = require('./lib/wind-gfs');
 const { HISTORY_INTERVAL_HOURS, historyWindows, buildFramePlumes, clusterHotspots } = require('./lib/plume-history');
+const { MAX_PLUME_CLUSTERS, MAX_CLUSTERS_PER_REGION, selectRegionalClusters } = require('./lib/plume-selection');
+const { buildSnapshot: buildRegionalHazeSnapshot } = require('./lib/regional-haze');
+const { buildIndicativePlume, buildImpactPlumes, impactedRegions, plumePolygon } = require('./lib/plume-model');
+const REGIONAL_HAZE_SNAPSHOT = buildRegionalHazeSnapshot();
 const { openHotspots, toIsoUtc, WINDOW_HOURS: FIRMS_WINDOW_HOURS } = require('./lib/firms-open');
 const webcams = require('./lib/webcams');
 const { volcanicAsh } = require('./lib/volcano');
@@ -250,12 +254,6 @@ function haversine(a, b, c, d) {
   const dLat = toRad(c - a), dLon = toRad(d - b);
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a)) * Math.cos(toRad(c)) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
-}
-function destination(lat, lon, bearingDeg, distKm) {
-  const br = toRad(bearingDeg), d = distKm / R, la = toRad(lat), lo = toRad(lon);
-  const la2 = Math.asin(Math.sin(la) * Math.cos(d) + Math.cos(la) * Math.sin(d) * Math.cos(br));
-  const lo2 = lo + Math.atan2(Math.sin(br) * Math.sin(d) * Math.cos(la), Math.cos(d) - Math.sin(la) * Math.sin(la2));
-  return [toDeg(la2), ((toDeg(lo2) + 540) % 360) - 180];
 }
 async function fetchWithTimeout(url, opts = {}, ms = 12000) {
   const ac = new AbortController();
@@ -523,25 +521,10 @@ async function getHotspots() {
 }
 
 // ---------- klaster + sebaran asap ----------
-async function windAt(lat, lon) {
-  // Angin murni dari medan GFS global yang sudah di-cache: tidak ada
-  // permintaan jaringan per klaster. Suhu & kelembapan diambil terpisah
-  // secara massal oleh enrichWeather().
-  try {
-    const f = await gfsField(0);
-    const w = sampleAt(f, lat, lon);
-    if (w) return { speed: +w.speed.toFixed(2), from: Math.round(w.from), rh: null, temp: null, estimated: false };
-  } catch (e) {
-    console.error('[windAt:gfs]', e.message);
-  }
-  return { speed: 3, from: 100, rh: null, temp: null, estimated: true };
-}
-
 /**
- * Lengkapi daftar pluma dengan suhu & kelembapan dalam SATU permintaan.
- * Open-Meteo menghitung kuota per koordinat, jadi menggabungkan 14 titik
- * ke satu panggilan jauh lebih hemat daripada 14 panggilan terpisah.
- * Kegagalan di sini tidak boleh menghilangkan data angin.
+ * Lengkapi sampel plume visual dengan suhu dan kelembapan dalam satu permintaan.
+ * Open-Meteo menerima koordinat sekaligus, jadi gabungkan paling banyak 36 titik
+ * yang digambar, bukan satu panggilan per klaster. Kegagalan tidak menghilangkan angin.
  */
 async function enrichWeather(plumes) {
   if (!plumes.length) return;
@@ -567,21 +550,8 @@ async function enrichWeather(plumes) {
   }
 }
 
-// Poligon pluma: kerucut searah angin, panjang ~ f(FRP, kecepatan angin)
-function plumePolygon(lat, lon, bearingTo, lengthKm, halfAngleDeg) {
-  const pts = [[lat, lon]];
-  const steps = 9;
-  for (let i = 0; i <= steps; i++) {
-    const a = bearingTo - halfAngleDeg + (2 * halfAngleDeg * i) / steps;
-    pts.push(destination(lat, lon, a, lengthKm));
-  }
-  pts.push([lat, lon]);
-  return pts;
-}
-
-// Prakiraan angin per jam (untuk timeline sebaran asap ke depan).
-// Dipisah dari windAt() agar cache-nya sendiri dan hanya diambil sekali per klaster.
-// Offset jam yang ditampilkan pada timeline sebaran.
+// Lead-time medan angin yang diambil sekali per overview untuk model dan timeline.
+// Offset jam ini ditampilkan pada timeline sebaran asap.
 const PLUME_STEPS = [0, 6, 12, 18];
 
 /**
@@ -595,17 +565,16 @@ const PLUME_STEPS = [0, 6, 12, 18];
  */
 const HOTSPOT_CAP = CONFIG.THRESHOLDS.hotspotCap;
 
-async function windForecast(lat, lon) {
-  // Prakiraan diambil dari siklus GFS yang sama (jam +6/+12/+18), sehingga
-  // timeline konsisten dengan medan angin yang digambar di peta.
+function windForecast(lat, lon, fields) {
+  // Medan angin setiap lead-time sudah diambil sekali per overview, bukan
+  // sekali per klaster. Ini menjaga jumlah unduhan GRIB tetap konstan.
   const out = [];
-  for (const h of PLUME_STEPS) {
-    try {
-      const f = await gfsField(h);
-      const w = sampleAt(f, lat, lon);
-      if (!w) continue;
-      out.push({ hour: h, speed: w.speed, from: w.from, run: f.run });
-    } catch { /* jam ini dilewati bila berkasnya belum terbit */ }
+  for (const hour of PLUME_STEPS) {
+    const field = fields.get(hour);
+    if (!field) continue;
+    const wind = sampleAt(field, lat, lon);
+    if (!wind) continue;
+    out.push({ hour, speed: wind.speed, from: wind.from, run: field.run });
   }
   return out.length ? out : null;
 }
@@ -635,29 +604,75 @@ function plumeForecast(c, fc) {
   });
 }
 async function buildPlumes(clusters) {
-  const top = clusters.slice(0, 14);
-  const [winds, fcs] = await Promise.all([
-    Promise.all(top.map(c => windAt(c.lat, c.lon))),
-    Promise.all(top.map(c => windForecast(c.lat, c.lon)))
-  ]);
-  const built = top.map((c, i) => {
-    const w = winds[i];
-    const bearingTo = (w.from + 180) % 360;                  // arah tujuan asap
-    const len = Math.min(320, 18 + Math.sqrt(c.frp) * 6 + w.speed * 12);
-    const half = Math.max(12, 34 - w.speed * 2);
-    const intensity = Math.min(1, (c.frp / 900) * 0.6 + (c.count / 40) * 0.4);
-    return {
-      lat: c.lat, lon: c.lon, frp: c.frp, count: c.count,
-      wind: w, bearingTo: Math.round(bearingTo), lengthKm: Math.round(len),
-      halfAngle: Math.round(half), intensity: +intensity.toFixed(2),
-      polygon: plumePolygon(c.lat, c.lon, bearingTo, len, half),
-      // Inti pekat: 45% jangkauan & kerucut lebih sempit (asap paling tebal dekat sumber).
-      corePolygon: plumePolygon(c.lat, c.lon, bearingTo, len * 0.45, half * 0.7),
-      forecast: plumeForecast(c, fcs[i])
-    };
+  // Sampel visual tetap dibatasi dan diseimbangkan lintas wilayah agar peta
+  // responsif. Perhitungan pusat memakai seluruh klaster di bawah, bukan
+  // hanya sampel visual ini.
+  const selection = selectRegionalClusters(clusters, c => provinceOf(c.lat, c.lon), {
+    maxClusters: MAX_PLUME_CLUSTERS,
+    perRegion: MAX_CLUSTERS_PER_REGION
   });
+  const top = selection.clusters;
+  const fields = new Map();
+  const fieldResults = await Promise.all(PLUME_STEPS.map(async hour => {
+    try { return [hour, await gfsField(hour)]; }
+    catch (error) {
+      console.error('[plume:gfs]', hour, error.message);
+      return [hour, null];
+    }
+  }));
+  fieldResults.forEach(([hour, field]) => { if (field) fields.set(hour, field); });
+
+  const currentField = fields.get(0) || null;
+  const impactBuild = buildImpactPlumes(clusters, (lat, lon) => {
+    return currentField ? sampleAt(currentField, lat, lon) : null;
+  }, (lat, lon) => provinceOf(lat, lon));
+
+  const built = [];
+  for (const cluster of top) {
+    const wind = currentField ? sampleAt(currentField, cluster.lat, cluster.lon) : null;
+    const plume = buildIndicativePlume(cluster, wind, (lat, lon) => provinceOf(lat, lon));
+    if (!plume) continue;
+    plume.forecast = plumeForecast(cluster, windForecast(cluster.lat, cluster.lon, fields));
+    built.push(plume);
+  }
   await enrichWeather(built);
-  return built;
+
+  const sourceProvinces = [...new Set(clusters.map(c => provinceOf(c.lat, c.lon)).filter(Boolean))].sort();
+  const representedProvinces = [...new Set(built.map(p => p.sourceRegion).filter(Boolean))].sort();
+  const status = impactBuild.inputClusters === 0 ? 'no-detections'
+    : impactBuild.modeledClusters === 0 ? 'wind-unavailable'
+      : impactBuild.modeledClusters < impactBuild.inputClusters ? 'partial' : 'ready';
+  return {
+    plumes: built,
+    impactPlumes: impactBuild.plumes,
+    impactModel: {
+      status,
+      inputClusters: impactBuild.inputClusters,
+      modeledClusters: impactBuild.modeledClusters,
+      windUnavailableClusters: impactBuild.windUnavailableClusters,
+      invalidClusters: impactBuild.invalidClusters,
+      windModel: 'NOAA GFS 10 m, grid 1°',
+      verticalLevel: 'near-surface 10 m',
+      visualClusters: built.length,
+      visualClusterCap: selection.maxClusters,
+      interpretation: 'Indikasi geometris dari klaster FIRMS dan angin 10 m; bukan model dispersi atmosfer, observasi lintasan asap, konsentrasi permukaan, atau jumlah orang terpapar.'
+    },
+    coverage: {
+      inputClusters: selection.totalClusterCount,
+      selectedCandidates: top.length,
+      selectedClusters: built.length,
+      sourceRegionCount: selection.totalRegionCount,
+      representedRegionCount: representedProvinces.length,
+      sourceProvinceCount: sourceProvinces.length,
+      representedProvinceCount: representedProvinces.length,
+      representedProvinces,
+      provinceMethod: 'approximate bounding boxes used for visual sampling only',
+      maxClusters: selection.maxClusters,
+      maxPerRegion: selection.perRegion,
+      truncated: selection.truncated || built.length < top.length,
+      selection: 'round-robin-by-province-or-coarse-grid'
+    }
+  };
 }
 
 async function buildPlumeHistory(hotspots, anchorTime) {
@@ -671,6 +686,8 @@ async function buildPlumeHistory(hotspots, anchorTime) {
       hotspotCount: frame.detections.length,
       clusterCount: 0,
       totalClusterCount: 0,
+      totalRegionCount: 0,
+      selectedRegionCount: 0,
       truncated: false,
       plumes: []
     };
@@ -685,7 +702,7 @@ async function buildPlumeHistory(hotspots, anchorTime) {
 
     try {
       const field = await gfsHistoryField(frame.windTargetTime);
-      const built = buildFramePlumes(frame, field, plumePolygon);
+      const built = buildFramePlumes(frame, field, plumePolygon, c => provinceOf(c.lat, c.lon));
       if (!built.plumes.length) {
         return {
           ...base,
@@ -696,6 +713,8 @@ async function buildPlumeHistory(hotspots, anchorTime) {
           windValidTime: field.validTime || null,
           clusterCount: built.clusterCount,
           totalClusterCount: built.totalClusterCount,
+          totalRegionCount: built.totalRegionCount,
+          selectedRegionCount: built.selectedRegionCount,
           truncated: built.truncated
         };
       }
@@ -710,6 +729,8 @@ async function buildPlumeHistory(hotspots, anchorTime) {
         windValidTime: field.validTime || null,
         clusterCount: built.clusterCount,
         totalClusterCount: built.totalClusterCount,
+        totalRegionCount: built.totalRegionCount,
+        selectedRegionCount: built.selectedRegionCount,
         truncated: built.truncated,
         plumes: built.plumes
       };
@@ -740,15 +761,6 @@ function bearingBetween(lat1, lon1, lat2, lon2) {
   return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }
 function angDiff(a, b) { return Math.abs(((a - b + 540) % 360) - 180); }
-
-// Arah mata angin dalam Bahasa Indonesia (16 penjuru).
-function compassId(deg) {
-  const N = ['utara', 'utara-timur laut', 'timur laut', 'timur-timur laut',
-             'timur', 'timur-tenggara', 'tenggara', 'selatan-tenggara',
-             'selatan', 'selatan-barat daya', 'barat daya', 'barat-barat daya',
-             'barat', 'barat-barat laut', 'barat laut', 'utara-barat laut'];
-  return N[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16];
-}
 
 /**
  * Kota yang berada di bawah jalur sebaran abu vulkanik.
@@ -863,61 +875,6 @@ function ashImpactedRegions(volcanoes) {
       truncated: out.length > ASH_IMPACT_CAP
     }
   };
-}
-
-function impactedRegions(plumes) {
-  const out = [];
-  for (const reg of REGIONS) {
-    let score = 0; const causes = [];
-    for (const p of plumes) {
-      const dist = haversine(reg.lat, reg.lon, p.lat, p.lon);
-      if (dist > p.lengthKm * 1.15) continue;
-      const br = bearingBetween(p.lat, p.lon, reg.lat, reg.lon);
-      const off = angDiff(br, p.bearingTo);
-      if (off > p.halfAngle * 1.25) continue;
-      const distFactor = Math.max(0, 1 - dist / (p.lengthKm * 1.15));
-      const angFactor = Math.max(0, 1 - off / (p.halfAngle * 1.25));
-      const s = 100 * p.intensity * distFactor * angFactor;
-      if (s > 0.5) {
-        // Perkiraan waktu tempuh asap = jarak / kecepatan angin.
-        const etaH = p.wind.speed > 0.3 ? dist / (p.wind.speed * 3.6) : null;
-        causes.push({
-          km: Math.round(dist), frp: p.frp, etaH,
-          from: compassId(p.bearingTo), windSpeed: p.wind.speed
-        });
-        score += s;
-      }
-    }
-    if (score <= 0.5) continue;
-    score = Math.min(100, score);
-    const nearest = causes.reduce((a, b) => (b.km < a.km ? b : a));
-    const level = score >= 66 ? 'Berat' : score >= 33 ? 'Sedang' : 'Ringan';
-    // ETA tercepat di antara pluma yang mengenai kota ini.
-    const etas = causes.map(c => c.etaH).filter(v => v !== null);
-    const etaH = etas.length ? Math.min(...etas) : null;
-    out.push({
-      name: reg.name, prov: reg.prov, lat: reg.lat, lon: reg.lon, population: reg.pop,
-      score: +score.toFixed(1), level,
-      nearestKm: nearest.km,
-      plumes: causes.length,
-      windSpeed: +nearest.windSpeed.toFixed(1),
-      fromDir: nearest.from,
-      etaHours: etaH === null ? null : +etaH.toFixed(1),
-      etaText: etaH === null ? 'angin nyaris diam, asap cenderung mengendap di sekitar sumber'
-        : etaH < 1 ? 'asap bisa tiba di bawah 1 jam'
-        : etaH < 24 ? 'asap diperkirakan tiba ~' + Math.round(etaH) + ' jam lagi'
-        : 'asap diperkirakan tiba lebih dari sehari',
-      etaShort: etaH === null ? 'angin diam'
-        : etaH < 1 ? 'tiba <1 jam' : etaH < 24 ? 'tiba ~' + Math.round(etaH) + ' jam' : 'tiba >1 hari',
-      proximity: nearest.km <= 50 ? 'sangat dekat' : nearest.km <= 150 ? 'dekat' : 'jauh',
-      advice: level === 'Berat'
-        ? 'Batasi aktivitas luar ruang, kenakan masker N95, dan pantau kelompok rentan (anak, lansia, penderita ISPA).'
-        : level === 'Sedang'
-        ? 'Kurangi aktivitas luar ruang yang berat dan siapkan masker bila kabut asap menebal.'
-        : 'Paparan diperkirakan tipis; tetap pantau perkembangan arah angin.'
-    });
-  }
-  return out.sort((a, b) => b.score - a.score);
 }
 
 // ---------- berita penanganan ----------
@@ -1213,11 +1170,13 @@ async function buildOverview() {
     const { mode, source, days, hotspots, notice } = hs;
     const anchorTime = Date.now();
     const clusters = clusterHotspots(hotspots);
-    const [plumes, plumeHistory] = await Promise.all([
+    const [plumeBuild, plumeHistory] = await Promise.all([
       buildPlumes(clusters),
       buildPlumeHistory(hotspots, anchorTime)
     ]);
-    const impacted = impactedRegions(plumes);
+    const plumes = plumeBuild.plumes;
+    const plumeCoverage = plumeBuild.coverage;
+    const impacted = impactedRegions(plumeBuild.impactPlumes, REGIONS);
     const highConf = hotspots.filter(h => h.confidence >= 80).length;
     const totalFrp = hotspots.reduce((s, h) => s + h.frp, 0);
     const byProvince = {};
@@ -1302,6 +1261,9 @@ async function buildOverview() {
       lat: h.lat, lon: h.lon, frp: h.frp, confidence: h.confidence,
       acq: h.acq, satellite: h.satellite, daynight: h.daynight
     }));
+    const newestAcqMs = hs.newestAcq ? Date.parse(hs.newestAcq) : NaN;
+    const latestAcqAgeHours = Number.isFinite(newestAcqMs)
+      ? +Math.max(0, (Date.now() - newestAcqMs) / 3600000).toFixed(1) : null;
 
     return {
       meta: {
@@ -1313,6 +1275,7 @@ async function buildOverview() {
         windowHours: hs.windowHours != null ? hs.windowHours : null,
         oldestAcq: hs.oldestAcq || null,
         newestAcq: hs.newestAcq || null,
+        latestAcqAgeHours,
         dataAgeHours: hs.dataAgeHours != null ? hs.dataAgeHours : null,
         filteredOut: hs.filteredOut != null ? hs.filteredOut : null,
         bbox: BBOX,
@@ -1323,13 +1286,17 @@ async function buildOverview() {
         highConfidence: highConf,
         totalFrp: +totalFrp.toFixed(0),
         clusters: clusters.length,
+        modeledCenterCount: impacted.length,
+        // Legacy field name kept as an alias for clients that still read it.
         impactedRegions: impacted.length,
-        // Semua kota di jalur asap dihitung; ambang 'sedang' dipisah agar
-        // angka tidak menjadi nol saat paparan tersebar tipis di banyak kota.
-        peopleExposed: impacted.reduce((s, r) => s + r.population, 0),
-        peopleExposedModerate: impacted.reduce((s, r) => s + (r.score >= 33 ? r.population : 0), 0)
+        impactClusterCount: plumeBuild.impactModel.modeledClusters,
+        impactCountInterpretation: 'Pusat permukiman yang masuk poligon indikatif dari seluruh klaster FIRMS dengan sampel NOAA GFS 10 m; bukan observasi asap, konsentrasi permukaan, laporan resmi, atau hitungan penduduk terpapar.',
+        // Population exposure is not inferred from a city-center intersection.
+        peopleExposed: null,
+        peopleExposedModerate: null
       },
       hotspots: hotspotsOut, clusters: clusters.slice(0, CONFIG.THRESHOLDS.clustersMax), plumes, plumeHistory, impacted,
+      plumeCoverage, impactModel: plumeBuild.impactModel, regionalHaze: REGIONAL_HAZE_SNAPSHOT,
       // Titik api dipotong ke yang paling kuat agar payload tidak
       // membengkak saat musim kebakaran memuncak. Metadata di bawah
       // membuat pemotongan itu terbaca, bukan tersembunyi: antarmuka
@@ -2774,7 +2741,7 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
  * menghasilkan URL baru, peramban pengguna tidak akan lagi memakai
  * berkas lama dari cache tanpa perlu hard-refresh manual.
  */
-const ASSET_FILES = ['app.js', 'app.css', 'smoke-geometry.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css'];
+const ASSET_FILES = ['app.js', 'app.css', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css'];
 let assetVersion = null;
 
 function getAssetVersion() {
@@ -2796,7 +2763,7 @@ function renderIndex() {
   // Fase 2.1: label sudut peta dari BBOX config, bukan hardcoded
   const corners = BBOX_CORNERS; // { nw, ne, sw, se } dari lib/config.js
   let html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
-    .replace(/(href|src)="\/(app\.css|app\.js|smoke-geometry\.js|wind-particles\.js|wind-viewport\.js|map-resize\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css)"/g,
+    .replace(/(href|src)="\/(app\.css|app\.js|smoke-geometry\.js|smoke-cloud-layer\.js|wind-particles\.js|wind-viewport\.js|map-resize\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css)"/g,
       (_m, attr, file) => `${attr}="${file}?v=${v}"`);
   // Inject BBOX corners ke HTML (fallback jika JS belum load)
   try {
