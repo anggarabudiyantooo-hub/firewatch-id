@@ -115,6 +115,7 @@ memakai `no-store` agar keadaan "belum tahu" tidak ikut ter-cache.
 | `/api/status` | no-store | Umur tiap sumber |
 | `/api/wind-field` | 1800 dtk | Medan angin |
 | `/api/air-quality` | 900 dtk, stale 1800 dtk | Grid US AQI; `forecast=1` menambahkan empat frame PM2.5 CAMS Global |
+| `/api/smoke-grid` | 1800 dtk, stale 3600 dtk | Batch CAMS PM2.5 total dan empat frame angin untuk raster interaktif; grid dibatasi per viewport dan ketinggian angin tetap eksplisit |
 | `/api/air-point` | - | AQI satu titik |
 | `/api/place` | - | Wilayah administratif |
 | `/api/whose-land` | - | Status lahan satu titik |
@@ -141,6 +142,14 @@ dan interval 3 jam; bukan pengukuran stasiun atau atribusi khusus asap. Cache se
 berlaku 30 menit dengan stale 60 menit. Pane, palet, legenda, dan status PM2.5
 terpisah dari US AQI, plume indikatif, serta raster aerosol OMPS; linimasa dapat
 menyelaraskan waktunya tanpa menyatukan arti produk.
+
+`/api/smoke-grid` memakai batch yang sama untuk CAMS PM2.5 dan dapat menyertakan
+US AQI, lalu mengirim medan angin 0/+6/+12/+18 jam pada level yang dipilih.
+Koordinat CAMS dibatasi 400 per batch; angin atas dibatasi 320 titik. TTL cache
+server 30 menit dengan stale 60 menit, sedangkan `s-maxage` CDN 30 menit. Batas
+ini mencegah permintaan per titik dan menjaga permintaan viewport yang diulang
+tetap memakai cache. Grid tampilan dapat lebih kasar daripada resolusi native
+CAMS, dan interpolasi klien hanya menghaluskan visual, bukan menambah informasi.
 
 ### 2.4 Frontend
 
