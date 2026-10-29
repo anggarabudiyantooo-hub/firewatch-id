@@ -70,6 +70,17 @@
     'Memuat…': 'Loading...',
     'LAPISAN PETA': 'MAP LAYERS',
     'Letusan gunung api': 'Volcanic eruptions',
+    'MODE ASAP': 'SMOKE MODES',
+    'Pilih satu mode asap': 'Choose one smoke mode',
+    'Raster PM2.5 total (CAMS)': 'Total PM2.5 raster (CAMS)',
+    'Raster PM2.5 total CAMS Global dari semua sumber, bukan khusus asap': 'CAMS Global total PM2.5 raster from all sources, not smoke-specific',
+    'Plume indikatif (FIRMS + GFS)': 'Indicative plume (FIRMS + GFS)',
+    'Plume indikatif dari titik api FIRMS dan angin model NOAA GFS': 'Indicative plume from FIRMS hotspots and NOAA GFS modeled winds',
+    'Belum ada plume indikatif yang tersedia pada data saat ini.': 'No indicative plume is available in the current data.',
+    'Prakiraan PM2.5 total CAMS sedang dimuat.': 'Loading the CAMS total PM2.5 forecast.',
+    'Hanya satu mode dapat aktif pada satu waktu. Memilih mode lain akan mengganti layer aktif.': 'Only one mode can be active at a time. Selecting the other replaces the active layer.',
+    'Memuat grid kualitas udara dan prakiraan PM2.5 CAMS…': 'Loading the air-quality grid and CAMS PM2.5 forecast…',
+    'Legenda raster PM2.5 total model dalam mikrogram per meter kubik': 'Total modeled PM2.5 raster legend in micrograms per cubic meter',
     'Sebaran asap indikatif (FIRMS + GFS)': 'Indicative smoke plume (FIRMS + GFS)',
     'Sebaran asap indikatif FIRMS dan NOAA GFS': 'Indicative smoke plume from FIRMS and NOAA GFS',
     'Cakupan klaster plume akan muncul setelah data dimuat.': 'Plume cluster coverage will appear when data loads.',
@@ -84,8 +95,19 @@
     'Kualitas udara (US AQI)': 'Air quality (US AQI)',
     'Kualitas udara US AQI': 'US AQI air quality',
     'PM2.5 total model (CAMS)': 'Total modeled PM2.5 (CAMS)',
+    'Raster PM2.5 total model · µg/m³': 'Total modeled PM2.5 raster · µg/m³',
+    'PM2.5 total model · µg/m³': 'Total modeled PM2.5 · µg/m³',
     'PM2.5 total model CAMS Global, bukan khusus asap': 'CAMS Global total modeled PM2.5, not smoke-specific',
     'Legenda PM2.5 model dalam mikrogram per meter kubik': 'Modeled PM2.5 legend in micrograms per cubic meter',
+    'Memuat prakiraan PM2.5 model CAMS Global…': 'Loading the CAMS Global modeled PM2.5 forecast…',
+    'Prakiraan PM2.5 CAMS tidak tersedia untuk area ini.': 'CAMS PM2.5 forecast is unavailable for this area.',
+    'Prakiraan PM2.5 CAMS tidak tersedia saat ini.': 'CAMS PM2.5 forecast is currently unavailable.',
+    'Kuota Open-Meteo tercapai. Coba lagi setelah jeda; tidak ada nilai baru yang ditampilkan.': 'Open-Meteo quota reached. Try again after a pause; no new values are being shown.',
+    'PM2.5 CAMS tidak tersedia pada frame ini.': 'CAMS PM2.5 is unavailable for this frame.',
+    'Tidak ada sampel CAMS valid di sini; transparan berarti tidak tersedia, bukan nol.': 'No valid CAMS grid sample here; transparent means unavailable, not zero.',
+    'Data PM2.5 historis CAMS tidak tersedia sebelum frame 0.': 'Historical CAMS PM2.5 is unavailable before frame 0.',
+    'PM2.5 total semua sumber, bukan khusus asap kebakaran.': 'Total PM2.5 from all sources, not smoke-specific.',
+    'Dekat permukaan 10 m; bukan pembacaan stasiun atau kontribusi khusus asap.': 'Near-surface model; not a station reading or a smoke-only contribution.',
     'Aliran angin': 'Wind flow',
     'Batas konsesi': 'Concession boundaries',
     'Lalu lintas udara': 'Air traffic',
@@ -1037,6 +1059,12 @@
     }
     if ((match = /^([\d.,]+) sampel PM2\.5 total CAMS\. Bukan kontribusi khusus asap\.$/i.exec(text))) {
       return match[1] + ' total CAMS PM2.5 samples. Not a smoke-specific contribution.';
+    }
+    if ((match = /^([\d.,]+) sampel PM2\.5 total model CAMS, bukan khusus asap\.$/i.exec(text))) {
+      return match[1] + ' total modeled CAMS PM2.5 samples; not smoke-specific.';
+    }
+    if ((match = /^([\d.,]+) plume indikatif dari klaster FIRMS dan angin NOAA GFS; bukan lintasan asap teramati atau ukuran konsentrasi\.$/i.exec(text))) {
+      return match[1] + ' indicative plumes from FIRMS clusters and NOAA GFS winds; not observed smoke tracks or measured concentrations.';
     }
     if ((match = /^([\d.,]+) sel kualitas udara \(filter: ([\d.,]+) tampil\) · model CAMS via Open-Meteo\.$/i.exec(text))) {
       return match[1] + ' air-quality cells (' + match[2] + ' shown after filtering) · CAMS model via Open-Meteo.';

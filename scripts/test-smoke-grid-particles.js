@@ -36,7 +36,10 @@ particles.setField(frame, { preserveParticles: true });
 assert.equal(seedCalls, 0);
 const wind = particles._lookup(0.5, 100.5);
 assert.ok(wind && Math.abs(wind[0] - 5) < 0.01 && Math.abs(wind[1]) < 0.01);
-console.log('  LULUS frame angin dari batch grid dapat langsung diinterpolasi oleh partikel');
+const sampledWind = particles.sampleAt(0.5, 100.5);
+assert.ok(sampledWind && Math.abs(sampledWind[0] - 5) < 0.01 && Math.abs(sampledWind[1]) < 0.01);
+assert.equal(particles.sampleAt(2, 100.5), null);
+console.log('  LULUS frame angin dari batch grid dapat disampel bilinear; luar cakupan dilaporkan null');
 
 particles.setField(frame);
 assert.equal(seedCalls, 1);

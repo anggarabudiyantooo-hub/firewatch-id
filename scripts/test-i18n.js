@@ -17,6 +17,25 @@ function check(name, actual, expected) {
 console.log('\n== Dashboard Indonesian-English localization ==');
 check('Indonesian remains the default locale', i18n.translate('Ringkasan situasi', 'id'), 'Ringkasan situasi');
 check('static dashboard labels translate to English', i18n.translate('Ringkasan situasi', 'en'), 'Situation summary');
+check('smoke modes use the requested neutral bilingual labels',
+  [
+    i18n.translate('Raster PM2.5 total (CAMS)', 'en'),
+    i18n.translate('Plume indikatif (FIRMS + GFS)', 'en'),
+    i18n.translate('Hanya satu mode dapat aktif pada satu waktu. Memilih mode lain akan mengganti layer aktif.', 'en')
+  ].join(' | '),
+  'Total PM2.5 raster (CAMS) | Indicative plume (FIRMS + GFS) | Only one mode can be active at a time. Selecting the other replaces the active layer.');
+check('CAMS source caveat and missing-sample warning translate to English',
+  [
+    i18n.translate('Raster PM2.5 total CAMS Global dari semua sumber, bukan khusus asap', 'en'),
+    i18n.translate('Tidak ada sampel CAMS valid di sini; transparan berarti tidak tersedia, bukan nol.', 'en')
+  ].join(' | '),
+  'CAMS Global total PM2.5 raster from all sources, not smoke-specific | No valid CAMS grid sample here; transparent means unavailable, not zero.');
+check('dynamic plume and CAMS layer hints translate to English',
+  [
+    i18n.translate('8 plume indikatif dari klaster FIRMS dan angin NOAA GFS; bukan lintasan asap teramati atau ukuran konsentrasi.', 'en'),
+    i18n.translate('4 sampel PM2.5 total model CAMS, bukan khusus asap.', 'en')
+  ].join(' | '),
+  '8 indicative plumes from FIRMS clusters and NOAA GFS winds; not observed smoke tracks or measured concentrations. | 4 total modeled CAMS PM2.5 samples; not smoke-specific.');
 check('visible language control has accessible ID and EN buttons',
   /id="langId"[^>]*aria-label="Bahasa Indonesia"[\s\S]*?id="langEn"[^>]*aria-label="English language"/.test(
     fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8')
