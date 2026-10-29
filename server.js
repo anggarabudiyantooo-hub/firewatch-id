@@ -217,7 +217,7 @@ const RL_TILE = 1200;
 // banyak pengguna sah sekaligus. Yang ingin dicegah adalah skrip yang
 // mengirim ribuan permintaan, bukan manusia yang menggeser peta.
 const RL_EXPENSIVE = CONFIG.RATE_LIMIT.expensive;
-const RL_EXPENSIVE_PATHS = /^\/(overview|wind-field|air-quality|concessions|place|whose-land|air-point|news)/;
+const RL_EXPENSIVE_PATHS = /^\/(overview|wind-field|air-quality|smoke-grid|concessions|place|whose-land|air-point|news)/;
 
 const hits = new Map();
 app.use('/api', (req, res, next) => {
@@ -1822,6 +1822,294 @@ app.get('/api/air-quality', async (req, res) => {
     }
     // Jika ada cache stale, cached() sudah return stale di atas, jadi 502 hanya bila benar-benar belum pernah berhasil
     res.status(502).json({ error: 'Data kualitas udara sedang tidak tersedia.' });
+  }
+});
+
+const SMOKE_GRID_HOURS = [0, 6, 12, 18];
+
+function gfsValidTime(field) {
+  const match = /^(\d{8})\s+(\d{2})Z$/.exec(String(field && field.run || ''));
+  if (!match) return null;
+  const ymd = match[1];
+  const runMs = Date.UTC(Number(ymd.slice(0, 4)), Number(ymd.slice(4, 6)) - 1,
+    Number(ymd.slice(6, 8)), Number(match[2]));
+  const fhour = Number(field.fhour);
+  if (!Number.isFinite(runMs) || !Number.isFinite(fhour)) return null;
+  return new Date(runMs + fhour * 3600000).toISOString();
+}
+
+async function gfsSmokeWindFrames(box, validTimes) {
+  const frames = await Promise.all(SMOKE_GRID_HOURS.map(async (hour, index) => {
+    try {
+      const field = await gfsField(hour);
+      const points = gridPoints(field, 1, box);
+      return {
+        hour,
+        targetTime: validTimes[index] || null,
+        validTime: gfsValidTime(field),
+        modelRun: field.run || null,
+        forecastHour: Number.isFinite(Number(field.fhour)) ? Number(field.fhour) : hour,
+        fetchedAt: new Date().toISOString(),
+        source: 'NOAA GFS 1 degree, angin permukaan 10 m',
+        count: points.length,
+        points
+      };
+    } catch (error) {
+      console.warn('[smoke-grid:gfs]', hour, error.message);
+      return {
+        hour,
+        targetTime: validTimes[index] || null,
+        validTime: null,
+        source: 'NOAA GFS 1 degree, angin permukaan 10 m',
+        count: 0,
+        points: [],
+        error: /429|limit/i.test(error.message) ? 'quota' : 'unavailable'
+      };
+    }
+  }));
+  return {
+    level: '10m',
+    levelLabel: WIND_ALOFT_LEVELS['10m'].label,
+    heightM: 10,
+    hPa: null,
+    source: 'NOAA GFS 1 degree',
+    frames
+  };
+}
+
+function openMeteoTimeMs(value) {
+  const text = String(value || '');
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(text)) return Date.parse(text + ':00Z');
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(text)) return Date.parse(text + 'Z');
+  return Date.parse(text);
+}
+
+function nearestOpenMeteoHour(times, target) {
+  const targetMs = Date.parse(target);
+  if (!Array.isArray(times) || !Number.isFinite(targetMs)) return -1;
+  let bestIndex = -1;
+  let bestGap = Infinity;
+  for (let i = 0; i < times.length; i++) {
+    const value = openMeteoTimeMs(times[i]);
+    const gap = Math.abs(value - targetMs);
+    if (Number.isFinite(gap) && gap < bestGap) {
+      bestGap = gap;
+      bestIndex = i;
+    }
+  }
+  return bestGap <= 90 * 60 * 1000 ? bestIndex : -1;
+}
+
+async function fetchAloftSmokeWind(level, box, validTimes) {
+  const lv = WIND_ALOFT_LEVELS[level];
+  if (!lv || !lv.hPa) throw new Error('wind_level_invalid');
+  const b = box || BBOX;
+  const maxPoints = 320;
+  let step = 2;
+  let lats;
+  let lons;
+  do {
+    lats = aloftAxis(b.south, b.north, step, [-90, 90]);
+    lons = aloftAxis(b.west, b.east, step);
+    if (lats.length * lons.length <= maxPoints) break;
+    step += 1;
+  } while (step <= 180);
+
+  const latitudes = [];
+  const longitudes = [];
+  for (const lat of lats) {
+    for (const lon of lons) {
+      latitudes.push(lat.toFixed(2));
+      longitudes.push(normalizeWindLongitude(lon).toFixed(2));
+    }
+  }
+  if (!latitudes.length) throw new Error('wind_grid_empty');
+
+  const keyBox = [b.west, b.south, b.east, b.north].map(value => Number(value).toFixed(1)).join(',');
+  const keyTimes = (validTimes || []).join(',');
+  const cacheKey = `smoke-wind:${level}:${step}:${keyBox}:${keyTimes}`;
+  return cached(cacheKey, 30 * 60 * 1000, async () => {
+    const speedKey = `wind_speed_${lv.hPa}hPa`;
+    const directionKey = `wind_direction_${lv.hPa}hPa`;
+    const url = CONFIG.UPSTREAM_URLS.openMeteo.forecast
+      + `?latitude=${latitudes.join(',')}&longitude=${longitudes.join(',')}`
+      + `&hourly=${speedKey},${directionKey}&forecast_hours=19&timezone=UTC&wind_speed_unit=ms`;
+    const response = await fetchWithRetry(url, {}, 30000, 3);
+    if (!response.ok) {
+      if (response.status === 429) throw new Error('aloft_429_limit');
+      throw new Error('aloft_' + response.status);
+    }
+    const result = await response.json();
+    const locations = Array.isArray(result) ? result : [result];
+    const reference = locations.find(location => location && location.hourly
+      && Array.isArray(location.hourly.time));
+    if (!reference) throw new Error('aloft_hourly_missing');
+    const frameIndexes = (validTimes || []).map(target =>
+      nearestOpenMeteoHour(reference.hourly.time, target));
+    const frames = SMOKE_GRID_HOURS.map((hour, frameIndex) => ({
+      hour,
+      targetTime: validTimes[frameIndex] || null,
+      modelIndex: frameIndexes[frameIndex],
+      validTime: frameIndexes[frameIndex] >= 0
+        ? new Date(openMeteoTimeMs(reference.hourly.time[frameIndexes[frameIndex]])).toISOString()
+        : null,
+      source: `Open-Meteo (GFS/ECMWF), angin ${lv.hPa} hPa`,
+      count: 0,
+      points: []
+    }));
+
+    for (const location of locations) {
+      const hourly = location && location.hourly;
+      if (!hourly || !Array.isArray(hourly.time)
+          || !Array.isArray(hourly[speedKey]) || !Array.isArray(hourly[directionKey])) continue;
+      const lat = Number(location.latitude);
+      const lon = Number(location.longitude);
+      if (![lat, lon].every(Number.isFinite) || lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
+      for (let frameIndex = 0; frameIndex < frames.length; frameIndex++) {
+        const modelIndex = frames[frameIndex].modelIndex;
+        if (modelIndex < 0 || modelIndex >= hourly.time.length) continue;
+        const speed = Number(hourly[speedKey][modelIndex]);
+        const from = Number(hourly[directionKey][modelIndex]);
+        if (![speed, from].every(Number.isFinite) || speed < 0 || speed > 120) continue;
+        const normalizedFrom = ((Math.round(from) % 360) + 360) % 360;
+        frames[frameIndex].points.push({
+          lat: +lat.toFixed(2),
+          lon: normalizeWindLongitude(lon),
+          speed: +speed.toFixed(1),
+          from: normalizedFrom,
+          to: (normalizedFrom + 180) % 360
+        });
+      }
+    }
+    frames.forEach(frame => { frame.count = frame.points.length; });
+    return {
+      level,
+      levelLabel: lv.label,
+      heightM: lv.heightM,
+      hPa: lv.hPa,
+      step,
+      source: `Open-Meteo (GFS/ECMWF), angin ${lv.hPa} hPa`,
+      fetchedAt: new Date().toISOString(),
+      frames
+    };
+  }, { staleMs: 60 * 60 * 1000, background: true });
+}
+
+async function smokeGridWindForecast(level, box, validTimes) {
+  if (level === '10m') return gfsSmokeWindFrames(box, validTimes);
+  return fetchAloftSmokeWind(level, box, validTimes);
+}
+
+function smokeGridStatus(payload) {
+  const now = Date.now();
+  const forecast = payload && payload.pm25Forecast;
+  const fetchedAt = forecast && Date.parse(forecast.fetchedAt);
+  const ageMs = Number.isFinite(fetchedAt) ? Math.max(0, now - fetchedAt) : null;
+  const pm25Available = !!(forecast && forecast.available && forecast.points && forecast.points.length);
+  const pm25State = !pm25Available ? 'unavailable'
+    : ageMs !== null && ageMs > 30 * 60 * 1000 ? 'stale' : 'ready';
+  const wind = payload && payload.windForecast;
+  const frames = wind && Array.isArray(wind.frames) ? wind.frames : [];
+  const availableWindFrames = frames.filter(frame => frame && frame.points && frame.points.length).length;
+  const windState = availableWindFrames === 0 ? 'unavailable'
+    : availableWindFrames < SMOKE_GRID_HOURS.length ? 'partial' : 'ready';
+  return {
+    pm25: {
+      state: pm25State,
+      source: 'CAMS Global via Open-Meteo Air Quality API',
+      retrievedAt: forecast && forecast.fetchedAt || null,
+      ageMinutes: ageMs === null ? null : Math.round(ageMs / 60000),
+      validTimes: forecast && forecast.validTimes || [],
+      count: forecast && forecast.count || 0,
+      units: 'µg/m³',
+      nativeResolutionDeg: forecast && forecast.nativeResolutionDeg || 0.4
+    },
+    wind: {
+      state: windState,
+      source: wind && wind.source || null,
+      level: wind && wind.level || null,
+      retrievedAt: wind && wind.fetchedAt || null,
+      availableFrames: availableWindFrames,
+      totalFrames: SMOKE_GRID_HOURS.length,
+      validTimes: frames.map(frame => frame && frame.validTime || null)
+    }
+  };
+}
+
+app.get('/api/smoke-grid', async (req, res) => {
+  const sp = readStep(req.query.step, AQ_STEPS, 1.5);
+  if (sp.error) return res.status(400).json({ error: sp.error });
+  const step = sp.value;
+  const includeAqi = req.query.aqi === '1';
+  const level = String(req.query.level || '10m');
+  if (!WIND_ALOFT_LEVELS[level]) {
+    return res.status(400).json({ error: 'Aras angin harus salah satu dari: ' + Object.keys(WIND_ALOFT_LEVELS).join(', ') + '.' });
+  }
+
+  const west = Number(req.query.west), south = Number(req.query.south);
+  const east = Number(req.query.east), north = Number(req.query.north);
+  const boundsRequested = ['west', 'south', 'east', 'north'].some(key => req.query[key] !== undefined);
+  let box = null;
+  if (boundsRequested) {
+    if (![west, south, east, north].every(Number.isFinite)
+        || west >= east || south >= north || south < -90 || north > 90
+        || west < -180 || east > 180) {
+      return res.status(400).json({ error: 'Area peta tidak valid.' });
+    }
+    box = {
+      west: Math.max(BBOX.west, west), south: Math.max(BBOX.south, south),
+      east: Math.min(BBOX.east, east), north: Math.min(BBOX.north, north)
+    };
+    if (box.west >= box.east || box.south >= box.north) {
+      return res.json({
+        updatedAt: new Date().toISOString(),
+        source: 'CAMS Global via Open-Meteo Air Quality API',
+        step: 0, count: 0, points: [], pm25Forecast: null,
+        windForecast: { level, frames: [] },
+        sourceStatus: { pm25: { state: 'unavailable' }, wind: { state: 'unavailable' } }
+      });
+    }
+  }
+
+  const b = box || BBOX;
+  const keyBox = [b.west, b.south, b.east, b.north].map(value => Number(value).toFixed(1)).join(',');
+  const cacheKey = `smoke-grid:${step}:${level}:${includeAqi ? 1 : 0}:${keyBox}`;
+  try {
+    const payload = await cached(cacheKey, 30 * 60 * 1000, async () => {
+      const field = await airQualityField(step, box, true, includeAqi);
+      const forecast = field.pm25Forecast;
+      let windForecast = { level, source: null, frames: [] };
+      if (forecast && Array.isArray(forecast.validTimes) && forecast.validTimes.length === SMOKE_GRID_HOURS.length) {
+        try {
+          windForecast = await smokeGridWindForecast(level, b, forecast.validTimes);
+        } catch (error) {
+          console.warn('[smoke-grid:wind]', error.message);
+          windForecast = {
+            level,
+            source: level === '10m' ? 'NOAA GFS 1 degree' : 'Open-Meteo (GFS/ECMWF)',
+            frames: SMOKE_GRID_HOURS.map(hour => ({ hour, count: 0, points: [], error: /429|limit/i.test(error.message) ? 'quota' : 'unavailable' }))
+          };
+        }
+      }
+      return {
+        ...field,
+        source: 'CAMS Global via Open-Meteo Air Quality API',
+        updatedAt: new Date().toISOString(),
+        windForecast
+      };
+    }, { staleMs: 60 * 60 * 1000, background: true });
+
+    const result = { ...payload, sourceStatus: smokeGridStatus(payload) };
+    res.set('Cache-Control', apiCache(1800, 3600));
+    return res.json(result);
+  } catch (error) {
+    console.error('[smoke-grid]', error.message);
+    if (/429|limit/i.test(error.message)) {
+      res.set('Retry-After', '60');
+      res.set('Cache-Control', 'no-store');
+      return res.status(429).json({ error: 'Kuota CAMS atau Open-Meteo tercapai. Data cache terakhir akan dicoba bila tersedia.', retryAfter: 60 });
+    }
+    return res.status(502).json({ error: 'Grid PM2.5 total CAMS sedang tidak tersedia.' });
   }
 });
 
