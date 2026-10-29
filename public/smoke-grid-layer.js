@@ -7,14 +7,33 @@
 
   var COLOR_STOPS = [
     { value: 0, color: [0, 0, 0], alpha: 0 },
-    { value: 5, color: [250, 204, 21], alpha: 0.24 },
-    { value: 12, color: [249, 115, 22], alpha: 0.38 },
-    { value: 25, color: [239, 68, 68], alpha: 0.5 },
-    { value: 50, color: [168, 85, 247], alpha: 0.6 }
+    { value: 1, color: [105, 116, 55], alpha: 0.16 },
+    { value: 5, color: [248, 207, 66], alpha: 0.28 },
+    { value: 12, color: [246, 137, 46], alpha: 0.42 },
+    { value: 25, color: [255, 58, 43], alpha: 0.56 },
+    { value: 50, color: [91, 31, 25], alpha: 0.65 }
+  ];
+  var AOD_COLOR_STOPS = [
+    { value: 0, color: [0, 0, 0], alpha: 0 },
+    { value: 0.05, color: [105, 116, 55], alpha: 0.16 },
+    { value: 0.2, color: [248, 207, 66], alpha: 0.28 },
+    { value: 0.5, color: [246, 137, 46], alpha: 0.42 },
+    { value: 1, color: [255, 58, 43], alpha: 0.56 },
+    { value: 2, color: [91, 31, 25], alpha: 0.65 }
+  ];
+  var DUST_COLOR_STOPS = [
+    { value: 0, color: [0, 0, 0], alpha: 0 },
+    { value: 1, color: [105, 116, 55], alpha: 0.16 },
+    { value: 10, color: [248, 207, 66], alpha: 0.28 },
+    { value: 25, color: [246, 137, 46], alpha: 0.42 },
+    { value: 50, color: [255, 58, 43], alpha: 0.56 },
+    { value: 100, color: [91, 31, 25], alpha: 0.65 }
   ];
 
   function finiteNumber(value) {
-    return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
+    var type = typeof value;
+    return (type === 'number' || (type === 'string' && value.trim() !== ''))
+      && Number.isFinite(Number(value));
   }
 
   function buildGrid(points, frameIndex) {
@@ -26,7 +45,8 @@
       var lat = Number(point && point.lat);
       var lon = Number(point && point.lon);
       var values = point && point.values;
-      var value = Array.isArray(values) ? Number(values[frameIndex]) : NaN;
+      var rawValue = Array.isArray(values) ? values[frameIndex] : null;
+      var value = finiteNumber(rawValue) ? Number(rawValue) : NaN;
       if (!Number.isFinite(lat) || !Number.isFinite(lon)
           || lat < -90 || lat > 90 || lon < -180 || lon > 180
           || !Number.isFinite(value) || value < 0) return;
@@ -96,15 +116,16 @@
       + grid.values[i01] * c + grid.values[i11] * d;
   }
 
-  function colorForValue(value) {
+  function colorForValue(value, colorStops) {
     var number = Number(value);
     if (!Number.isFinite(number) || number <= 0) return [0, 0, 0, 0];
-    var low = COLOR_STOPS[0];
-    var high = COLOR_STOPS[COLOR_STOPS.length - 1];
-    for (var i = 1; i < COLOR_STOPS.length; i++) {
-      if (number <= COLOR_STOPS[i].value) {
-        low = COLOR_STOPS[i - 1];
-        high = COLOR_STOPS[i];
+    var stops = Array.isArray(colorStops) && colorStops.length >= 2 ? colorStops : COLOR_STOPS;
+    var low = stops[0];
+    var high = stops[stops.length - 1];
+    for (var i = 1; i < stops.length; i++) {
+      if (number <= stops[i].value) {
+        low = stops[i - 1];
+        high = stops[i];
         break;
       }
     }
@@ -178,7 +199,7 @@
               for (var x = 0; x < width; x++) {
                 var worldX = Number(coords.x) * tileSize + (x + 0.5) * scale;
                 var latlng = this._map.unproject(L.point(worldX, worldY), Number(coords.z));
-                var rgba = colorForValue(sampleGrid(grid, latlng.lat, latlng.lng));
+                var rgba = colorForValue(sampleGrid(grid, latlng.lat, latlng.lng), this.options.colorStops);
                 var offset = (y * width + x) * 4;
                 image.data[offset] = rgba[0];
                 image.data[offset + 1] = rgba[1];
@@ -206,8 +227,15 @@
       keepBuffer: 1,
       updateWhenIdle: true,
       opacity: 1,
-      sampleRate: 4
+      sampleRate: 4,
+      colorStops: COLOR_STOPS
     }, options || {}));
+  }
+
+  function cloneStops(stops) {
+    return stops.map(function (stop) {
+      return { value: stop.value, color: stop.color.slice(), alpha: stop.alpha };
+    });
   }
 
   return {
@@ -215,8 +243,8 @@
     buildGrid: buildGrid,
     sampleGrid: sampleGrid,
     colorForValue: colorForValue,
-    colorStops: COLOR_STOPS.map(function (stop) {
-      return { value: stop.value, color: stop.color.slice(), alpha: stop.alpha };
-    })
+    colorStops: cloneStops(COLOR_STOPS),
+    aodColorStops: cloneStops(AOD_COLOR_STOPS),
+    dustColorStops: cloneStops(DUST_COLOR_STOPS)
   };
 });

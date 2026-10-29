@@ -1449,7 +1449,7 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
 .pm25-legend{margin:0 0 8px;padding:7px 8px;background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-field)}
 .pm25-legend-title{margin-bottom:6px;color:var(--text-secondary);font:600 10px/1.2 var(--font-prose)}
 .pm25-legend-gradient{height:9px;border:1px solid rgba(255,255,255,.14);border-radius:5px;background-color:rgba(255,255,255,.04)}
-.pm25-legend-ticks{display:flex;justify-content:space-between;margin-top:3px;color:var(--text-tertiary);font:400 8px/1.2 var(--font-data)}
+.pm25-legend-ticks{position:relative;height:10px;margin-top:3px;color:var(--text-tertiary);font:400 8px/1.2 var(--font-data)}.pm25-legend-ticks span{position:absolute;top:0;white-space:nowrap}
 .pm25-legend-note{margin-top:6px;color:var(--text-tertiary);font:400 9px/1.4 var(--font-prose)}
 .pm25-legend-attribution{margin-top:5px;color:var(--text-tertiary);font:400 9px/1.35 var(--font-prose)}
 .pm25-legend-attribution a{color:var(--status-info);text-decoration:underline;text-underline-offset:2px}

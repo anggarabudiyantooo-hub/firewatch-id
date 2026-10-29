@@ -281,16 +281,46 @@
   // gunung, dan tutupan lahan langsung terbaca, sehingga posisi titik api
   // maupun sebaran abu punya konteks geografis tanpa perlu diatur dulu.
   var activeBase = 'citra';
+  var smokeBaseActive = false;
+  var baseBeforeSmoke = null;
   BASEMAPS.citra.addTo(map);
   document.body.classList.add('basemap-citra');
 
   function setBasemap(name) {
-    if (!BASEMAPS[name] || name === activeBase) return;
+    if (!BASEMAPS[name]) return;
+    if (smokeBaseActive && name !== 'gelap') {
+      baseBeforeSmoke = name;
+      name = 'gelap';
+    }
+    if (name === activeBase) {
+      var currentSelector = document.getElementById('baseSel');
+      if (currentSelector) currentSelector.value = activeBase;
+      return;
+    }
     map.removeLayer(BASEMAPS[activeBase]);
     BASEMAPS[name].addTo(map);
-    BASEMAPS[name].eachLayer(function (l) { l.bringToBack(); });
+    BASEMAPS[name].eachLayer(function (layer) { layer.bringToBack(); });
     activeBase = name;
     document.body.classList.toggle('basemap-citra', name === 'citra');
+    var selector = document.getElementById('baseSel');
+    if (selector) selector.value = activeBase;
+  }
+
+  function syncSmokeBasemap() {
+    var active = ['lyPm25', 'lyAod', 'lyDust', 'lySmoke'].some(function (id) {
+      var toggle = document.getElementById(id);
+      return !!(toggle && toggle.checked);
+    });
+    if (active && !smokeBaseActive) {
+      baseBeforeSmoke = activeBase;
+      smokeBaseActive = true;
+      setBasemap('gelap');
+    } else if (!active && smokeBaseActive) {
+      var restore = baseBeforeSmoke || 'citra';
+      smokeBaseActive = false;
+      baseBeforeSmoke = null;
+      setBasemap(restore);
+    }
   }
 
   map.createPane('pm25Pane');
@@ -325,6 +355,14 @@
   var gPm25 = window.SiagaSmokeGridLayer
     ? window.SiagaSmokeGridLayer.create(L, { pane: 'pm25Pane', sampleRate: 4 })
     : L.layerGroup();
+  var gAod = window.SiagaSmokeGridLayer
+    ? window.SiagaSmokeGridLayer.create(L, {
+      pane: 'pm25Pane', sampleRate: 4, colorStops: window.SiagaSmokeGridLayer.aodColorStops
+    }) : L.layerGroup();
+  var gDust = window.SiagaSmokeGridLayer
+    ? window.SiagaSmokeGridLayer.create(L, {
+      pane: 'pm25Pane', sampleRate: 4, colorStops: window.SiagaSmokeGridLayer.dustColorStops
+    }) : L.layerGroup();
   var gAsh = L.layerGroup();
   // Marker status gunung berdiri sendiri; dulu menempel di gAsh sehingga
   // ikut padam saat lapisan Abu vulkanik dimatikan - padahal data status tetap
@@ -360,7 +398,8 @@
     smokeSelection: null, smokePlaying: false, smokePlaybackTimer: null,
     aerosolOn: false, aerosolLayer: null, aerosolMeta: null, aerosolRequest: 0,
     air: null, airKey: null, smokeGrid: null, airOn: false, airBusy: false, airPendingQ: null,
-    pm25On: false, pm25Loading: false, pm25Error: '',
+    pm25On: false, aodOn: false, dustOn: false,
+    pm25Loading: false, pm25Error: '',
     airMinAqi: 0, airFilteredCount: 0, // Fase 2.5: filter AQI UI friendly
     ash: null, ashOn: false, volcanoOn: false, ashBusy: false, newsAt: '',
     // Harus cocok dengan <option selected> pada #himaSel (nonaktif),
@@ -1203,7 +1242,90 @@
     }
   }
 
-  var PM25_COLOR_GRADIENT = 'linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(250,204,21,.24) 10%, rgba(249,115,22,.38) 24%, rgba(239,68,68,.5) 50%, rgba(168,85,247,.6) 100%)';
+  var MODEL_RASTER_META = {
+    pm25: {
+      stateKey: 'pm25On', layer: gPm25, forecastKey: 'pm25Forecast',
+      idLabel: 'PM2.5 total model', enLabel: 'Total modeled PM2.5', units: 'µg/m³',
+      gradientStops: window.SiagaSmokeGridLayer && window.SiagaSmokeGridLayer.colorStops,
+      ticks: [
+        { value: 0, label: '0' }, { value: 5, label: '5' }, { value: 12, label: '12' },
+        { value: 25, label: '25' }, { value: 50, label: '50+' }
+      ]
+    },
+    aod: {
+      stateKey: 'aodOn', layer: gAod, forecastKey: 'aerosolForecast',
+      idLabel: 'Kedalaman optik aerosol (AOD)', enLabel: 'Aerosol optical depth (AOD)', units: '',
+      gradientStops: window.SiagaSmokeGridLayer && window.SiagaSmokeGridLayer.aodColorStops,
+      ticks: [
+        { value: 0, label: '0' }, { value: 0.2, label: '0,2' },
+        { value: 0.5, label: '0,5' }, { value: 1, label: '1' }, { value: 2, label: '2+' }
+      ]
+    },
+    dust: {
+      stateKey: 'dustOn', layer: gDust, forecastKey: 'dustForecast',
+      idLabel: 'Debu model dekat permukaan', enLabel: 'Modeled near-surface dust', units: 'µg/m³',
+      gradientStops: window.SiagaSmokeGridLayer && window.SiagaSmokeGridLayer.dustColorStops,
+      ticks: [
+        { value: 0, label: '0' }, { value: 10, label: '10' }, { value: 25, label: '25' },
+        { value: 50, label: '50' }, { value: 100, label: '100+' }
+      ]
+    }
+  };
+
+  function activeModelRasterKind() {
+    if (state.pm25On) return 'pm25';
+    if (state.aodOn) return 'aod';
+    if (state.dustOn) return 'dust';
+    return null;
+  }
+
+  function modelRasterIsOn() {
+    return !!activeModelRasterKind();
+  }
+
+  function modelRasterMeta(kind) {
+    return MODEL_RASTER_META[kind || activeModelRasterKind()] || null;
+  }
+
+  function modelRasterForecast(kind) {
+    var meta = modelRasterMeta(kind);
+    return meta && state.air && state.air[meta.forecastKey] || null;
+  }
+
+  function modelRasterHint(kind) {
+    var meta = modelRasterMeta(kind);
+    var forecast = modelRasterForecast(kind);
+    var english = getLanguage() === 'en';
+    if (state.pm25Loading) return english
+      ? 'Loading the regional CAMS model grid.' : 'Memuat grid model CAMS regional.';
+    if (state.pm25Error) return state.pm25Error;
+    if (!meta || !forecast || !forecast.count) return english
+      ? (meta ? meta.enLabel + ' is unavailable for this area.' : 'CAMS model data is unavailable.')
+      : (meta ? meta.idLabel + ' tidak tersedia untuk area ini.' : 'Data model CAMS tidak tersedia.');
+    var caveat = kind === 'pm25'
+      ? (english ? '; total from all sources, not smoke-specific.' : '; total semua sumber, bukan khusus asap.')
+      : kind === 'aod'
+        ? (english ? '; dimensionless whole-atmosphere indicator, not surface concentration.'
+          : '; indikator seluruh kolom atmosfer tanpa satuan, bukan konsentrasi permukaan.')
+        : (english ? '; separate modeled dust, not a wildfire-smoke measurement.'
+          : '; debu model terpisah, bukan pengukuran asap kebakaran.');
+    return nf.format(forecast.count) + (english
+      ? ' grid cells with at least one valid ' + meta.enLabel + ' frame'
+      : ' sel grid dengan setidaknya satu frame ' + meta.idLabel + ' valid') + caveat;
+  }
+
+  function modelRasterGradient(stops) {
+    if (!Array.isArray(stops) || stops.length < 2) return '';
+    var min = Number(stops[0].value);
+    var max = Number(stops[stops.length - 1].value);
+    if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return '';
+    return 'linear-gradient(90deg,' + stops.map(function (stop) {
+      var color = stop.color || [0, 0, 0];
+      var percent = Math.round((Number(stop.value) - min) / (max - min) * 1000) / 10;
+      return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',' + stop.alpha + ') ' + percent + '%';
+    }).join(',') + ')';
+  }
+
   var pm25InspectLatLng = null;
   var pm25InspectPinned = false;
   var pm25InspectSignature = '';
@@ -1215,7 +1337,9 @@
 
   function formatPm25Time(value) {
     var date = new Date(value);
-    if (!Number.isFinite(date.getTime())) return 'waktu model tidak tersedia';
+    if (!Number.isFinite(date.getTime())) {
+      return getLanguage() === 'en' ? 'model time unavailable' : 'waktu model tidak tersedia';
+    }
     return date.toLocaleString(getLocale(), {
       timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short',
       hour: '2-digit', minute: '2-digit'
@@ -1254,28 +1378,59 @@
     }) + ' ' + zone;
   }
 
-  function drawPm25(preserveParticlePositions) {
-    if (!state.pm25On || Number(state.plumeHour) < 0 || state.pm25Loading || state.pm25Error
-        || !state.air || !state.air.pm25Forecast) {
-      if (typeof gPm25.clearFrame === 'function') gPm25.clearFrame();
-      else gPm25.clearLayers();
+  function drawModelRaster(kind, preserveParticlePositions) {
+    var selectedKind = activeModelRasterKind();
+    if (kind && kind !== selectedKind) {
+      var inactiveMeta = modelRasterMeta(kind);
+      if (inactiveMeta && inactiveMeta.layer && typeof inactiveMeta.layer.clearFrame === 'function') {
+        inactiveMeta.layer.clearFrame();
+      }
+      return;
+    }
+    var activeKind = selectedKind;
+    var meta = modelRasterMeta(activeKind);
+    var layer = meta && meta.layer;
+    var forecast = modelRasterForecast(activeKind);
+    var index = pm25FrameIndex();
+    [gPm25, gAod, gDust].forEach(function (candidate) {
+      if (candidate !== layer && typeof candidate.clearFrame === 'function') candidate.clearFrame();
+    });
+    if (!meta || !state[meta.stateKey] || Number(state.plumeHour) < 0 || state.pm25Loading
+        || state.pm25Error || !forecast || !Array.isArray(forecast.points) || !forecast.points.length) {
+      if (layer && typeof layer.clearFrame === 'function') layer.clearFrame();
       updatePm25Status(0);
       syncWindParticles(false);
-      refreshPm25Inspect();
+      if (activeKind) refreshPm25Inspect();
+      else clearPm25Inspect();
       return;
     }
 
-    var forecast = state.air.pm25Forecast;
-    var index = pm25FrameIndex();
-    var points = Array.isArray(forecast.points) ? forecast.points : [];
+    var points = forecast.points;
     var drawn = points.filter(function (point) {
       var value = point && point.values && point.values[index];
-      return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+      return typeof value === 'number' && Number.isFinite(value) && value > 0;
     }).length;
-    if (typeof gPm25.setFrame === 'function') gPm25.setFrame(points, index);
+    if (typeof layer.setFrame === 'function') layer.setFrame(points, index);
     updatePm25Status(drawn);
     syncWindParticles(!!preserveParticlePositions);
-    refreshPm25Inspect();
+    if (activeKind) refreshPm25Inspect();
+    else clearPm25Inspect();
+  }
+
+  function drawActiveModelRaster(preserveParticlePositions) {
+    drawModelRaster(activeModelRasterKind(), preserveParticlePositions);
+  }
+
+  function drawPm25(preserveParticlePositions) {
+    drawModelRaster('pm25', preserveParticlePositions);
+  }
+
+  function drawAod(preserveParticlePositions) {
+    drawModelRaster('aod', preserveParticlePositions);
+  }
+
+  function drawDust(preserveParticlePositions) {
+    drawModelRaster('dust', preserveParticlePositions);
   }
 
   function clearPm25Inspect() {
@@ -1297,7 +1452,9 @@
   function updatePm25PointInfo(latlng, pinned) {
     var box = $('pm25PointInfo');
     if (!box || !latlng) return;
-    if (!state.pm25On || !map.hasLayer(gPm25)) {
+    var kind = activeModelRasterKind();
+    var meta = modelRasterMeta(kind);
+    if (!meta || !map.hasLayer(meta.layer)) {
       clearPm25Inspect();
       return;
     }
@@ -1310,37 +1467,40 @@
       rows.push((english ? 'Location: ' : 'Lokasi: ') + lat.toFixed(3) + ', ' + lon.toFixed(3));
     }
 
-    var forecast = state.air && state.air.pm25Forecast;
+    var forecast = modelRasterForecast(kind);
     var index = pm25FrameIndex();
     if (Number(state.plumeHour) < 0) {
       rows.push(english
-        ? 'Historical CAMS PM2.5 is unavailable before frame 0.'
-        : 'Data historis PM2.5 CAMS tidak tersedia sebelum frame 0.');
+        ? 'Historical CAMS model data is unavailable before frame 0.'
+        : 'Data model CAMS historis tidak tersedia sebelum frame 0.');
     } else if (state.pm25Loading) {
       rows.push(english ? 'Loading the CAMS grid...' : 'Memuat grid CAMS...');
     } else if (state.pm25Error || !forecast) {
-      rows.push(english ? 'CAMS PM2.5 is unavailable for this frame.' : 'PM2.5 CAMS tidak tersedia pada frame ini.');
+      rows.push(english ? 'CAMS model data is unavailable for this frame.' : 'Data model CAMS tidak tersedia pada frame ini.');
     } else {
-      var value = typeof gPm25.sampleAt === 'function' ? gPm25.sampleAt(lat, lon) : null;
+      var value = typeof meta.layer.sampleAt === 'function' ? meta.layer.sampleAt(lat, lon) : null;
       var hasValue = Number.isFinite(value) && value >= 0;
+      var valueLabel = kind === 'pm25' ? (english ? 'Total modeled PM2.5: ' : 'PM2.5 total model: ')
+        : kind === 'aod' ? (english ? 'Aerosol optical depth (AOD): ' : 'Kedalaman optik aerosol (AOD): ')
+          : (english ? 'Modeled near-surface dust: ' : 'Debu model dekat permukaan: ');
+      var valueText = hasValue ? nf.format(value) + (meta.units ? ' ' + meta.units : (english ? ' (dimensionless)' : ' (tanpa satuan)')) : '';
       rows.push(!hasValue
         ? (english
           ? 'No valid CAMS grid sample here; transparent means unavailable, not zero.'
-          : 'Tidak ada sampel CAMS valid di sini; transparan berarti tidak tersedia, bukan nol.')
-        : (english ? 'Total modeled PM2.5: ' : 'PM2.5 total model: ')
-          + nf.format(value) + ' µg/m³');
+          : 'Tidak ada sampel grid CAMS valid di sini; transparan berarti tidak tersedia, bukan nol.')
+        : valueLabel + valueText);
       var camsTime = forecast.validTimes && forecast.validTimes[index];
       rows.push(camsTime
-        ? (english ? 'CAMS valid: ' : 'Waktu berlaku CAMS: ') + formatPm25Time(camsTime)
-        : (english ? 'CAMS valid time is unavailable.' : 'Waktu berlaku CAMS tidak tersedia.'));
+        ? (english ? 'Model valid: ' : 'Waktu berlaku model: ') + formatPm25Time(camsTime)
+        : (english ? 'Model valid time is unavailable.' : 'Waktu berlaku model tidak tersedia.'));
     }
 
-    var windFrame = smokeWindFrame();
-    var separateWind = !windFrame && state.windOn && state.wind
+    var windFrame = state.windOn && modelRasterIsOn() ? smokeWindFrame() : null;
+    var separateWind = state.windOn && !modelRasterIsOn() && state.wind
       && Array.isArray(state.wind.points) && state.wind.points.length >= 4;
-    var windVector = state.particles && typeof state.particles.sampleAt === 'function'
-      ? state.particles.sampleAt(lat, lon) : null;
-    if (windVector && (windFrame || separateWind)) {
+    var windVector = state.windOn && state.particles && typeof state.particles.sampleAt === 'function'
+      && (windFrame || separateWind) ? state.particles.sampleAt(lat, lon) : null;
+    if (windVector) {
       var speed = Math.sqrt(windVector[0] * windVector[0] + windVector[1] * windVector[1]);
       var toward = (Math.atan2(windVector[0], windVector[1]) * 180 / Math.PI + 360) % 360;
       var wind = state.smokeGrid && state.smokeGrid.windForecast;
@@ -1358,18 +1518,23 @@
       if (windValidTime) {
         rows.push((english ? 'Wind valid: ' : 'Waktu berlaku angin: ') + formatPm25Time(windValidTime));
       }
-    } else if (!windFrame && !separateWind) {
+    } else if (state.windOn && modelRasterIsOn() && !windFrame) {
       rows.push(english
-        ? 'No wind frame aligned with this CAMS time is available.'
-        : 'Frame angin yang selaras dengan waktu CAMS ini tidak tersedia.');
-    } else {
-      rows.push(english
-        ? 'Wind data is unavailable at this location.'
-        : 'Data angin tidak tersedia di lokasi ini.');
+        ? 'No wind frame aligned with this model time is available; particles are paused.'
+        : 'Frame angin selaras untuk waktu model ini tidak tersedia; partikel dijeda.');
+    } else if (state.windOn && !modelRasterIsOn()) {
+      rows.push(english ? 'Wind data is unavailable at this location.' : 'Data angin tidak tersedia di lokasi ini.');
     }
-    rows.push(english
-      ? 'CAMS is total PM2.5 from all sources, not smoke-specific or a station measurement.'
-      : 'CAMS adalah PM2.5 total semua sumber, bukan khusus asap atau pengukuran stasiun.');
+
+    var caveat = kind === 'pm25'
+      ? english ? 'CAMS PM2.5 is total from all sources, not smoke-specific or a station measurement.'
+        : 'PM2.5 CAMS adalah total semua sumber, bukan khusus asap atau pengukuran stasiun.'
+      : kind === 'aod'
+        ? english ? 'AOD is a dimensionless whole-atmosphere optical-depth indicator, not surface PM2.5.'
+          : 'AOD adalah indikator kedalaman optik seluruh kolom atmosfer tanpa satuan, bukan PM2.5 permukaan.'
+        : english ? 'CAMS dust is a separate near-surface model variable; it is not a fire-smoke measurement.'
+          : 'Debu CAMS adalah variabel model dekat permukaan yang terpisah; bukan pengukuran asap kebakaran.';
+    rows.push(caveat);
 
     var signature = rows.join('\n');
     box.hidden = false;
@@ -1378,7 +1543,9 @@
     if (signature === pm25InspectSignature) return;
     pm25InspectSignature = signature;
     clear(box);
-    box.appendChild(el('div', 'pm25-point-title', english ? 'CAMS PM2.5 · wind frame' : 'PM2.5 CAMS · frame angin'));
+    box.appendChild(el('div', 'pm25-point-title', english
+      ? meta.enLabel + (state.windOn ? ' · wind frame' : '')
+      : meta.idLabel + (state.windOn ? ' · frame angin' : '')));
     rows.forEach(function (row, indexInRows) {
       box.appendChild(el('div',
         indexInRows === rows.length - 1 ? 'pm25-point-caveat' : 'pm25-point-row', row));
@@ -1386,14 +1553,15 @@
   }
 
   map.on('mousemove', function (event) {
-    if (!state.pm25On || pm25InspectPinned) return;
+    if (!modelRasterIsOn() || pm25InspectPinned) return;
     var now = Date.now();
     if (now - pm25InspectLastMoveAt < 140) return;
     pm25InspectLastMoveAt = now;
     updatePm25PointInfo(event.latlng, false);
   });
   map.on('click', function (event) {
-    if (!state.pm25On || !map.hasLayer(gPm25)) return;
+    var meta = modelRasterMeta();
+    if (!meta || !map.hasLayer(meta.layer)) return;
     if (pm25InspectPinned && pm25InspectLatLng
         && Math.abs(pm25InspectLatLng.lat - event.latlng.lat) < 0.0001
         && Math.abs(pm25InspectLatLng.lng - event.latlng.lng) < 0.0001) {
@@ -2934,49 +3102,53 @@
   }
 
   function loadAir(skipCachedFrameDraw) {
-    if (!state.airOn && !state.pm25On) return Promise.resolve();
+    if (!state.airOn && !modelRasterIsOn()) return Promise.resolve();
     var step = airStepFor(map.getZoom());
     var b = map.getBounds();
-    var useSmokeGrid = !!state.pm25On;
+    var useSmokeGrid = modelRasterIsOn();
     var q = 'step=' + step + '&aqi=' + (state.airOn ? '1' : '0');
-    if (useSmokeGrid) q += '&level=' + encodeURIComponent(resolveWindLevel());
-    else q += '&forecast=0';
-    if (step < 1.5) {
+    if (useSmokeGrid) {
+      q += '&wind=' + (state.windOn ? '1' : '0');
+      if (state.windOn) q += '&level=' + encodeURIComponent(resolveWindLevel());
+    } else {
+      q += '&forecast=0';
+    }
+    if (useSmokeGrid || step < 1.5) {
       q += '&west=' + b.getWest().toFixed(2) + '&south=' + b.getSouth().toFixed(2) +
            '&east=' + b.getEast().toFixed(2) + '&north=' + b.getNorth().toFixed(2);
     }
-    if (state.pm25On && state.airKey !== q) {
+    if (useSmokeGrid && state.airKey !== q) {
       state.pm25Loading = true;
       state.pm25Error = '';
       state.smokeGrid = null;
-      gPm25.clearLayers();
+      [gPm25, gAod, gDust].forEach(function (layer) {
+        if (typeof layer.clearFrame === 'function') layer.clearFrame();
+      });
       syncWindParticles(false);
       refreshPm25Inspect();
       updatePm25Status(0);
       updateForecastStatus();
     }
-    // Saat kedua layer aktif, AQI dan CAMS PM2.5 memakai satu permintaan grid.
     if (state.airKey === q) {
       state.pm25Loading = false;
       state.pm25Error = '';
-      if (useSmokeGrid && state.pm25On) state.smokeGrid = state.air;
+      if (useSmokeGrid && modelRasterIsOn()) state.smokeGrid = state.air;
       if (state.airOn) drawAir();
       renderAirLegend();
-      if (state.pm25On && !skipCachedFrameDraw) drawPm25();
+      if (useSmokeGrid && !skipCachedFrameDraw) drawActiveModelRaster();
       try { if (typeof updateAirCfg === 'function') updateAirCfg(); } catch (e) {}
       updateForecastStatus();
       return Promise.resolve();
     }
-    // Jika sedang sibuk, simpan area terbaru agar geser cepat tidak memakai area lama.
     if (state.airBusy) {
       state.airPendingQ = q;
       return Promise.resolve();
     }
     state.airBusy = true;
-    showHint(state.pm25On
-      ? 'Memuat grid kualitas udara dan prakiraan PM2.5 CAMS…'
+    showHint(useSmokeGrid
+      ? 'Memuat grid CAMS regional dan keluaran model…'
       : 'Memuat data kualitas udara…');
-    return fetchTRetry((useSmokeGrid ? '/api/smoke-grid?' : '/api/air-quality?') + q,
+    return fetchTRetry((useSmokeGrid ? '/api/smoke-grid-static?' : '/api/air-quality?') + q,
       { headers: { Accept: 'application/json' } }, 15000, 3)
       .then(function (r) {
         if (r.status === 429) {
@@ -2990,7 +3162,7 @@
       })
       .then(function (d) {
         state.air = d;
-        state.smokeGrid = useSmokeGrid && state.pm25On ? d : null;
+        state.smokeGrid = useSmokeGrid && modelRasterIsOn() ? d : null;
         state.airKey = q;
         state.pm25Loading = false;
         state.pm25Error = '';
@@ -2998,14 +3170,19 @@
         if (!hasNewerArea) {
           if (state.airOn) drawAir();
           renderAirLegend();
-          if (state.pm25On) drawPm25();
+          if (useSmokeGrid) drawActiveModelRaster();
           try { if (typeof updateAirCfg === 'function') updateAirCfg(); } catch (e) {}
           updateForecastStatus();
-          if (state.pm25On) {
-            var forecast = d.pm25Forecast;
-            showHint(forecast && forecast.count
-              ? nf.format(forecast.count) + ' sampel PM2.5 total CAMS. Bukan kontribusi khusus asap.'
-              : 'Prakiraan PM2.5 CAMS tidak tersedia pada area ini.', 5000);
+          if (useSmokeGrid) {
+            var kind = activeModelRasterKind();
+            var meta = modelRasterMeta(kind);
+            var forecast = modelRasterForecast(kind);
+            var count = forecast && forecast.count || 0;
+            showHint(count
+              ? nf.format(count) + ' sampel ' + (getLanguage() === 'en' ? meta.enLabel : meta.idLabel)
+                + ' · CAMS Global via Open-Meteo.'
+              : (getLanguage() === 'en' ? meta.enLabel + ' is unavailable in this area.'
+                : meta.idLabel + ' tidak tersedia pada area ini.'), 5000);
           } else {
             showHint(d.count
               ? nf.format(d.count) + ' sel kualitas udara (filter: ' + nf.format(state.airFilteredCount) + ' tampil) · model CAMS via Open-Meteo.'
@@ -3015,13 +3192,17 @@
       })
       .catch(function (err) {
         state.pm25Loading = false;
-        if (state.pm25On) {
+        if (useSmokeGrid && modelRasterIsOn()) {
           state.smokeGrid = null;
           syncWindParticles(false);
           state.pm25Error = err && err.message === 'quota'
-            ? 'Kuota Open-Meteo tercapai. Coba lagi setelah jeda; tidak ada nilai baru yang ditampilkan.'
-            : 'Prakiraan PM2.5 CAMS tidak tersedia saat ini.';
-          if (!state.airKey || state.airKey !== q) gPm25.clearLayers();
+            ? 'Kuota layanan data tercapai. Coba lagi setelah jeda; tidak ada nilai baru yang ditampilkan.'
+            : 'Grid CAMS regional tidak tersedia saat ini.';
+          if (!state.airKey || state.airKey !== q) {
+            [gPm25, gAod, gDust].forEach(function (layer) {
+              if (typeof layer.clearFrame === 'function') layer.clearFrame();
+            });
+          }
           refreshPm25Inspect();
           updatePm25Status(0);
           updateForecastStatus();
@@ -3032,11 +3213,9 @@
       })
       .then(function () {
         state.airBusy = false;
-        // Ulangi hanya jika peta berpindah ke query berbeda saat request berjalan.
-        // Query yang sama yang sudah gagal tidak dikirim ulang dua kali sekaligus.
         var pendingQ = state.airPendingQ;
         state.airPendingQ = null;
-        if (pendingQ && pendingQ !== q && (state.airOn || state.pm25On)) loadAir();
+        if (pendingQ && pendingQ !== q && (state.airOn || modelRasterIsOn())) loadAir();
       });
   }
 
@@ -3167,34 +3346,60 @@
     var box = $('pm25Legend');
     if (!box) return;
     clear(box);
-    var forecast = state.air && state.air.pm25Forecast;
-    if (!state.pm25On || Number(state.plumeHour) < 0 || state.pm25Loading || state.pm25Error
+    var kind = activeModelRasterKind();
+    var meta = modelRasterMeta(kind);
+    var forecast = modelRasterForecast(kind);
+    if (!meta || Number(state.plumeHour) < 0 || state.pm25Loading || state.pm25Error
         || !forecast || !forecast.points || !forecast.points.length) {
       box.hidden = true;
       return;
     }
     box.hidden = false;
     var english = getLanguage() === 'en';
-    box.appendChild(el('div', 'pm25-legend-title', english
-      ? 'Total modeled PM2.5 · µg/m³' : 'PM2.5 total model · µg/m³'));
+    var units = meta.units || (english ? 'dimensionless' : 'tanpa satuan');
+    box.appendChild(el('div', 'pm25-legend-title', (english ? meta.enLabel : meta.idLabel) + ' · ' + units));
     var scale = el('div', 'pm25-legend-gradient');
-    scale.style.background = PM25_COLOR_GRADIENT;
+    scale.style.background = modelRasterGradient(meta.gradientStops);
     box.appendChild(scale);
     var ticks = el('div', 'pm25-legend-ticks');
-    ['0', '5', '12', '25', '50+'].forEach(function (label) {
-      ticks.appendChild(el('span', '', label));
+    var maximumTick = meta.ticks.length ? meta.ticks[meta.ticks.length - 1].value : 0;
+    ticks.style.position = 'relative';
+    ticks.style.height = '10px';
+    meta.ticks.forEach(function (tick, index) {
+      var label = String(tick.label);
+      var localized = english ? label.replace(',', '.') : label;
+      var tickLabel = el('span', '', localized);
+      var position = maximumTick > 0 ? tick.value / maximumTick * 100 : 0;
+      tickLabel.style.position = 'absolute';
+      tickLabel.style.left = position + '%';
+      tickLabel.style.transform = index === 0 ? 'translateX(0)'
+        : index === meta.ticks.length - 1 ? 'translateX(-100%)' : 'translateX(-50%)';
+      ticks.appendChild(tickLabel);
     });
     box.appendChild(ticks);
-    var step = Number(forecast.sampleStepDeg) || 1.5;
-    box.appendChild(el('div', 'pm25-legend-note', english
-      ? 'Hover or click (tap on touch screens) to inspect a point. CAMS Global native resolution ~0.4° (~45 km), 3-hour output. Display grid step '
-        + step + '° (~' + Math.round(step * 111) + ' km). Continuous visual scale, not a health category.'
-      : 'Arahkan kursor atau klik (ketuk pada layar sentuh) untuk memeriksa nilai titik. Resolusi native CAMS Global ~0,4° (~45 km), keluaran 3-jaman. Langkah grid tampilan '
-        + step + '° (~' + Math.round(step * 111) + ' km). Skala kontinu untuk visual, bukan kategori kesehatan.'));
+    var step = Number(forecast.sampleStepDeg) || 0.4;
+    var note = english
+      ? 'Hover or click (tap on touch screens) to inspect a point. CAMS Global native grid is about 0.4° (~45 km), with 3-hour model output. This continuous visual scale is not a health category.'
+      : 'Arahkan kursor atau klik (ketuk pada layar sentuh) untuk memeriksa nilai titik. Grid native CAMS Global sekitar 0,4° (~45 km), dengan keluaran model 3-jaman. Skala kontinu ini bukan kategori kesehatan.';
+    if (kind === 'pm25') {
+      note += english
+        ? ' Near-surface total PM2.5 from all sources; not smoke-specific or a station measurement.'
+        : ' PM2.5 total dekat permukaan dari semua sumber; bukan khusus asap atau pengukuran stasiun.';
+    } else if (kind === 'aod') {
+      note += english
+        ? ' AOD is column-integrated and dimensionless; it is not a surface concentration.'
+        : ' AOD terintegrasi sepanjang kolom atmosfer dan tanpa satuan; bukan konsentrasi permukaan.';
+    } else {
+      note += english
+        ? ' Dust is a separate modeled dust variable, not a fire-smoke measurement.'
+        : ' Debu adalah variabel model terpisah, bukan pengukuran asap kebakaran.';
+    }
+    note += english
+      ? ' Grid sample spacing: ' + step + '°.'
+      : ' Jarak sampel grid: ' + step + '°.';
+    box.appendChild(el('div', 'pm25-legend-note', note));
     var attribution = el('div', 'pm25-legend-attribution');
-    attribution.appendChild(document.createTextNode(english
-      ? 'Total PM2.5 from all sources; not smoke-specific or a station measurement. Sources: ' :
-        'PM2.5 total semua sumber; bukan khusus asap atau pengukuran stasiun. Sumber: '));
+    attribution.appendChild(document.createTextNode(english ? 'Data providers: ' : 'Penyedia data: '));
     var camsLink = el('a', '', 'CAMS / ECMWF');
     camsLink.href = 'https://atmosphere.copernicus.eu/';
     camsLink.target = '_blank';
@@ -3211,22 +3416,24 @@
 
   function updatePm25Status(drawn) {
     var english = getLanguage() === 'en';
-    if (!state.pm25On) {
+    var kind = activeModelRasterKind();
+    var meta = modelRasterMeta(kind);
+    if (!meta) {
       setPm25Status('', '');
       renderPm25Legend();
       return;
     }
     if (Number(state.plumeHour) < 0) {
       setPm25Status('ready', english
-        ? 'Historical CAMS PM2.5 is unavailable before frame 0.'
-        : 'Data PM2.5 historis CAMS tidak tersedia sebelum frame 0.');
+        ? 'Historical CAMS model data is unavailable before frame 0.'
+        : 'Data model CAMS historis tidak tersedia sebelum frame 0.');
       renderPm25Legend();
       return;
     }
     if (state.pm25Loading) {
       setPm25Status('loading', english
-        ? 'Loading the CAMS Global modeled PM2.5 forecast…'
-        : 'Memuat prakiraan PM2.5 model CAMS Global…');
+        ? 'Loading the regional CAMS model grid…'
+        : 'Memuat grid model CAMS regional…');
       renderPm25Legend();
       return;
     }
@@ -3237,118 +3444,165 @@
       renderPm25Legend();
       return;
     }
-    var forecast = state.air && state.air.pm25Forecast;
+    var forecast = modelRasterForecast(kind);
     if (!forecast || !forecast.points || !forecast.points.length) {
       setPm25Status('error', english
-        ? 'CAMS PM2.5 forecast is unavailable for this area.'
-        : 'Prakiraan PM2.5 CAMS tidak tersedia untuk area ini.');
+        ? (meta.enLabel + ' is unavailable for this area.')
+        : (meta.idLabel + ' tidak tersedia untuk area ini.'));
       renderPm25Legend();
       return;
     }
     var index = pm25FrameIndex();
+    var validCount = forecast.points.filter(function (point) {
+      var value = point && point.values && point.values[index];
+      return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+    }).length;
     var validTime = forecast.validTimes && forecast.validTimes[index];
     var suffix = validTime
       ? (english ? ' Valid: ' : ' Waktu berlaku: ') + formatPm25Time(validTime) + '.' : '';
     var retrieved = forecast.fetchedAt
-      ? (english ? ' Source retrieved: ' : ' Data sumber diambil: ')
-        + formatPm25Time(forecast.fetchedAt) + '.' : '';
-    if (!drawn) {
+      ? (english ? ' Grid refreshed: ' : ' Grid diperbarui: ') + formatPm25Time(forecast.fetchedAt) + '.' : '';
+    if (!validCount) {
       setPm25Status('ready', (english
-        ? 'No valid modeled value in this frame.' : 'Tidak ada nilai model valid pada frame ini.') + suffix + retrieved
-        + (english ? ' Total PM2.5 from all sources, not smoke-specific.'
-          : ' PM2.5 total semua sumber, bukan khusus asap kebakaran.'));
+        ? 'No valid modeled value in this frame; missing data is not zero.'
+        : 'Tidak ada nilai model valid pada frame ini; data hilang bukan nol.') + suffix + retrieved);
+    } else if (!drawn) {
+      setPm25Status('ready', (english
+        ? 'Valid grid cells contain zero; transparent cells indicate zero or unavailable data, distinguished by inspection.'
+        : 'Sel grid valid bernilai nol; sel transparan menunjukkan nol atau data tidak tersedia, dibedakan melalui inspeksi.')
+        + suffix + retrieved);
     } else {
       setPm25Status('ready', nf.format(drawn)
-        + (english ? ' total modeled PM2.5 grid samples.' : ' sampel PM2.5 model total.') + suffix + retrieved
-        + (english ? ' Near-surface model; not a station reading or a smoke-only contribution.'
-          : ' Dekat permukaan 10 m; bukan pembacaan stasiun atau kontribusi khusus asap.'));
+        + (english ? ' positive model grid samples.' : ' sampel grid model bernilai positif.') + suffix + retrieved);
     }
     renderPm25Legend();
   }
 
   function updateForecastStatus() {
     var smokeToggle = $('lySmoke');
-    var pm25Toggle = $('lyPm25');
     var smokeOn = !!(smokeToggle && smokeToggle.checked);
-    var pm25On = !!(pm25Toggle && pm25Toggle.checked);
+    var rasterOn = modelRasterIsOn();
+    var kind = activeModelRasterKind();
+    var meta = modelRasterMeta(kind);
     var coverageNode = $('plumeCoverageStatus');
     if (coverageNode) coverageNode.hidden = !smokeOn;
     var english = getLanguage() === 'en';
     var hour = Number(state.plumeHour) || 0;
-    var forecast = state.air && state.air.pm25Forecast;
+    var forecast = modelRasterForecast(kind);
     var index = pm25FrameIndex();
-    var validTime = hour >= 0 && state.pm25On && !state.pm25Loading && !state.pm25Error
+    var validTime = hour >= 0 && rasterOn && !state.pm25Loading && !state.pm25Error
       && forecast && forecast.validTimes && forecast.validTimes[index];
-    var frameLabel = hour === 0 ? '0 (kondisi saat ini)'
-      : hour < 0 ? smokeHourLabel(hour).toLowerCase() : '+' + hour + ' jam';
+    var frameLabel = hour === 0
+      ? (english ? '0 (current conditions)' : '0 (kondisi saat ini)')
+      : hour < 0 ? smokeHourLabel(hour).toLowerCase()
+        : (english ? '+' + hour + ' hours' : '+' + hour + ' jam');
     var timeSuffix = validTime
-      ? ' Waktu berlaku PM2.5: ' + formatPm25Time(validTime) + '.'
-      : ' Waktu berlaku PM2.5 tidak tersedia.';
+      ? (english ? ' Model valid: ' : ' Waktu berlaku model: ') + formatPm25Time(validTime) + '.'
+      : '';
+    var modelDescription = !meta ? '' : kind === 'pm25'
+      ? (english
+        ? 'CAMS Global total PM2.5 near the surface, from all sources; not smoke-specific or a station measurement.'
+        : 'PM2.5 total CAMS Global dekat permukaan dari semua sumber; bukan khusus asap atau pengukuran stasiun.')
+      : kind === 'aod'
+        ? (english
+          ? 'CAMS aerosol optical depth (AOD), a dimensionless whole-atmosphere column indicator; not surface concentration.'
+          : 'Kedalaman optik aerosol CAMS (AOD), indikator seluruh kolom atmosfer tanpa satuan; bukan konsentrasi permukaan.')
+        : (english
+          ? 'CAMS modeled near-surface dust, a separate product; not a wildfire-smoke measurement.'
+          : 'Debu model CAMS dekat permukaan adalah produk terpisah; bukan pengukuran asap kebakaran.');
 
     if (_smokePlaybackStatus) {
       if (hour < 0) {
         var historyFrame = plumeHistoryFrame(hour);
-        var historyStatus = 'Data riwayat plume belum tersedia.';
+        var historyStatus = english ? 'Plume history is not available yet.' : 'Data riwayat plume belum tersedia.';
         if (historyFrame && historyFrame.status === 'no-detections') {
-          historyStatus = 'Tidak ada deteksi FIRMS pada interval ini; ini bukan bukti bahwa tidak ada kebakaran.';
+          historyStatus = english
+            ? 'No FIRMS detections were recorded in this interval; this does not prove there was no fire.'
+            : 'Tidak ada deteksi FIRMS pada interval ini; ini bukan bukti bahwa tidak ada kebakaran.';
         } else if (historyFrame && historyFrame.status === 'wind-unavailable') {
-          historyStatus = nf.format(historyFrame.hotspotCount || 0)
-            + ' deteksi FIRMS tersedia, tetapi medan angin historis tidak tersedia. Plume tidak digambar.';
+          historyStatus = nf.format(historyFrame.hotspotCount || 0) + (english
+            ? ' FIRMS detections are available, but historical wind is unavailable; no plume is drawn.'
+            : ' deteksi FIRMS tersedia, tetapi medan angin historis tidak tersedia. Plume tidak digambar.');
         } else if (historyFrame && historyFrame.status === 'partial') {
           var plumeCount = Array.isArray(historyFrame.plumes) ? historyFrame.plumes.length : 0;
-          historyStatus = nf.format(historyFrame.hotspotCount || 0)
-            + ' deteksi FIRMS; plume tersedia untuk ' + nf.format(plumeCount) + ' dari '
-            + nf.format(historyFrame.totalClusterCount || 0) + ' klaster. '
-            + (historyFrame.truncated ? 'Hanya 14 klaster teratas yang diproses. ' : '')
-            + 'Angin NOAA GFS 10 m, grid 1° berlaku '
-            + (historyFrame.windValidTime ? formatPm25Time(historyFrame.windValidTime) : 'pada waktu yang tidak tersedia')
-            + '. FRP dijumlah per klaster, bukan daya api sesaat.';
+          historyStatus = nf.format(historyFrame.hotspotCount || 0) + (english
+            ? ' FIRMS detections; plumes are available for ' + nf.format(plumeCount) + ' of '
+              + nf.format(historyFrame.totalClusterCount || 0) + ' clusters. '
+              + (historyFrame.truncated ? 'Only the top 14 clusters were processed. ' : '')
+              + 'NOAA GFS 10 m, 1° grid valid '
+              + (historyFrame.windValidTime ? formatPm25Time(historyFrame.windValidTime) : 'at an unavailable time')
+              + '. FRP is summed per cluster, not instantaneous fire power.'
+            : ' deteksi FIRMS; plume tersedia untuk ' + nf.format(plumeCount) + ' dari '
+              + nf.format(historyFrame.totalClusterCount || 0) + ' klaster. '
+              + (historyFrame.truncated ? 'Hanya 14 klaster teratas yang diproses. ' : '')
+              + 'Angin NOAA GFS 10 m, grid 1° berlaku '
+              + (historyFrame.windValidTime ? formatPm25Time(historyFrame.windValidTime) : 'pada waktu yang tidak tersedia')
+              + '. FRP dijumlah per klaster, bukan daya api sesaat.');
         } else if (historyFrame && historyFrame.status === 'ready') {
-          historyStatus = nf.format(historyFrame.hotspotCount || 0)
-            + ' deteksi FIRMS pada interval ini; NOAA GFS 10 m, grid 1° berlaku '
-            + (historyFrame.windValidTime ? formatPm25Time(historyFrame.windValidTime) : 'pada waktu yang tidak tersedia')
-            + '. FRP dijumlah per klaster, bukan daya api sesaat.';
+          historyStatus = nf.format(historyFrame.hotspotCount || 0) + (english
+            ? ' FIRMS detections in this interval; NOAA GFS 10 m, 1° grid valid '
+              + (historyFrame.windValidTime ? formatPm25Time(historyFrame.windValidTime) : 'at an unavailable time')
+              + '. FRP is summed per cluster, not instantaneous fire power.'
+            : ' deteksi FIRMS pada interval ini; NOAA GFS 10 m, grid 1° berlaku '
+              + (historyFrame.windValidTime ? formatPm25Time(historyFrame.windValidTime) : 'pada waktu yang tidak tersedia')
+              + '. FRP dijumlah per klaster, bukan daya api sesaat.');
         }
         if (smokeOn) {
-          _smokePlaybackStatus.textContent = 'Plume asap indikatif, ' + smokeHourLabel(hour).toLowerCase()
-            + '. ' + historyStatus + ' Rekonstruksi berbasis model angin dan intensitas titik api, '
-            + 'bukan lintasan teramati atau ukuran PM2.5. Rona gelap hanya gaya visual.';
+          _smokePlaybackStatus.textContent = (english ? 'Indicative smoke plume, ' : 'Plume asap indikatif, ')
+            + smokeHourLabel(hour).toLowerCase() + '. ' + historyStatus + (english
+              ? ' Reconstructed from modeled winds and hotspot intensity; not an observed track or a PM2.5 measurement. The dark tint is visual styling only.'
+              : ' Rekonstruksi berbasis model angin dan intensitas titik api, bukan lintasan teramati atau ukuran PM2.5. Rona gelap hanya gaya visual.');
         } else {
-          _smokePlaybackStatus.textContent = 'Aktifkan layer asap untuk melihat riwayat '
+          _smokePlaybackStatus.textContent = (english ? 'Enable the plume layer to view ' : 'Aktifkan layer asap untuk melihat riwayat ')
             + smokeHourLabel(hour).toLowerCase() + '. ' + historyStatus;
         }
-        if (pm25On) {
-          _smokePlaybackStatus.textContent += ' Data PM2.5 historis CAMS tidak tersedia sebelum frame 0.';
+        if (rasterOn) {
+          _smokePlaybackStatus.textContent += english
+            ? ' Historical CAMS model frames are unavailable before frame 0.'
+            : ' Data model CAMS historis tidak tersedia sebelum frame 0.';
         }
-      } else if (smokeOn && pm25On) {
-        _smokePlaybackStatus.textContent = 'Plume asap indikatif, frame ' + frameLabel
-          + ', dari model angin dan deteksi FIRMS 24 jam terakhir; bukan ukuran PM2.5. PM2.5 CAMS Global '
-          + 'adalah total semua sumber pada frame yang sama. Rona gelap bukan ukuran konsentrasi.' + timeSuffix;
-      } else if (pm25On) {
-        _smokePlaybackStatus.textContent = 'PM2.5 total model CAMS Global, frame ' + frameLabel
-          + ', dekat permukaan 10 m; bukan khusus asap kebakaran.' + timeSuffix;
+      } else if (smokeOn && rasterOn) {
+        _smokePlaybackStatus.textContent = (english
+          ? 'Indicative FIRMS + GFS plume; not an observed smoke boundary or measured concentration. '
+          : 'Plume FIRMS + GFS bersifat indikatif; bukan batas asap teramati atau konsentrasi terukur. ')
+          + modelDescription + timeSuffix;
+      } else if (rasterOn) {
+        _smokePlaybackStatus.textContent = (english ? meta.enLabel : meta.idLabel)
+          + (english ? ' model, frame ' : ' model, frame ') + frameLabel + '. '
+          + modelDescription + timeSuffix;
       } else if (smokeOn) {
         _smokePlaybackStatus.textContent = hour === 0
-          ? 'Kondisi angin saat ini dan deteksi FIRMS 24 jam terakhir. Plume indikatif, bukan ukuran PM2.5. Rona gelap hanya gaya visual.'
-          : 'Prakiraan +' + hour + ' jam dari deteksi FIRMS 24 jam terakhir dan angin model. Bukan ukuran PM2.5. Rona gelap hanya gaya visual.';
+          ? (english
+            ? 'Current modeled winds and FIRMS detections from the last 24 hours. Indicative plume, not a PM2.5 measurement; dark tint is visual styling only.'
+            : 'Kondisi angin saat ini dan deteksi FIRMS 24 jam terakhir. Plume indikatif, bukan ukuran PM2.5. Rona gelap hanya gaya visual.')
+          : (english
+            ? 'Forecast +' + hour + ' hours from the last 24 hours of FIRMS detections and modeled winds. Not a PM2.5 measurement; dark tint is visual styling only.'
+            : 'Prakiraan +' + hour + ' jam dari deteksi FIRMS 24 jam terakhir dan angin model. Bukan ukuran PM2.5. Rona gelap hanya gaya visual.');
       } else {
-        _smokePlaybackStatus.textContent = 'Pilih layer asap atau PM2.5 model untuk melihat prakiraan.';
+        _smokePlaybackStatus.textContent = english
+          ? 'Choose an indicative plume or a CAMS model layer to view the timeline.'
+          : 'Pilih plume indikatif atau layer model CAMS untuk melihat prakiraan.';
       }
     }
     if (_smokeTimeLabel) {
-      _smokeTimeLabel.textContent = pm25On && hour >= 0
-        ? (english
-          ? (hour === 0 ? 'CAMS NOW' : 'CAMS +' + hour + 'H')
-          : (hour === 0 ? 'CAMS 0J' : 'CAMS +' + hour + 'J'))
+      var productTag = kind === 'pm25' ? 'PM2.5' : kind === 'aod' ? 'AOD' : kind === 'dust'
+        ? (english ? 'DUST' : 'DEBU') : 'CAMS';
+      _smokeTimeLabel.textContent = rasterOn && hour >= 0
+        ? productTag + ' ' + (hour === 0 ? (english ? 'NOW' : '0J')
+          : '+' + hour + (english ? 'H' : 'J'))
         : smokeHourShortLabel(hour);
     }
     if (_tlSel) {
       var timelineAria = hour < 0
         ? (english
-          ? 'Indicative smoke plume, history ' + smokeHourLabel(hour).toLowerCase() + '; CAMS PM2.5 unavailable'
-          : 'Plume asap indikatif, riwayat ' + smokeHourLabel(hour).toLowerCase() + ', data PM2.5 tidak tersedia')
-        : pm25On
-          ? (english ? 'CAMS PM2.5 forecast plus ' + hour + ' hours' : 'CAMS, prakiraan plus ' + hour + ' jam')
+          ? 'Indicative smoke plume, history ' + smokeHourLabel(hour).toLowerCase()
+            + (rasterOn ? '; CAMS model data unavailable' : '')
+          : 'Plume asap indikatif, riwayat ' + smokeHourLabel(hour).toLowerCase()
+            + (rasterOn ? '; data model CAMS tidak tersedia' : ''))
+        : rasterOn
+          ? (english
+            ? (meta.enLabel + ' forecast ' + (hour === 0 ? 'current conditions' : 'plus ' + hour + ' hours'))
+            : (meta.idLabel + ', prakiraan ' + (hour === 0 ? 'kondisi saat ini' : 'plus ' + hour + ' jam')))
           : (english ? 'Smoke plume ' + smokeHourShortLabel(hour) : smokeHourShortLabel(hour).toLowerCase());
       _tlSel.setAttribute('aria-valuetext', timelineAria);
     }
@@ -3356,7 +3610,7 @@
     if (_smokePlaybackStatus && windTimelineNote) {
       _smokePlaybackStatus.textContent += ' ' + windTimelineNote;
     }
-    if (_tlSel && pm25On && hour >= 0 && windTimelineNote) {
+    if (_tlSel && rasterOn && state.windOn && hour >= 0 && windTimelineNote) {
       _tlSel.setAttribute('aria-valuetext', _tlSel.getAttribute('aria-valuetext')
         + '. ' + windTimelineNote);
     }
@@ -3377,7 +3631,7 @@
 
 
   function smokeWindFrame() {
-    if (!state.pm25On || Number(state.plumeHour) < 0 || !state.smokeGrid) return null;
+    if (!modelRasterIsOn() || !state.windOn || Number(state.plumeHour) < 0 || !state.smokeGrid) return null;
     var wind = state.smokeGrid.windForecast;
     var frames = wind && Array.isArray(wind.frames) ? wind.frames : [];
     var index = pm25FrameIndex();
@@ -3395,18 +3649,13 @@
   }
 
   function smokeWindTimelineNote() {
-    if (!state.pm25On || Number(state.plumeHour) < 0) return '';
+    if (!modelRasterIsOn() || !state.windOn || Number(state.plumeHour) < 0) return '';
     var english = getLanguage() === 'en';
     var windForecast = state.smokeGrid && state.smokeGrid.windForecast;
     var frame = smokeWindFrame();
     if (!frame) {
       if (state.pm25Loading) {
         return english ? 'Loading the wind frame aligned to CAMS.' : 'Memuat frame angin yang diselaraskan dengan CAMS.';
-      }
-      if (state.windOn && state.wind && Array.isArray(state.wind.points) && state.wind.points.length) {
-        return english
-          ? 'No aligned wind frame is available; the separate wind layer uses its own model time.'
-          : 'Frame angin selaras tidak tersedia; layer angin terpisah memakai waktu modelnya sendiri.';
       }
       return english
         ? 'No aligned wind frame is available for this CAMS time; particles are paused.'
@@ -3436,9 +3685,9 @@
   }
 
   function syncWindParticles(preserveParticlePositions) {
-    var field = state.pm25On ? smokeWindFrame() : null;
-    if (!field && state.windOn) field = state.wind;
-    if (!field || !Array.isArray(field.points) || field.points.length < 4) {
+    var field = null;
+    if (state.windOn) field = modelRasterIsOn() ? smokeWindFrame() : state.wind;
+    if (!state.windOn || !field || !Array.isArray(field.points) || field.points.length < 4) {
       if (state.particles) state.particles.stop();
       return;
     }
@@ -4357,18 +4606,13 @@
         + '; area kabut digeneralisasi dan bukan batas resmi atau konsentrasi.';
     },
     lyPm25: function () {
-      var forecast = state.air && state.air.pm25Forecast;
-      var english = getLanguage() === 'en';
-      if (state.pm25Loading) return english
-        ? 'Loading the CAMS total PM2.5 forecast.' : 'Prakiraan PM2.5 total CAMS sedang dimuat.';
-      if (state.pm25Error) return state.pm25Error;
-      return forecast && forecast.count
-        ? (english
-          ? nf.format(forecast.count) + ' total modeled CAMS PM2.5 samples; not smoke-specific.'
-          : nf.format(forecast.count) + ' sampel PM2.5 total model CAMS, bukan khusus asap.')
-        : (english
-          ? 'No CAMS total PM2.5 samples are available for this area.'
-          : 'Tidak ada sampel PM2.5 total CAMS yang tersedia untuk area ini.');
+      return modelRasterHint('pm25');
+    },
+    lyAod: function () {
+      return modelRasterHint('aod');
+    },
+    lyDust: function () {
+      return modelRasterHint('dust');
     },
     lyImpact: function () {
       var n = state.data && state.data.impacted ? state.data.impacted.length : 0;
@@ -4410,55 +4654,79 @@
   function refreshSmokeModeHint() {
     var hint = $('mapHint');
     if (!hint || hint.hidden || !/(PM2\.5|CAMS|plume|FIRMS|GFS)/i.test(hint.textContent || '')) return;
-    if (state.pm25On) {
+    if (modelRasterIsOn()) {
       if (state.pm25Loading) {
         showHint(getLanguage() === 'en'
-          ? 'Loading the air-quality grid and CAMS PM2.5 forecast…'
-          : 'Memuat grid kualitas udara dan prakiraan PM2.5 CAMS…', 6000);
+          ? 'Loading the regional CAMS model grid…'
+          : 'Memuat grid model CAMS regional…', 6000);
       } else if (state.pm25Error) {
         showHint(state.pm25Error, 6000);
       } else {
-        layerHint('lyPm25');
+        var kind = activeModelRasterKind();
+        layerHint(kind === 'pm25' ? 'lyPm25' : kind === 'aod' ? 'lyAod' : 'lyDust');
       }
     } else if ($('lySmoke').checked) {
       layerHint('lySmoke');
     }
   }
 
-  function deactivatePm25Mode() {
-    var toggle = $('lyPm25');
-    if (toggle) toggle.checked = false;
-    state.pm25On = false;
+  function clearModelRasterLayer(kind) {
+    var meta = modelRasterMeta(kind);
+    if (!meta) return;
+    if (map.hasLayer(meta.layer)) map.removeLayer(meta.layer);
+    if (meta.layer && typeof meta.layer.clearFrame === 'function') meta.layer.clearFrame();
+  }
+
+  function deactivateModelRasterMode() {
+    Object.keys(MODEL_RASTER_META).forEach(function (kind) {
+      var meta = MODEL_RASTER_META[kind];
+      var toggle = $(kind === 'pm25' ? 'lyPm25' : kind === 'aod' ? 'lyAod' : 'lyDust');
+      if (toggle) toggle.checked = false;
+      state[meta.stateKey] = false;
+      clearModelRasterLayer(kind);
+    });
     state.pm25Loading = false;
     state.pm25Error = '';
     state.smokeGrid = null;
-    if (map.hasLayer(gPm25)) map.removeLayer(gPm25);
-    if (gPm25 && typeof gPm25.clearLayers === 'function') gPm25.clearLayers();
     clearPm25Inspect();
     syncWindParticles(false);
     updatePm25Status(0);
+    syncSmokeBasemap();
+  }
+
+  function deactivateOtherModelRasters(activeKind) {
+    Object.keys(MODEL_RASTER_META).forEach(function (kind) {
+      if (kind === activeKind) return;
+      var meta = MODEL_RASTER_META[kind];
+      var toggle = $(kind === 'pm25' ? 'lyPm25' : kind === 'aod' ? 'lyAod' : 'lyDust');
+      if (toggle) toggle.checked = false;
+      state[meta.stateKey] = false;
+      clearModelRasterLayer(kind);
+    });
   }
 
   function deactivateSmokeMode() {
     var toggle = $('lySmoke');
     if (toggle) toggle.checked = false;
-    if (!$('lyPm25').checked) stopSmokePlayback();
+    if (!modelRasterIsOn()) stopSmokePlayback();
     map.removeLayer(gSmoke);
     if (state.smokeSelection) {
       state.smokeSelection = null;
       drawSmoke();
       renderImpactList();
     }
+    syncSmokeBasemap();
   }
 
   function bindLayer(id, group) {
     $(id).addEventListener('change', function (e) {
       if (e.target.checked) {
-        if (id === 'lySmoke' && $('lyPm25').checked) deactivatePm25Mode();
+        if (id === 'lySmoke' && modelRasterIsOn()) deactivateModelRasterMode();
         map.addLayer(group);
         layerHint(id);
+        if (id === 'lySmoke' && state.windOn) loadWind();
       } else {
-        if (id === 'lySmoke' && !$('lyPm25').checked) stopSmokePlayback();
+        if (id === 'lySmoke' && !modelRasterIsOn()) stopSmokePlayback();
         map.removeLayer(group);
         if (id === 'lySmoke' && state.smokeSelection) {
           state.smokeSelection = null;
@@ -4468,6 +4736,7 @@
         showHint(null);
       }
       if (id === 'lySmoke') {
+        syncSmokeBasemap();
         updateForecastStatus();
         updateSmokePlaybackButton();
       }
@@ -4588,32 +4857,46 @@
     }
   });
 
-  var _lyPm25 = $('lyPm25');
-  _lyPm25 && _lyPm25.addEventListener('change', function (event) {
-    state.pm25On = event.target.checked;
-    if (state.pm25On) {
-      if ($('lySmoke').checked) deactivateSmokeMode();
-      map.addLayer(gPm25);
-      state.pm25Loading = true;
-      state.pm25Error = '';
-      layerHint('lyPm25');
-      updatePm25Status(0);
-      loadAir();
-    } else {
-      state.pm25Loading = false;
-      state.pm25Error = '';
-      state.smokeGrid = null;
-      map.removeLayer(gPm25);
-      gPm25.clearLayers();
-      clearPm25Inspect();
-      syncWindParticles(false);
-      updatePm25Status(0);
-      if (!$('lySmoke').checked) stopSmokePlayback();
-      showHint(null);
-    }
-    updateForecastStatus();
-    updateSmokePlaybackButton();
-  });
+  function bindModelRasterToggle(id, kind) {
+    var toggle = $(id);
+    if (!toggle) return;
+    var meta = MODEL_RASTER_META[kind];
+    toggle.addEventListener('change', function (event) {
+      state[meta.stateKey] = event.target.checked;
+      if (event.target.checked) {
+        if ($('lySmoke').checked) deactivateSmokeMode();
+        deactivateOtherModelRasters(kind);
+        map.addLayer(meta.layer);
+        syncSmokeBasemap();
+        state.pm25Loading = true;
+        state.pm25Error = '';
+        layerHint(id);
+        updatePm25Status(0);
+        loadAir();
+      } else {
+        clearModelRasterLayer(kind);
+        if (!modelRasterIsOn()) {
+          state.pm25Loading = false;
+          state.pm25Error = '';
+          state.smokeGrid = null;
+          clearPm25Inspect();
+          syncWindParticles(false);
+          if (state.windOn) loadWind();
+          updatePm25Status(0);
+          if (!$('lySmoke').checked) stopSmokePlayback();
+          showHint(null);
+        } else {
+          drawActiveModelRaster();
+        }
+        syncSmokeBasemap();
+      }
+      updateForecastStatus();
+      updateSmokePlaybackButton();
+    });
+  }
+  bindModelRasterToggle('lyPm25', 'pm25');
+  bindModelRasterToggle('lyAod', 'aod');
+  bindModelRasterToggle('lyDust', 'dust');
 
   // Fase 2.5: filter AQI, UI friendly
   function updateAirCfg() {
@@ -5471,29 +5754,30 @@
 
   var _lyWind = $('lyWind'); _lyWind && _lyWind.addEventListener('change', function (e) {
     state.windOn = e.target.checked;
-    if (state.windOn) { map.addLayer(gWind); loadWind(); }
-    else {
+    if (state.windOn) {
+      map.addLayer(gWind);
+      if (modelRasterIsOn()) loadAir();
+      else loadWind();
+    } else {
       map.removeLayer(gWind);
       syncWindParticles(false);
       showHint(null);
       renderWindBadge();
     }
+    updateForecastStatus();
   });
 
   $('windLevel').addEventListener('change', function (e) {
     state.windLevel = e.target.value;
-    // Kunci cache dikosongkan supaya aras baru benar-benar diambil,
-    // bukan dijawab dari hasil aras sebelumnya.
     state.windKey = null;
-    if (!state.windOn && !state.pm25On) {
-      // Menyalakan sendiri lebih membantu daripada mengubah pilihan pada
-      // lapisan yang sedang mati tanpa efek apa pun.
+    if (!state.windOn) {
       $('lyWind').checked = true;
       state.windOn = true;
       map.addLayer(gWind);
     }
-    if (state.windOn) loadWind();
-    if (state.pm25On) loadAir();
+    if (modelRasterIsOn()) loadAir();
+    else if (state.windOn) loadWind();
+    updateForecastStatus();
   });
 
   function toggleConc(on) {
@@ -5510,8 +5794,8 @@
     clearTimeout(moveTimer);
     moveTimer = setTimeout(function () {
       if (state.concOn) loadConcessions();
-      if (state.windOn) loadWind();
-      if (state.airOn || state.pm25On) loadAir();
+      if (state.windOn && !modelRasterIsOn()) loadWind();
+      if (state.airOn || modelRasterIsOn()) loadAir();
     }, 800);
   });
 
@@ -5869,10 +6153,13 @@
   var _smokePlaybackStatus = $('smokePlaybackStatus');
 
   function smokeHourLabel(hour) {
-    if (hour === 0) return 'SEKARANG';
-    if (hour > 0) return '+' + hour + ' JAM';
+    var english = getLanguage() === 'en';
+    if (hour === 0) return english ? 'NOW' : 'SEKARANG';
+    if (hour > 0) return '+' + hour + (english ? ' HOURS' : ' JAM');
     var start = Math.abs(hour);
-    return start + '-' + (start - 6) + ' JAM LALU';
+    return english
+      ? start + '-' + (start - 6) + ' HOURS AGO'
+      : start + '-' + (start - 6) + ' JAM LALU';
   }
 
   function smokeHourShortLabel(hour) {
@@ -5886,16 +6173,24 @@
   function updateSmokePlaybackButton() {
     if (!_smokePlay) return;
     var playing = state.smokePlaying;
+    var english = getLanguage() === 'en';
     var smokeOn = $('lySmoke').checked;
-    var pm25On = $('lyPm25').checked;
-    var label = smokeOn && pm25On ? 'linimasa asap dan PM2.5 model'
-      : pm25On ? 'linimasa PM2.5 model' : 'linimasa sebaran asap';
+    var rasterOn = modelRasterIsOn();
+    var kind = activeModelRasterKind();
+    var product = kind === 'pm25' ? 'PM2.5' : kind === 'aod' ? 'AOD' : kind === 'dust'
+      ? (english ? 'dust' : 'debu') : (english ? 'model raster' : 'raster model');
+    var label = smokeOn && rasterOn
+      ? (english ? 'the plume and ' + product + ' timeline' : 'linimasa plume dan ' + product)
+      : rasterOn
+        ? (english ? 'the ' + product + ' timeline' : 'linimasa ' + product)
+        : (english ? 'the smoke plume timeline' : 'linimasa plume asap');
+    var action = playing ? (english ? 'Pause ' : 'Jeda ')
+      : state.plumeHour >= 18 ? (english ? 'Replay ' : 'Putar ulang ') : (english ? 'Play ' : 'Putar ');
     _smokePlay.textContent = playing ? 'Ⅱ' : '▶';
     _smokePlay.setAttribute('aria-pressed', String(playing));
-    _smokePlay.setAttribute('aria-label', playing
-      ? 'Jeda ' + label
-      : state.plumeHour >= 18 ? 'Putar ulang ' + label : 'Putar ' + label);
-    _smokePlay.title = playing ? 'Jeda' : state.plumeHour >= 18 ? 'Putar ulang' : 'Putar';
+    _smokePlay.setAttribute('aria-label', action + label);
+    _smokePlay.title = playing ? (english ? 'Pause' : 'Jeda')
+      : state.plumeHour >= 18 ? (english ? 'Replay' : 'Putar ulang') : (english ? 'Play' : 'Putar');
   }
 
   function stopSmokePlayback() {
@@ -5916,19 +6211,25 @@
     } else if (!map.hasLayer(gSmoke)) {
       map.addLayer(gSmoke);
     }
+    syncSmokeBasemap();
   }
 
   function ensureForecastLayers(skipCachedFrameDraw) {
     var smokeToggle = $('lySmoke');
-    var pm25Toggle = $('lyPm25');
-    if ((!smokeToggle || !smokeToggle.checked) && (!pm25Toggle || !pm25Toggle.checked)) {
-      ensureSmokeLayer();
-    }
+    var modelToggleIds = ['lyPm25', 'lyAod', 'lyDust'];
+    var modelSelected = modelToggleIds.some(function (id) {
+      var toggle = $(id);
+      return !!(toggle && toggle.checked);
+    });
+    if ((!smokeToggle || !smokeToggle.checked) && !modelSelected) ensureSmokeLayer();
     if (smokeToggle && smokeToggle.checked && !map.hasLayer(gSmoke)) map.addLayer(gSmoke);
-    if (pm25Toggle && pm25Toggle.checked) {
-      if (!map.hasLayer(gPm25)) map.addLayer(gPm25);
+    var kind = activeModelRasterKind();
+    var meta = modelRasterMeta(kind);
+    if (meta) {
+      if (!map.hasLayer(meta.layer)) map.addLayer(meta.layer);
       loadAir(!!skipCachedFrameDraw);
     }
+    syncSmokeBasemap();
   }
 
   function setSmokeHour(value) {
@@ -5939,7 +6240,7 @@
     if (_tlSel) _tlSel.value = String(hour);
     drawFires();
     if ($('lySmoke').checked) drawSmoke();
-    if (state.pm25On) drawPm25(true);
+    if (modelRasterIsOn()) drawActiveModelRaster(true);
     updateForecastStatus();
     updateSmokePlaybackButton();
   }
@@ -6565,12 +6866,14 @@
       renderAirLegend();
       renderPm25Legend();
       if (state.airOn) drawAir();
-      if (state.pm25On) drawPm25();
-    } else if (state.pm25On) {
+      if (modelRasterIsOn()) drawActiveModelRaster();
+    } else if (modelRasterIsOn()) {
       updatePm25Status(0);
     }
     refreshPm25Inspect();
     refreshSmokeModeHint();
+    updateForecastStatus();
+    updateSmokePlaybackButton();
     if (state.ash) renderAshInfo();
     if (state.so2) renderSo2(state.so2);
     renderHimaInfo();
@@ -6601,28 +6904,33 @@
   (function syncLayers() {
     var _lv = $('lyVolcano');
     var _la = $('lyAerosol');
-    var _lp = $('lyPm25');
-    var _ls = $('lySmoke');
-    if (_lp && _lp.checked && _ls && _ls.checked) _ls.checked = false;
+    var _modeIds = ['lyPm25', 'lyAod', 'lyDust', 'lySmoke'];
+    var _selectedMode = _modeIds.find(function (id) { return !!($(id) && $(id).checked); }) || null;
+    _modeIds.forEach(function (id) { if ($(id)) $(id).checked = id === _selectedMode; });
     if (_lv) state.volcanoOn = _lv.checked;
-    if (_lp) state.pm25On = _lp.checked;
+    state.pm25On = !!($('lyPm25') && $('lyPm25').checked);
+    state.aodOn = !!($('lyAod') && $('lyAod').checked);
+    state.dustOn = !!($('lyDust') && $('lyDust').checked);
+    state.windOn = !!($('lyWind') && $('lyWind').checked);
     if (_la && _la.checked) {
       state.aerosolOn = true;
       loadAerosolRaster();
     }
-    [['lyFire', gFire], ['lyAir', gAir], ['lyPm25', gPm25], ['lyQuake', gQuake],
-     ['lyShelter', gShelter], ['lySmoke', gSmoke], ['lyRegionalHaze', gRegionalHaze], ['lyConc', gConc],
-     ['lyFlights', gFlights],
-     ['lyVolcano', gVolcano]
+    [['lyFire', gFire], ['lyAir', gAir], ['lyPm25', gPm25], ['lyAod', gAod], ['lyDust', gDust],
+     ['lyQuake', gQuake], ['lyShelter', gShelter], ['lySmoke', gSmoke], ['lyWind', gWind],
+     ['lyRegionalHaze', gRegionalHaze], ['lyConc', gConc], ['lyFlights', gFlights], ['lyVolcano', gVolcano]
     ].forEach(function (t) {
-      var el = $(t[0]);
-      if (!el || !el.checked) return;
+      var toggle = $(t[0]);
+      if (!toggle || !toggle.checked) return;
       try { map.addLayer(t[1]); } catch (e) {}
     });
-    // Data gunung dibutuhkan dua sakelar (abu & letusan); muat sekali di awal
-    // bila salah satunya ON - loadAsh punya gerbang ashOn||volcanoOn sendiri.
+    syncSmokeBasemap();
+    updateForecastStatus();
+    updateSmokePlaybackButton();
+    // Data gunung dibutuhkan dua sakelar (abu & letusan); muat sekali inisial.
     if (state.volcanoOn || state.ashOn) loadAsh();
-    if (state.pm25On) loadAir();
+    if (modelRasterIsOn()) loadAir();
+    else if (state.windOn) loadWind();
     if (state.flightsOn) loadFlights();
     setTimeout(function () {
       try { map.invalidateSize(); } catch (e) {}
