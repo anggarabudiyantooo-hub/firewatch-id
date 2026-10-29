@@ -1451,6 +1451,17 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
 .pm25-legend-gradient{height:9px;border:1px solid rgba(255,255,255,.14);border-radius:5px;background-color:rgba(255,255,255,.04)}
 .pm25-legend-ticks{display:flex;justify-content:space-between;margin-top:3px;color:var(--text-tertiary);font:400 8px/1.2 var(--font-data)}
 .pm25-legend-note{margin-top:6px;color:var(--text-tertiary);font:400 9px/1.4 var(--font-prose)}
+.pm25-legend-attribution{margin-top:5px;color:var(--text-tertiary);font:400 9px/1.35 var(--font-prose)}
+.pm25-legend-attribution a{color:var(--status-info);text-decoration:underline;text-underline-offset:2px}
+.smoke-mode-options{padding:2px 0 0;border:1px solid var(--hairline);border-radius:var(--radius-field);background:var(--surface-1)}
+.smoke-mode-options .row{min-height:30px;padding:3px 8px}
+.smoke-mode-options .row+.row{border-top:1px solid var(--hairline)}
+.smoke-mode-note{margin:4px 0 7px;padding:5px 8px;border-left:2px solid var(--status-info);background:var(--surface-1);color:var(--text-tertiary);font:400 9px/1.4 var(--font-prose)}
+.pm25-point-info{position:absolute;top:10px;right:10px;z-index:650;box-sizing:border-box;width:min(310px,calc(100% - 20px));padding:8px 10px;border:1px solid var(--hairline-strong);border-radius:var(--radius-field);background:rgba(12,16,21,.94);box-shadow:0 6px 22px rgba(0,0,0,.28);color:var(--text-secondary);font:400 10px/1.45 var(--font-prose);pointer-events:none}
+.pm25-point-info[hidden]{display:none!important}
+.pm25-point-title{margin-bottom:3px;color:var(--text-primary);font:600 10px/1.35 var(--font-prose)}
+.pm25-point-row{color:var(--text-secondary)}
+.pm25-point-caveat{margin-top:4px;color:var(--text-tertiary);font-size:9px}
 .smoke-playback{display:flex;align-items:center;gap:8px;min-width:0;margin:2px 0 0}
 .smoke-play-btn{width:32px;height:32px;flex:0 0 32px;display:grid;place-items:center;padding:0;border:1px solid var(--hairline-strong);border-radius:50%;background:var(--surface-2);color:var(--text-primary);font:700 12px/1 var(--font-data);cursor:pointer}
 .smoke-play-btn:hover{border-color:var(--status-info);color:var(--status-info)}
@@ -1468,6 +1479,7 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
 .smoke-time-label{min-width:52px;text-align:right;color:var(--status-info);font:600 9px/1.2 var(--font-data);white-space:nowrap}
 .smoke-playback-status{margin:4px 0 7px 40px;color:var(--text-tertiary);font:400 9px/1.4 var(--font-prose)}
 @media(max-width:540px){.smoke-time-label{min-width:46px;font-size:8px}.smoke-play-ticks{font-size:7px}}
+@media(max-width:600px){.pm25-point-info{top:auto;right:8px;bottom:46px;left:8px;width:auto;max-width:none;font-size:9.5px}}
 .aerosol-status[data-state="error"]{border-left-color:var(--status-alert);color:var(--status-alert)}
 .aerosol-status[data-state="loading"]::before{content:"";display:inline-block;width:9px;height:9px;margin:0 6px 0 0;vertical-align:-1px;border:1.5px solid rgba(100,210,255,.28);border-top-color:var(--status-info);border-radius:50%;animation:aerosol-spin .8s linear infinite}
 @keyframes aerosol-spin{to{transform:rotate(360deg)}}

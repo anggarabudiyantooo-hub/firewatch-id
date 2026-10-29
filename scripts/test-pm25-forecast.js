@@ -176,10 +176,13 @@ check('request udara hanya diulang untuk area terbaru yang berbeda', () => {
   assert.ok(app.includes('pendingQ !== q && (state.airOn || state.pm25On)'));
 });
 
-check('antarmuka menyebut PM2.5 total dan bukan atribusi asap', () => {
+check('antarmuka menyebut PM2.5 total, mode plume, dan caveat non-asap', () => {
   assert.ok(html.includes('id="lyPm25"'));
-  assert.ok(html.includes('PM2.5 total model (CAMS)'));
-  assert.ok(html.includes('bukan kontribusi khusus asap'));
+  assert.ok(html.includes('Raster PM2.5 total (CAMS)'));
+  assert.ok(html.includes('id="lySmoke"'));
+  assert.ok(html.includes('Plume indikatif (FIRMS + GFS)'));
+  assert.ok(html.includes('bukan khusus asap'));
+  assert.ok(app.includes('kontribusi khusus asap'));
   assert.ok(html.includes('id="pm25Status"'));
   assert.ok(html.includes('id="pm25Legend"'));
 });

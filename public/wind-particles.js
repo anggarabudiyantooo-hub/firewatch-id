@@ -148,6 +148,10 @@
     ];
   };
 
+  WindParticles.prototype.sampleAt = function (lat, lon) {
+    return this._lookup(Number(lat), Number(lon));
+  };
+
   WindParticles.prototype._randomParticle = function (p) {
     p = p || {};
     p.x = Math.random() * this.w;

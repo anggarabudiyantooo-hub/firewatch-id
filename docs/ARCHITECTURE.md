@@ -155,6 +155,16 @@ plume-only karena data CAMS historis tidak tersedia. Animasi menjaga batas sekit
 `prefers-reduced-motion`. Layer raster, legenda, serta statusnya tetap terpisah dari
 US AQI, plume indikatif, dan raster aerosol OMPS.
 
+Di panel lapisan, `Raster PM2.5 total (CAMS)` dan `Plume indikatif (FIRMS + GFS)`
+adalah mode alternatif: memilih salah satunya mematikan yang lain, sedangkan mode
+aktif tetap dapat dimatikan. Legenda CAMS menyatakan bahwa nilai mencakup semua
+sumber, bukan khusus asap atau pengukuran stasiun, serta menautkan atribusi CAMS /
+ECMWF dan Open-Meteo. Saat raster aktif, hover atau klik (ketuk pada layar sentuh)
+menampilkan sampel PM2.5 dan angin yang diinterpolasi pada koordinat peta. Sel kosong,
+frame CAMS negatif, dan frame angin yang tak selaras dinyatakan sebagai tidak tersedia;
+ketiadaan sampel tidak disulap menjadi nol. Frame angin untuk inspeksi tunduk pada
+validasi waktu 90 menit yang sama dengan partikel dan timeline.
+
 ### 2.4 Frontend
 
 Satu berkas `app.js` bergaya ES5 (`var`, ekspresi fungsi), tanpa langkah build.
