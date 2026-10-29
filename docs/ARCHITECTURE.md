@@ -129,27 +129,25 @@ memakai `no-store` agar keadaan "belum tahu" tidak ikut ter-cache.
 | `/api/sentinel/:p/:z/:x/:y.jpg` | 21600 dtk | Proksi ubin Sentinel-2, allowlist produk, zoom 8-16 |
 | `/` | no-store | Halaman, menyuntik hash aset |
 
-**Permintaan grid udara.** `/api/air-quality` tetap same-origin dan membatasi grid
-hingga 400 titik. Varian AQI dan varian prakiraan memakai kunci cache berbeda; klien
-mengirim `aqi=1` hanya saat layer US AQI aktif dan `forecast=1` hanya saat PM2.5
-aktif. Dengan begitu layer PM2.5 saja tidak meminta variabel current AQI, sedangkan
-layer AQI saja tidak meminta deret hourly. Varian prakiraan meminta `pm2_5` hourly
-dari CAMS Global. `lib/pm25-forecast.js` memvalidasi empat frame
-0/+6/+12/+18 jam, waktu berlaku, satuan, koordinat, serta nilai kosong sebelum
-mengirim `pm25Forecast`. Nilainya
-mewakili PM2.5 total model dekat permukaan sekitar 10 m, grid native 0,4° (~45 km)
-dan interval 3 jam; bukan pengukuran stasiun atau atribusi khusus asap. Cache server
-berlaku 30 menit dengan stale 60 menit. Pane, palet, legenda, dan status PM2.5
-terpisah dari US AQI, plume indikatif, serta raster aerosol OMPS; linimasa dapat
-menyelaraskan waktunya tanpa menyatukan arti produk.
+**Grid PM2.5 total dan AQI.** `/api/air-quality` tetap same-origin untuk layer
+US AQI dan kompatibilitas prakiraan lama. `/api/smoke-grid` kini menjadi jalur UI
+untuk raster CAMS: satu batch mengambil `pm2_5` hourly dan, hanya bila diminta,
+variabel current AQI; empat frame 0/+6/+12/+18 jam divalidasi oleh
+`lib/pm25-forecast.js`, termasuk waktu UTC, satuan, koordinat, dan nilai kosong.
+Nilai CAMS mewakili PM2.5 total model dekat permukaan sekitar 10 m, grid native
+0,4° (~45 km) dan interval 3 jam; bukan pengukuran stasiun atau atribusi khusus asap.
 
-`/api/smoke-grid` memakai batch yang sama untuk CAMS PM2.5 dan dapat menyertakan
-US AQI, lalu mengirim medan angin 0/+6/+12/+18 jam pada level yang dipilih.
-Koordinat CAMS dibatasi 400 per batch; angin atas dibatasi 320 titik. TTL cache
-server 30 menit dengan stale 60 menit, sedangkan `s-maxage` CDN 30 menit. Batas
-ini mencegah permintaan per titik dan menjaga permintaan viewport yang diulang
-tetap memakai cache. Grid tampilan dapat lebih kasar daripada resolusi native
-CAMS, dan interpolasi klien hanya menghaluskan visual, bukan menambah informasi.
+`/api/smoke-grid` juga mengembalikan empat frame angin pada level terpilih.
+Koordinat CAMS dibatasi 400 per batch; angin atas dibatasi 320 titik. Cache server
+30 menit dengan stale 60 menit, sedangkan `s-maxage` CDN 30 menit. Batas ini
+mencegah permintaan per titik dan menjaga permintaan viewport yang diulang tetap
+memakai cache. `public/smoke-grid-layer.js` menyusun titik batch menjadi grid,
+melakukan interpolasi bilinear untuk visual, dan menggambar tile kanvas beresolusi
+rendah dengan palet kontinu transparan-kuning-oranye-merah-ungu. Grid tampilan dapat
+lebih kasar daripada resolusi native CAMS; interpolasi hanya menghaluskan visual,
+bukan menambah informasi atau mengubah PM2.5 total menjadi konsentrasi khusus asap.
+Layer raster, legenda, serta statusnya tetap terpisah dari US AQI, plume indikatif,
+dan raster aerosol OMPS.
 
 ### 2.4 Frontend
 

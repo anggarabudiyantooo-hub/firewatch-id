@@ -1448,9 +1448,8 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
 .regional-haze-report a{color:var(--status-info);text-decoration:underline;text-underline-offset:2px}
 .pm25-legend{margin:0 0 8px;padding:7px 8px;background:var(--surface-1);border:1px solid var(--hairline);border-radius:var(--radius-field)}
 .pm25-legend-title{margin-bottom:6px;color:var(--text-secondary);font:600 10px/1.2 var(--font-prose)}
-.pm25-legend-bands{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 6px}
-.pm25-legend-item{display:flex;align-items:center;gap:5px;min-width:0;color:var(--text-tertiary);font:400 9px/1.2 var(--font-data)}
-.pm25-legend-swatch{width:11px;height:11px;flex:0 0 11px;border-radius:2px}
+.pm25-legend-gradient{height:9px;border:1px solid rgba(255,255,255,.14);border-radius:5px;background-color:rgba(255,255,255,.04)}
+.pm25-legend-ticks{display:flex;justify-content:space-between;margin-top:3px;color:var(--text-tertiary);font:400 8px/1.2 var(--font-data)}
 .pm25-legend-note{margin-top:6px;color:var(--text-tertiary);font:400 9px/1.4 var(--font-prose)}
 .smoke-playback{display:flex;align-items:center;gap:8px;min-width:0;margin:2px 0 0}
 .smoke-play-btn{width:32px;height:32px;flex:0 0 32px;display:grid;place-items:center;padding:0;border:1px solid var(--hairline-strong);border-radius:50%;background:var(--surface-2);color:var(--text-primary);font:700 12px/1 var(--font-data);cursor:pointer}

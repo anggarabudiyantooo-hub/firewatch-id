@@ -147,18 +147,20 @@ check('endpoint meminta CAMS Global, empat frame, dan waktu UTC dalam satu permi
 
 check('layer PM2.5 memakai grup dan pane tersendiri serta mengikuti linimasa', () => {
   assert.ok(app.includes("map.createPane('pm25Pane')"));
-  assert.ok(app.includes('var gPm25 = L.layerGroup()'));
+  assert.ok(app.includes('window.SiagaSmokeGridLayer.create(L'));
   assert.ok(app.includes('function drawPm25()'));
+  assert.ok(app.includes('gPm25.setFrame(points, index)'));
   assert.ok(app.includes('if (state.pm25On) drawPm25()'));
   assert.ok(app.includes('Waktu berlaku PM2.5: '));
   assert.ok(app.includes('Waktu berlaku PM2.5 tidak tersedia.'));
   assert.ok(app.includes('function ensureForecastLayers()'));
 });
 
-check('query hanya meminta produk dan variabel yang sedang aktif', () => {
+check('query memilih route grid PM2.5 beserta level angin dan tetap memisahkan AQI', () => {
   assert.ok(app.includes("var q = 'step=' + step + '&aqi=' + (state.airOn ? '1' : '0')"));
-  assert.ok(app.includes("+ '&forecast=' + (state.pm25On ? '1' : '0')"));
-  assert.ok(app.includes("fetchTRetry('/api/air-quality?' + q"));
+  assert.ok(app.includes("if (useSmokeGrid) q += '&level=' + encodeURIComponent(resolveWindLevel())"));
+  assert.ok(app.includes("else q += '&forecast=0'"));
+  assert.ok(app.includes("(useSmokeGrid ? '/api/smoke-grid?' : '/api/air-quality?') + q"));
   assert.ok(app.includes("if (state.airOn) drawAir()"));
   assert.ok(app.includes("var _lyAir = $('lyAir')"));
 });
@@ -180,6 +182,13 @@ check('antarmuka menyebut PM2.5 total dan bukan atribusi asap', () => {
   assert.ok(html.includes('bukan kontribusi khusus asap'));
   assert.ok(html.includes('id="pm25Status"'));
   assert.ok(html.includes('id="pm25Legend"'));
+});
+
+check('modul raster PM2.5 dimuat setelah Leaflet dan ikut versi cache aset', () => {
+  assert.ok(html.indexOf('<script src="/smoke-grid-layer.js">') > html.indexOf('<script src="/vendor/leaflet.js">'));
+  assert.ok(html.indexOf('<script src="/smoke-grid-layer.js">') < html.indexOf('<script src="/app.js">'));
+  assert.ok(server.includes("'smoke-grid-layer.js'"));
+  assert.ok(app.includes("var PM25_COLOR_GRADIENT = 'linear-gradient"));
 });
 
 console.log('\n' + '='.repeat(42));
