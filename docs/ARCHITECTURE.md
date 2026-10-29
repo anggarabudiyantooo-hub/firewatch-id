@@ -146,8 +146,11 @@ melakukan interpolasi bilinear untuk visual, dan menggambar tile kanvas beresolu
 rendah dengan palet kontinu transparan-kuning-oranye-merah-ungu. Grid tampilan dapat
 lebih kasar daripada resolusi native CAMS; interpolasi hanya menghaluskan visual,
 bukan menambah informasi atau mengubah PM2.5 total menjadi konsentrasi khusus asap.
-Layer raster, legenda, serta statusnya tetap terpisah dari US AQI, plume indikatif,
-dan raster aerosol OMPS.
+`public/wind-particles.js` memakai frame angin pada indeks dan target waktu yang sama
+dengan CAMS; pilihan level 10 m atau tekanan juga ikut pada permintaan. Animasi
+menjaga batas sekitar 30 FPS, kerapatan partikel berbasis ukuran layar, dan dukungan
+`prefers-reduced-motion`. Layer raster, legenda, serta statusnya tetap terpisah dari
+US AQI, plume indikatif, dan raster aerosol OMPS.
 
 ### 2.4 Frontend
 

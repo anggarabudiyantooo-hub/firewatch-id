@@ -64,7 +64,7 @@ check('frame plume historis menggunakan data arsip yang tersedia saja',
     && server.includes('fetchWindFieldAt') && server.includes('historyWindows(hotspots, anchorTime)'), true);
 check('titik api historis difilter ke interval akuisisi frame',
   app.includes('Date.parse(frame.intervalStart)') && app.includes('Date.parse(frame.intervalEnd)'), true);
-const drawPm25At = app.indexOf('function drawPm25()');
+const drawPm25At = app.indexOf('function drawPm25(');
 const pm25NegativeGuardAt = app.indexOf('Number(state.plumeHour) < 0', drawPm25At);
 check('CAMS PM2.5 historis tidak ditampilkan sebagai plume atau nilai buatan',
   app.includes('Data PM2.5 historis CAMS tidak tersedia sebelum frame 0.')

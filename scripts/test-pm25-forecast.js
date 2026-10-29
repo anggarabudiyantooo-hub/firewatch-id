@@ -145,15 +145,15 @@ check('endpoint meminta CAMS Global, empat frame, dan waktu UTC dalam satu permi
   assert.ok(server.includes('legend: includeAqi ? AQI_BANDS.map'));
 });
 
-check('layer PM2.5 memakai grup dan pane tersendiri serta mengikuti linimasa', () => {
+check('layer PM2.5 memakai raster grid, pane tersendiri, dan mengikuti linimasa', () => {
   assert.ok(app.includes("map.createPane('pm25Pane')"));
   assert.ok(app.includes('window.SiagaSmokeGridLayer.create(L'));
-  assert.ok(app.includes('function drawPm25()'));
+  assert.ok(app.includes('function drawPm25('));
   assert.ok(app.includes('gPm25.setFrame(points, index)'));
   assert.ok(app.includes('if (state.pm25On) drawPm25()'));
   assert.ok(app.includes('Waktu berlaku PM2.5: '));
   assert.ok(app.includes('Waktu berlaku PM2.5 tidak tersedia.'));
-  assert.ok(app.includes('function ensureForecastLayers()'));
+  assert.ok(app.includes('function ensureForecastLayers('));
 });
 
 check('query memilih route grid PM2.5 beserta level angin dan tetap memisahkan AQI', () => {

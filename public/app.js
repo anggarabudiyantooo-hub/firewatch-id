@@ -1250,12 +1250,13 @@
     }) + ' ' + zone;
   }
 
-  function drawPm25() {
+  function drawPm25(preserveParticlePositions) {
     if (!state.pm25On || Number(state.plumeHour) < 0 || state.pm25Loading || state.pm25Error
         || !state.air || !state.air.pm25Forecast) {
       if (typeof gPm25.clearFrame === 'function') gPm25.clearFrame();
       else gPm25.clearLayers();
       updatePm25Status(0);
+      syncWindParticles(false);
       return;
     }
 
@@ -1268,6 +1269,7 @@
     }).length;
     if (typeof gPm25.setFrame === 'function') gPm25.setFrame(points, index);
     updatePm25Status(drawn);
+    syncWindParticles(!!preserveParticlePositions);
   }
 
   /* ---------- gunung api & sebaran abu vulkanik ---------- */
@@ -2794,7 +2796,7 @@
     return tryOnce();
   }
 
-  function loadAir() {
+  function loadAir(skipCachedFrameDraw) {
     if (!state.airOn && !state.pm25On) return Promise.resolve();
     var step = airStepFor(map.getZoom());
     var b = map.getBounds();
@@ -2811,6 +2813,7 @@
       state.pm25Error = '';
       state.smokeGrid = null;
       gPm25.clearLayers();
+      syncWindParticles(false);
       updatePm25Status(0);
     }
     // Saat kedua layer aktif, AQI dan CAMS PM2.5 memakai satu permintaan grid.
@@ -2820,7 +2823,7 @@
       if (useSmokeGrid && state.pm25On) state.smokeGrid = state.air;
       if (state.airOn) drawAir();
       renderAirLegend();
-      if (state.pm25On) drawPm25();
+      if (state.pm25On && !skipCachedFrameDraw) drawPm25();
       try { if (typeof updateAirCfg === 'function') updateAirCfg(); } catch (e) {}
       updateForecastStatus();
       return Promise.resolve();
@@ -2875,6 +2878,7 @@
         state.pm25Loading = false;
         if (state.pm25On) {
           state.smokeGrid = null;
+          syncWindParticles(false);
           state.pm25Error = err && err.message === 'quota'
             ? 'Kuota Open-Meteo tercapai. Coba lagi setelah jeda; tidak ada nilai baru yang ditampilkan.'
             : 'Prakiraan PM2.5 CAMS tidak tersedia saat ini.';
@@ -3181,15 +3185,38 @@
   }
 
 
+  function smokeWindFrame() {
+    if (!state.pm25On || Number(state.plumeHour) < 0 || !state.smokeGrid) return null;
+    var wind = state.smokeGrid.windForecast;
+    var frames = wind && Array.isArray(wind.frames) ? wind.frames : [];
+    var index = pm25FrameIndex();
+    var frame = frames[index];
+    if (!frame || !Array.isArray(frame.points) || frame.points.length < 4) return null;
+    var camsTimes = state.smokeGrid.pm25Forecast && state.smokeGrid.pm25Forecast.validTimes;
+    var targetTime = camsTimes && camsTimes[index];
+    var windTargetTime = frame.targetTime || frame.validTime;
+    var camsMs = Date.parse(targetTime || '');
+    var windMs = Date.parse(windTargetTime || '');
+    if (Number.isFinite(camsMs) && Number.isFinite(windMs)
+        && Math.abs(camsMs - windMs) > 90 * 60 * 1000) return null;
+    return frame;
+  }
+
+  function syncWindParticles(preserveParticlePositions) {
+    var field = state.pm25On ? smokeWindFrame() : null;
+    if (!field && state.windOn) field = state.wind;
+    if (!field || !Array.isArray(field.points) || field.points.length < 4) {
+      if (state.particles) state.particles.stop();
+      return;
+    }
+    if (!state.particles) state.particles = new WindParticles(map, { fade: 0.16, density: 1900 });
+    state.particles.setField(field, { preserveParticles: !!preserveParticlePositions });
+    state.particles.start();
+  }
+
   function drawWind() {
     gWind.clearLayers();
-    if (!state.wind) return;
-
-    // Aliran angin bergaya Windy (animasi garis arus). Mode panah dihapus.
-    if (!state.particles) state.particles = new WindParticles(map, { fade: 0.16, density: 1900 });
-    state.particles.setField(state.wind);
-    if (state.windOn) state.particles.start();
-
+    syncWindParticles(false);
   }
 
   // Kerapatan grid mengikuti zoom agar panah tetap terlihat saat diperbesar.
@@ -4283,6 +4310,7 @@
       state.smokeGrid = null;
       map.removeLayer(gPm25);
       gPm25.clearLayers();
+      syncWindParticles(false);
       updatePm25Status(0);
       if (!$('lySmoke').checked) stopSmokePlayback();
       showHint(null);
@@ -5150,7 +5178,7 @@
     if (state.windOn) { map.addLayer(gWind); loadWind(); }
     else {
       map.removeLayer(gWind);
-      if (state.particles) state.particles.stop();
+      syncWindParticles(false);
       showHint(null);
       renderWindBadge();
     }
@@ -5161,14 +5189,14 @@
     // Kunci cache dikosongkan supaya aras baru benar-benar diambil,
     // bukan dijawab dari hasil aras sebelumnya.
     state.windKey = null;
-    if (!state.windOn) {
+    if (!state.windOn && !state.pm25On) {
       // Menyalakan sendiri lebih membantu daripada mengubah pilihan pada
       // lapisan yang sedang mati tanpa efek apa pun.
       $('lyWind').checked = true;
       state.windOn = true;
       map.addLayer(gWind);
     }
-    loadWind();
+    if (state.windOn) loadWind();
     if (state.pm25On) loadAir();
   });
 
@@ -5593,7 +5621,7 @@
     }
   }
 
-  function ensureForecastLayers() {
+  function ensureForecastLayers(skipCachedFrameDraw) {
     var smokeToggle = $('lySmoke');
     var pm25Toggle = $('lyPm25');
     if ((!smokeToggle || !smokeToggle.checked) && (!pm25Toggle || !pm25Toggle.checked)) {
@@ -5602,7 +5630,7 @@
     if (smokeToggle && smokeToggle.checked && !map.hasLayer(gSmoke)) map.addLayer(gSmoke);
     if (pm25Toggle && pm25Toggle.checked) {
       if (!map.hasLayer(gPm25)) map.addLayer(gPm25);
-      loadAir();
+      loadAir(!!skipCachedFrameDraw);
     }
   }
 
@@ -5610,11 +5638,11 @@
     var hour = Number(value);
     if ([-24, -18, -12, -6, 0, 6, 12, 18].indexOf(hour) < 0) return;
     state.plumeHour = hour;
-    ensureForecastLayers();
+    ensureForecastLayers(true);
     if (_tlSel) _tlSel.value = String(hour);
     drawFires();
     if ($('lySmoke').checked) drawSmoke();
-    if (state.pm25On) drawPm25();
+    if (state.pm25On) drawPm25(true);
     updateForecastStatus();
     updateSmokePlaybackButton();
   }
