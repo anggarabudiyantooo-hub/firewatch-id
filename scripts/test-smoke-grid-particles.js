@@ -44,13 +44,17 @@ console.log('  LULUS perubahan area/grid tetap menginisialisasi ulang posisi par
 
 assert.ok(/function smokeWindFrame\(\)/.test(app));
 assert.ok(/var frame = frames\[index\]/.test(app));
-assert.ok(/frame\.targetTime \|\| frame\.validTime/.test(app));
-assert.ok(/Math\.abs\(camsMs - windMs\) > 90 \* 60 \* 1000/.test(app));
+assert.ok(/frame\.targetTime/.test(app) && /frame\.validTime/.test(app));
+assert.ok(/Math\.abs\(camsMs - windTargetMs\) > 90 \* 60 \* 1000/.test(app));
+assert.ok(/Math\.abs\(camsMs - windValidMs\) > 90 \* 60 \* 1000/.test(app));
 assert.ok(/state\.particles\.setField\(field, \{ preserveParticles: !!preserveParticlePositions \}\)/.test(app));
 assert.ok(/function ensureForecastLayers\(skipCachedFrameDraw\)/.test(app));
 assert.ok(/loadAir\(!!skipCachedFrameDraw\)/.test(app));
 assert.ok(/ensureForecastLayers\(true\);/.test(app));
 assert.ok(/if \(state\.pm25On\) drawPm25\(true\)/.test(app));
+assert.ok(/function smokeWindTimelineNote\(\)/.test(app));
+assert.ok(/aligned to CAMS/.test(app) && /selaras dengan CAMS/.test(app));
+assert.ok(/'CAMS NOW'/.test(app) && /'CAMS 0J'/.test(app));
 console.log('  LULUS CAMS dan angin dipilih dengan indeks sama, target waktu divalidasi, dan timeline mempertahankan jejak');
 
 assert.ok(source.includes('if (ts - last > 33)'));

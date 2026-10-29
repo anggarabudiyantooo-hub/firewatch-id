@@ -2815,6 +2815,7 @@
       gPm25.clearLayers();
       syncWindParticles(false);
       updatePm25Status(0);
+      updateForecastStatus();
     }
     // Saat kedua layer aktif, AQI dan CAMS PM2.5 memakai satu permintaan grid.
     if (state.airKey === q) {
@@ -2884,6 +2885,7 @@
             : 'Prakiraan PM2.5 CAMS tidak tersedia saat ini.';
           if (!state.airKey || state.airKey !== q) gPm25.clearLayers();
           updatePm25Status(0);
+          updateForecastStatus();
         }
         if (!(err && err.message === 'quota')) {
           showHint('Gagal memuat data kualitas udara. Akan coba lagi saat peta digeser.', 6000);
@@ -3095,6 +3097,7 @@
     var pm25Toggle = $('lyPm25');
     var smokeOn = !!(smokeToggle && smokeToggle.checked);
     var pm25On = !!(pm25Toggle && pm25Toggle.checked);
+    var english = getLanguage() === 'en';
     var hour = Number(state.plumeHour) || 0;
     var forecast = state.air && state.air.pm25Forecast;
     var index = pm25FrameIndex();
@@ -3158,16 +3161,28 @@
     }
     if (_smokeTimeLabel) {
       _smokeTimeLabel.textContent = pm25On && hour >= 0
-        ? (hour === 0 ? 'CAMS 0J' : 'CAMS +' + hour + 'J')
+        ? (english
+          ? (hour === 0 ? 'CAMS NOW' : 'CAMS +' + hour + 'H')
+          : (hour === 0 ? 'CAMS 0J' : 'CAMS +' + hour + 'J'))
         : smokeHourShortLabel(hour);
     }
     if (_tlSel) {
-      _tlSel.setAttribute('aria-valuetext', hour < 0
-        ? 'Plume asap indikatif, riwayat ' + smokeHourLabel(hour).toLowerCase()
-          + ', data PM2.5 tidak tersedia'
+      var timelineAria = hour < 0
+        ? (english
+          ? 'Indicative smoke plume, history ' + smokeHourLabel(hour).toLowerCase() + '; CAMS PM2.5 unavailable'
+          : 'Plume asap indikatif, riwayat ' + smokeHourLabel(hour).toLowerCase() + ', data PM2.5 tidak tersedia')
         : pm25On
-          ? 'CAMS, prakiraan plus ' + hour + ' jam'
-          : smokeHourLabel(hour).toLowerCase());
+          ? (english ? 'CAMS PM2.5 forecast plus ' + hour + ' hours' : 'CAMS, prakiraan plus ' + hour + ' jam')
+          : (english ? 'Smoke plume ' + smokeHourShortLabel(hour) : smokeHourShortLabel(hour).toLowerCase());
+      _tlSel.setAttribute('aria-valuetext', timelineAria);
+    }
+    var windTimelineNote = smokeWindTimelineNote();
+    if (_smokePlaybackStatus && windTimelineNote) {
+      _smokePlaybackStatus.textContent += ' ' + windTimelineNote;
+    }
+    if (_tlSel && pm25On && hour >= 0 && windTimelineNote) {
+      _tlSel.setAttribute('aria-valuetext', _tlSel.getAttribute('aria-valuetext')
+        + '. ' + windTimelineNote);
     }
   }
 
@@ -3194,12 +3209,54 @@
     if (!frame || !Array.isArray(frame.points) || frame.points.length < 4) return null;
     var camsTimes = state.smokeGrid.pm25Forecast && state.smokeGrid.pm25Forecast.validTimes;
     var targetTime = camsTimes && camsTimes[index];
-    var windTargetTime = frame.targetTime || frame.validTime;
     var camsMs = Date.parse(targetTime || '');
-    var windMs = Date.parse(windTargetTime || '');
-    if (Number.isFinite(camsMs) && Number.isFinite(windMs)
-        && Math.abs(camsMs - windMs) > 90 * 60 * 1000) return null;
+    var windTargetMs = Date.parse(frame.targetTime || '');
+    var windValidMs = Date.parse(frame.validTime || '');
+    if (![camsMs, windTargetMs, windValidMs].every(Number.isFinite)
+        || Math.abs(camsMs - windTargetMs) > 90 * 60 * 1000
+        || Math.abs(camsMs - windValidMs) > 90 * 60 * 1000) return null;
     return frame;
+  }
+
+  function smokeWindTimelineNote() {
+    if (!state.pm25On || Number(state.plumeHour) < 0) return '';
+    var english = getLanguage() === 'en';
+    var windForecast = state.smokeGrid && state.smokeGrid.windForecast;
+    var frame = smokeWindFrame();
+    if (!frame) {
+      if (state.pm25Loading) {
+        return english ? 'Loading the wind frame aligned to CAMS.' : 'Memuat frame angin yang diselaraskan dengan CAMS.';
+      }
+      if (state.windOn && state.wind && Array.isArray(state.wind.points) && state.wind.points.length) {
+        return english
+          ? 'No aligned wind frame is available; the separate wind layer uses its own model time.'
+          : 'Frame angin selaras tidak tersedia; layer angin terpisah memakai waktu modelnya sendiri.';
+      }
+      return english
+        ? 'No aligned wind frame is available for this CAMS time; particles are paused.'
+        : 'Frame angin selaras tidak tersedia untuk waktu CAMS ini; partikel dijeda.';
+    }
+    var index = pm25FrameIndex();
+    var camsTimes = state.smokeGrid.pm25Forecast && state.smokeGrid.pm25Forecast.validTimes;
+    var target = frame.targetTime || (camsTimes && camsTimes[index]);
+    var valid = frame.validTime || target;
+    var targetMs = Date.parse(target || '');
+    var validMs = Date.parse(valid || '');
+    var offset = Number.isFinite(targetMs) && Number.isFinite(validMs)
+      ? Math.round(Math.abs(targetMs - validMs) / 60000) : null;
+    var level = windForecast && windForecast.level || frame.level || '10m';
+    var levelLabel = level === '10m' ? '10 m' : level + ' hPa';
+    var source = level === '10m' ? 'NOAA GFS' : 'Open-Meteo (GFS/ECMWF)';
+    var validLabel = valid ? formatPm25Time(valid) : (english ? 'time unavailable' : 'waktu tidak tersedia');
+    var targetLabel = target ? formatPm25Time(target) : (english ? 'time unavailable' : 'waktu tidak tersedia');
+    var offsetNote = offset && offset > 0
+      ? (english ? '; nearest wind output is ' + offset + ' min from target' : '; keluaran angin terdekat berjarak ' + offset + ' menit dari target')
+      : '';
+    return english
+      ? 'Wind particles · ' + levelLabel + ' · ' + source + ' · valid ' + validLabel
+        + '; aligned to CAMS ' + targetLabel + offsetNote + '.'
+      : 'Partikel angin · ' + levelLabel + ' · ' + source + ' · berlaku ' + validLabel
+        + '; selaras dengan CAMS ' + targetLabel + offsetNote + '.';
   }
 
   function syncWindParticles(preserveParticlePositions) {
@@ -5580,10 +5637,11 @@
   }
 
   function smokeHourShortLabel(hour) {
-    if (hour === 0) return 'SEKARANG';
-    if (hour > 0) return '+' + hour + 'J';
+    var english = getLanguage() === 'en';
+    if (hour === 0) return english ? 'NOW' : 'SEKARANG';
+    if (hour > 0) return '+' + hour + (english ? 'H' : 'J');
     var start = Math.abs(hour);
-    return start + '-' + (start - 6) + 'J';
+    return start + '-' + (start - 6) + (english ? 'H AGO' : 'J');
   }
 
   function updateSmokePlaybackButton() {

@@ -147,8 +147,11 @@ rendah dengan palet kontinu transparan-kuning-oranye-merah-ungu. Grid tampilan d
 lebih kasar daripada resolusi native CAMS; interpolasi hanya menghaluskan visual,
 bukan menambah informasi atau mengubah PM2.5 total menjadi konsentrasi khusus asap.
 `public/wind-particles.js` memakai frame angin pada indeks dan target waktu yang sama
-dengan CAMS; pilihan level 10 m atau tekanan juga ikut pada permintaan. Animasi
-menjaga batas sekitar 30 FPS, kerapatan partikel berbasis ukuran layar, dan dukungan
+dengan CAMS; pilihan level 10 m atau tekanan juga ikut pada permintaan. Timeline
+menampilkan waktu target CAMS, waktu valid keluaran angin, level, serta sumber;
+frame angin yang meleset lebih dari 90 menit tidak dipakai. Frame negatif tetap
+plume-only karena data CAMS historis tidak tersedia. Animasi menjaga batas sekitar
+30 FPS, kerapatan partikel berbasis ukuran layar, dan dukungan
 `prefers-reduced-motion`. Layer raster, legenda, serta statusnya tetap terpisah dari
 US AQI, plume indikatif, dan raster aerosol OMPS.
 
