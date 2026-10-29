@@ -28,7 +28,8 @@ check('grup regional dipisah dari plume asap dan PM2.5',
   /var gRegionalHaze = L\.layerGroup\(\)/.test(app)
     && /bindLayer\('lyRegionalHaze', gRegionalHaze\)/.test(app)
     && /var gSmoke = L\.layerGroup\(\)/.test(app)
-    && /var gPm25 = L\.layerGroup\(\)/.test(app), true);
+    && (/var gPm25 = L\.layerGroup\(\)/.test(app)
+      || /var gPm25 = window\.SiagaSmokeGridLayer[\s\S]*?\.create\(L/.test(app)), true);
 check('sapuan ASMC melewati freshness window sementara marker historis tetap tersedia',
   /ageMs <= maxAgeMs/.test(app) && /if \(!\$\('lyRegionalHaze'\)\.checked\) return/.test(app)
     && /marker\.source !== 'bmkg' && !fresh/.test(app), true);

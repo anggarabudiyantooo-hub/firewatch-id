@@ -64,21 +64,21 @@ check('frame plume historis menggunakan data arsip yang tersedia saja',
     && server.includes('fetchWindFieldAt') && server.includes('historyWindows(hotspots, anchorTime)'), true);
 check('titik api historis difilter ke interval akuisisi frame',
   app.includes('Date.parse(frame.intervalStart)') && app.includes('Date.parse(frame.intervalEnd)'), true);
-const drawPm25At = app.indexOf('function drawPm25()');
-const pm25NegativeGuardAt = app.indexOf('Number(state.plumeHour) < 0', drawPm25At);
-check('CAMS PM2.5 historis tidak ditampilkan sebagai plume atau nilai buatan',
-  app.includes('Data PM2.5 historis CAMS tidak tersedia sebelum frame 0.')
-    && drawPm25At >= 0 && pm25NegativeGuardAt > drawPm25At
-    && pm25NegativeGuardAt < app.indexOf('var forecast = state.air.pm25Forecast', drawPm25At), true);
+const drawRasterAt = app.indexOf('function drawModelRaster(');
+const rasterNegativeGuardAt = app.indexOf('Number(state.plumeHour) < 0', drawRasterAt);
+check('frame CAMS historis tidak ditampilkan sebagai plume atau nilai buatan',
+  app.includes('Data model CAMS historis tidak tersedia sebelum frame 0.')
+    && drawRasterAt >= 0 && rasterNegativeGuardAt > drawRasterAt
+    && rasterNegativeGuardAt < app.indexOf('var points = forecast.points', drawRasterAt), true);
 check('playback berhenti hanya saat seluruh layer prakiraan mati',
-  /if \(id === 'lySmoke' && !\$\('lyPm25'\)\.checked\) stopSmokePlayback\(\)/.test(app)
+  /if \(id === 'lySmoke' && !modelRasterIsOn\(\)\) stopSmokePlayback\(\)/.test(app)
     && app.includes("if (!$('lySmoke').checked) stopSmokePlayback();"), true);
 check('geser manual menjeda playback sebelum mengubah frame',
   app.includes("_tlSel.addEventListener('input'")
     && /stopSmokePlayback\(\);\s*setSmokeHour\(event\.target\.value\)/.test(app), true);
-check('keterangan waktu membedakan plume dari ukuran PM2.5',
-  /bukan ukuran PM2\.5/i.test(html) && /bukan ukuran PM2\.5/i.test(app)
-    && app.includes('PM2.5 total model CAMS Global'), true);
+check('keterangan timeline membedakan plume indikatif dari pengukuran konsentrasi',
+  /bukan ukuran PM2\.5/i.test(html) && /not an observed smoke boundary or measured concentration/i.test(app)
+    && app.includes('CAMS Global total PM2.5 near the surface, from all sources'), true);
 check('modul raster kabut dimuat setelah Leaflet dan sebelum app.js',
   html.indexOf('<script src="/smoke-cloud-layer.js">') > html.indexOf('<script src="/vendor/leaflet.js">')
     && html.indexOf('<script src="/smoke-cloud-layer.js">') < html.indexOf('<script src="/app.js">'), true);
@@ -92,9 +92,10 @@ check('renderer menggabungkan plume dan melembutkan badan serta tepinya',
     && smokeCloud.includes("filter = 'blur(' + BROAD_BLUR + 'px)'")
     && smokeCloud.includes("filter = 'blur(' + BODY_BLUR + 'px)'")
     && css.includes('.leaflet-container .smoke-cloud-tile{pointer-events:none}'), true);
-check('renderer tidak mengubah layer PM2.5 dan gaya tetap diberi batas interpretasi',
+check('renderer tidak mengubah layer CAMS dan plume tetap diberi batas interpretasi',
   !app.includes('smoke-haze') && !app.includes('smoke-body') && !app.includes('smoke-core')
-    && app.includes('Rona gelap hanya gaya visual') && app.includes('Rona gelap bukan ukuran konsentrasi.'), true);
+    && app.includes('Rona gelap hanya gaya visual')
+    && app.includes('not an observed smoke boundary or measured concentration'), true);
 
 console.log('\n' + '='.repeat(40));
 console.log('  ' + passed + ' lulus, ' + failed + ' gagal');

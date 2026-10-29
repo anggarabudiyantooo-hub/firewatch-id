@@ -145,41 +145,62 @@ check('endpoint meminta CAMS Global, empat frame, dan waktu UTC dalam satu permi
   assert.ok(server.includes('legend: includeAqi ? AQI_BANDS.map'));
 });
 
-check('layer PM2.5 memakai grup dan pane tersendiri serta mengikuti linimasa', () => {
+check('raster PM2.5/AOD/debu memakai grid kontinu, pane tersendiri, dan timeline bersama', () => {
   assert.ok(app.includes("map.createPane('pm25Pane')"));
-  assert.ok(app.includes('var gPm25 = L.layerGroup()'));
-  assert.ok(app.includes('function drawPm25()'));
-  assert.ok(app.includes('if (state.pm25On) drawPm25()'));
-  assert.ok(app.includes('Waktu berlaku PM2.5: '));
-  assert.ok(app.includes('Waktu berlaku PM2.5 tidak tersedia.'));
-  assert.ok(app.includes('function ensureForecastLayers()'));
+  assert.ok(app.includes('window.SiagaSmokeGridLayer.create(L'));
+  assert.ok(app.includes('function drawPm25('));
+  assert.ok(app.includes("forecastKey: 'pm25Forecast'"));
+  assert.ok(app.includes("forecastKey: 'aerosolForecast'"));
+  assert.ok(app.includes("forecastKey: 'dustForecast'"));
+  assert.ok(app.includes('if (typeof layer.setFrame === \'function\') layer.setFrame(points, index)'));
+  assert.ok(app.includes('function drawActiveModelRaster('));
+  assert.ok(app.includes('Model valid: '));
+  assert.ok(app.includes('function ensureForecastLayers('));
 });
 
-check('query hanya meminta produk dan variabel yang sedang aktif', () => {
+check('klien memakai endpoint statis untuk grid CAMS dan tidak memanggil Open-Meteo langsung', () => {
   assert.ok(app.includes("var q = 'step=' + step + '&aqi=' + (state.airOn ? '1' : '0')"));
-  assert.ok(app.includes("+ '&forecast=' + (state.pm25On ? '1' : '0')"));
-  assert.ok(app.includes("fetchTRetry('/api/air-quality?' + q"));
+  assert.ok(app.includes("q += '&wind=' + (state.windOn ? '1' : '0')"));
+  assert.ok(app.includes("if (state.windOn) q += '&level=' + encodeURIComponent(resolveWindLevel())"));
+  assert.ok(app.includes("q += '&forecast=0'"));
+  assert.ok(app.includes("(useSmokeGrid ? '/api/smoke-grid-static?' : '/api/air-quality?') + q"));
   assert.ok(app.includes("if (state.airOn) drawAir()"));
   assert.ok(app.includes("var _lyAir = $('lyAir')"));
+  assert.doesNotMatch(app, /https:\/\/air-quality-api\.open-meteo\.com/);
 });
 
-check('layer PM2.5 mengikuti move/zoom dan keadaan checkbox awal', () => {
-  assert.ok(app.includes('if (state.airOn || state.pm25On) loadAir();'));
-  assert.ok(app.includes("['lyFire', gFire], ['lyAir', gAir], ['lyPm25', gPm25]"));
-  assert.ok(app.includes('if (state.pm25On) loadAir();'));
+check('semua raster mengikuti move/zoom dan checkbox default', () => {
+  assert.ok(app.includes('if (state.airOn || modelRasterIsOn()) loadAir();'));
+  assert.ok(app.includes("['lyPm25', gPm25], ['lyAod', gAod], ['lyDust', gDust]"));
+  assert.ok(app.includes('if (modelRasterIsOn()) loadAir();'));
+  assert.match(html, /id="lyPm25" checked/);
 });
 
 check('request udara hanya diulang untuk area terbaru yang berbeda', () => {
   assert.ok(app.includes('var pendingQ = state.airPendingQ;'));
-  assert.ok(app.includes('pendingQ !== q && (state.airOn || state.pm25On)'));
+  assert.ok(app.includes('pendingQ !== q && (state.airOn || modelRasterIsOn())'));
 });
 
-check('antarmuka menyebut PM2.5 total dan bukan atribusi asap', () => {
+check('antarmuka memisahkan PM2.5 total, AOD, debu, dan plume indikatif', () => {
   assert.ok(html.includes('id="lyPm25"'));
-  assert.ok(html.includes('PM2.5 total model (CAMS)'));
-  assert.ok(html.includes('bukan kontribusi khusus asap'));
+  assert.ok(html.includes('Raster PM2.5 total (CAMS)'));
+  assert.ok(html.includes('id="lyAod"'));
+  assert.ok(html.includes('id="lyDust"'));
+  assert.ok(html.includes('id="lySmoke"'));
+  assert.ok(html.includes('Plume indikatif (FIRMS + GFS)'));
+  assert.ok(html.includes('bukan khusus asap'));
+  assert.ok(app.includes('CAMS PM2.5 is total from all sources, not smoke-specific or a station measurement.'));
+  assert.ok(app.includes('dimensionless whole-atmosphere optical-depth indicator'));
+  assert.ok(app.includes('separate near-surface model variable'));
   assert.ok(html.includes('id="pm25Status"'));
   assert.ok(html.includes('id="pm25Legend"'));
+});
+
+check('modul raster CAMS dimuat setelah Leaflet dan ikut versi cache aset', () => {
+  assert.ok(html.indexOf('<script src="/smoke-grid-layer.js">') > html.indexOf('<script src="/vendor/leaflet.js">'));
+  assert.ok(html.indexOf('<script src="/smoke-grid-layer.js">') < html.indexOf('<script src="/app.js">'));
+  assert.ok(server.includes("'smoke-grid-layer.js'"));
+  assert.ok(app.includes('function modelRasterGradient(stops)'));
 });
 
 console.log('\n' + '='.repeat(42));

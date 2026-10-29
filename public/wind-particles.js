@@ -3,7 +3,7 @@
  * Lapisan animasi partikel angin bergaya Windy untuk Leaflet.
  *
  * Cara kerja:
- *  - Titik grid angin (dari /api/wind-field) dimasukkan ke kisi teratur.
+ *  - Titik grid angin (dari /api/wind-field atau frame /api/smoke-grid) dimasukkan ke kisi teratur.
  *  - Kecepatan pada posisi bebas dihitung dengan interpolasi bilinear.
  *  - Ribuan partikel dihanyutkan mengikuti medan itu, jejaknya memudar
  *    perlahan sehingga membentuk garis arus (streamline) yang mengalir.
@@ -78,8 +78,9 @@
   };
 
   /** Bangun kisi teratur dari daftar titik agar interpolasi cepat. */
-  WindParticles.prototype.setField = function (field) {
+  WindParticles.prototype.setField = function (field, options) {
     if (!field || !field.points || !field.points.length) { this.grid = null; return; }
+    var preserveParticles = !!(options && options.preserveParticles);
     var pts = field.points;
     var lats = [], lons = [];
     var wrapCenter = Number(field.wrapCenter);
@@ -123,7 +124,7 @@
       dLat: (lats[ny - 1] - lats[0]) / (ny - 1),
       dLon: (lons[nx - 1] - lons[0]) / (nx - 1)
     };
-    this._seed();
+    if (!preserveParticles || !this.particles.length || !this.w || !this.h) this._seed();
   };
 
   /** Interpolasi bilinear; null bila di luar cakupan data. */
@@ -145,6 +146,10 @@
       g.u[k00] * a + g.u[k10] * b + g.u[k01] * c + g.u[k11] * d,
       g.v[k00] * a + g.v[k10] * b + g.v[k01] * c + g.v[k11] * d
     ];
+  };
+
+  WindParticles.prototype.sampleAt = function (lat, lon) {
+    return this._lookup(Number(lat), Number(lon));
   };
 
   WindParticles.prototype._randomParticle = function (p) {
