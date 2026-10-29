@@ -1,0 +1,73 @@
+name: Refresh regional CAMS smoke grid
+
+# CAMS Global is refreshed roughly every 12 hours. The artifact samples the
+# ~0.4-degree native model at 0.8 degrees to stay within the free API quota;
+# both resolutions are recorded separately. Commit only when values or times change.
+# Scheduled workflows run from the default branch; workflow_dispatch can be
+# used to exercise this workflow on another branch.
+
+on:
+  schedule:
+    - cron: '0 1,13 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-smoke-grid
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+
+      - name: Download and assemble CAMS grid
+        run: node scripts/refresh-smoke-grid.js
+
+      - name: Check for changed artifact
+        id: diff
+        run: |
+          if git status --porcelain -- public/data/smoke-grid.json | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git status --short -- public/data/smoke-grid.json
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No CAMS grid changes; skipping commit."
+          fi
+
+      - name: Commit and push changed artifact
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/data/smoke-grid.json
+          git commit -m "data(cams): refresh regional smoke grid $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push
+
+      - name: Summary
+        run: |
+          node - <<'NODE'
+          const grid = require('./public/data/smoke-grid.json');
+          console.log(JSON.stringify({
+            retrievedAt: grid.retrievedAt,
+            dataHash: grid.dataHash,
+            validTimes: grid.validTimes,
+            cells: grid.cellCount,
+            batches: grid.batchCount,
+            coverage: Object.fromEntries(Object.entries(grid.variables).map(([key, value]) => [
+              key, value.coverage.map(frame => frame.percent)
+            ]))
+          }, null, 2));
+          NODE
