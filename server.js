@@ -101,6 +101,7 @@ const { isRelevant, scoreArticle, classify } = require('./lib/relevance');
 const sentinel = require('./lib/sentinel');
 const aerosolRaster = require('./lib/aerosol-raster');
 const pm25Forecast = require('./lib/pm25-forecast');
+const regionalSmokeArtifact = require('./lib/smoke-grid-artifact');
 const { fetchDrought } = require('./lib/drought');
 const { summarize: summarizeCasualties } = require('./lib/casualty');
 const { Scheduler } = require('./lib/scheduler');
@@ -217,7 +218,7 @@ const RL_TILE = 1200;
 // banyak pengguna sah sekaligus. Yang ingin dicegah adalah skrip yang
 // mengirim ribuan permintaan, bukan manusia yang menggeser peta.
 const RL_EXPENSIVE = CONFIG.RATE_LIMIT.expensive;
-const RL_EXPENSIVE_PATHS = /^\/(overview|wind-field|air-quality|smoke-grid|concessions|place|whose-land|air-point|news)/;
+const RL_EXPENSIVE_PATHS = /^\/(overview|wind-field|air-quality|smoke-grid-static|smoke-grid|concessions|place|whose-land|air-point|news)/;
 
 const hits = new Map();
 app.use('/api', (req, res, next) => {
@@ -1825,7 +1826,38 @@ app.get('/api/air-quality', async (req, res) => {
   }
 });
 
-const SMOKE_GRID_HOURS = [0, 6, 12, 18];
+const SMOKE_GRID_HOURS = regionalSmokeArtifact.FRAME_HOURS.slice();
+const SMOKE_GRID_REGION = regionalSmokeArtifact.REGION;
+const SMOKE_GRID_ARTIFACT_PATH = path.resolve(
+  process.env.SMOKE_GRID_ARTIFACT_PATH || path.join(__dirname, 'public', 'data', 'smoke-grid.json')
+);
+let smokeGridArtifactCache = null;
+
+function readSmokeGridArtifact() {
+  let stat;
+  try { stat = fs.statSync(SMOKE_GRID_ARTIFACT_PATH); }
+  catch (error) {
+    if (smokeGridArtifactCache) return smokeGridArtifactCache.artifact;
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  }
+  if (smokeGridArtifactCache && smokeGridArtifactCache.mtimeMs === stat.mtimeMs
+      && smokeGridArtifactCache.size === stat.size) return smokeGridArtifactCache.artifact;
+  try {
+    const artifact = JSON.parse(fs.readFileSync(SMOKE_GRID_ARTIFACT_PATH, 'utf8'));
+    if (!regionalSmokeArtifact.validateArtifact(artifact)) {
+      throw new Error('Skema artefak CAMS tidak valid.');
+    }
+    smokeGridArtifactCache = { mtimeMs: stat.mtimeMs, size: stat.size, artifact };
+    return artifact;
+  } catch (error) {
+    if (smokeGridArtifactCache) {
+      console.warn('[smoke-grid:artifact] artefak baru rusak; memakai salinan terakhir yang valid:', error.message);
+      return smokeGridArtifactCache.artifact;
+    }
+    throw error;
+  }
+}
 
 function gfsValidTime(field) {
   const match = /^(\d{8})\s+(\d{2})Z$/.exec(String(field && field.run || ''));
@@ -2114,6 +2146,177 @@ app.get('/api/smoke-grid', async (req, res) => {
 });
 
 // AQI pada satu koordinat (dipakai popup "cek titik"), Fase 1.3: retry + stale
+function smokeArtifactStatus(artifact, forecasts, windForecast) {
+  const retrieved = Date.parse(artifact.retrievedAt || '');
+  const ageMs = Number.isFinite(retrieved) ? Math.max(0, Date.now() - retrieved) : null;
+  const pm25 = forecasts.pm25Forecast;
+  const pm25Available = !!(pm25 && pm25.available && pm25.count);
+  const pm25State = !pm25Available ? 'unavailable'
+    : ageMs !== null && ageMs > 24 * 60 * 60 * 1000 ? 'stale' : 'ready';
+  const windFrames = windForecast && Array.isArray(windForecast.frames) ? windForecast.frames : [];
+  const availableWindFrames = windFrames.filter(frame => frame && frame.points && frame.points.length).length;
+  const variableStatus = variable => {
+    const forecast = forecasts[variable];
+    const available = !!(forecast && forecast.available && forecast.count);
+    return {
+      state: !available ? 'unavailable'
+        : ageMs !== null && ageMs > 24 * 60 * 60 * 1000 ? 'stale' : 'ready',
+      source: artifact.source,
+      retrievedAt: artifact.retrievedAt || null,
+      ageMinutes: ageMs === null ? null : Math.round(ageMs / 60000),
+      validTimes: artifact.validTimes,
+      count: forecast && forecast.count || 0,
+      units: forecast && forecast.units || '',
+      coverage: forecast && forecast.coverage || []
+    };
+  };
+  return {
+    pm25: {
+      state: pm25State,
+      source: artifact.source,
+      retrievedAt: artifact.retrievedAt || null,
+      ageMinutes: ageMs === null ? null : Math.round(ageMs / 60000),
+      validTimes: artifact.validTimes,
+      count: pm25 && pm25.count || 0,
+      units: 'µg/m³',
+      nativeResolutionDeg: artifact.nativeResolutionDeg || regionalSmokeArtifact.GRID_STEP_DEG
+    },
+    aerosolOpticalDepth: variableStatus('aerosolForecast'),
+    dust: variableStatus('dustForecast'),
+    pm10Wildfires: variableStatus('pm10WildfiresForecast'),
+    wind: {
+      state: availableWindFrames === 0 ? 'unavailable'
+        : availableWindFrames < SMOKE_GRID_HOURS.length ? 'partial' : 'ready',
+      source: windForecast && windForecast.source || null,
+      level: windForecast && windForecast.level || null,
+      retrievedAt: windForecast && windForecast.fetchedAt || null,
+      availableFrames: availableWindFrames,
+      totalFrames: SMOKE_GRID_HOURS.length,
+      validTimes: windFrames.map(frame => frame && frame.validTime || null)
+    }
+  };
+}
+
+app.get('/api/smoke-grid-static', async (req, res) => {
+  const sp = readStep(req.query.step, AQ_STEPS, 1.5);
+  if (sp.error) return res.status(400).json({ error: sp.error });
+  const step = sp.value;
+  const includeAqi = req.query.aqi === '1';
+  const windRequested = req.query.wind === '1';
+  const level = String(req.query.level || '10m');
+  if (windRequested && !WIND_ALOFT_LEVELS[level]) {
+    return res.status(400).json({ error: 'Aras angin harus salah satu dari: ' + Object.keys(WIND_ALOFT_LEVELS).join(', ') + '.' });
+  }
+
+  const west = Number(req.query.west), south = Number(req.query.south);
+  const east = Number(req.query.east), north = Number(req.query.north);
+  const boundsRequested = ['west', 'south', 'east', 'north'].some(key => req.query[key] !== undefined);
+  let viewBox = null;
+  if (boundsRequested) {
+    if (![west, south, east, north].every(Number.isFinite)
+        || west >= east || south >= north || south < -90 || north > 90
+        || west < -180 || east > 180) {
+      return res.status(400).json({ error: 'Area peta tidak valid.' });
+    }
+    viewBox = {
+      west: Math.max(SMOKE_GRID_REGION.west, west),
+      south: Math.max(SMOKE_GRID_REGION.south, south),
+      east: Math.min(SMOKE_GRID_REGION.east, east),
+      north: Math.min(SMOKE_GRID_REGION.north, north)
+    };
+    if (viewBox.west >= viewBox.east || viewBox.south >= viewBox.north) viewBox = false;
+  }
+
+  try {
+    const artifact = readSmokeGridArtifact();
+    if (!artifact) {
+      res.set('Cache-Control', 'no-store');
+      return res.status(503).json({ error: 'Artefak grid regional CAMS belum tersedia.' });
+    }
+    const emptyView = viewBox === false;
+    const gridBounds = artifact.grid;
+    const pad = Number(artifact.grid.stepDeg) || regionalSmokeArtifact.GRID_STEP_DEG;
+    let sampleBox = null;
+    if (viewBox && !emptyView) {
+      sampleBox = {
+        west: Math.max(gridBounds.west, viewBox.west - pad),
+        south: Math.max(gridBounds.south, viewBox.south - pad),
+        east: Math.min(gridBounds.east, viewBox.east + pad),
+        north: Math.min(gridBounds.north, viewBox.north + pad)
+      };
+    }
+    const makeForecast = variable => {
+      const forecast = regionalSmokeArtifact.forecastFromArtifact(artifact, variable, emptyView ? null : sampleBox);
+      return emptyView ? { ...forecast, available: false, count: 0, points: [] } : forecast;
+    };
+    const forecasts = {
+      pm25Forecast: makeForecast('pm2_5'),
+      aerosolForecast: makeForecast('aerosol_optical_depth'),
+      dustForecast: makeForecast('dust'),
+      pm10WildfiresForecast: makeForecast('pm10_wildfires')
+    };
+
+    let aqiField = { step, count: 0, points: [], pm25Forecast: null };
+    if (includeAqi && !emptyView) {
+      const aqiBox = viewBox || SMOKE_GRID_REGION;
+      aqiField = await airQualityField(step, aqiBox, false, true);
+    }
+
+    let windForecast = { level, source: null, frames: [] };
+    if (windRequested && !emptyView) {
+      const windBox = viewBox || SMOKE_GRID_REGION;
+      const keyBox = [windBox.west, windBox.south, windBox.east, windBox.north]
+        .map(value => Number(value).toFixed(1)).join(',');
+      try {
+        windForecast = await cached(
+          `smoke-grid-artifact-wind:${level}:${keyBox}:${artifact.validTimes.join(',')}`,
+          30 * 60 * 1000,
+          () => smokeGridWindForecast(level, windBox, artifact.validTimes),
+          { staleMs: 60 * 60 * 1000, background: true }
+        );
+      } catch (error) {
+        console.warn('[smoke-grid-static:wind]', error.message);
+        windForecast = {
+          level,
+          source: level === '10m' ? 'NOAA GFS 1 degree' : 'Open-Meteo (GFS/ECMWF)',
+          frames: SMOKE_GRID_HOURS.map(hour => ({
+            hour, count: 0, points: [], error: /429|limit/i.test(error.message) ? 'quota' : 'unavailable'
+          }))
+        };
+      }
+    }
+
+    const result = {
+      updatedAt: artifact.retrievedAt,
+      source: artifact.source,
+      attribution: artifact.attribution,
+      region: artifact.region,
+      grid: {
+        nx: artifact.grid.nx,
+        ny: artifact.grid.ny,
+        stepDeg: artifact.grid.stepDeg,
+        nativeResolutionDeg: artifact.nativeResolutionDeg
+      },
+      step,
+      count: aqiField.count || 0,
+      points: aqiField.points || [],
+      legend: includeAqi ? AQI_BANDS.map(band => ({
+        upto: band.max === Infinity ? null : band.max,
+        label: band.label, color: band.color, advice: band.advice
+      })) : [],
+      ...forecasts,
+      windForecast,
+      sourceStatus: smokeArtifactStatus(artifact, forecasts, windForecast)
+    };
+    res.set('Cache-Control', apiCache(900, 3600));
+    return res.json(result);
+  } catch (error) {
+    console.error('[smoke-grid-static]', error.message);
+    res.set('Cache-Control', 'no-store');
+    return res.status(503).json({ error: 'Artefak grid CAMS regional tidak dapat dibaca.' });
+  }
+});
+
 app.get('/api/air-point', async (req, res) => {
   const lat = Number(req.query.lat), lon = Number(req.query.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
