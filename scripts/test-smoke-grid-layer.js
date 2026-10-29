@@ -42,18 +42,48 @@ const sparseGrid = raster.buildGrid([
 check('grid dengan satu simpul hilang tetap tersedia untuk area lain', !!sparseGrid && sparseGrid.nx === 3, true);
 check('sel grid yang kehilangan satu simpul tetap transparan, bukan diisi tebakan',
   raster.sampleGrid(sparseGrid, 0.5, 100.5), null);
+function gridWithMissingValue(missingValue) {
+  const rows = [];
+  [0, 1, 2].forEach(function (lat) {
+    [100, 101, 102].forEach(function (lon) {
+      rows.push({ lat: lat, lon: lon, values: [lat === 1 && lon === 101 ? missingValue : 10] });
+    });
+  });
+  return raster.buildGrid(rows, 0);
+}
+const nullValueGrid = gridWithMissingValue(null);
+const undefinedValueGrid = gridWithMissingValue(undefined);
+const emptyValueGrid = gridWithMissingValue('');
+const booleanValueGrid = gridWithMissingValue(false);
+check('null, undefined, string kosong, dan boolean bukan nilai nol pada grid',
+  !!nullValueGrid && nullValueGrid.present[4] === 0
+    && !!undefinedValueGrid && undefinedValueGrid.present[4] === 0
+    && !!emptyValueGrid && emptyValueGrid.present[4] === 0
+    && !!booleanValueGrid && booleanValueGrid.present[4] === 0, true);
+check('interpolasi tidak melintasi simpul model yang null',
+  raster.sampleGrid(nullValueGrid, 0.5, 100.5), null);
 
 const clear = raster.colorForValue(0);
+const olive = raster.colorForValue(1);
 const yellow = raster.colorForValue(5);
 const orange = raster.colorForValue(12);
 const red = raster.colorForValue(25);
-const purple = raster.colorForValue(50);
+const darkRed = raster.colorForValue(50);
 check('nol PM2.5 transparan', clear[3], 0);
+check('nilai rendah mulai dari hijau zaitun', olive[1] > olive[0] && olive[0] > olive[2] && olive[3] > 0, true);
 check('titik tengah kuning berwarna kuning', yellow[0] > yellow[2] && yellow[1] > yellow[2] && yellow[3] > 0, true);
-check('warna bergerak melalui oranye dan merah', orange[0] > orange[1] && red[0] > red[1], true);
-check('nilai tinggi beralih ke ungu', purple[2] > purple[0] && purple[2] > purple[1], true);
-check('opasitas tetap lembut dan paling tinggi 60 persen',
-  raster.colorStops[raster.colorStops.length - 1].alpha <= 0.6 && purple[3] <= 153, true);
+check('warna kontinu bergerak melalui oranye dan merah', orange[0] > orange[1] && red[0] > red[1], true);
+check('nilai tinggi beralih ke merah tua/cokelat', darkRed[0] > darkRed[1] && darkRed[1] > darkRed[2], true);
+check('opasitas puncak raster dibatasi sekitar 65 persen',
+  raster.colorStops[raster.colorStops.length - 1].alpha === 0.65 && darkRed[3] <= 166, true);
+check('nilai di atas ramp mempertahankan merah tua maksimum', raster.colorForValue(500),
+  function (actual) { return JSON.stringify(actual) === JSON.stringify(darkRed); });
+check('palet AOD memakai rentang numerik terpisah',
+  raster.colorForValue(0.2, raster.aodColorStops)[3] > 0
+    && raster.colorForValue(0.2, raster.aodColorStops)[0] > raster.colorForValue(0.2)[0], true);
+check('palet debu memakai rentang numerik terpisah',
+  raster.colorForValue(10, raster.dustColorStops)[3] > 0
+    && raster.dustColorStops[raster.dustColorStops.length - 1].value === 100, true);
 check('sampel hilang atau tidak numerik tetap transparan',
   raster.colorForValue(null)[3] === 0 && raster.colorForValue('rusak')[3] === 0, true);
 
