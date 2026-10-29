@@ -54,10 +54,10 @@ assert.ok(/state\.particles\.setField\(field, \{ preserveParticles: !!preservePa
 assert.ok(/function ensureForecastLayers\(skipCachedFrameDraw\)/.test(app));
 assert.ok(/loadAir\(!!skipCachedFrameDraw\)/.test(app));
 assert.ok(/ensureForecastLayers\(true\);/.test(app));
-assert.ok(/if \(state\.pm25On\) drawPm25\(true\)/.test(app));
+assert.ok(/if \(modelRasterIsOn\(\)\) drawActiveModelRaster\(true\)/.test(app));
 assert.ok(/function smokeWindTimelineNote\(\)/.test(app));
 assert.ok(/aligned to CAMS/.test(app) && /selaras dengan CAMS/.test(app));
-assert.ok(/'CAMS NOW'/.test(app) && /'CAMS 0J'/.test(app));
+assert.ok(/productTag = kind === 'pm25'/.test(app) && /'AOD'/.test(app) && /'DEBU'/.test(app));
 console.log('  LULUS CAMS dan angin dipilih dengan indeks sama, target waktu divalidasi, dan timeline mempertahankan jejak');
 
 assert.ok(source.includes('if (ts - last > 33)'));

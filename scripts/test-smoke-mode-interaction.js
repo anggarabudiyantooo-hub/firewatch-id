@@ -14,46 +14,58 @@ function count(text, needle) {
   return (text.match(new RegExp(needle, 'g')) || []).length;
 }
 
-console.log('\n== toggle, legenda, dan inspeksi PM2.5/asap ==');
+console.log('\n== toggle, legenda, dan inspeksi raster CAMS/plume ==');
 assert.ok(html.includes('Raster PM2.5 total (CAMS)'));
+assert.ok(html.includes('Kedalaman optik aerosol (AOD)'));
+assert.ok(html.includes('Debu model dekat permukaan'));
 assert.ok(html.includes('Plume indikatif (FIRMS + GFS)'));
-assert.equal(count(html, 'id="lyPm25"'), 1, 'toggle PM2.5 harus unik');
-assert.equal(count(html, 'id="lySmoke"'), 1, 'toggle plume harus unik');
-assert.equal(count(html, 'id="pm25Status"'), 1, 'status PM2.5 harus unik');
-assert.equal(count(html, 'id="pm25Legend"'), 1, 'legenda PM2.5 harus unik');
-assert.match(html, /role="group" aria-label="Pilih satu mode asap"[\s\S]*?id="lyPm25"[\s\S]*?id="lySmoke"/);
-assert.ok(html.includes('Hanya satu mode dapat aktif pada satu waktu.'));
-assert.ok(i18n.translate('Raster PM2.5 total (CAMS)', 'en').includes('Total PM2.5 raster'));
-assert.ok(i18n.translate('Plume indikatif (FIRMS + GFS)', 'en').includes('Indicative plume'));
+['lyPm25', 'lyAod', 'lyDust', 'lySmoke'].forEach(function (id) {
+  assert.equal(count(html, 'id="' + id + '"'), 1, 'toggle ' + id + ' harus unik');
+});
+assert.match(html, /id="lyPm25" checked/);
+assert.equal(count(html, 'id="pm25Status"'), 1, 'status raster harus unik');
+assert.equal(count(html, 'id="pm25Legend"'), 1, 'legenda raster harus unik');
+assert.match(html, /role="group" aria-label="Pilih satu layer model CAMS atau plume indikatif"[\s\S]*?id="lyPm25"[\s\S]*?id="lyAod"[\s\S]*?id="lyDust"[\s\S]*?id="lySmoke"/);
+assert.ok(html.includes('PM2.5 adalah total model, bukan konsentrasi asap spesifik.'));
+assert.ok(i18n.translate('Raster PM2.5 total (CAMS) · utama', 'en').includes('primary'));
+assert.ok(i18n.translate('Kedalaman optik aerosol (AOD)', 'en').includes('Aerosol optical depth'));
+assert.ok(i18n.translate('Debu model dekat permukaan', 'en').includes('near-surface dust'));
+assert.ok(i18n.translate('Animasi partikel angin', 'en').includes('Wind particle animation'));
 
-assert.ok(app.includes("if (id === 'lySmoke' && $('lyPm25').checked) deactivatePm25Mode();"));
+assert.ok(app.includes("if (id === 'lySmoke' && modelRasterIsOn()) deactivateModelRasterMode();"));
 assert.ok(app.includes("if ($('lySmoke').checked) deactivateSmokeMode();"));
-assert.ok(app.includes("if (_lp && _lp.checked && _ls && _ls.checked) _ls.checked = false;"));
-assert.ok(app.includes('function deactivatePm25Mode()'));
+assert.ok(app.includes("var _modeIds = ['lyPm25', 'lyAod', 'lyDust', 'lySmoke'];"));
+assert.ok(app.includes('function deactivateModelRasterMode()'));
+assert.ok(app.includes('function deactivateOtherModelRasters(activeKind)'));
 assert.ok(app.includes('function deactivateSmokeMode()'));
-assert.ok(app.includes("if (!$('lySmoke').checked) stopSmokePlayback();"));
+assert.ok(app.includes('function bindModelRasterToggle(id, kind)'));
+assert.ok(app.includes('syncSmokeBasemap();'));
+assert.ok(app.includes("if (!modelRasterIsOn()) stopSmokePlayback();"));
 assert.ok(app.includes('map.removeLayer(group)'));
 
 assert.ok(app.includes('function updatePm25PointInfo(latlng, pinned)'));
 assert.ok(app.includes("map.on('mousemove'"));
 assert.ok(app.includes("map.on('click'"));
-assert.ok(app.includes('gPm25.sampleAt(lat, lon)'));
+assert.ok(app.includes('meta.layer.sampleAt(lat, lon)'));
 assert.ok(app.includes('state.particles.sampleAt(lat, lon)'));
 assert.ok(app.includes('Number.isFinite(value) && value >= 0'));
 assert.ok(app.includes('transparent means unavailable, not zero'));
 assert.ok(app.includes('Wind data is unavailable at this location.'));
 assert.ok(app.includes('Math.abs(camsMs - windValidMs) > 90 * 60 * 1000'));
-assert.ok(app.includes('No wind frame aligned with this CAMS time is available.'));
+assert.ok(app.includes('No aligned wind frame is available for this CAMS time; particles are paused.'));
 assert.ok(app.includes('var windSource = windFrame'));
 assert.ok(app.includes('coverageNode.hidden = !smokeOn'));
+assert.ok(app.includes('Aerosol optical depth'));
+assert.ok(app.includes('whole-atmosphere'));
+assert.ok(app.includes('fire-smoke measurement'));
 
 assert.ok(app.includes('https://atmosphere.copernicus.eu/'));
 assert.ok(app.includes('https://open-meteo.com/en/docs/air-quality-api'));
-assert.ok(app.includes('PM2.5 total semua sumber; bukan khusus asap atau pengukuran stasiun.'));
-assert.ok(app.includes('CAMS is total PM2.5 from all sources, not smoke-specific or a station measurement.'));
+assert.ok(app.includes('PM2.5 CAMS adalah total semua sumber, bukan khusus asap atau pengukuran stasiun.'));
+assert.ok(app.includes('CAMS Global total PM2.5 near the surface, from all sources'));
 assert.ok(css.includes('.pm25-point-info'));
 assert.ok(css.includes('@media(max-width:600px){.pm25-point-info'));
 
-console.log('  LULUS label/ID unik, mode saling mengganti tetapi tetap dapat dimatikan');
-console.log('  LULUS inspeksi hover/klik, sampel hilang bukan nol, dan sumber CAMS/Open-Meteo');
-console.log('\n2/2 uji interaksi mode asap lulus.');
+console.log('  LULUS PM2.5/AOD/debu/plume eksklusif, PM2.5 default, dan basemap gelap');
+console.log('  LULUS inspeksi hover/klik, interpolasi nilai, caveat dan atribusi terpisah');
+console.log('\n2/2 uji interaksi mode raster lulus.');
