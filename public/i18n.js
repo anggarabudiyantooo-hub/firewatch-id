@@ -70,6 +70,35 @@
     'Memuat…': 'Loading...',
     'LAPISAN PETA': 'MAP LAYERS',
     'Letusan gunung api': 'Volcanic eruptions',
+    'MODE ASAP': 'SMOKE MODES',
+    'MODE ASAP & AEROSOL': 'SMOKE & AEROSOL MODES',
+    'Pilih satu mode asap': 'Choose one smoke mode',
+    'Pilih satu layer model CAMS atau plume indikatif': 'Choose one CAMS model layer or indicative plume',
+    'Raster PM2.5 total (CAMS)': 'Total PM2.5 raster (CAMS)',
+    'Raster PM2.5 total (CAMS) · utama': 'Total PM2.5 raster (CAMS) · primary',
+    'Raster PM2.5 total CAMS Global dari semua sumber, bukan khusus asap': 'CAMS Global total PM2.5 raster from all sources, not smoke-specific',
+    'Raster PM2.5 total CAMS Global dari semua sumber, dekat permukaan, bukan khusus asap': 'CAMS Global total PM2.5 raster near the surface from all sources, not smoke-specific',
+    'Kedalaman optik aerosol (AOD)': 'Aerosol optical depth (AOD)',
+    'AOD CAMS tanpa satuan, ukuran optik seluruh kolom atmosfer, bukan konsentrasi permukaan': 'CAMS AOD is dimensionless and describes the whole atmospheric column; it is not a surface concentration',
+    'Debu model dekat permukaan': 'Modeled near-surface dust',
+    'Debu CAMS dalam mikrogram per meter kubik; produk terpisah, bukan ukuran asap kebakaran': 'CAMS dust in micrograms per cubic meter; a separate product, not a wildfire-smoke measurement',
+    'Pilih satu overlay utama: PM2.5, AOD, debu, atau plume. PM2.5 adalah total model, bukan konsentrasi asap spesifik.': 'Choose one primary overlay: PM2.5, AOD, dust, or plume. PM2.5 is a total-model product, not a smoke-specific concentration.',
+    'Legenda variabel raster CAMS aktif dan atribusinya': 'Legend and attribution for the active CAMS raster variable',
+    'Animasi partikel angin': 'Wind particle animation',
+    'Animasi partikel angin; saat raster CAMS aktif, frame mengikuti waktu dan grid model': 'Wind particle animation; when a CAMS raster is active, frames follow model time and grid',
+    'Saat raster CAMS aktif, partikel hanya bergerak bila frame angin selaras tersedia; tidak menggunakan data Open-Meteo langsung dari browser.': 'With a CAMS raster active, particles move only when an aligned wind frame is available; the browser does not call Open-Meteo directly.',
+    'Aras / tekanan angin': 'Wind level / pressure',
+    'Aras tekanan angin': 'Wind pressure level',
+    'LINIMASA PLUME & MODEL CAMS': 'PLUME & CAMS MODEL TIMELINE',
+    'Linimasa bawah peta memutar plume indikatif atau frame prakiraan raster CAMS yang aktif; PM2.5, AOD, dan debu tetap produk terpisah.': 'The bottom timeline animates the indicative plume or the active CAMS raster forecast; PM2.5, AOD, and dust remain separate products.',
+
+    'Plume indikatif (FIRMS + GFS)': 'Indicative plume (FIRMS + GFS)',
+    'Plume indikatif dari titik api FIRMS dan angin model NOAA GFS': 'Indicative plume from FIRMS hotspots and NOAA GFS modeled winds',
+    'Belum ada plume indikatif yang tersedia pada data saat ini.': 'No indicative plume is available in the current data.',
+    'Prakiraan PM2.5 total CAMS sedang dimuat.': 'Loading the CAMS total PM2.5 forecast.',
+    'Hanya satu mode dapat aktif pada satu waktu. Memilih mode lain akan mengganti layer aktif.': 'Only one mode can be active at a time. Selecting the other replaces the active layer.',
+    'Memuat grid kualitas udara dan prakiraan PM2.5 CAMS…': 'Loading the air-quality grid and CAMS PM2.5 forecast…',
+    'Legenda raster PM2.5 total model dalam mikrogram per meter kubik': 'Total modeled PM2.5 raster legend in micrograms per cubic meter',
     'Sebaran asap indikatif (FIRMS + GFS)': 'Indicative smoke plume (FIRMS + GFS)',
     'Sebaran asap indikatif FIRMS dan NOAA GFS': 'Indicative smoke plume from FIRMS and NOAA GFS',
     'Cakupan klaster plume akan muncul setelah data dimuat.': 'Plume cluster coverage will appear when data loads.',
@@ -84,8 +113,25 @@
     'Kualitas udara (US AQI)': 'Air quality (US AQI)',
     'Kualitas udara US AQI': 'US AQI air quality',
     'PM2.5 total model (CAMS)': 'Total modeled PM2.5 (CAMS)',
+    'Raster PM2.5 total model · µg/m³': 'Total modeled PM2.5 raster · µg/m³',
+    'PM2.5 total model · µg/m³': 'Total modeled PM2.5 · µg/m³',
     'PM2.5 total model CAMS Global, bukan khusus asap': 'CAMS Global total modeled PM2.5, not smoke-specific',
     'Legenda PM2.5 model dalam mikrogram per meter kubik': 'Modeled PM2.5 legend in micrograms per cubic meter',
+    'Memuat prakiraan PM2.5 model CAMS Global…': 'Loading the CAMS Global modeled PM2.5 forecast…',
+    'Prakiraan PM2.5 CAMS tidak tersedia untuk area ini.': 'CAMS PM2.5 forecast is unavailable for this area.',
+    'Prakiraan PM2.5 CAMS tidak tersedia saat ini.': 'CAMS PM2.5 forecast is currently unavailable.',
+    'Kuota Open-Meteo tercapai. Coba lagi setelah jeda; tidak ada nilai baru yang ditampilkan.': 'Open-Meteo quota reached. Try again after a pause; no new values are being shown.',
+    'Kuota layanan data tercapai. Coba lagi setelah jeda; tidak ada nilai baru yang ditampilkan.': 'The data-service quota has been reached. Try again after a pause; no new values are being shown.',
+    'Grid CAMS regional tidak tersedia saat ini.': 'The regional CAMS grid is currently unavailable.',
+    'PM2.5 CAMS tidak tersedia pada frame ini.': 'CAMS PM2.5 is unavailable for this frame.',
+    'Data model CAMS historis tidak tersedia sebelum frame 0.': 'Historical CAMS model data is unavailable before frame 0.',
+    'Tidak ada nilai model valid pada frame ini; data hilang bukan nol.': 'No valid modeled value in this frame; missing data is not zero.',
+    'Sel grid valid bernilai nol; sel transparan menunjukkan nol atau data tidak tersedia, dibedakan melalui inspeksi.': 'Valid grid cells contain zero; transparent cells indicate zero or unavailable data, distinguished by inspection.',
+
+    'Tidak ada sampel CAMS valid di sini; transparan berarti tidak tersedia, bukan nol.': 'No valid CAMS grid sample here; transparent means unavailable, not zero.',
+    'Data PM2.5 historis CAMS tidak tersedia sebelum frame 0.': 'Historical CAMS PM2.5 is unavailable before frame 0.',
+    'PM2.5 total semua sumber, bukan khusus asap kebakaran.': 'Total PM2.5 from all sources, not smoke-specific.',
+    'Dekat permukaan 10 m; bukan pembacaan stasiun atau kontribusi khusus asap.': 'Near-surface model; not a station reading or a smoke-only contribution.',
     'Aliran angin': 'Wind flow',
     'Batas konsesi': 'Concession boundaries',
     'Lalu lintas udara': 'Air traffic',
@@ -1037,6 +1083,12 @@
     }
     if ((match = /^([\d.,]+) sampel PM2\.5 total CAMS\. Bukan kontribusi khusus asap\.$/i.exec(text))) {
       return match[1] + ' total CAMS PM2.5 samples. Not a smoke-specific contribution.';
+    }
+    if ((match = /^([\d.,]+) sampel PM2\.5 total model CAMS, bukan khusus asap\.$/i.exec(text))) {
+      return match[1] + ' total modeled CAMS PM2.5 samples; not smoke-specific.';
+    }
+    if ((match = /^([\d.,]+) plume indikatif dari klaster FIRMS dan angin NOAA GFS; bukan lintasan asap teramati atau ukuran konsentrasi\.$/i.exec(text))) {
+      return match[1] + ' indicative plumes from FIRMS clusters and NOAA GFS winds; not observed smoke tracks or measured concentrations.';
     }
     if ((match = /^([\d.,]+) sel kualitas udara \(filter: ([\d.,]+) tampil\) · model CAMS via Open-Meteo\.$/i.exec(text))) {
       return match[1] + ' air-quality cells (' + match[2] + ' shown after filtering) · CAMS model via Open-Meteo.';

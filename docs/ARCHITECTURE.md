@@ -115,6 +115,7 @@ memakai `no-store` agar keadaan "belum tahu" tidak ikut ter-cache.
 | `/api/status` | no-store | Umur tiap sumber |
 | `/api/wind-field` | 1800 dtk | Medan angin |
 | `/api/air-quality` | 900 dtk, stale 1800 dtk | Grid US AQI; `forecast=1` menambahkan empat frame PM2.5 CAMS Global |
+| `/api/smoke-grid` | 1800 dtk, stale 3600 dtk | Batch CAMS PM2.5 total dan empat frame angin untuk raster interaktif; grid dibatasi per viewport dan ketinggian angin tetap eksplisit |
 | `/api/air-point` | - | AQI satu titik |
 | `/api/place` | - | Wilayah administratif |
 | `/api/whose-land` | - | Status lahan satu titik |
@@ -128,19 +129,41 @@ memakai `no-store` agar keadaan "belum tahu" tidak ikut ter-cache.
 | `/api/sentinel/:p/:z/:x/:y.jpg` | 21600 dtk | Proksi ubin Sentinel-2, allowlist produk, zoom 8-16 |
 | `/` | no-store | Halaman, menyuntik hash aset |
 
-**Permintaan grid udara.** `/api/air-quality` tetap same-origin dan membatasi grid
-hingga 400 titik. Varian AQI dan varian prakiraan memakai kunci cache berbeda; klien
-mengirim `aqi=1` hanya saat layer US AQI aktif dan `forecast=1` hanya saat PM2.5
-aktif. Dengan begitu layer PM2.5 saja tidak meminta variabel current AQI, sedangkan
-layer AQI saja tidak meminta deret hourly. Varian prakiraan meminta `pm2_5` hourly
-dari CAMS Global. `lib/pm25-forecast.js` memvalidasi empat frame
-0/+6/+12/+18 jam, waktu berlaku, satuan, koordinat, serta nilai kosong sebelum
-mengirim `pm25Forecast`. Nilainya
-mewakili PM2.5 total model dekat permukaan sekitar 10 m, grid native 0,4° (~45 km)
-dan interval 3 jam; bukan pengukuran stasiun atau atribusi khusus asap. Cache server
-berlaku 30 menit dengan stale 60 menit. Pane, palet, legenda, dan status PM2.5
-terpisah dari US AQI, plume indikatif, serta raster aerosol OMPS; linimasa dapat
-menyelaraskan waktunya tanpa menyatukan arti produk.
+**Grid PM2.5 total dan AQI.** `/api/air-quality` tetap same-origin untuk layer
+US AQI dan kompatibilitas prakiraan lama. `/api/smoke-grid` kini menjadi jalur UI
+untuk raster CAMS: satu batch mengambil `pm2_5` hourly dan, hanya bila diminta,
+variabel current AQI; empat frame 0/+6/+12/+18 jam divalidasi oleh
+`lib/pm25-forecast.js`, termasuk waktu UTC, satuan, koordinat, dan nilai kosong.
+Nilai CAMS mewakili PM2.5 total model dekat permukaan sekitar 10 m, grid native
+0,4° (~45 km) dan interval 3 jam; bukan pengukuran stasiun atau atribusi khusus asap.
+
+`/api/smoke-grid` juga mengembalikan empat frame angin pada level terpilih.
+Koordinat CAMS dibatasi 400 per batch; angin atas dibatasi 320 titik. Cache server
+30 menit dengan stale 60 menit, sedangkan `s-maxage` CDN 30 menit. Batas ini
+mencegah permintaan per titik dan menjaga permintaan viewport yang diulang tetap
+memakai cache. `public/smoke-grid-layer.js` menyusun titik batch menjadi grid,
+melakukan interpolasi bilinear untuk visual, dan menggambar tile kanvas beresolusi
+rendah dengan palet kontinu transparan-kuning-oranye-merah-ungu. Grid tampilan dapat
+lebih kasar daripada resolusi native CAMS; interpolasi hanya menghaluskan visual,
+bukan menambah informasi atau mengubah PM2.5 total menjadi konsentrasi khusus asap.
+`public/wind-particles.js` memakai frame angin pada indeks dan target waktu yang sama
+dengan CAMS; pilihan level 10 m atau tekanan juga ikut pada permintaan. Timeline
+menampilkan waktu target CAMS, waktu valid keluaran angin, level, serta sumber;
+frame angin yang meleset lebih dari 90 menit tidak dipakai. Frame negatif tetap
+plume-only karena data CAMS historis tidak tersedia. Animasi menjaga batas sekitar
+30 FPS, kerapatan partikel berbasis ukuran layar, dan dukungan
+`prefers-reduced-motion`. Layer raster, legenda, serta statusnya tetap terpisah dari
+US AQI, plume indikatif, dan raster aerosol OMPS.
+
+Di panel lapisan, `Raster PM2.5 total (CAMS)` dan `Plume indikatif (FIRMS + GFS)`
+adalah mode alternatif: memilih salah satunya mematikan yang lain, sedangkan mode
+aktif tetap dapat dimatikan. Legenda CAMS menyatakan bahwa nilai mencakup semua
+sumber, bukan khusus asap atau pengukuran stasiun, serta menautkan atribusi CAMS /
+ECMWF dan Open-Meteo. Saat raster aktif, hover atau klik (ketuk pada layar sentuh)
+menampilkan sampel PM2.5 dan angin yang diinterpolasi pada koordinat peta. Sel kosong,
+frame CAMS negatif, dan frame angin yang tak selaras dinyatakan sebagai tidak tersedia;
+ketiadaan sampel tidak disulap menjadi nol. Frame angin untuk inspeksi tunduk pada
+validasi waktu 90 menit yang sama dengan partikel dan timeline.
 
 ### 2.4 Frontend
 
