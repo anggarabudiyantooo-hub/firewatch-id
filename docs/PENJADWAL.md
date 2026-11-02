@@ -50,7 +50,7 @@ bila ingin presisi menit.
 
 | Pilihan | Keandalan | Biaya | Catatan |
 |---|---|---|---|
-| **A. Cron eksternal gratis** (mis. cron-job.org) memanggil `/api/cron?key=…` | tinggi (per 5-10 menit) | Rp0 | butuh satu pendaftaran; tidak memakai menit Actions |
+| **A. Cron eksternal gratis** (mis. cron-job.org) memanggil `/api/cron` dengan `Authorization: Bearer` | tinggi (per 5-10 menit) | Rp0 | butuh satu pendaftaran + `CRON_SECRET`; tidak memakai menit Actions |
 | B. Vercel Cron | Hobby: sekali sehari | Rp0 | **terpasang** di `vercel.json` sebagai jaring terakhir; terlalu jarang untuk data 10 menitan |
 | C. Vercel Pro (cron per menit) | tinggi | ±$20/bln | tidak perlu bila pilihan A cukup |
 | D. Biarkan seperti sekarang | rendah | Rp0 | dashboard sudah jujur menandai TELAMBAT, tetapi angka berubah tanpa penjelasan |
@@ -65,16 +65,17 @@ Vercel menolak jadwal yang lebih rapat pada paket gratis. Fungsinya sempit dan
 jelas, yaitu memastikan ada satu penyegaran penuh setiap hari tanpa bergantung
 pada GitHub Actions, penjadwal luar, atau uluran tangan.
 
-Bila `CRON_SECRET` dipasang di Vercel, permintaan cron dari Vercel membawa
-header `Authorization: Bearer` secara otomatis dan tetap diterima `server.js`.
+`CRON_SECRET` wajib dipasang di Vercel Production. Vercel Cron akan membawa
+header `Authorization: Bearer` secara otomatis. Bila secret tidak ada,
+`/api/cron` fail-closed dengan HTTP 503 dan tidak menjalankan penyegaran.
 
 ## 5. Langkah memasang pilihan A (tanpa menyentuh kode)
 
 1. Daftar gratis di cron-job.org → **Create cronjob**.
-2. URL: `https://firewatch-id.vercel.app/api/cron?key=<CRON_SECRET>`
-   (`CRON_SECRET` adalah nilai yang sudah dipasang di Vercel. Bila memilih
-   header, gunakan `Authorization: Bearer <CRON_SECRET>`; keduanya didukung
-   `server.js`.)
+2. URL: `https://firewatch-id.vercel.app/api/cron`. Atur header
+   `Authorization: Bearer <CRON_SECRET>` di konfigurasi job, dengan nilai
+   rahasia yang sama seperti di Vercel dan GitHub Actions. Jangan menaruh
+   rahasia di URL atau query string.
 3. Jadwal: **setiap 10 menit**. Timeout 60 detik. Aktifkan notifikasi surel
    saat gagal.
 4. Buat cronjob kedua untuk alarm: `https://firewatch-id.vercel.app/api/alarm`
@@ -87,6 +88,10 @@ Sebelumnya alarm hanya ada di dalam `uptime.yml`, yang ikut telat. Sejak
 
 - **200**, normal.
 - **503**, ada yang perlu ditangani; isi balasan menyebut *apa*.
+
+`/api/alarm` memang publik dan hanya membaca status instance yang melayaninya;
+route ini tidak memicu pengukuran atau permintaan hulu. Karena itu instance dingin
+boleh menjawab `UNKNOWN` dengan HTTP 200 sampai penjadwal mengukurnya.
 
 Aturan penilaiannya dipilih dengan sadar dan diuji:
 

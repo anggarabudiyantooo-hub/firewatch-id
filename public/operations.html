@@ -35,12 +35,12 @@
     <p class="notice-inline" id="keteranganAplikasi"></p>
     <p class="notice-inline" id="aksesBaris"></p>
     <details id="formToken">
-      <summary>Token akses (bila pemasangan ini memakainya)</summary>
+      <summary>Token akses Operations</summary>
       <div class="body">
         <div class="field"><label for="iToken">Token</label><input id="iToken" type="password" autocomplete="off" placeholder="tempel token akses Anda" /></div>
-        <button class="btn" id="btnToken" type="button">Simpan di perangkat ini</button>
+        <button class="btn" id="btnToken" type="button">Simpan di tab ini</button>
         <button class="btn" id="btnTokenHapus" type="button">Hapus</button>
-        <p class="notice-inline">Token hanya disimpan di peramban ini dan dikirim ke server aplikasi yang sama sebagai header <code>x-ops-token</code>. Peran yang berlaku ditampilkan di baris akses di atas.</p>
+        <p class="notice-inline">Token hanya disimpan di sessionStorage tab ini (hilang saat tab ditutup), lalu dikirim ke server aplikasi yang sama sebagai header <code>x-ops-token</code>. Server harus lebih dulu dikonfigurasi dengan OPS_TOKEN_VIEWER / OPERATOR / ADMIN; memasukkan token di sini saja tidak membuka akses. Peran yang berlaku ditampilkan di baris akses di atas.</p>
       </div>
     </details>
   </section>

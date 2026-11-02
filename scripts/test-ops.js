@@ -268,6 +268,40 @@ console.log('\n== insiden ==');
   ]), 'RB-001');
   cek('penandaan ulang memakai yang terbaru', [dua['2'].by, dua['2'].at], ['Sari', '2026-10-04T05:00:00Z']);
 
+  // Token operator tidak disimpan permanen di localStorage: cukup bertahan
+  // selama tab aktif, lalu hilang saat tab ditutup.
+  function storagePalsu(data) {
+    return {
+      getItem: (k) => Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null,
+      setItem: (k, v) => { data[k] = String(v); },
+      removeItem: (k) => { delete data[k]; }
+    };
+  }
+  const dataLokal = { ops_actor: 'Rina', ops_token: 'token-lama-localStorage' };
+  const dataSesi = {};
+  const sandboxCore = {
+    console,
+    localStorage: storagePalsu(dataLokal),
+    sessionStorage: storagePalsu(dataSesi)
+  };
+  sandboxCore.window = sandboxCore;
+  vm.createContext(sandboxCore);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'public', 'ops-core.js'), 'utf8'), sandboxCore);
+  sandboxCore.OpsCore.simpanToken('  token-uji-session  ');
+  cek('token disimpan di sessionStorage, bukan localStorage',
+    [dataSesi.ops_token, dataLokal.ops_token], ['token-uji-session', 'token-lama-localStorage']);
+  cek('header ops memakai token sesi, bukan token lokal lama',
+    sandboxCore.OpsCore.headerOps()['x-ops-token'], 'token-uji-session');
+  let headerTerambil = null;
+  sandboxCore.fetch = (_url, opsi) => {
+    headerTerambil = opsi.headers;
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) });
+  };
+  await sandboxCore.OpsCore.ambilAman('/api/operations/health');
+  cek('GET helper otomatis mengirim token sesi', headerTerambil['x-ops-token'], 'token-uji-session');
+  sandboxCore.OpsCore.simpanToken('');
+  cek('hapus token membersihkan sessionStorage', dataSesi.ops_token, undefined);
+
   // --- RBAC: peran akses (VIEWER < OPERATOR < ADMIN) ---
   function reqDengan(token) {
     return { get: (h) => (h.toLowerCase() === 'x-ops-token' ? token : undefined), opsPeran: undefined };
@@ -282,19 +316,25 @@ console.log('\n== insiden ==');
   ['OPS_TOKEN_VIEWER', 'OPS_TOKEN_OPERATOR', 'OPS_TOKEN_ADMIN', 'OPS_WRITE_TOKEN', 'OPS_READ_PROTECTED']
     .forEach(k => { simpanEnv[k] = process.env[k]; delete process.env[k]; });
 
-  cek('tanpa token apa pun → mode terbuka', auth.konfigurasi().mode, 'terbuka');
-  cek('mode terbuka: tidak ada peran yang dikonfigurasi',
+  cek('tanpa token apa pun → mode terkunci', auth.konfigurasi().mode, 'terkunci');
+  cek('mode terkunci: tidak ada peran yang dikonfigurasi',
     auth.konfigurasi().peranDikonfigurasi, { VIEWER: false, OPERATOR: false, ADMIN: false });
   let lanjut = false;
-  auth.butuh('OPERATOR')(reqDengan(''), resPalsu(), () => { lanjut = true; });
-  cek('mode terbuka: tulis diloloskan (perilaku lama dipertahankan)', lanjut, true);
+  const rTerkunci = resPalsu();
+  auth.butuh('OPERATOR')(reqDengan(''), rTerkunci, () => { lanjut = true; });
+  cek('mode terkunci: tulis ditolak 503 dan tidak diteruskan',
+    [rTerkunci.kode, rTerkunci.badan.mode, lanjut], [503, 'terkunci', false]);
+  const rBacaTerkunci = resPalsu(); lanjut = false;
+  auth.baca()(reqDengan(''), rBacaTerkunci, () => { lanjut = true; });
+  cek('mode terkunci: baca juga ditolak 503',
+    [rBacaTerkunci.kode, rBacaTerkunci.badan.mode, lanjut], [503, 'terkunci', false]);
 
   process.env.OPS_TOKEN_VIEWER = 'v1';
   process.env.OPS_TOKEN_OPERATOR = 'o1';
   process.env.OPS_TOKEN_ADMIN = 'a1';
   const kTerkunci = auth.konfigurasi();
   cek('tiga peran terkonfigurasi → mode token', [kTerkunci.mode, kTerkunci.aktif], ['token', true]);
-  cek('baca tetap publik sebagai bawaan', kTerkunci.readProtected, false);
+  cek('semua pembacaan operasional selalu terlindungi', kTerkunci.readProtected, true);
 
   let r1 = resPalsu(); lanjut = false;
   auth.butuh('OPERATOR')(reqDengan(''), r1, () => { lanjut = true; });
@@ -325,14 +365,14 @@ console.log('\n== insiden ==');
   auth.butuh('OPERATOR')(reqDengan('lama'), r1, () => { lanjut = true; });
   cek('token lama tetap bisa menulis', lanjut, true);
 
-  // Baca terkunci hanya bila diminta eksplisit.
-  process.env.OPS_READ_PROTECTED = '1';
+  // OPS_READ_PROTECTED lama tidak boleh lagi membuka pembacaan tanpa token.
+  process.env.OPS_READ_PROTECTED = '0';
   r1 = resPalsu(); lanjut = false;
   auth.baca()(reqDengan(''), r1, () => { lanjut = true; });
-  cek('OPS_READ_PROTECTED=1: baca tanpa token → 401', [r1.kode, lanjut], [401, false]);
+  cek('OPS_READ_PROTECTED=0 tidak menonaktifkan auth baca → 401', [r1.kode, lanjut], [401, false]);
   r1 = resPalsu(); lanjut = false;
   auth.baca()(reqDengan('lama'), r1, () => { lanjut = true; });
-  cek('OPS_READ_PROTECTED=1: baca dengan token sah → lanjut', lanjut, true);
+  cek('token ADMIN lama dapat membaca', lanjut, true);
 
   // Keterangan untuk API/antarmuka tidak boleh memuat tokennya sendiri.
   const inf = JSON.stringify(auth.info());
@@ -636,15 +676,15 @@ console.log('\n== insiden ==');
   const simpan = {};
   kunci.forEach(k => { simpan[k] = process.env[k]; delete process.env[k]; });
   const k0 = authUji.konfigurasi();
-  cek('akses: tanpa token → mode terbuka dan mengatakannya', [k0.mode, k0.aktif], ['terbuka', false]);
+  cek('akses: tanpa token → mode terkunci dan mengatakannya', [k0.mode, k0.aktif], ['terkunci', false]);
   cek('akses: nama variable yang diperiksa disebutkan (untuk diagnosa)',
     k0.namaDiperiksa.join(','), 'OPS_TOKEN_VIEWER,OPS_TOKEN_OPERATOR,OPS_TOKEN_ADMIN,OPS_WRITE_TOKEN');
   cek('akses: belum ada yang terlihat saat env kosong', k0.terlihat.length, 0);
   cek('akses: balasan /access memuat nama yang diperiksa (bukan hanya nama di kode)',
     [authUji.info(null).namaDiperiksa.length > 0, 'terlihat' in authUji.info(null)], [true, true]);
   const ket = authUji.info(null).keterangan;
-  cek('akses: keterangan menyebut nama yang diperiksa + yang terlihat (mode terbuka)',
-    ket.includes('Diperiksa: ') && ket.includes('tidak satu pun'), true);
+  cek('akses: keterangan menyebut mode terkunci + nama yang diperiksa',
+    ket.includes('TERKUNCI') && ket.includes('Diperiksa: ') && ket.includes('tidak satu pun'), true);
 
   process.env.OPS_TOKEN_OPERATOR = 'rahasia-jangan-bocor';
   const k1 = authUji.konfigurasi();
