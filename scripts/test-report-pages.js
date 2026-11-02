@@ -11,6 +11,14 @@ function check(name, fn) {
   try { fn(); passed++; console.log('  ✓ ' + name); }
   catch (error) { console.error('  ✗ ' + name + '\n    ' + (error && error.stack || error)); process.exitCode = 1; }
 }
+function isHttpOrHttps(value) {
+  try {
+    const protocol = new URL(value).protocol;
+    return protocol === 'http:' || protocol === 'https:';
+  } catch (_error) {
+    return false;
+  }
+}
 
 const capture = '2026-10-30T00:15:00.000Z';
 const inside = '2026-10-29T16:00:00.000Z';
@@ -84,24 +92,40 @@ check('source headlines and quoted report wording remain verbatim', () => {
   assert(snapshot.events.some(event => event.title === 'Original headline in English'));
   assert(snapshot.events.some(event => event.description === 'Laporan pos pengamatan dalam bahasa sumber.'));
 });
-check('invalid in-period news citations are excluded and make the issue partial', () => {
+check('in-period citations with non-HTTP schemes are rejected and make the issue partial', () => {
   const data = JSON.parse(JSON.stringify(fixture));
-  data.news.articles.push({ title: 'Unsafe source URL', url: 'javascript:alert(1)', pubDate: inside });
+  const unsafeUrls = [
+    ['JavaScript URL', 'javascript:alert(1)'],
+    ['Data URL', 'data:text/html,not-executable'],
+    ['VBScript URL', 'vbscript:msgbox(1)']
+  ];
+  unsafeUrls.forEach(([title, url]) => data.news.articles.push({ title, url, pubDate: inside }));
   const result = model.buildDailySnapshot(data, capture, {});
   assert.strictEqual(result.sourceStatus.news.available, true);
-  assert.strictEqual(result.sourceStatus.news.periodRecords, 3);
-  assert.strictEqual(result.sourceStatus.news.rejectedRecords, 1);
+  assert.strictEqual(result.sourceStatus.news.periodRecords, 5);
+  assert.strictEqual(result.sourceStatus.news.rejectedRecords, 3);
   assert.strictEqual(result.sourceStatus.news.includedRecords, 2);
   assert.strictEqual(result.sourceStatus.news.partial, true);
-  assert.strictEqual(result.notes.newsRejectedRecords, 1);
+  assert.strictEqual(result.notes.newsRejectedRecords, 3);
   assert.strictEqual(result.quality, 'partial');
 });
-check('unsafe URLs are rejected and each event has a verifiable HTTP(S) citation', () => {
-  assert(!snapshot.references.some(ref => ref.url.startsWith('javascript:')));
+check('citation URLs use an HTTP(S) allowlist and reject executable or non-web schemes', () => {
+  const unsafeUrls = [
+    'javascript:alert(1)',
+    'data:text/html,not-executable',
+    'vbscript:msgbox(1)',
+    'file:///tmp/report',
+    'ftp://example.org/feed',
+    '//example.org/path'
+  ];
+  unsafeUrls.forEach(url => assert.strictEqual(model.safeUrl(url), null, url));
+  assert(isHttpOrHttps(model.safeUrl('http://example.org/report')));
+  assert(isHttpOrHttps(model.safeUrl('https://example.net/report')));
+  assert(snapshot.references.every(ref => isHttpOrHttps(ref.url)));
   const refIds = new Set(snapshot.references.map(ref => ref.id));
   snapshot.events.forEach(event => {
     assert(refIds.has(event.referenceId));
-    assert(/^https?:\/\//.test(event.referenceUrl));
+    assert(isHttpOrHttps(event.referenceUrl));
   });
 });
 check('hotspot counts and truncation are preserved without implying exposure', () => {
