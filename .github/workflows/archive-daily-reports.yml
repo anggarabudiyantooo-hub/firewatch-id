@@ -1,0 +1,53 @@
+name: Archive daily SIAGA-ID evidence
+
+# Daily snapshots are immutable by default. A persistent weekly issue is
+# materialized from the saved daily snapshots for the same ISO week; overlapping
+# rolling windows are never added as if they were disjoint.
+# The Vercel data refresh runs at 19:00 UTC (02:00 WIB); archive at 19:30 UTC
+# (02:30 WIB) to allow it to finish before capturing that day's source state.
+
+on:
+  schedule:
+    - cron: '30 19 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: archive-daily-reports
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+
+      - name: Capture source-linked daily evidence
+        env:
+          REPORT_BASE_URL: ${{ vars.REPORT_BASE_URL || 'https://firewatch-id.vercel.app' }}
+        run: node scripts/archive-daily-report.js
+
+      - name: Commit new daily archive
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- public/reports/archive; then
+            echo "No new daily report archive was created."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/reports/archive
+          git commit -m "data(report): archive daily evidence $(TZ=Asia/Jakarta date +%Y-%m-%d)"
+          git push origin HEAD:main
