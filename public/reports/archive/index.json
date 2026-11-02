@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "timeZone": "Asia/Jakarta",
+  "generatedAt": "2026-10-29T08:07:03.189Z",
+  "reports": [
+    {
+      "date": "2026-10-29",
+      "file": "2026-10-29.json",
+      "capturedAt": "2026-10-29T08:06:55.044Z",
+      "period": {
+        "start": "2026-10-28T08:06:55.044Z",
+        "end": "2026-10-29T08:06:55.044Z",
+        "durationHours": 24
+      },
+      "quality": "partial",
+      "eventCount": 65,
+      "availableSources": 5,
+      "expectedSources": 5
+    }
+  ],
+  "weeklyReports": [
+    {
+      "weekId": "2026-W44",
+      "file": "weekly/2026-W44.json",
+      "throughDate": "2026-10-29",
+      "capturedAt": "2026-10-29T08:06:55.044Z",
+      "period": {
+        "start": "2026-10-28T08:06:55.044Z",
+        "end": "2026-10-29T08:06:55.044Z",
+        "durationHours": 24
+      },
+      "quality": "partial",
+      "dailySnapshotCount": 1,
+      "expectedDailySnapshots": 7,
+      "eventCount": 65,
+      "referenceCount": 49
+    }
+  ]
+}

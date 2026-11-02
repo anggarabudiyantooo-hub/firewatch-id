@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="id" data-site-title-id="SIAGA.ID - Laporan Harian & Mingguan" data-site-title-en="SIAGA.ID - Daily & Weekly Reports" data-site-description-id="Laporan berkala SIAGA-ID bergaya paper akademis dengan jendela data, metode, keterbatasan, dan referensi sumber yang dapat diverifikasi." data-site-description-en="SIAGA-ID academic-style periodic reports with explicit data windows, methods, limitations, and verifiable source references.">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Laporan berkala SIAGA-ID bergaya paper akademis dengan jendela data, metode, keterbatasan, dan referensi sumber yang dapat diverifikasi." />
+  <meta name="theme-color" content="#0b0c0e" />
+  <title>SIAGA.ID - Laporan Harian &amp; Mingguan</title>
+  <link rel="stylesheet" href="/site.css" />
+</head>
+<body class="site-page reports-page">
+  <a class="site-skip-link" href="#content" data-i18n-skip data-site-id="Lewati ke konten utama" data-site-en="Skip to main content">Lewati ke konten utama</a>
+  <header class="site-header">
+    <a class="site-header-brand" href="/" aria-label="SIAGA.ID home">
+      <span class="site-brand-mark" aria-hidden="true">S</span>
+      <span>SIAGA.ID</span>
+      <span class="site-brand-sub" data-i18n-skip data-site-id="Terminal Bencana" data-site-en="Disaster Monitor">Terminal Bencana</span>
+    </a>
+    <div class="site-nav-wrap">
+      <button class="site-nav-toggle" id="siteNavToggle" type="button" aria-controls="siteNav" aria-expanded="false" data-i18n-skip data-site-aria-id="Buka navigasi" data-site-aria-en="Open navigation">
+        <span aria-hidden="true">☰</span><span data-i18n-skip data-site-id="Menu" data-site-en="Menu">Menu</span>
+      </button>
+      <nav class="site-nav-links" id="siteNav" aria-label="Navigasi utama">
+        <a href="/"><span data-i18n-skip data-site-id="Beranda" data-site-en="Home">Beranda</span></a>
+        <a href="/dashboard"><span data-i18n-skip data-site-id="Dashboard" data-site-en="Dashboard">Dashboard</span></a>
+        <a href="/reports" aria-current="page"><span data-i18n-skip data-site-id="Laporan" data-site-en="Reports">Laporan</span></a>
+      </nav>
+    </div>
+    <div class="site-header-actions">
+      <div class="site-language-switch" role="group" aria-label="Pilih bahasa" data-site-aria-id="Pilih bahasa" data-site-aria-en="Choose language">
+        <button id="langId" type="button" aria-label="Bahasa Indonesia" aria-pressed="true">ID</button>
+        <button id="langEn" type="button" aria-label="English language" aria-pressed="false">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="content" class="site-main">
+    <section class="reports-intro">
+      <p class="site-eyebrow" data-i18n-skip data-site-id="Arsip bukti · Laporan berkala" data-site-en="Evidence archive · Periodic reports">Arsip bukti · Laporan berkala</p>
+      <h1 class="site-heading" data-i18n-skip data-site-id="Laporan yang bisa ditelusuri kembali." data-site-en="Reports you can trace back to their evidence.">Laporan yang bisa ditelusuri kembali.</h1>
+      <p class="site-lede" data-i18n-skip data-site-id="Setiap edisi mencatat periode, waktu pengambilan, cakupan feed, metode, keterbatasan, dan tautan referensi. Laporan mingguan disusun dari snapshot harian yang tersedia; feed yang gagal tidak dihitung sebagai nol." data-site-en="Each issue records its period, capture time, feed coverage, methods, limitations, and reference links. Weekly reports are derived from available daily snapshots; failed feeds are never counted as zero.">Setiap edisi mencatat periode, waktu pengambilan, cakupan feed, metode, keterbatasan, dan tautan referensi. Laporan mingguan disusun dari snapshot harian yang tersedia; feed yang gagal tidak dihitung sebagai nol.</p>
+    </section>
+
+    <section class="site-section report-controls site-screen-only" aria-label="Pengaturan laporan">
+      <div class="report-control-row">
+        <div class="report-period-tabs" role="tablist" aria-label="Pilih periode laporan">
+          <button class="report-period-tab active" id="periodDaily" type="button" role="tab" aria-selected="true" aria-controls="reportPaper" data-period="daily"><span data-i18n-skip data-site-id="Harian" data-site-en="Daily">Harian</span></button>
+          <button class="report-period-tab" id="periodWeekly" type="button" role="tab" aria-selected="false" aria-controls="reportPaper" data-period="weekly"><span data-i18n-skip data-site-id="Mingguan" data-site-en="Weekly">Mingguan</span></button>
+        </div>
+        <label class="report-select-label" for="reportSelect" data-i18n-skip data-site-id="Edisi tersimpan" data-site-en="Archived issue">Edisi tersimpan</label>
+        <select id="reportSelect" class="report-select" aria-label="Pilih edisi laporan" data-site-aria-id="Pilih edisi laporan" data-site-aria-en="Choose report issue"><option value="" data-i18n-skip>Memuat arsip…</option></select>
+        <button id="reportPrint" class="site-button primary" type="button" disabled><span aria-hidden="true">⎙</span><span data-i18n-skip data-site-id="Ekspor PDF" data-site-en="Export PDF">Ekspor PDF</span></button>
+      </div>
+      <p id="archiveStatus" class="site-status" role="status" aria-live="polite" data-i18n-skip>Memuat indeks arsip laporan…</p>
+    </section>
+
+    <article id="reportPaper" class="report-paper" aria-live="polite">
+      <div id="reportContent" data-i18n-skip>
+        <div class="site-empty">Memuat laporan…</div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <span>SIAGA.ID · <span data-i18n-skip data-site-id="Laporan ini merangkum sumber; bukan peringatan resmi." data-site-en="This report summarizes sources; it is not an official alert.">Laporan ini merangkum sumber; bukan peringatan resmi.</span></span>
+    <a href="/dashboard" data-i18n-skip data-site-id="Buka dashboard interaktif" data-site-en="Open interactive dashboard">Buka dashboard interaktif</a>
+  </footer>
+
+  <script src="/i18n.js"></script>
+  <script src="/site-nav.js"></script>
+  <script src="/report-model.js"></script>
+  <script src="/reports.js"></script>
+</body>
+</html>
