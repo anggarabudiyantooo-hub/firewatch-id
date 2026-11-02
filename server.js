@@ -108,6 +108,8 @@ const { fetchDrought } = require('./lib/drought');
 const { summarize: summarizeCasualties } = require('./lib/casualty');
 const { Scheduler } = require('./lib/scheduler');
 const { answer: ragAnswer } = require('./lib/rag');
+const { answerWithMuse, safeFailureCode } = require('./lib/muse-agent');
+const aiHistoryStore = require('./lib/ai-history-store');
 const kamera = require('./lib/kamera');
 const flights = require('./lib/flights');
 
@@ -220,6 +222,8 @@ const RL_TILE = 1200;
 // banyak pengguna sah sekaligus. Yang ingin dicegah adalah skrip yang
 // mengirim ribuan permintaan, bukan manusia yang menggeser peta.
 const RL_EXPENSIVE = CONFIG.RATE_LIMIT.expensive;
+// Muse requests can incur provider usage, so keep a separate per-IP burst cap.
+const RL_AI = 12;
 const RL_EXPENSIVE_PATHS = /^\/(overview|wind-field|air-quality|smoke-grid-static|smoke-grid|concessions|place|whose-land|air-point|news)/;
 
 const hits = new Map();
@@ -227,9 +231,10 @@ app.use('/api', (req, res, next) => {
   const ip = req.ip || 'x';
   const now = Date.now();
   const isTile = RL_TILE_PATHS.test(req.path);
-  const expensive = !isTile && RL_EXPENSIVE_PATHS.test(req.path);
-  const limit = isTile ? RL_TILE : (expensive ? RL_EXPENSIVE : RL_NORMAL);
-  const key = ip + (isTile ? '|t' : expensive ? '|e' : '|n');
+  const isAi = req.path === '/ask';
+  const expensive = !isTile && !isAi && RL_EXPENSIVE_PATHS.test(req.path);
+  const limit = isTile ? RL_TILE : (isAi ? RL_AI : (expensive ? RL_EXPENSIVE : RL_NORMAL));
+  const key = ip + (isTile ? '|t' : isAi ? '|ai' : expensive ? '|e' : '|n');
 
   const rec = hits.get(key) || { n: 0, t: now };
   if (now - rec.t > RL_WINDOW_MS) { rec.n = 0; rec.t = now; }
@@ -2468,34 +2473,33 @@ app.get('/api/news', async (_req, res) => {
   } catch { res.status(502).json({ ok: false, articles: [], message: 'Umpan berita gagal dimuat.' }); }
 });
 
-/* ---------- pencarian & tanya-jawab berbasis data (RAG lokal) ---------- */
+/* ---------- AI situation briefing: Muse Spark plus local fallback ---------- */
 /**
  * Batas kesabaran satu sumber pada /api/ask.
  *
- * Terukur di produksi (3 Okt): overview dingin 10,8 dtk, hazard 8,2 dtk,
- * news 1,4 dtk, dan bila beberapa sumber dingin sekaligus, /api/ask
- * melewati batas 60 dtk platform dan jatuh sebagai 504. Pengguna tidak
- * pernah menerima jawaban apa pun; itu kegagalan yang lebih buruk daripada
- * jawaban yang mengaku tidak menemukan data pada sumber yang belum tiba.
- * Dengan batas ini jawaban selalu keluar; kekosongan ditulis apa adanya
- * oleh ragAnswer, tidak dipalsukan.
+ * Setiap sumber mendapat deadline sendiri agar satu sumber dingin atau lambat
+ * tidak menghalangi seluruh briefing. Data yang tidak tiba tetap dinyatakan
+ * tidak tersedia, bukan diubah menjadi nol.
  */
 const ASK_SOURCE_DEADLINE_MS = 20000;
 function withDeadline(p, fallback, ms) {
   const batas = ms || ASK_SOURCE_DEADLINE_MS;
-  return Promise.race([
-    Promise.resolve(p).catch(() => fallback),
-    new Promise((resolve) => { setTimeout(() => resolve(fallback), batas); })
-  ]);
+  return new Promise(resolve => {
+    let settled = false;
+    const finish = value => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(value);
+    };
+    const timer = setTimeout(() => finish(fallback), batas);
+    Promise.resolve(p).then(finish, () => finish(fallback));
+  });
 }
 
 app.get('/api/ask', async (req, res) => {
   const raw = String(req.query.q || '').trim();
   if (!raw) return res.status(400).json({ error: 'Pertanyaan tidak boleh kosong.' });
-  // Klien membatasi 200 karakter lewat atribut maxlength. Server menolak
-  // secara tegas alih-alih diam-diam memotong: memangkas tanpa memberi
-  // tahu membuat pengguna menerima jawaban atas pertanyaan yang bukan
-  // pertanyaannya, dan menyembunyikan penyalahgunaan dari log.
   if (raw.length > 200) {
     return res.status(400).json({ error: 'Pertanyaan maksimal 200 karakter.' });
   }
@@ -2511,6 +2515,14 @@ app.get('/api/ask', async (req, res) => {
       withDeadline(scheduler.get('shelter'), null)
     ]);
     const hazard = { quakes, shelters };
+    const assembledAt = Date.now();
+    const sourceState = {
+      volcano: publicSchedulerTaskState('volcano', assembledAt),
+      pvmbg: publicSchedulerTaskState('pvmbg', assembledAt),
+      eruption: publicSchedulerTaskState('eruption', assembledAt),
+      quake: publicSchedulerTaskState('quake', assembledAt),
+      shelter: publicSchedulerTaskState('shelter', assembledAt)
+    };
     const casualties = summarizeCasualties((news && news.articles) || []);
     const ctx = {
       overview,
@@ -2519,10 +2531,38 @@ app.get('/api/ask', async (req, res) => {
       volcano,
       hazard,
       casualties,
+      sourceState,
       air: { worst: overview && overview.worstAir }
     };
     res.set('Cache-Control', 'no-store');
-    res.json(ragAnswer(q, ctx, language));
+
+    const localAnswer = ragAnswer(q, ctx, language);
+    const apiKey = String(process.env.MODEL_API_KEY || '').trim();
+    if (!apiKey) {
+      return res.json({
+        ...localAnswer,
+        provider: 'local-rag',
+        model: null,
+        metaApiConfigured: false,
+        notice: 'Meta Model API belum tersambung. Jawaban ini memakai mode lokal dan bukan demonstrasi Muse Spark.'
+      });
+    }
+
+    try {
+      const answer = await answerWithMuse(q, ctx, { apiKey, language });
+      return res.json(answer);
+    } catch (error) {
+      const failureCode = safeFailureCode(error);
+      console.warn('[ask:muse-fallback]', failureCode);
+      return res.json({
+        ...localAnswer,
+        provider: 'local-fallback',
+        model: 'muse-spark-1.3',
+        metaApiConfigured: true,
+        failureCode,
+        notice: 'Muse Spark tidak dapat dijangkau. Jawaban ini memakai mode lokal, bukan hasil model Meta.'
+      });
+    }
   } catch {
     res.status(502).json({ error: 'Pencarian sedang tidak tersedia.' });
   }
@@ -2617,6 +2657,24 @@ app.get('/api/cron', autentikasiCron, async (req, res) => {
     // Batas fungsi Vercel 60 detik; sisakan ruang untuk menyusun balasan
     // agar cron tidak pernah dibunuh di tengah jalan dan terbaca "gagal".
     const r = await scheduler.tick({ force: req.query.force === '1', budgetMs: CONFIG.TIMEOUTS.cronBudgetMs });
+    // Riwayat analitik hanya membaca hasil FIRMS yang baru saja disegarkan.
+    // Tanpa DATABASE_URL, tidak ada koneksi atau penulisan database.
+    let aiHistory = { enabled: false, ok: false, reason: 'DATABASE_URL_NOT_CONFIGURED' };
+    try {
+      aiHistory = await aiHistoryStore.captureFireHistory({
+        databaseUrl: process.env.DATABASE_URL,
+        snapshot: scheduler.peek('hotspots'),
+        sourceState: publicSchedulerTaskState('hotspots'),
+        provinceOf
+      });
+      if (aiHistory.enabled && !aiHistory.ok) {
+        console.warn('[ai-history]', aiHistory.failureCode || aiHistory.reason || 'AI_HISTORY_FAILED');
+      }
+    } catch (error) {
+      const failureCode = aiHistoryStore.safeFailureCode(error);
+      console.warn('[ai-history]', failureCode);
+      aiHistory = { enabled: !!String(process.env.DATABASE_URL || '').trim(), ok: false, failureCode };
+    }
     // Setelah data disegarkan, nilai alert dari keadaan yang BARU diukur.
     // Tidak ada permintaan hulu tambahan: modul ops membaca hasil penjadwal
     // yang sama. Kegagalan di sini tidak boleh menjatuhkan cron.
@@ -2632,7 +2690,7 @@ app.get('/api/cron', autentikasiCron, async (req, res) => {
       ops = { error: 'evaluasi alert gagal' };
     }
     res.set('Cache-Control', 'no-store');
-    res.json({ ok: true, ...r, ops });
+    res.json({ ok: true, ...r, ops, aiHistory });
   } catch {
     res.status(500).json({ error: 'Penyegaran gagal.' });
   }
