@@ -28,10 +28,10 @@ di antaranya.
 | `FIRMS_MAP_KEY` | *(kosong)* | `server.js:25` |
 | `FIRMS_SOURCE` | `VIIRS_SNPP_NRT` | `server.js:27` |
 | `FIRMS_DAYS` | `1` | `server.js:28` |
-| `CRON_SECRET` | *(kosong)* | `server.js` (`/api/cron`) |
+| `CRON_SECRET` | wajib di Vercel Production | `server.js` (`/api/cron`), fail-closed jika tidak ada; Bearer header saja |
 | `CDSE_CLIENT_ID` | *(kosong)* | `lib/sentinel.js` |
 | `CDSE_CLIENT_SECRET` | *(kosong)* | `lib/sentinel.js` |
-| `DEBUG_KEY` | *(kosong)* | `server.js` |
+| `DEBUG_KEY` | *(tidak diatur)* | `server.js`, diagnostik Sentinel hanya lewat header Bearer; tidak lewat query |
 
 ---
 

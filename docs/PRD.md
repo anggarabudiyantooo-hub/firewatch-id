@@ -122,9 +122,8 @@ Tiga belas topik dari Google Berita RSS, disaring gerbang relevansi kebencanaan,
 diberi skor, dan dibuang duplikatnya. Tiap artikel menampilkan penerbit, usia terbit,
 dan jam WIB.
 
-### F6: Kueri data
-Pertanyaan bahasa alami dijawab dari indeks lokal yang disusun dari data dasbor
-sendiri. Tanpa layanan LLM eksternal.
+### F6: Agen briefing situasi AI
+Saat `MODEL_API_KEY` tersedia, Muse Spark dapat memilih tool baca-saja yang dibatasi untuk memeriksa data dasbor terkini dan laporan bertanggal, lalu menyusun briefing dengan kesegaran sumber dan ketidakpastian. Asisten BM25 sebelumnya tetap tersedia sebagai fallback lokal yang dilabeli jelas bila kunci Meta belum dipasang atau API tidak tersedia. Lapisan Neon opsional menyiapkan rollup hotspot FIRMS per wilayah/hari WIB, tanpa menyimpan baris titik mentah, serta fitur kalender untuk analitik; ingest baru aktif setelah migration diterapkan dan `DATABASE_URL` dipasang. Belum ada model ML terlatih atau prakiraan historis yang disajikan. Lihat [HACKATHON_AI.md](HACKATHON_AI.md) dan [AI_HISTORY.md](AI_HISTORY.md) untuk baseline yang dipakai ulang, kontribusi agen baru, batas keselamatan, dan langkah verifikasi.
 
 ### F7: Transparansi sumber
 Panel status menampilkan umur tiap sumber dan apakah penyegaran terakhirnya berhasil.

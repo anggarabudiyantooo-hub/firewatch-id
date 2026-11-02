@@ -28,7 +28,7 @@
   }
 
   function ambil(url, opts) {
-    return fetch(url, opts).then(function (r) {
+    return fetch(url, opsiDenganHeaderOps(opts)).then(function (r) {
       return r.json().then(function (j) {
         if (!r.ok) throw new Error(j && j.error ? j.error : ('HTTP ' + r.status));
         return j;
@@ -51,7 +51,7 @@
 
   /** Sama seperti ambil(), tetapi header balasan ikut dibawa (untuk jam server). */
   function ambilDenganHeader(url, opts) {
-    return fetch(url, opts).then(function (r) {
+    return fetch(url, opsiDenganHeaderOps(opts)).then(function (r) {
       var tanggal = r.headers.get('date');
       return r.json().then(function (j) {
         if (!r.ok) throw new Error(j && j.error ? j.error : ('HTTP ' + r.status));
@@ -69,15 +69,15 @@
     try { localStorage.setItem('ops_actor', String(nama || '').slice(0, 60)); } catch (e) { /* diabaikan */ }
   }
 
-  /** Token akses (RBAC) bila pemasangan ini memakainya. Disimpan lokal saja. */
+  /** Token RBAC disimpan hanya per-tab, tidak menetap seperti localStorage. */
   function tokenSaya() {
-    try { return localStorage.getItem('ops_token') || ''; } catch (e) { return ''; }
+    try { return sessionStorage.getItem('ops_token') || ''; } catch (e) { return ''; }
   }
 
   function simpanToken(tok) {
     try {
-      if (tok) localStorage.setItem('ops_token', String(tok).trim());
-      else localStorage.removeItem('ops_token');
+      if (tok) sessionStorage.setItem('ops_token', String(tok).trim());
+      else sessionStorage.removeItem('ops_token');
     } catch (e) { /* diabaikan */ }
   }
 
@@ -89,6 +89,12 @@
       actor ? { 'x-ops-actor': actor } : {},
       tok ? { 'x-ops-token': tok } : {},
       tambahan || {});
+  }
+
+  function opsiDenganHeaderOps(opts) {
+    var o = Object.assign({}, opts || {});
+    o.headers = headerOps(o.headers);
+    return o;
   }
 
   function kirim(url, metode, body) {
@@ -123,7 +129,7 @@
 
   /** Koreksi jam: pakai header Date server bila jam perangkat meleset. */
   function koreksiJam() {
-    return fetch('/api/operations/health', { headers: { Accept: 'application/json' } })
+    return fetch('/api/operations/health', { headers: headerOps({ Accept: 'application/json' }) })
       .then(function (r) {
         var d = r.headers.get('date');
         if (d) {

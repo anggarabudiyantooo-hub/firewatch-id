@@ -75,6 +75,14 @@ const payloads = {
 };
 
 (async () => {
+  const homeMarkup = fs.readFileSync(path.join(__dirname, '..', 'public', 'home.html'), 'utf8');
+  const dashboardMarkup = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  assert(/<footer class="site-footer">[\s\S]*href="\/operations"/.test(homeMarkup),
+    'Operations shortcut should live in the Home footer');
+  assert(!dashboardMarkup.includes('href="/operations"') && !dashboardMarkup.includes('dock-ops'),
+    'Dashboard should not contain an Operations shortcut');
+  console.log('  ✓ Operations shortcut is in the Home footer, not the Dashboard');
+
   const page = await mount('id', payloads);
   const html = page.nodes.homeEvents.innerHTML;
   const expectedOrder = ['PTWC bulletin title', '&lt;script&gt;alert(1)&lt;/script&gt;', 'Laut Jawa', 'Merapi report'];
@@ -99,7 +107,7 @@ const payloads = {
   assert.strictEqual(partialPage.stats[1].strong.textContent, 'Unavailable');
   assert(/unavailable/i.test(partialPage.stats[1].small.textContent));
   console.log('  ✓ A failed hazard feed is unavailable, not reported as zero');
-  console.log('\nHome checks: 4 passed.');
+  console.log('\nHome checks: 5 passed.');
 })().catch(error => {
   console.error(error && error.stack || error);
   process.exitCode = 1;

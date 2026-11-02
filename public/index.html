@@ -440,11 +440,6 @@
         </button>
       </span>
       </div>
-      <!-- Pintu ke Operations Center: di JALUR CHROME dock, DI LUAR
-           daftar tab yang bisa digeser, dan di luar role="tablist",
-           supaya tetap terlihat pada 390 px (topbar sudah 0 px sisa) dan
-           tidak lagi terbaca sebagai bagian dari data panel. -->
-      <a class="dock-ops" id="opsLink" href="/operations" aria-label="Buka Operations Center, halaman terpisah">Operasi <span aria-hidden="true">&rarr;</span></a>
     </div>
     <div class="dock-body" id="dockBody">
 
@@ -656,7 +651,7 @@
     <div class="ai-head-left">
       <span class="ai-dot"></span>
       <h3>AI ASISTEN SIAGA</h3>
-      <span class="ai-head-sub" id="askMeta">indeks lokal</span>
+      <span class="ai-head-sub" id="askMeta">mode lokal · Meta API belum aktif</span>
     </div>
     <div class="ai-head-actions">
       <span class="ai-drag-hint">⋮⋮ geser</span>
@@ -667,19 +662,21 @@
     <form id="askForm" class="ask-bar" autocomplete="off">
       <label class="sr-only" for="askQ">Tanyakan tentang data bencana</label>
       <span class="ask-prompt">&gt;</span>
-      <input id="askQ" type="text" placeholder="siapa perusahaan yang bertanggung jawab?" maxlength="200" />
+      <input id="askQ" type="text" placeholder="Tanyakan kondisi atau minta briefing lintas sumber" maxlength="200" />
       <button class="btn btn-ghost" type="submit">JALANKAN</button>
     </form>
     <div class="ask-chips">
-      <button type="button" class="chip" data-q="siapa perusahaan yang bertanggung jawab">konsesi</button>
-      <button type="button" class="chip" data-q="provinsi mana paling banyak titik api">provinsi</button>
-      <button type="button" class="chip" data-q="bagaimana kualitas udara">udara</button>
-      <button type="button" class="chip" data-q="gunung apa yang sedang erupsi">gunung</button>
-      <button type="button" class="chip" data-q="kemana arah sebaran asap">angin</button>
+      <button type="button" class="chip" data-q="Buat briefing situasi kebakaran terkini: hotspot, provinsi teratas, dan batas model plume" data-q-en="Create a current fire situation brief: hotspots, top provinces, and plume-model limits">briefing</button>
+      <button type="button" class="chip" data-q="Apa yang dilaporkan ASMC, NEA, dan BMKG, dan apa yang belum pasti?" data-q-en="What do ASMC, NEA, and BMKG report, and what remains uncertain?">cek sumber</button>
+      <button type="button" class="chip" data-q="siapa perusahaan yang bertanggung jawab" data-q-en="Which companies are responsible for the fires?">konsesi</button>
+      <button type="button" class="chip" data-q="provinsi mana paling banyak titik api" data-q-en="Which provinces have the most fire hotspots?">provinsi</button>
+      <button type="button" class="chip" data-q="bagaimana kualitas udara" data-q-en="What does the modeled air-quality data show?">udara</button>
+      <button type="button" class="chip" data-q="gunung apa yang sedang erupsi" data-q-en="Which volcanoes have recent observatory eruption reports?">gunung</button>
+      <button type="button" class="chip" data-q="kemana arah sebaran asap" data-q-en="Where is the indicative modeled plume moving?">angin</button>
     </div>
-    <div id="askOut" class="ask-out"><p class="empty">Ajukan pertanyaan; jawaban disusun dari data langsung di dashboard ini. Contoh: ketik 'siapa perusahaan yang bertanggung jawab?' atau klik chip di atas.</p></div>
+    <div id="askOut" class="ask-out" aria-live="polite" aria-atomic="false"><p class="empty">Ajukan pertanyaan; mode aktif dan sumber yang dipakai akan ditampilkan bersama jawaban.</p></div>
   </div>
-  <div class="ai-popup-foot">Data lokal RAG · Sumber: FIRMS, PVMBG, BMKG, BNPB, CAMS · <b>Bukan peringatan resmi</b> dan bukan pengganti sumber resmi · Darurat: <b>112</b></div>
+  <div class="ai-popup-foot">Muse Spark memakai tool data baca-saja saat Meta API aktif; mode lokal ditandai sebagai fallback. Pertanyaan dan fakta publik terpilih dikirim ke Meta saat API aktif. <b>Bukan peringatan resmi</b> atau nasihat medis · Darurat: ikuti otoritas setempat.</div>
 </div>
 
 <script src="/vendor/leaflet.js"></script>
