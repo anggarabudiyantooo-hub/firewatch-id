@@ -3,6 +3,38 @@
 Tanggal audit: 4 Oktober 2026 · Cakupan: repo produksi `firewatch-id` pada keadaan tip saat audit
 Sifat dokumen: **pembacaan kode + pengukuran langsung**, bukan asumsi. Fase ini **tidak mengubah kode**.
 
+## Addendum keamanan (2 November 2026)
+
+Bagian di bawah adalah potret historis 4 Oktober dan bukan status kode terbaru.
+Audit baca-saja terbaru membuktikan bahwa deployment produksi pada saat itu
+masih melaporkan `/api/operations/access` mode `terbuka` tanpa token role, dan
+`/api/operations/store` menggunakan storage `github` yang persisten. Tidak ada
+permintaan mutasi ke produksi yang dilakukan.
+
+Temuan yang ditangani pada branch `fix/security-ops-hardening` berbasis
+`origin/main` `3283443`:
+
+- API data Operations kini fail-closed tanpa token (503), semua pembacaan butuh
+  VIEWER, mutasi insiden butuh OPERATOR, evaluasi manual butuh ADMIN; detail
+  insiden dan runbook juga memakai penjaga baca.
+- `/api/cron` yang dapat memicu refresh dan menulis hasil alert kini mewajibkan
+  `CRON_SECRET` di production dan hanya menerima header Bearer. Sebelum deploy,
+  atur secret yang sama di Vercel dan GitHub Actions; jangan gunakan query URL.
+- Endpoint diagnostik Sentinel juga hanya menerima `DEBUG_KEY` melalui header
+  Bearer, bukan query string.
+- `qs` diperbarui ke 6.16.2 untuk menutup GHSA-6pq8-jhm2-2vcw; `npm audit`
+  saat pengujian branch melaporkan nol kerentanan.
+- Operations sudah menjadi halaman terpisah di `/operations`; tautan pintas
+  dipindah dari dock Dashboard ke footer Beranda, tanpa menanam panel operasional
+  di halaman Dashboard.
+
+Perubahan ini belum di-push atau di-deploy. Sampai merge dan deployment
+berhasil, temuan paparan pada deployment live di atas masih berlaku. Sebelum
+mengaktifkan akses panel, konfigurasi token `OPS_TOKEN_VIEWER`,
+`OPS_TOKEN_OPERATOR`, dan/atau `OPS_TOKEN_ADMIN` di Vercel Production, lalu
+deploy ulang. Jangan mengirim nilai secret melalui chat atau menyimpannya di
+repo.
+
 ---
 
 ## 1. Arsitektur

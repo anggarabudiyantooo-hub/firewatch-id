@@ -63,8 +63,10 @@ Repo yang dipakai saat ini: `anggarabudiyantooo-hub/firewatch-id` (**privat**).
 
 4. **Redeploy** (Deployments → … → Redeploy). Variabel lingkungan baru hanya
    terbaca oleh fungsi setelah deploy ulang.
-5. Verifikasi: `python3 scripts/verify-store.py`, mode harus berubah
-   menjadi `github`. Untuk membuktikan datanya benar-benar bertahan:
+5. Verifikasi baca-saja: siapkan `OPS_TOKEN_VIEWER` (atau token peran lebih
+   tinggi) di environment shell, lalu jalankan `python3 scripts/verify-store.py`;
+   mode harus berubah menjadi `github`. Untuk membuktikan data benar-benar
+   bertahan, siapkan juga token OPERATOR/ADMIN dan jalankan
    `python3 scripts/verify-store.py --tulis` (membuat satu insiden uji,
    membacanya ulang, lalu menutupnya; insidennya tidak dihapus).
 6. Issue keadaan: dibuat otomatis saat penulisan pertama, berjudul
@@ -97,9 +99,11 @@ yang dipakai. Itu disengaja: Upstash lebih cepat dan tidak punya batas 60 KB.
 
 ## Hal yang perlu diketahui setelah penyimpanan tetap aktif
 
-- **Peran akses (RBAC) jadi lebih penting.** Tanpa `OPS_TOKEN_*`, papan berjalan
-  dalam mode terbuka dan siapa pun yang menjangkau server dapat mengubah insiden
-  yang sekarang tersimpan permanen. Lihat tabel peran di README.
+- **Peran akses (RBAC) wajib dikonfigurasi.** Tanpa `OPS_TOKEN_*` atau
+  `OPS_WRITE_TOKEN`, API operasional yang dilindungi fail-closed: baca dan tulis
+  ditolak dengan HTTP 503. Setelah token dipasang di environment server dan
+  deployment diulang, pembacaan memerlukan VIEWER, perubahan insiden OPERATOR,
+  dan evaluasi manual ADMIN. Lihat tabel peran di README.
 - **Log audit ikut tersimpan** (200 entri terakhir). Itu memang tujuannya:
   jejak "siapa mengubah apa" harus bertahan lebih lama daripada satu instance.
 - **Insiden lama dari mode sementara tidak berpindah.** Yang tersimpan hanyalah
@@ -110,8 +114,20 @@ yang dipakai. Itu disengaja: Upstash lebih cepat dan tidak punya batas 60 KB.
 
 ## Memeriksa bila ada yang tidak beres
 
+Status akses awal yang aman dibaca publik:
+
 ```bash
-curl -s https://firewatch-id.vercel.app/api/operations/store | python3 -m json.tool
+curl -s https://firewatch-id.vercel.app/api/operations/access | python3 -m json.tool
+```
+
+Endpoint `/api/operations/store` dan `?uji=1` memerlukan autentikasi VIEWER;
+`/api/operations/access` adalah pengecualian publik untuk petunjuk konfigurasi.
+
+Untuk detail penyimpanan, kirim token VIEWER dari environment lokal (jangan
+menaruh nilai token di repo atau riwayat shell):
+
+```bash
+curl -s -H "x-ops-token: $OPS_TOKEN_VIEWER" https://firewatch-id.vercel.app/api/operations/store | python3 -m json.tool
 ```
 
 - `mode` menyatakan mode yang benar-benar dipakai, dan `lastError` memuat galat
@@ -143,11 +159,15 @@ Pemasangan mode `github` diverifikasi ulang sesudah tokennya diperbaiki:
   insiden `kosong: false`, satu batang pada 2026-10-04, MTTR LOW 0 menit,
   SLA 100% (target 4.320 menit), apa adanya, sekecil apa pun datanya.
 
-Catatan tindak lanjut: penyimpanan kini MENETAP, dan akses tulis produksi
-masih **terbuka** (`/api/operations/access` → mode terbuka, dan halaman
-mengatakannya). Bila repo ini dipakai bersama orang lain, pasang token peran
-(`OPS_WRITE_TOKEN` atau `OPS_TOKEN_OPERATOR`/`OPS_TOKEN_ADMIN`) supaya tulis
-insiden tidak terbuka bagi siapa pun yang menemukan alamatnya.
+Catatan historis dan keamanan (audit baca-saja, 2 Nov 2026): penyimpanan
+produksi masih persisten (`github`), sedangkan `/api/operations/access` masih
+melaporkan mode `terbuka` dan belum ada token peran. Tidak ada permintaan tulis
+ke produksi yang dilakukan saat audit. Perubahan fail-closed di kode hanya
+melindungi produksi setelah patch ini masuk ke `main` dan ter-deploy; sampai itu
+terjadi, paparan live yang ditemukan masih perlu dianggap berlaku. Sebelum
+mengaktifkan kembali Operations setelah deploy, atur `OPS_TOKEN_VIEWER` /
+`OPS_TOKEN_OPERATOR` / `OPS_TOKEN_ADMIN` di environment Vercel Production dan
+redeploy. Jangan kirim nilainya lewat chat atau commit ke repo.
 
 ## Bila penyimpanan gagal dibaca (dan cara memeriksanya)
 

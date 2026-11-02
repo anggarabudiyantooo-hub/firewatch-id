@@ -212,8 +212,6 @@
     'Siaran': 'Streams',
     '8 panel · klik untuk pindah': '8 panels · click to switch',
     'Lipat dok': 'Collapse data dock',
-    'Buka Operations Center, halaman terpisah': 'Open Operations Center in a separate page',
-    'Operasi': 'Operations',
     'DATA LANGSUNG': 'LIVE DATA',
     'Menunggu kejadian dan laporan dari sumber.': 'Waiting for events and reports from sources.',
     'Linimasa prakiraan asap dan PM2.5': 'Smoke and PM2.5 forecast timeline',

@@ -29,12 +29,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Header Authorization hanya dikirim bila rahasianya dipasang,
-          # sehingga alur ini tetap bekerja tanpa konfigurasi tambahan.
-          AUTH=()
-          if [ -n "${CRON_SECRET:-}" ]; then
-            AUTH=(-H "Authorization: Bearer ${CRON_SECRET}")
+          # Endpoint production fail-closed: secret yang sama wajib ada di
+          # Vercel dan GitHub Actions. Jangan pernah kirim secret di URL.
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::CRON_SECRET wajib diatur di GitHub Actions dan Vercel."
+            exit 1
           fi
+          AUTH=(-H "Authorization: Bearer ${CRON_SECRET}")
 
           # Setelah data disegarkan, hangatkan cache CDN untuk halaman yang
           # benar-benar dibuka pengunjung. Tanpa langkah ini, pengunjung

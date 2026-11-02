@@ -220,11 +220,14 @@ menyertakan metadatanya:
 
 ## 4. Keadaan yang tidak disimpan
 
-Tidak ada `localStorage`, `sessionStorage`, cookie, maupun IndexedDB. Seluruh
-keadaan klien ada di memori dan hilang saat halaman dimuat ulang.
+Data pemantauan, insiden, dan preferensi aplikasi tidak disimpan di browser.
+Pengecualian terbatas: nama pelaku (`ops_actor`) di `localStorage` dan token
+RBAC Operations di `sessionStorage` tab aktif; token hilang saat tab ditutup.
+Tidak ada cookie maupun IndexedDB untuk keadaan aplikasi.
 
-Konsekuensinya: preferensi lapisan, peta dasar, dan filter tidak bertahan. Imbalannya:
-tidak ada permukaan privasi di sisi klien sama sekali. Ini pertukaran yang disengaja.
+Perubahan ini menjaga token operasi agar tidak menetap lintas sesi browser; ia
+tetap dapat diakses skrip origin yang sama selama tab terbuka, sehingga halaman
+Operations harus tetap memakai CSP dan tidak memuat skrip pihak ketiga.
 
 ---
 
