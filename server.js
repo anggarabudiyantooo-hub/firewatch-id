@@ -1156,6 +1156,21 @@ async function getNews() {
 }
 
 // ---------- API ----------
+function publicSchedulerTaskState(id, assembledAt = Date.now()) {
+  const task = (scheduler.status().tasks || []).find(item => item.id === id);
+  if (!task) return null;
+  return {
+    hasData: task.hasData,
+    healthy: task.healthy,
+    lastOkAgeMs: task.ageMs,
+    lastSuccessfulAt: Number.isFinite(task.ageMs) ? new Date(assembledAt - task.ageMs).toISOString() : null,
+    lastCheckedAt: task.lastCheckedAt,
+    everyMs: task.everyMs,
+    consecutiveFails: task.consecutiveFails,
+    errorNote: task.errorNote
+  };
+}
+
 app.get('/api/health', (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
 /* ---------- Operations Center (modul terpisah: lib/ops-routes.js) ----------
@@ -1169,6 +1184,7 @@ async function buildOverview() {
   {
     const hs = await getHotspots();
     const { mode, source, days, hotspots, notice } = hs;
+    const sourceState = publicSchedulerTaskState('hotspots');
     const anchorTime = Date.now();
     const clusters = clusterHotspots(hotspots);
     const [plumeBuild, plumeHistory] = await Promise.all([
@@ -1192,9 +1208,21 @@ async function buildOverview() {
       if (!rec) { rec = { province: p, hotspots: 0, frp: 0 }; provAgg.set(p, rec); }
       rec.hotspots++; rec.frp += h.frp;
     }
-    const provinceRanking = [...provAgg.values()]
+    const provinceRankingLimit = 15;
+    const assignedProvinceDetections = [...provAgg.values()].reduce((sum, item) => sum + item.hotspots, 0);
+    const provinceRankingAll = [...provAgg.values()]
       .map(p => ({ ...p, frp: +p.frp.toFixed(0) }))
-      .sort((a, b) => b.hotspots - a.hotspots).slice(0, 15);
+      .sort((a, b) => b.hotspots - a.hotspots);
+    const provinceRanking = provinceRankingAll.slice(0, provinceRankingLimit);
+    const provinceRankingMeta = {
+      assignmentMethod: 'coarse rectangular province boxes',
+      assignedDetectionCount: assignedProvinceDetections,
+      unassignedDetectionCount: Math.max(0, hotspots.length - assignedProvinceDetections),
+      availableProvinceCount: provAgg.size,
+      returnedProvinceCount: provinceRanking.length,
+      maxReturned: provinceRankingLimit,
+      truncated: provinceRankingAll.length > provinceRankingLimit
+    };
 
     // Kota di jalur abu vulkanik. Opsional: kegagalan data gunung tidak
     // boleh menggugurkan seluruh ringkasan karhutla.
@@ -1270,6 +1298,7 @@ async function buildOverview() {
       meta: {
         mode, source, days, notice,
         updatedAt: new Date().toISOString(),
+        sourceState,
         // Kesegaran dilaporkan apa adanya. Antarmuka membaca nilai ini
         // alih-alih menuliskan "24 jam" secara tetap, supaya klaim di layar
         // tidak pernah melampaui data yang benar-benar dimiliki.
@@ -1321,7 +1350,7 @@ async function buildOverview() {
       ashImpacted: ashImpacted.list || ashImpacted,
       ashImpactedMeta: ashImpacted.meta || null,
       volcano: volcanoSummary,
-      provinceScores: byProvince, provinceRanking, worstAir
+      provinceScores: byProvince, provinceRanking, provinceRankingMeta, worstAir
     };
   }
 }
@@ -2430,8 +2459,11 @@ app.get('/api/whose-land', async (req, res) => {
 app.get('/api/news', async (_req, res) => {
   // Penjadwal menyegarkan berita tiap 10 menit; cache CDN 60 detik sudah
   // cukup meredam lonjakan tanpa membuat artikel baru tertahan lama.
-  try { res.set('Cache-Control', apiCache(CONFIG.CACHE_TTL.news, 900)); res.json(await getNews()); }
-  catch { res.status(502).json({ ok: false, articles: [], message: 'Umpan berita gagal dimuat.' }); }
+  try {
+    const data = await getNews();
+    res.set('Cache-Control', apiCache(CONFIG.CACHE_TTL.news, 900));
+    res.json(Object.assign({}, data, { sourceState: publicSchedulerTaskState('news') }));
+  } catch { res.status(502).json({ ok: false, articles: [], message: 'Umpan berita gagal dimuat.' }); }
 });
 
 /* ---------- pencarian & tanya-jawab berbasis data (RAG lokal) ---------- */
@@ -2742,8 +2774,18 @@ app.get('/api/hazard', async (_req, res) => {
     if (!quakes && !tsunami && !shelters) {
       return res.status(502).json({ error: 'Data kebencanaan tidak tersedia.' });
     }
+    const assembledAt = Date.now();
     res.set('Cache-Control', apiCache(CONFIG.CACHE_TTL.hazard, 900));
-    res.json({ updatedAt: new Date().toISOString(), quakes, tsunami, shelters });
+    res.json({
+      updatedAt: new Date(assembledAt).toISOString(),
+      quakes,
+      tsunami,
+      shelters,
+      sourceState: {
+        quakes: publicSchedulerTaskState('quake', assembledAt),
+        tsunami: publicSchedulerTaskState('tsunami', assembledAt)
+      }
+    });
   } catch {
     res.status(502).json({ error: 'Data kebencanaan tidak tersedia.' });
   }
@@ -2796,7 +2838,7 @@ app.get('/api/eruptions', async (_req, res) => {
     const d = await scheduler.get('eruption');
     // Fase 1.3: satukan TTL dengan /api/volcano-ash (sebelumnya 300 vs 900) → 600 + SWR 1200
     res.set('Cache-Control', apiCache(600, 1200));
-    res.json(d);
+    res.json(d && typeof d === 'object' ? Object.assign({}, d, { sourceState: publicSchedulerTaskState('eruption') }) : d);
   } catch {
     res.status(502).json({ error: 'Laporan letusan gagal dimuat.' });
   }
@@ -3233,7 +3275,7 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
  * menghasilkan URL baru, peramban pengguna tidak akan lagi memakai
  * berkas lama dari cache tanpa perlu hard-refresh manual.
  */
-const ASSET_FILES = ['app.js', 'app.css', 'i18n.js', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'smoke-grid-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css'];
+const ASSET_FILES = ['app.js', 'app.css', 'i18n.js', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'smoke-grid-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css', 'site.css', 'site-nav.js', 'home.js', 'report-model.js', 'reports.js'];
 let assetVersion = null;
 
 function getAssetVersion() {
@@ -3255,7 +3297,7 @@ function renderIndex() {
   // Fase 2.1: label sudut peta dari BBOX config, bukan hardcoded
   const corners = BBOX_CORNERS; // { nw, ne, sw, se } dari lib/config.js
   let html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
-    .replace(/(href|src)="\/(app\.css|app\.js|i18n\.js|smoke-geometry\.js|smoke-cloud-layer\.js|smoke-grid-layer\.js|wind-particles\.js|wind-viewport\.js|map-resize\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css)"/g,
+    .replace(/(href|src)="\/(app\.css|app\.js|i18n\.js|smoke-geometry\.js|smoke-cloud-layer\.js|smoke-grid-layer\.js|wind-particles\.js|wind-viewport\.js|map-resize\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css|site\.css|site-nav\.js)"/g,
       (_m, attr, file) => `${attr}="${file}?v=${v}"`);
   // Inject BBOX corners ke HTML (fallback jika JS belum load)
   try {
@@ -3277,11 +3319,31 @@ function sendIndex(res, status = 200) {
   res.send(renderIndex());
 }
 
-app.get('/', (_req, res) => sendIndex(res));
+function renderPublicPage(fileName) {
+  const version = getAssetVersion();
+  return fs.readFileSync(path.join(__dirname, 'public', fileName), 'utf8')
+    .replace(/(href|src)="\/(site\.css|i18n\.js|site-nav\.js|home\.js|report-model\.js|reports\.js)"/g,
+      (_match, attr, asset) => `${attr}="/${asset}?v=${version}"`);
+}
 
-// index.html tidak boleh di-cache: berkas inilah yang menunjuk versi aset,
-// sehingga peramban wajib memeriksanya ulang setiap kunjungan. Aset lain
-// aman di-cache lama karena URL-nya sudah bertanda versi (?v=ASSET_VERSION).
+function sendPublicPage(res, fileName, status = 200) {
+  res.status(status);
+  res.set('Content-Type', 'text/html; charset=utf-8');
+  res.set('Cache-Control', 'no-cache, must-revalidate');
+  res.send(renderPublicPage(fileName));
+}
+
+// The root route is the overview; the original interactive application stays
+// intact at /dashboard, with its existing static asset names and API behavior.
+app.get('/', (_req, res) => sendPublicPage(res, 'home.html'));
+app.get('/dashboard', (_req, res) => sendIndex(res));
+app.get('/dashboard/', (_req, res) => sendIndex(res));
+app.get('/reports', (_req, res) => sendPublicPage(res, 'reports.html'));
+app.get('/reports/', (_req, res) => sendPublicPage(res, 'reports.html'));
+
+// HTML shells are revalidated each visit; versioned assets can remain cached
+// long-term. Mutable archive/index.json has a short cache below, while each
+// dated report snapshot is addressed by its own immutable URL.
 /**
  * Situs kepentingan publik seharusnya dapat ditemukan mesin pencari.
  * Endpoint API dikecualikan supaya perayap tidak menghabiskan kuota
@@ -3308,12 +3370,14 @@ app.get('/sitemap.xml', (req, res) => {
   res.type('application/xml').send(
     '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-    '  <url>\n' +
-    `    <loc>${proto}://${host}/</loc>\n` +
-    `    <lastmod>${today}</lastmod>\n` +
-    '    <changefreq>hourly</changefreq>\n' +
-    '    <priority>1.0</priority>\n' +
-    '  </url>\n' +
+    ['/', '/dashboard', '/reports'].map((route, index) =>
+      '  <url>\n'
+      + `    <loc>${proto}://${host}${route}</loc>\n`
+      + `    <lastmod>${today}</lastmod>\n`
+      + `    <changefreq>${index === 1 ? 'hourly' : 'daily'}</changefreq>\n`
+      + `    <priority>${index === 0 ? '1.0' : index === 1 ? '0.9' : '0.8'}</priority>\n`
+      + '  </url>\n'
+    ).join('') +
     '</urlset>\n'
   );
 });
@@ -3321,7 +3385,9 @@ app.get('/sitemap.xml', (req, res) => {
 app.use(express.static(path.join(__dirname, 'public'), {
   index: false,
   setHeaders(res, filePath) {
-    if (filePath.endsWith('.html')) {
+    if (filePath.endsWith(path.join('reports', 'archive', 'index.json'))) {
+      res.setHeader('Cache-Control', 'public, max-age=60, must-revalidate');
+    } else if (filePath.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-cache, must-revalidate');
     } else {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
@@ -3337,16 +3403,15 @@ app.use((req, res) => {
     res.set('Cache-Control', apiCache(300, 900));
     return res.status(404).type('text/plain').send('404 Tidak ditemukan.\n');
   }
-  // Dokumen penuh hanya dikirim kepada peramban yang memang sedang
-  // menavigasi; aplikasi ini satu halaman, jadi rute tak dikenal perlu
-  // tetap memuatnya agar riwayat peramban berfungsi. Perayap, pemindai,
-  // dan pemanggil API memperoleh balasan ringkas.
+  // Rute halaman kini eksplisit (/, /dashboard, /reports). Untuk navigasi
+  // HTML yang tidak dikenal, kirim beranda dengan status 404; pemanggil API,
+  // perayap, dan pemindai tetap memperoleh balasan ringkas.
   const wantsHtml = String(req.get('accept') || '').indexOf('text/html') !== -1;
   if (!wantsHtml) {
     res.set('Cache-Control', apiCache(300, 900));
     return res.status(404).type('text/plain').send('404 Tidak ditemukan.\n');
   }
-  sendIndex(res, 404);
+  sendPublicPage(res, 'home.html', 404);
 });
 // jangan bocorkan stack trace
 app.use((err, _req, res, _next) => { console.error('[err]', err && err.message); res.status(500).json({ error: 'Terjadi kesalahan pada server.' }); });

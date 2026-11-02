@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="/app.css" />
 <link rel="stylesheet" href="/v3-fix.css" />
 <link rel="stylesheet" href="/v3-audit.css" />
+<link rel="stylesheet" href="/site.css" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111a24'/%3E%3Cpath d='M16 5c3 5-1 6 1 9 1.4 2.1 4-1 4-1 1.6 2.4 2 4.4 2 6a7 7 0 11-14 0c0-4 3-7 4-9 1.2-2.4 2-4 3-5z' fill='%23ff6b35'/%3E%3C/svg%3E" />
 </head>
 <body class="bloomberg">
@@ -22,6 +23,16 @@
     <span class="wordmark">SIAGA.ID</span>
     <span class="vsep" aria-hidden="true"></span>
     <span class="label">Terminal Bencana</span>
+  </div>
+  <div class="site-nav-wrap">
+    <button class="site-nav-toggle" id="siteNavToggle" type="button" aria-controls="siteNav" aria-expanded="false" aria-label="Buka navigasi" data-i18n-skip data-site-aria-id="Buka navigasi" data-site-aria-en="Open navigation">
+      <span aria-hidden="true">☰</span><span data-i18n-skip data-site-id="Menu" data-site-en="Menu">Menu</span>
+    </button>
+    <nav class="site-nav-links" id="siteNav" aria-label="Navigasi utama" data-site-aria-id="Navigasi utama" data-site-aria-en="Main navigation">
+      <a href="/" data-i18n-skip><span data-site-id="Beranda" data-site-en="Home">Beranda</span></a>
+      <a href="/dashboard" aria-current="page" data-i18n-skip><span data-site-id="Dashboard" data-site-en="Dashboard">Dashboard</span></a>
+      <a href="/reports" data-i18n-skip><span data-site-id="Laporan" data-site-en="Reports">Laporan</span></a>
+    </nav>
   </div>
   <div class="topbar-right">
     <span class="live" id="modeBadge"><i class="led" aria-hidden="true"></i>Data Langsung</span>
@@ -679,6 +690,7 @@
 <script src="/wind-viewport.js"></script>
 <script src="/map-resize.js"></script>
 <script src="/i18n.js"></script>
+<script src="/site-nav.js"></script>
 <script src="/app.js"></script>
 <script src="/v3-ui.js"></script>
 

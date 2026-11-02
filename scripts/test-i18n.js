@@ -128,7 +128,7 @@ check('English AI requests send an explicit language parameter',
     fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8')
   ), true);
 check('language script loads before the dashboard app',
-  /<script src="\/i18n\.js"><\/script>\s*<script src="\/app\.js"><\/script>/.test(
+  /<script src="\/i18n\.js"><\/script>(?:\s*<script src="\/site-nav\.js"><\/script>)?\s*<script src="\/app\.js"><\/script>/.test(
     fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8')
   ), true);
 check('language script participates in asset versioning',

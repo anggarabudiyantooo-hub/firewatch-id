@@ -82,9 +82,17 @@ try {
 if (typeof app === 'function') {
   console.log('\n[4] Menguji rute');
   const http = require('http');
+  const archiveIndex = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'reports', 'archive', 'index.json'), 'utf8'));
+  const latestWeekly = Array.isArray(archiveIndex.weeklyReports) ? archiveIndex.weeklyReports[archiveIndex.weeklyReports.length - 1] : null;
+  const weeklyPath = latestWeekly && latestWeekly.file ? '/reports/archive/' + latestWeekly.file : null;
   const srv = http.createServer(app).listen(0, '127.0.0.1', async () => {
     const port = srv.address().port;
-    const paths = ['/api/health', '/', '/app.css', '/smoke-geometry.js', '/smoke-cloud-layer.js', '/smoke-grid-layer.js', '/wind-particles.js', '/wind-viewport.js', '/map-resize.js', '/vendor/leaflet.js'];
+    const paths = [
+      '/api/health', '/', '/dashboard', '/reports', '/reports/archive/index.json', weeklyPath,
+      '/app.css', '/site.css', '/site-nav.js', '/home.js', '/reports.js', '/report-model.js', '/i18n.js',
+      '/smoke-geometry.js', '/smoke-cloud-layer.js', '/smoke-grid-layer.js',
+      '/wind-particles.js', '/wind-viewport.js', '/map-resize.js', '/vendor/leaflet.js'
+    ].filter(Boolean);
     for (const p of paths) {
       try {
         const r = await fetch(`http://127.0.0.1:${port}${p}`);
@@ -92,16 +100,30 @@ if (typeof app === 'function') {
           ok(`${r.status} ${p}`);
           if (p === '/') {
             const html = await r.text();
-            if (/src="smoke-geometry\.js\?v=[a-f0-9]{10}"/.test(html)) ok('HTML memberi versi aset pada modul geometri asap');
-            else bad('HTML tidak memberi versi aset pada modul geometri asap');
-            if (/src="smoke-cloud-layer\.js\?v=[a-f0-9]{10}"/.test(html)) ok('HTML memberi versi aset pada renderer kabut asap');
-            else bad('HTML tidak memberi versi aset pada renderer kabut asap');
-            if (/src="smoke-grid-layer\.js\?v=[a-f0-9]{10}"/.test(html)) ok('HTML memberi versi aset pada raster PM2.5 CAMS');
-            else bad('HTML tidak memberi versi aset pada raster PM2.5 CAMS');
-            if (/src="wind-viewport\.js\?v=[a-f0-9]{10}"/.test(html)) ok('HTML memberi versi aset pada modul viewport angin');
-            else bad('HTML tidak memberi versi aset pada modul viewport angin');
-            if (/src="map-resize\.js\?v=[a-f0-9]{10}"/.test(html)) ok('HTML memberi versi aset pada controller ukuran peta');
-            else bad('HTML tidak memberi versi aset pada controller ukuran peta');
+            if (/class="site-page home-page"/.test(html)) ok('root menyajikan halaman Home');
+            else bad('root tidak menyajikan halaman Home');
+            if (/src="\/home\.js\?v=[a-f0-9]{10}"/.test(html) && /href="\/site\.css\?v=[a-f0-9]{10}"/.test(html)) ok('Home memakai versi aset yang tervalidasi');
+            else bad('Home tidak memberi versi aset yang tervalidasi');
+          }
+          if (p === '/dashboard') {
+            const html = await r.text();
+            if (/src="smoke-geometry\.js\?v=[a-f0-9]{10}"/.test(html)) ok('Dashboard memberi versi aset pada modul geometri asap');
+            else bad('Dashboard tidak memberi versi aset pada modul geometri asap');
+            if (/src="smoke-cloud-layer\.js\?v=[a-f0-9]{10}"/.test(html)) ok('Dashboard memberi versi aset pada renderer kabut asap');
+            else bad('Dashboard tidak memberi versi aset pada renderer kabut asap');
+            if (/src="smoke-grid-layer\.js\?v=[a-f0-9]{10}"/.test(html)) ok('Dashboard memberi versi aset pada raster PM2.5 CAMS');
+            else bad('Dashboard tidak memberi versi aset pada raster PM2.5 CAMS');
+            if (/src="wind-viewport\.js\?v=[a-f0-9]{10}"/.test(html)) ok('Dashboard memberi versi aset pada modul viewport angin');
+            else bad('Dashboard tidak memberi versi aset pada modul viewport angin');
+            if (/src="map-resize\.js\?v=[a-f0-9]{10}"/.test(html)) ok('Dashboard memberi versi aset pada controller ukuran peta');
+            else bad('Dashboard tidak memberi versi aset pada controller ukuran peta');
+          }
+          if (p === '/reports') {
+            const html = await r.text();
+            if (/class="site-page reports-page"/.test(html)) ok('route /reports menyajikan halaman laporan');
+            else bad('route /reports tidak menyajikan halaman laporan');
+            if (/src="\/reports\.js\?v=[a-f0-9]{10}"/.test(html) && /src="\/report-model\.js\?v=[a-f0-9]{10}"/.test(html)) ok('halaman laporan memakai versi aset yang tervalidasi');
+            else bad('halaman laporan tidak memberi versi aset yang tervalidasi');
           }
         } else bad(`${r.status} ${p}`);
       } catch (e) { bad(`${p}, ${e.message}`); }
