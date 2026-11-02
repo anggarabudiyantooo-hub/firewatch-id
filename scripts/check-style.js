@@ -82,23 +82,28 @@ for (const jalur of berkas) {
     continue;
   }
   diperiksa += 1;
-  for (const [tanda, nama] of [
-    [TANDA_PISAH_PANJANG, 'em dash (U+2014)'],
-    [TANDA_PISAH_SEDANG, 'en dash (U+2013)'],
-  ]) {
-    let posisi = teks.indexOf(tanda);
-    while (posisi !== -1) {
-      temuan.push(`${relatif}:${nomorBaris(teks, posisi)}: ${nama}`);
-      posisi = teks.indexOf(tanda, posisi + 1);
+  // Arsip ini berisi kutipan/headline verbatim dari penerbit; jangan ubah
+  // tanda bacanya demi gaya internal. Jalur absolut tetap diperiksa di bawah.
+  const arsipKutipanSumber = relatif.startsWith('public/reports/archive/') && path.extname(relatif) === '.json';
+  if (!arsipKutipanSumber) {
+    for (const [tanda, nama] of [
+      [TANDA_PISAH_PANJANG, 'em dash (U+2014)'],
+      [TANDA_PISAH_SEDANG, 'en dash (U+2013)'],
+    ]) {
+      let posisi = teks.indexOf(tanda);
+      while (posisi !== -1) {
+        temuan.push(`${relatif}:${nomorBaris(teks, posisi)}: ${nama}`);
+        posisi = teks.indexOf(tanda, posisi + 1);
+      }
     }
-  }
-  const teksKecil = teks.toLowerCase();
-  for (const [bentuk, nama] of REPRESENTASI_EM_DASH) {
-    const bentukKecil = bentuk.toLowerCase();
-    let posisi = teksKecil.indexOf(bentukKecil);
-    while (posisi !== -1) {
-      temuan.push(`${relatif}:${nomorBaris(teks, posisi)}: ${nama}`);
-      posisi = teksKecil.indexOf(bentukKecil, posisi + 1);
+    const teksKecil = teks.toLowerCase();
+    for (const [bentuk, nama] of REPRESENTASI_EM_DASH) {
+      const bentukKecil = bentuk.toLowerCase();
+      let posisi = teksKecil.indexOf(bentukKecil);
+      while (posisi !== -1) {
+        temuan.push(`${relatif}:${nomorBaris(teks, posisi)}: ${nama}`);
+        posisi = teksKecil.indexOf(bentukKecil, posisi + 1);
+      }
     }
   }
   // Berkas ini sendiri memuat jalur tersebut sebagai konstanta, jadi dikecualikan.
