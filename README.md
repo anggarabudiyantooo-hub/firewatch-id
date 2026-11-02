@@ -65,14 +65,16 @@ Untuk monitor luar ada **`GET /api/alarm`**: `200` bila normal, `503` bila ada
 sumber DOWN (kritis → `tingkat:"kritis"`). Penjadwalan dan mengapa jadwal GitHub
 Actions bisa tertunda berjam-jam dijelaskan di **`docs/PENJADWAL.md`**.
 
-Lindungi dengan `CRON_SECRET` bila endpoint ini dipublikasikan. Rinciannya di
-`PANDUAN-DEPLOY-VERCEL.md`.
+`CRON_SECRET` wajib dipasang di Vercel Production dan sebagai GitHub Actions
+secret dengan nama sama. `/api/cron` fail-closed (503) di production bila
+rahasia belum diatur, dan hanya menerima `Authorization: Bearer`; jangan kirim
+rahasia lewat URL/query string. Rinciannya di `docs/PENJADWAL.md`.
 
 ---
 
 ## Variabel lingkungan
 
-Seluruhnya **opsional**.
+Seluruhnya **opsional untuk aplikasi utama**. Namun, bila tidak ada `OPS_TOKEN_*` atau `OPS_WRITE_TOKEN`, API Operations yang dilindungi sengaja fail-closed (HTTP 503) sampai kredensial dipasang di lingkungan server.
 
 | Variabel | Default | Fungsi |
 |---|---|---|
@@ -82,9 +84,9 @@ Seluruhnya **opsional**.
 | `FIRMS_DAYS` | `1` | Rentang hari jalur MAP_KEY (1-10). Hasilnya tetap disaring ke jendela 24 jam |
 | `CDSE_CLIENT_ID` | *(kosong)* | Client ID OAuth Copernicus. Bila kosong, lapisan Sentinel-2 menampilkan keterangan "belum dikonfigurasi" dan seluruh fitur lain tetap berjalan |
 | `CDSE_CLIENT_SECRET` | *(kosong)* | Client secret OAuth Copernicus |
-| `CRON_SECRET` | *(kosong)* | Bila diisi, `/api/cron` menuntut `Authorization: Bearer <secret>` atau `?key=<secret>` |
+| `CRON_SECRET` | wajib di Vercel Production | `/api/cron` hanya menerima `Authorization: Bearer <secret>`; tanpa secret, endpoint terkunci (503) |
 | `OPS_SLA_*_MIN` | 60/240/1440/4320 | Target SLA per severity untuk metrik & analitik |
-| `DEBUG_KEY` | *(kosong)* | Membuka endpoint diagnostik |
+| `DEBUG_KEY` | *(tidak diatur)* | endpoint diagnostik Sentinel hanya dibuka dengan `Authorization: Bearer <secret>`; secret tidak diterima lewat query string |
 
 Pendaftaran kunci FIRMS (gratis): <https://firms.modaps.eosdis.nasa.gov/api/map_key/>
 
@@ -265,9 +267,9 @@ dikerjakan" di layar dibaca ulang dari timeline itu setiap kali halaman dimuat.
 
 ### Cara masuk
 
-Dari dashboard: panel **Sumber** (chip status di topbar, atau kunci F6) memuat
-tautan **Buka Operations Center**. Halaman ops juga bisa dibuka langsung di
-`/operations`, dan tiap insiden punya tautan sendiri:
+Operations Center adalah halaman tersendiri di `/operations`; panelnya tidak
+ditampilkan di Dashboard, dan tautan pintasnya kini berada di footer halaman
+**Beranda** agar terpisah dari papan data. Tiap insiden punya tautan sendiri:
 `/operations?insiden=INC-2026-00001` membuka detail insiden itu.
 
 ### Penyimpanan operasional: apa adanya
@@ -288,8 +290,9 @@ didaur ulang, dan itu tertulis di halaman, bukan disembunyikan.
 
 **Cara memasangnya** (langkah rinci, termasuk mengapa tidak perlu basis data
 seperti Neon): [`docs/PENYIMPANAN.md`](docs/PENYIMPANAN.md). Verifikasi setelah
-dipasang: `python3 scripts/verify-store.py` (baca-saja), tambahkan `--tulis`
-untuk membuktikan insiden benar-benar bertahan.
+dipasang memerlukan token VIEWER di environment lokal:
+`python3 scripts/verify-store.py` (baca-saja). `--tulis` memerlukan token
+OPERATOR/ADMIN dan membuat satu insiden uji yang ditutup, tetapi tidak dihapus.
 
 Hal serupa berlaku untuk **pengukuran**: di Vercel setiap instance punya memori
 sendiri dan tugas penjadwal hanya berjalan saat `/api/cron` memanggilnya (tiap
@@ -313,9 +316,9 @@ cepat 60 detik sekali agar sumber hulu tidak dihujani permintaan.
 | `OPS_ALERT_DEDUP_MS` | `1800000` | jendela anti-duplikasi per (aturan, subjek) |
 | `OPS_SLA_CRITICAL_MIN` / `…_HIGH_MIN` / `…_MEDIUM_MIN` / `…_LOW_MIN` | `60` / `240` / `1440` / `4320` | target penyelesaian per severity (menit) |
 | `OPS_WARMUP_MS` | `8000` | di Vercel, instance yang belum pernah mengukur apa pun menjalankan satu kali pengukuran beranggaran ini detik saat rute ops dibuka; `0` mematikannya |
-| `OPS_TOKEN_VIEWER` / `OPS_TOKEN_OPERATOR` / `OPS_TOKEN_ADMIN` | *(kosong)* | mengaktifkan peran akses (lihat tabel peran di bawah) |
-| `OPS_WRITE_TOKEN` | *(kosong)* | token lama; tetap dihormati sebagai token tingkat **ADMIN** |
-| `OPS_READ_PROTECTED` | *(kosong)* | `1` = pembacaan API ops juga menuntut peran VIEWER ke atas (bawaan: publik) |
+| `OPS_TOKEN_VIEWER` / `OPS_TOKEN_OPERATOR` / `OPS_TOKEN_ADMIN` | *(tidak diatur)* | token akses peran; tanpa salah satunya, API Operations yang dilindungi terkunci (503) |
+| `OPS_WRITE_TOKEN` | *(tidak diatur)* | token lama; tetap dihormati sebagai token tingkat **ADMIN** |
+| `OPS_READ_PROTECTED` | usang, diabaikan | pembacaan data Operations selalu memerlukan VIEWER ke atas; variabel ini tidak dapat menonaktifkan auth |
 | `OPS_STORE_FILE` | *(kosong)* | menunjuk berkas simpanan lain untuk mode `file` (pengembangan/uji) |
 | `OPS_GITHUB_TOKEN` / `OPS_GITHUB_REPO` | *(kosong)* | mengaktifkan mode penyimpanan `github` |
 
@@ -323,32 +326,51 @@ cepat 60 detik sekali agar sumber hulu tidak dihujani permintaan.
 
 | Peran | Boleh |
 |---|---|
-| `VIEWER` | membaca seluruh data operasional (bila `OPS_READ_PROTECTED=1`) |
+| `VIEWER` | membaca data operasional (termasuk insiden, runbook, metrik, dan audit) |
 | `OPERATOR` | semua di atas + menangani insiden: buat, tugaskan, catatan, eskalasi, selesaikan, tutup, alert → insiden |
 | `ADMIN` | semua di atas + memicu `POST /api/operations/evaluate` (operasi mahal: mengambil data hulu) |
 
 Aturan yang dipegang:
 
-- **Tanpa token apa pun, aplikasi berjalan seperti sebelumnya (mode terbuka)**,
-  dan mode itu ditulis apa adanya di `/api/operations/access` serta di halaman.
-  Mengunci diri sendiri tanpa dikonfigurasi akan membuat orang menyangka sudah
-  aman padahal belum.
-- Pembacaan **publik** sebagai bawaan (papan ini memang untuk dipantau); pasang
-  `OPS_READ_PROTECTED=1` bila pemasangan Anda privat.
-- Token dikirim sebagai header `x-ops-token` dan **tidak pernah dikembalikan**
-  API; `/api/operations/access` hanya menyatakan peran mana yang ada dan peran
-  Anda sendiri. Perbandingan token memakai waktu tetap.
-- `OPS_WRITE_TOKEN` lama diperlakukan sebagai token **ADMIN**, sehingga pemasangan
-  yang sudah ada tidak berubah perilakunya.
-- Bila masih mode terbuka padahal variabel sudah dipasang, `/api/operations/access`
-  menyebut **nama variable yang diperiksa** (`namaDiperiksa`) dan mana yang
-  **benar-benar terlihat pada deployment ini** (`terlihat`), nama saja, isinya
-  tidak pernah. Hanya nama yang terlihat itu yang membuktikan pemasangan sudah
-  sampai ke runtime. `GET /api/operations/health` memuat `application.build`
-  (7 huruf commit yang sedang melayani) supaya "sudah deploy belum" bisa
-  dibuktikan, bukan disimpulkan.
+- **Fail-closed.** Tanpa token peran yang terkonfigurasi, API Operations yang
+  dilindungi menolak baca maupun tulis dengan HTTP 503 dan panel menyatakan
+  akses **TERKUNCI**. Pasang token di Vercel (Production, dan Preview bila
+  diperlukan), lalu deploy ulang. Jangan mengirim atau menyimpan nilainya di
+  repo atau chat; gunakan password manager/secret manager.
+- Semua pembacaan data operasional menuntut token **VIEWER** ke atas; menulis
+  insiden menuntut **OPERATOR**; memicu evaluasi yang mengambil data hulu
+  menuntut **ADMIN**. `OPS_READ_PROTECTED` adalah variabel lama yang diabaikan,
+  sehingga tidak dapat membuka endpoint baca.
+- Dua pengecualian publik yang dibatasi: `/api/operations/access` hanya
+  menunjukkan mode dan nama env yang perlu diperiksa (tidak pernah nilai
+  token), sedangkan `/api/alarm` hanya memberi ringkasan kesehatan untuk
+  monitor luar, tanpa insiden, alert, audit, atau detail penyimpanan.
+- Token dikirim sebagai header `x-ops-token`; token yang dimasukkan lewat
+  panel disimpan di `sessionStorage` tab aktif dan hilang saat tab ditutup.
+  Perbandingan server memakai digest SHA-256 berukuran tetap dan
+  `timingSafeEqual`.
+- `OPS_WRITE_TOKEN` lama diperlakukan sebagai token **ADMIN**, sehingga masih
+  dapat mengakses semua peran.
+- `/api/operations/access` menyebut **nama variable yang diperiksa**
+  (`namaDiperiksa`) dan mana yang **terlihat pada deployment ini** (`terlihat`),
+  nama saja, isinya tidak pernah. `GET /api/operations/health` memuat
+  `application.build` (7 huruf commit yang sedang melayani) untuk membuktikan
+  versi deployment.
 - Nama pelaku tetap dari header `x-ops-actor` (terpisah dari token: peran
   menentukan *boleh atau tidak*, nama menentukan *siapa* yang tercatat).
+
+#### Memasang token di Vercel
+
+1. Buat token acak terpisah untuk VIEWER, OPERATOR, dan ADMIN dengan password
+   manager atau generator kriptografis (minimal 32 byte acak). Jangan mengirim
+   nilainya lewat chat atau menaruhnya di repo; simpan di password manager.
+2. Di Vercel buka **Project → Settings → Environment Variables**; tambahkan
+   `OPS_TOKEN_VIEWER`, `OPS_TOKEN_OPERATOR`, dan `OPS_TOKEN_ADMIN` dengan nilai
+   masing-masing, untuk **Production** (tambahkan Preview hanya bila diperlukan).
+3. Redeploy Production agar variabel masuk ke runtime. Tanpa token, API data
+   Operations tetap terkunci (503). Setelah token tersedia, buka `/operations`
+   dan masukkan hanya token dengan peran yang diperlukan; token disimpan hanya
+   pada tab itu sampai tab ditutup.
 
 ### API operasional
 

@@ -10,6 +10,8 @@ const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
 const compression = require('compression');
+const autentikasiCron = require('./lib/cron-auth');
+const secretMatch = require('./lib/secret-match');
 
 // ---------- env loader sederhana (tanpa dependensi) ----------
 (function loadEnv() {
@@ -2607,17 +2609,10 @@ scheduler
  *
  * Vercel Hobby membatasi cron bawaan ke sekali sehari, jadi jadwal
  * sesungguhnya dijalankan penjadwal luar (GitHub Actions) yang memanggil
- * endpoint ini. Dilindungi CRON_SECRET bila variabel itu dipasang.
+ * endpoint ini. Di production, endpoint fail-closed: CRON_SECRET wajib ada
+ * dan dikirim hanya lewat header Authorization: Bearer (bukan query string).
  */
-app.get('/api/cron', async (req, res) => {
-  const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const hdr = String(req.get('authorization') || '');
-    const key = String(req.query.key || '');
-    if (hdr !== 'Bearer ' + secret && key !== secret) {
-      return res.status(401).json({ error: 'Tidak diizinkan.' });
-    }
-  }
+app.get('/api/cron', autentikasiCron, async (req, res) => {
   try {
     // Batas fungsi Vercel 60 detik; sisakan ruang untuk menyusun balasan
     // agar cron tidak pernah dibunuh di tengah jalan dan terbaca "gagal".
@@ -3138,7 +3133,8 @@ app.get('/api/himawari/:product/:z/:x/:y.jpg', async (req, res) => {
 const SENTINEL_MAX_CLOUD = [10, 20, 30, 50, 80];
 
 /**
- * Diagnostik Sentinel, hanya terbuka bila DEBUG_KEY dipasang dan cocok.
+ * Diagnostik Sentinel, hanya terbuka bila DEBUG_KEY dipasang dan dikirim
+ * sebagai Bearer token di header Authorization.
  *
  * Pesan galat hulu sengaja tidak dikirim ke klien biasa: isinya dapat
  * memuat potongan permintaan beserta petunjuk konfigurasi internal.
@@ -3147,8 +3143,11 @@ const SENTINEL_MAX_CLOUD = [10, 20, 30, 50, 80];
  * jalan tengahnya.
  */
 app.get('/api/sentinel/diag', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
   const key = (process.env.DEBUG_KEY || '').trim();
-  if (!key || String(req.query.key || '') !== key) return res.status(404).end();
+  const authz = String(req.get('authorization') || '');
+  const cocok = /^Bearer (.+)$/.exec(authz);
+  if (!key || !cocok || !secretMatch(cocok[1], key)) return res.status(404).end();
 
   const out = { configured: sentinel.isConfigured() };
   try {

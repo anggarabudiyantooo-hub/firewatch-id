@@ -325,30 +325,35 @@ keadaan itu dilaporkan sebagai `UNKNOWN` beserta sebabnya.
 
 ---
 
-## 8. Peran akses (RBAC): ditambahkan 4 Okt 2026
+## 8. Peran akses (RBAC): diperketat 2 Nov 2026
 
 ```
 permintaan ──► x-ops-token?  ──► peran (VIEWER < OPERATOR < ADMIN)
                     │                     │
-                    │                     ├─ GET  ops   → BACA   (publik, kecuali OPS_READ_PROTECTED=1)
-                    │                     ├─ tulis ops   → OPERATOR
-                    │                     └─ evaluate    → ADMIN (mahal: memanggil sumber hulu)
+                    │                     ├─ GET data ops → VIEWER ke atas
+                    │                     ├─ tulis ops     → OPERATOR ke atas
+                    │                     └─ evaluate      → ADMIN
                     ▼
-              tanpa token terkonfigurasi → mode TERBUKA, dikatakan di /api/operations/access
+              tanpa token di server → fail-closed 503 (mode TERKUNCI)
 ```
 
-Empat keputusan yang dipegang (`lib/ops-auth.js`):
+Aturan `lib/ops-auth.js`:
 
-1. **Mode terbuka dinyatakan terbuka.** Tanpa token yang dikonfigurasi,
-   aplikasi tidak berpura-pura terkunci; `/api/operations/access` dan halaman
-   menuliskannya apa adanya.
-2. **Baca publik sebagai bawaan.** Papan ini memang dipakai untuk memantau;
-   `OPS_READ_PROTECTED=1` menguncinya untuk pemasangan privat.
-3. **Pemasangan lama tidak berubah.** `OPS_WRITE_TOKEN` diperlakukan sebagai
-   token ADMIN, jadi perilaku sebelum RBAC tetap berlaku.
-4. **Token tidak pernah keluar dari server.** `/api/operations/access` hanya
-   menyatakan peran mana yang terkonfigurasi dan peran pemanggil; perbandingan
-   memakai `crypto.timingSafeEqual`.
+1. **Fail-closed.** Tanpa token peran, semua API data operasional menolak baca
+   maupun tulis dengan `503`; `/api/operations/access` tetap publik untuk
+   menunjukkan instruksi konfigurasi tanpa memuat nilai rahasia.
+2. **Baca selalu berautentikasi.** Semua detail operasi (termasuk detail
+   insiden dan runbook) memerlukan VIEWER ke atas. `OPS_READ_PROTECTED` lama
+   diabaikan dan tidak bisa menonaktifkan penjaga.
+3. **Pemasangan lama tetap dikenali.** `OPS_WRITE_TOKEN` adalah alias token
+   ADMIN. Token peran dikirim lewat `x-ops-token`.
+4. **Pengecualian kesehatan publik terbatas.** `/api/alarm` tetap publik untuk
+   monitor luar dan hanya mengembalikan ringkasan kesehatan layanan, bukan
+   insiden, alert, audit, atau detail penyimpanan.
+5. **Token tidak dikirim balik.** Status akses hanya memuat peran yang ada,
+   nama env yang diperiksa, dan peran pemanggil. Perbandingan memakai digest
+   SHA-256 berukuran tetap dan `crypto.timingSafeEqual`; panel menyimpan token
+   hanya di `sessionStorage` tab aktif.
 
 Peran menentukan *boleh atau tidak*; nama pelaku tetap dari `x-ops-actor` dan
 tetap menentukan *siapa* yang tercatat di timeline serta log audit.

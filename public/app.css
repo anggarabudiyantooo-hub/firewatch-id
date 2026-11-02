@@ -132,22 +132,6 @@ button,input,select{font-family:var(--font-data)}
   text-transform:uppercase;cursor:pointer;transition:transform var(--dur-state),filter var(--dur-state)}
 .btn-primary:hover{filter:brightness(1.08)} .btn-primary:active{transform:translateY(1px)}
 
-/* Pintu masuk Operations Center: tinggal di JALUR CHROME dock, bukan di dalam
-   panel data. Sebelumnya ia kotak berbingkai di tengah panel Sumber, sehingga
-   terbaca seperti bagian dari data (keluhan 4 Okt). Alasan tempatnya di sini -
-   dengan angka, bukan selera:
-     · topbar 390 px sudah 0 px sisa, jadi menaruhnya di sana tidak mungkin;
-     · jalur tab dock bisa digeser (isi ±990 px, terlihat 364 px di 390 px),
-       jadi tautan dibuat STICKY di tepi kanan: tetap terlihat walau digeser;
-     · latarnya pekat supaya tab yang lewat di bawahnya tidak menembus. */
-.dock-ops{flex:0 0 auto;margin-left:8px;
-  display:inline-flex;align-items:center;gap:5px;padding:6px 10px;
-  border:1px solid rgba(255,214,10,.45);border-radius:var(--radius-chip);
-  background:var(--chrome);color:var(--status-caution);text-decoration:none;
-  font:600 10px/1 var(--font-data);letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
-.dock-ops:hover{color:var(--text-primary);border-color:var(--text-secondary)}
-.dock-ops:focus-visible{outline:2px solid var(--status-info);outline-offset:2px}
-
 /* === y 0-52 Top Bar, slim, full bleed, #0F1115, 1px hairline beneath === */
 .topbar{
   height:var(--topbar-h);
