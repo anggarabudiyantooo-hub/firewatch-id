@@ -63,6 +63,7 @@
 }
 .map-capture-meta dt { color: var(--text-tertiary, #7d8590); }
 .map-capture-meta dd { margin: 0; color: var(--text-secondary, #c8ced6); overflow-wrap: anywhere; }
+.map-capture-meta-note { grid-column: 1 / -1; font: 400 10px/1.4 var(--font-prose, system-ui, sans-serif); color: var(--text-tertiary, #7d8590); }
 
 .map-capture-narrative {
   display: grid; gap: 8px; padding: 12px;

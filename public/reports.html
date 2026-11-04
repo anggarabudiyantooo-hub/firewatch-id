@@ -8,6 +8,9 @@
   <title>SIAGA.ID - Laporan Harian &amp; Mingguan</title>
   <link rel="stylesheet" href="/site.css" />
   <link rel="stylesheet" href="/assistant-widget.css" />
+  <link rel="stylesheet" href="/vendor/leaflet.css" />
+  <link rel="stylesheet" href="/map-capture.css" />
+  <link rel="stylesheet" href="/report-capture.css" />
 </head>
 <body class="site-page reports-page">
   <a class="site-skip-link" href="#content" data-i18n-skip data-site-id="Lewati ke konten utama" data-site-en="Skip to main content">Lewati ke konten utama</a>
@@ -55,6 +58,42 @@
       <p id="archiveStatus" class="site-status" role="status" aria-live="polite" data-i18n-skip>Memuat indeks arsip laporan…</p>
     </section>
 
+    <section class="site-section report-capture-section" id="tangkapan-peta" aria-labelledby="reportCaptureHeading">
+      <h2 id="reportCaptureHeading" data-i18n-skip data-site-id="Tangkapan peta untuk laporan" data-site-en="Map snapshot for the report">Tangkapan peta untuk laporan</h2>
+      <p class="site-lede" data-i18n-skip data-site-id="Tangkap tampilan peta beserta legenda, atribusi, batas wilayah, dan waktu WIB, lalu minta narasi AI yang angkanya hanya boleh berasal dari data. Gambar tetap di peramban Anda dan tidak diunggah ke server." data-site-en="Capture the map view together with its legend, attribution, bounds, and WIB timestamp, then request an AI narrative whose figures may only come from the data. Images stay in your browser and are never uploaded.">Tangkap tampilan peta beserta legenda, atribusi, batas wilayah, dan waktu WIB, lalu minta narasi AI yang angkanya hanya boleh berasal dari data. Gambar tetap di peramban Anda dan tidak diunggah ke server.</p>
+
+      <div class="report-map-shell site-screen-only">
+        <div class="report-map-tools">
+          <label><input type="checkbox" id="rmFire" checked /><span data-i18n-skip data-site-id="Titik api" data-site-en="Hotspots">Titik api</span></label>
+          <label><input type="checkbox" id="rmPlaces" /><span data-i18n-skip data-site-id="Pusat permukiman model" data-site-en="Modeled settlement centers">Pusat permukiman model</span></label>
+          <label for="rmWindow" data-i18n-skip data-site-id="Jendela deteksi" data-site-en="Detection window">Jendela deteksi</label>
+          <select id="rmWindow">
+            <option value="24" selected>24 j</option>
+            <option value="12">12 j</option>
+            <option value="6">6 j</option>
+          </select>
+          <label for="rmBase" data-i18n-skip data-site-id="Peta dasar" data-site-en="Basemap">Peta dasar</label>
+          <select id="rmBase">
+            <option value="GELAP" selected>GELAP</option>
+            <option value="CITRA">CITRA</option>
+          </select>
+          <span class="report-map-frame-label" id="rmFrameLabel">24 jam terakhir</span>
+          <button id="reportMapCaptureBtn" class="site-button primary" type="button"><span aria-hidden="true">◉</span><span data-i18n-skip data-site-id="Tangkap peta" data-site-en="Capture map">Tangkap peta</span></button>
+        </div>
+        <div id="reportMap" role="img" aria-label="Peta titik api untuk laporan"></div>
+        <ul class="report-map-legend">
+          <li><span class="swatch" style="background:#ff5a3c"></span><span data-i18n-skip data-site-id="Keyakinan tinggi" data-site-en="High confidence">Keyakinan tinggi</span></li>
+          <li><span class="swatch" style="background:#ffb020"></span><span data-i18n-skip data-site-id="Keyakinan sedang" data-site-en="Nominal confidence">Keyakinan sedang</span></li>
+          <li><span class="swatch" style="background:#ffe066"></span><span data-i18n-skip data-site-id="Keyakinan rendah" data-site-en="Low confidence">Keyakinan rendah</span></li>
+          <li><span class="swatch" style="background:#fb7185"></span><span data-i18n-skip data-site-id="Pusat permukiman model" data-site-en="Modeled settlement centers">Pusat permukiman model</span></li>
+        </ul>
+        <p id="reportMapStatus" class="site-status" role="status" aria-live="polite" data-i18n-skip>Memuat peta laporan…</p>
+      </div>
+
+      <div id="reportCaptureBody"></div>
+      <p id="reportCaptureStatus" class="site-status site-screen-only" role="status" aria-live="polite"></p>
+    </section>
+
     <article id="reportPaper" class="report-paper" aria-live="polite">
       <div id="reportContent" data-i18n-skip>
         <div class="site-empty">Memuat laporan…</div>
@@ -72,6 +111,12 @@
   <script src="/site-nav.js"></script>
   <script src="/report-model.js"></script>
   <script src="/reports.js"></script>
+  <script src="/vendor/leaflet.js"></script>
+  <script src="/map-screenshot.js"></script>
+  <script src="/map-capture-ui.js"></script>
+  <script src="/report-map.js"></script>
+  <script src="/report-pdf.js"></script>
+  <script src="/report-capture.js"></script>
   <script src="/assistant-widget.js"></script>
 </body>
 </html>

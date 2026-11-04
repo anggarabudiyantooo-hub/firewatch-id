@@ -105,8 +105,8 @@
       try {
         var clone = svg.cloneNode(true);
         clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-        clone.setAttribute('width', String(Math.max(1, Math.round(rect.width))));
-        clone.setAttribute('height', String(Math.max(1, Math.round(rect.height))));
+        clone.setAttribute('width', String(Math.max(1, Math.round(rect.w))));
+        clone.setAttribute('height', String(Math.max(1, Math.round(rect.h))));
         var text = new XMLSerializer().serializeToString(clone);
         var url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(text);
         var img = new Image();
