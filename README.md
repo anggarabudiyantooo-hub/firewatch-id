@@ -31,7 +31,7 @@ SIAGA.ID keeps a strict division of labour:
 
 - **Code owns every number.** Deterministic, read-only tools compute counts,
   distances, AQI values, wind vectors and time-window comparisons.
-- **Meta Muse Spark owns language and vision.** It picks tools, reads a map image,
+- **Meta Muse Spark owns language and vision.** It picks tools, resolves place names, reads a map image,
   and describes what is visible in a citizen photo.
 - **Code checks the model afterwards.** Every figure in an answer is matched against
   tool results. The model gets one chance to correct itself; anything still unmatched
@@ -41,7 +41,7 @@ Four user-facing results:
 
 | Feature | What it does |
 |---|---|
-| **Agentic assistant** (`/dashboard`) | 16 read-only tools, evidence receipts `[E1]`-`[E8]`, a numeric verifier badge, and "Show on map" buttons that move the map only to coordinates a tool returned. |
+| **Agentic assistant** (`/dashboard`) | 17 read-only tools (including `find_place`, which resolves a named city to coordinates so the agent never asks the user for a bounding box), evidence receipts `[E1]`-`[E8]`, a numeric verifier badge, and "Show on map" buttons that move the map only to coordinates a tool returned. |
 | **Map snapshot** (`/dashboard`, `/reports`) | "Capture map" composites the live Leaflet map to PNG with legend, attribution, WIB timestamp, bounding box, zoom and timeline frame baked into the image. |
 | **Report with AI narrative** (`/reports`) | The snapshot plus a code-computed numeric summary plus a Muse Spark narrative written from the image and the data. Export as PNG or a one-page PDF. Before/after two-frame comparison supported. |
 | **Cek Asap / Smoke Check** (`/cek-asap`) | A citizen photo or description plus place and time. Muse Spark describes only what is visible; code gathers evidence and returns *supported / not yet supported / not enough data*. |

@@ -148,7 +148,29 @@ const box = { west: 100, south: -4, east: 106, north: 2 };
     .forEach((name) => ok('alat terdaftar: ' + name, names.includes(name)));
   const geo = agent.TOOL_DEFINITIONS.filter(t => ['get_hotspots_in_area', 'get_air_quality_at', 'get_wind_at', 'get_volcano_near', 'get_places_in_area'].includes(t.function.name));
   ok('argumen koordinat diwajibkan skema', geo.every(t => Array.isArray(t.function.parameters.required) && t.function.parameters.required.length > 0));
-  ok('jumlah alat tetap terbatas', agent.TOOL_DEFINITIONS.length === 16, String(agent.TOOL_DEFINITIONS.length));
+  ok('jumlah alat tetap terbatas', agent.TOOL_DEFINITIONS.length === 17, String(agent.TOOL_DEFINITIONS.length));
+
+  // find_place: nama tempat harus diselesaikan kode, bukan dikarang model, dan
+  // model tidak boleh lagi meminta pengguna memberi kotak koordinat.
+  {
+    const ctx = { regions: [
+      { name: 'Pekanbaru', prov: 'Riau', lat: 0.5167, lon: 101.4417 },
+      { name: 'Palembang', prov: 'Sumatera Selatan', lat: -2.9167, lon: 104.7458 }
+    ] };
+    const hit = await agent.executeTool('find_place', { name: 'Pekanbaru' }, ctx);
+    ok('find_place menyelesaikan nama ke koordinat', hit.matchCount === 1 && hit.matches[0].lat === 0.5167);
+    ok('find_place memberi kotak siap pakai', !!hit.suggestedBox && hit.suggestedBox.west < hit.suggestedBox.east && hit.suggestedBox.south < hit.suggestedBox.north);
+    ok('kotak usulan selebar satu derajat', Math.abs((hit.suggestedBox.east - hit.suggestedBox.west) - 1) < 0.01);
+    const miss = await agent.executeTool('find_place', { name: 'Atlantis' }, ctx);
+    ok('nama tidak dikenal tidak menghasilkan koordinat karangan', miss.matchCount === 0 && miss.suggestedBox === null);
+    let rejectedEmpty = false;
+    try { await agent.executeTool('find_place', { name: '' }, ctx); } catch { rejectedEmpty = true; }
+    ok('find_place menolak nama kosong', rejectedEmpty);
+    const prompt = agent.buildDeveloperPrompt('en', 'brief');
+    ok('prompt EN melarang meminta kotak ke pengguna', /never ask the user for a bounding box/i.test(prompt));
+    ok('prompt EN menyuruh find_place lebih dulu', /find_place FIRST/.test(prompt));
+  }
+
   // Batas putaran naik ke 4 (lihat test-muse-agent.js); batas alat tetap 8 dan
   // anggaran dinding wajib lebih kecil dari batas fungsi serverless 60 detik.
   ok('batas putaran dan panggilan alat tetap ada', agent.MAX_TURNS === 4 && agent.MAX_TOOL_CALLS === 8);

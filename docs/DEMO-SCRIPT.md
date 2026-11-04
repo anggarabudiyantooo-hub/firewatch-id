@@ -48,7 +48,7 @@ Read the voiceover at a calm pace. Times below are cumulative.
 **Screen:** `/dashboard`. Open the assistant with the AI toggle.
 
 1. (1:15) Type: `How many thermal detections are near Pekanbaru in the last 24 hours?`
-   > "The assistant is not a chatbot wrapper. It chooses among sixteen read-only tools."
+   > "The assistant is not a chatbot wrapper. It chooses among seventeen read-only tools. It resolves the city name itself; the user never has to supply coordinates."
 2. (1:25) While it answers, point at the tool-call counter.
    > "Bounded: four model turns, eight tool calls, a forty-eight second total budget, schema-validated arguments."
 3. (1:33) Expand **EVIDENCE TRACE**. Open one receipt.
