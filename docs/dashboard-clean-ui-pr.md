@@ -53,15 +53,20 @@ Sesudah:
 
 Lihat `docs/dashboard-clean-ui-relocation.md`.
 
-## Catatan blocker
+## Status integrasi
 
-Push ke GitHub dan pembuatan PR otomatis belum dapat dilakukan dari lingkungan ini karena
-tidak ada kredensial GitHub yang aman dan konektor GitHub tidak tersedia. Token yang pernah
-dikirim di chat tidak digunakan ulang dan tidak disimpan. Alternatif aman:
+PR #19 sudah di-merge ke `main` (merge commit `b4cccf1`) dan tayang di produksi
+`https://firewatch-id.vercel.app/dashboard`. Deployment Vercel berstatus success dan
+seluruh check CI, termasuk CodeQL, lulus.
 
-1. Pengguna menghubungkan akun GitHub atau memberikan akses repo melalui mekanisme resmi, lalu branch ini didorong dan PR dibuat.
-2. Pengguna mendorong branch secara manual dari bundle/patch yang disediakan, lalu membuka PR ke `main`.
+### Tindak lanjut setelah merge
 
-Preview Vercel juga belum dapat dibuat karena akses konektor Vercel ditolak. Preview lokal
-tersedia selama proses server berjalan; setelah branch didorong, preview Vercel dapat dibuat
-dari PR atau deployment manual.
+- Komponen tooltip diperkuat: isi tooltip dibangun sebagai simpul DOM dengan daftar
+  izin tag, bukan HTML mentah, setelah CodeQL menandai dua celah XSS.
+- Tab Tampilan diberi umpan balik saat kontrol terkunci: peta dasar dipaksa Gelap dan
+  citra satelit tertutup selama raster asap aktif. Kini muncul catatan status beserta
+  satu tombol untuk mematikan raster, bukan kontrol yang tampak mati tanpa penjelasan.
+- Legenda AQI `.cfg-lg` sebelumnya tidak memiliki aturan CSS sama sekali sehingga
+  mewarisi font prosa 13px. Kini memakai font data 11px, satu kolom, dan titik 7px.
+- Tautan Operator ditambahkan ke safety bar dan hanya menuju `/admin-login`. Rute
+  `/operations` tetap menuntut sesi admin seperti ditetapkan pada penguncian keamanan.
