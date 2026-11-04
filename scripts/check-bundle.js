@@ -88,10 +88,10 @@ if (typeof app === 'function') {
   const srv = http.createServer(app).listen(0, '127.0.0.1', async () => {
     const port = srv.address().port;
     const paths = [
-      '/api/health', '/', '/dashboard', '/reports', '/reports/archive/index.json', weeklyPath,
+      '/api/health', '/', '/dashboard', '/reports', '/tentang-data', '/reports/archive/index.json', weeklyPath,
       '/app.css', '/site.css', '/site-nav.js', '/home.js', '/reports.js', '/report-model.js', '/i18n.js',
       '/smoke-geometry.js', '/smoke-cloud-layer.js', '/smoke-grid-layer.js',
-      '/wind-particles.js', '/wind-viewport.js', '/map-resize.js', '/vendor/leaflet.js'
+      '/wind-particles.js', '/wind-viewport.js', '/map-resize.js', '/ui-tooltip.js', '/ui-tooltip.css', '/dashboard-clean.css', '/dashboard-clean.js', '/tentang-data.css', '/vendor/leaflet.js'
     ].filter(Boolean);
     for (const p of paths) {
       try {

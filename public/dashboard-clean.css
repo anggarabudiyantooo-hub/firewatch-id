@@ -1,0 +1,377 @@
+/* Dashboard clean UI: panel lapisan ringkas, disclosure progresif, dan polesan visual. */
+
+:root {
+  --clean-space-1: 4px;
+  --clean-space-2: 8px;
+  --clean-space-3: 12px;
+  --clean-space-4: 16px;
+  --clean-font-control: 12px;
+  --clean-font-control-lg: 13px;
+  --clean-radius: 10px;
+  --clean-accent: #7fb4ff;
+  --clean-duration: 180ms;
+}
+
+.svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.layer-ic,
+.ui-info-btn svg,
+.layer-group-head > .layer-ic {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Panel lapisan */
+.layer-panel { padding: var(--clean-space-2); }
+.layer-group { border-bottom: 1px solid var(--hairline); }
+.layer-group:last-child { border-bottom: 0; }
+.layer-group-head {
+  display: flex;
+  align-items: center;
+  gap: var(--clean-space-2);
+  padding: var(--clean-space-2);
+  cursor: pointer;
+  list-style: none;
+  color: var(--text-secondary);
+  font: 600 var(--clean-font-control-lg)/1.2 var(--font-prose);
+  border-radius: 8px;
+  transition: background-color var(--clean-duration) ease, color var(--clean-duration) ease;
+}
+.layer-group-head::-webkit-details-marker { display: none; }
+.layer-group-head:hover { background: var(--surface-2); color: var(--text-primary); }
+.layer-group-head > span:first-of-type { flex: 1 1 auto; }
+.layer-group-head::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform var(--clean-duration) ease;
+}
+.layer-group[open] > .layer-group-head::after { transform: rotate(-135deg); }
+.layer-count {
+  min-width: 18px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-secondary);
+  font: 600 10px/1 var(--font-data);
+  text-align: center;
+}
+.layer-group-body { padding: 0 0 var(--clean-space-2); }
+
+.layer-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto 24px 32px;
+  align-items: center;
+  gap: var(--clean-space-2);
+  min-height: 36px;
+  padding: var(--clean-space-1) var(--clean-space-2);
+  border-radius: 8px;
+  transition: background-color var(--clean-duration) ease;
+}
+.layer-row:hover { background: var(--surface-2); }
+.layer-row .layer-ic { color: var(--text-tertiary); }
+.layer-row.is-active .layer-ic,
+.layer-row.is-active .layer-name { color: var(--text-primary); }
+.layer-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font: 500 var(--clean-font-control-lg)/1.25 var(--font-prose);
+  cursor: pointer;
+}
+.layer-row.mode-row { grid-template-columns: 16px minmax(0, 1fr) 24px; }
+.layer-badge {
+  padding: 2px 6px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  color: var(--text-tertiary);
+  font: 600 9px/1.2 var(--font-data);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.layer-toggle { justify-self: end; }
+
+/* Segmented mode asap/aerosol */
+.smoke-mode-options.segmented {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  margin: var(--clean-space-1) var(--clean-space-2) var(--clean-space-2);
+  padding: 2px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+.seg-option { position: relative; display: block; min-width: 0; }
+.seg-option input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.seg-option span {
+  display: block;
+  padding: 6px 4px;
+  border-radius: 6px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font: 600 var(--clean-font-control)/1.2 var(--font-data);
+  transition: background-color var(--clean-duration) ease, color var(--clean-duration) ease;
+}
+.seg-option input:checked + span { background: var(--surface-3); color: var(--text-primary); }
+.seg-option input:focus-visible + span {
+  outline: 2px solid var(--clean-accent);
+  outline-offset: 1px;
+}
+
+/* Konfigurasi progresif */
+.layer-config { margin: 0 var(--clean-space-2) var(--clean-space-2) 24px; }
+.layer-config[hidden] { display: none !important; }
+.layer-config > summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--text-tertiary);
+  font: 600 var(--clean-font-control)/1.3 var(--font-prose);
+  padding: var(--clean-space-1) 0;
+}
+.layer-config > summary::-webkit-details-marker { display: none; }
+.layer-config-body {
+  display: grid;
+  gap: var(--clean-space-1);
+  padding: var(--clean-space-2);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: var(--surface-1);
+}
+.cfg-row { display: flex; align-items: center; justify-content: space-between; gap: var(--clean-space-2); }
+.cfg-row > span { color: var(--text-secondary); font: 500 var(--clean-font-control)/1.3 var(--font-prose); }
+.cfg-row select.field { width: 128px; flex: 0 0 128px; }
+.cfg-note { display: grid; gap: 2px; color: var(--text-tertiary); font: 400 11px/1.4 var(--font-prose); }
+
+/* Status lapisan aktif: badge kecil, bukan paragraf lepas */
+.layer-status-stack { display: grid; gap: var(--clean-space-1); margin: 0 var(--clean-space-2) var(--clean-space-2); }
+.layer-status {
+  padding: 4px 8px;
+  border-left: 2px solid var(--clean-accent);
+  border-radius: 4px;
+  background: var(--surface-1);
+  color: var(--text-tertiary);
+  font: 400 11px/1.4 var(--font-prose);
+}
+.layer-status[hidden] { display: none !important; }
+.regional-haze-report.layer-status { max-height: 96px; overflow-y: auto; }
+.ikhtisar-legacy[hidden] { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .layer-group-head,
+  .layer-group-head::after,
+  .layer-row,
+  .seg-option span { transition: none; }
+}
+
+/* Ikhtisar sebagai strip chip ringkas di dekat atas peta */
+:root { --inspector-w: 280px; }
+#statsPanel.kpi-rail {
+  display: flex;
+  gap: var(--clean-space-2);
+  overflow-x: auto;
+  padding: var(--clean-space-2) var(--clean-space-3);
+  min-height: 0;
+  height: auto;
+  scrollbar-width: thin;
+}
+#statsPanel.kpi-rail .kpi { min-height: 0; }
+@media (min-width: 769px) {
+  .inspector { width: var(--inspector-w); min-width: 0; }
+  .stage, #main-bloomberg-grid { grid-template-columns: 1fr var(--inspector-w); }
+}
+.inspector .seg button { font-size: 11px; padding: 6px 8px; }
+@media (max-width: 768px) {
+  .stage, #main-bloomberg-grid { grid-template-columns: 1fr; }
+  #main { height: calc(100vh - 44px - 36px); overflow-y: auto; }
+  .map-card { height: 56vh; min-height: 320px; }
+}
+#statsPanel.kpi-rail .kpi {
+  flex: 0 0 auto;
+  min-width: 118px;
+  padding: var(--clean-space-2) var(--clean-space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--clean-radius);
+  background: var(--surface-1);
+  box-shadow: none;
+}
+#statsPanel.kpi-rail .kpi-top { margin-bottom: 2px; }
+#statsPanel.kpi-rail .kpi-num { font-size: 18px; line-height: 1.1; }
+#statsPanel.kpi-rail .kpi-sub { display: none; }
+
+/* Legenda pojok peta yang bisa dilipat */
+.map-legend {
+  position: absolute;
+  left: var(--clean-space-2);
+  bottom: 28px;
+  z-index: 650;
+  box-sizing: border-box;
+  max-width: min(280px, calc(100% - 16px));
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--clean-radius);
+  background: rgba(12, 16, 21, 0.92);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  color: var(--text-secondary);
+  font: 400 var(--clean-font-control)/1.4 var(--font-prose);
+}
+.map-legend[hidden] { display: none !important; }
+.map-legend > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--clean-space-2);
+  padding: var(--clean-space-2) var(--clean-space-3);
+  cursor: pointer;
+  list-style: none;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.map-legend > summary::-webkit-details-marker { display: none; }
+.map-legend-body {
+  display: grid;
+  gap: var(--clean-space-2);
+  padding: 0 var(--clean-space-3) var(--clean-space-3);
+  max-height: 220px;
+  overflow-y: auto;
+}
+.map-legend-body > div { margin: 0; }
+.map-legend .pm25-legend { border: 0; padding: 0; background: transparent; }
+
+@media (max-width: 768px) {
+  :root { --inspector-w: 260px; }
+  #statsPanel.kpi-rail .kpi { min-width: 104px; }
+  .map-legend { bottom: 24px; max-width: calc(100% - 16px); }
+}
+
+/* Kartu tautan metodologi di panel Sumber */
+.about-data-card { display: grid; gap: var(--clean-space-2); align-content: start; padding: var(--clean-space-3); border: 1px solid var(--hairline); border-radius: var(--clean-radius); background: var(--surface-1); }
+.about-data-card p { margin: 0; color: var(--text-secondary); font: 400 var(--clean-font-control)/1.5 var(--font-prose); }
+.about-data-card .btn { justify-self: start; }
+
+/* Safety bar permanen: satu baris ringkas */
+.foot.safety-bar {
+  display: flex !important;
+  align-items: center;
+  gap: var(--clean-space-3);
+  padding: var(--clean-space-2) var(--clean-space-3);
+  border-top: 1px solid var(--hairline);
+  background: var(--chrome);
+  color: var(--text-secondary);
+  font: 500 var(--clean-font-control)/1.3 var(--font-prose);
+  overflow-x: auto;
+  white-space: nowrap;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36px;
+  z-index: 60;
+}
+@media (min-width: 769px) {
+  #main { height: calc(100vh - 53px - 36px); }
+}
+@media (max-width: 768px) {
+  #main { padding-bottom: 44px; }
+}
+.foot.safety-bar a { color: var(--clean-accent); text-decoration: none; }
+.foot.safety-bar a:hover { text-decoration: underline; text-underline-offset: 2px; }
+.foot.safety-bar b { color: var(--text-primary); }
+.safety-misi { color: var(--text-tertiary); }
+.safety-coverage { margin-left: auto; color: var(--text-tertiary); }
+
+/* Drawer lapisan di mobile */
+.map-head { position: relative; z-index: 800; }
+.layer-drawer-btn { display: none; position: relative; z-index: 801; pointer-events: auto; }
+.inspector-close { display: none; }
+@media (max-width: 768px) {
+  .layer-drawer-btn { display: inline-flex; align-items: center; min-height: 32px; }
+  #inspector {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    bottom: 0 !important;
+    height: auto !important;
+    width: min(320px, 86vw);
+    z-index: 1500;
+    transform: translateX(-105%);
+    transition: transform var(--clean-duration) ease;
+    background: var(--chrome);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    padding-top: var(--clean-space-4);
+  }
+  body.layer-drawer-open #inspector { transform: translateX(0); }
+  body.layer-drawer-open::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 1400;
+    background: rgba(0, 0, 0, 0.4);
+  }
+  .inspector-close {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    top: var(--clean-space-2);
+    right: var(--clean-space-2);
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--hairline);
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .safety-coverage, .safety-misi { display: none; }
+}
+
+/* Skeleton loading */
+.skeleton {
+  display: inline-block;
+  width: 84px;
+  height: 10px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: clean-skeleton 1.4s ease infinite;
+}
+@keyframes clean-skeleton {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+/* Kurangi dekorasi: kapital dan aksen berlebihan */
+.micro,
+.dock-tab,
+.chip,
+.hz-title { text-transform: none; letter-spacing: 0.02em; }
+.dock { border-radius: var(--clean-radius); }
+.dock-body { height: 168px; }
+.card,
+.ev,
+.map-card,
+.inspector { border-radius: var(--clean-radius); }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+  #inspector,
+  .foot.safety-bar,
+  .dock { transition: none; }
+}

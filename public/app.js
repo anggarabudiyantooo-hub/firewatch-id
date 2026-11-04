@@ -6779,37 +6779,16 @@
     var box = $('daftarWindy');
     if (!box) return;
     box.textContent = '';
-    var english = getLanguage() === 'en';
+    var section = $('windySection');
     var meta = $('windyMeta');
-    var item = (d && d.item) || [];
-
-    if (!d || d.aktif === false) {
-      if (meta) meta.textContent = english ? 'inactive' : 'belum aktif';
-      var p = el('p', 'empty', english
-        ? 'Inactive: a Windy API key is not configured in this environment, so the webcam list is not requested. Windy does not provide a webcam list without an API key (unauthenticated requests return 403), so this page explains the limitation instead of showing an empty box.'
-        : 'Belum aktif: kunci API Windy belum dipasang pada lingkungan ini, jadi daftar kamera tidak diambil. '
-          + 'Windy tidak menyediakan daftar kamera tanpa kunci (permintaan tanpa kunci dijawab 403), '
-          + 'sehingga halaman ini menyatakan keadaannya apa adanya alih-alih menampilkan kotak kosong.');
-      box.appendChild(p);
-      var baris = el('div', 'siaran-aksi');
-      var a = el('a', 'btn btn-ghost', english ? 'OPEN WINDY WEBCAM MAP' : 'BUKA PETA KAMERA DI WINDY');
-      a.href = PETA_WINDY;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      baris.appendChild(a);
-      box.appendChild(baris);
+    var english = getLanguage() === 'en';
+    var item = (d && d.ok && Array.isArray(d.item)) ? d.item : [];
+    var active = item.length > 0;
+    if (section) section.hidden = !active;
+    if (!active) {
+      if (meta) meta.textContent = '';
       return;
     }
-
-    if (!d.ok) {
-      if (meta) meta.textContent = english ? 'source unavailable' : 'sumber sedang gagal';
-      box.appendChild(el('p', 'empty', english
-        ? 'The Windy webcam source is unavailable (' + (d.galat || 'cause unknown') + '). No cameras are shown; this does not mean there are no cameras at that location.'
-        : 'Sumber kamera Windy sedang gagal (' + ((d.galat) || 'sebab tidak diketahui') + '). Tidak ada kamera yang ditampilkan, '
-          + 'bukan berarti tidak ada kamera di sana.'));
-      return;
-    }
-
     if (meta) {
       var bagian = english
         ? [item.length + ' community webcams', 'source: Windy.com', 'updated ' + umurTeks(d.umurMs)]
@@ -6819,12 +6798,6 @@
         ? 'photo timestamp comes from the source; live-stream status is not measured here'
         : 'waktu foto milik sumber, bukan siaran langsung yang diukur di sini');
       meta.textContent = bagian.join(' · ');
-    }
-    if (!item.length) {
-      box.appendChild(el('p', 'empty', english
-        ? 'Windy responded, but no community webcams are available for Indonesia.'
-        : 'Windy menjawab, tetapi tidak ada kamera komunitas untuk Indonesia.'));
-      return;
     }
     item.forEach(function (c) { box.appendChild(kartuWindy(c)); });
   }
