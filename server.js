@@ -3404,7 +3404,7 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
  * menghasilkan URL baru, peramban pengguna tidak akan lagi memakai
  * berkas lama dari cache tanpa perlu hard-refresh manual.
  */
-const ASSET_FILES = ['app.js', 'app.css', 'i18n.js', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'smoke-grid-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css', 'site.css', 'site-nav.js', 'home.js', 'report-model.js', 'reports.js', 'assistant-widget.js', 'assistant-widget.css', 'ui-tooltip.js', 'ui-tooltip.css', 'dashboard-clean.css', 'dashboard-clean.js'];
+const ASSET_FILES = ['app.js', 'app.css', 'i18n.js', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'smoke-grid-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css', 'site.css', 'site-nav.js', 'home.js', 'report-model.js', 'reports.js', 'assistant-widget.js', 'assistant-widget.css', 'ui-tooltip.js', 'ui-tooltip.css', 'dashboard-clean.css', 'dashboard-clean.js', 'tentang-data.css'];
 let assetVersion = null;
 
 function getAssetVersion() {
@@ -3451,7 +3451,7 @@ function sendIndex(res, status = 200) {
 function renderPublicPage(fileName) {
   const version = getAssetVersion();
   return fs.readFileSync(path.join(__dirname, 'public', fileName), 'utf8')
-    .replace(/(href|src)="\/(site\.css|i18n\.js|site-nav\.js|home\.js|report-model\.js|reports\.js|assistant-widget\.css|assistant-widget\.js)"/g,
+    .replace(/(href|src)="\/(site\.css|app\.css|dashboard-clean\.css|tentang-data\.css|i18n\.js|site-nav\.js|home\.js|report-model\.js|reports\.js|assistant-widget\.css|assistant-widget\.js)"/g,
       (_match, attr, asset) => `${attr}="/${asset}?v=${version}"`);
 }
 
@@ -3469,6 +3469,9 @@ app.get('/dashboard', (_req, res) => sendIndex(res));
 app.get('/dashboard/', (_req, res) => sendIndex(res));
 app.get('/reports', (_req, res) => sendPublicPage(res, 'reports.html'));
 app.get('/reports/', (_req, res) => sendPublicPage(res, 'reports.html'));
+app.get('/tentang-data', (_req, res) => sendPublicPage(res, 'tentang-data.html'));
+app.get('/tentang-data/', (_req, res) => sendPublicPage(res, 'tentang-data.html'));
+app.get('/metodologi', (_req, res) => res.redirect(302, '/tentang-data'));
 
 // HTML shells are revalidated each visit; versioned assets can remain cached
 // long-term. Mutable archive/index.json has a short cache below, while each

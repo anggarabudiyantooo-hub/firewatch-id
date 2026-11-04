@@ -247,3 +247,8 @@
   #statsPanel.kpi-rail .kpi { min-width: 104px; }
   .map-legend { bottom: 24px; max-width: calc(100% - 16px); }
 }
+
+/* Kartu tautan metodologi di panel Sumber */
+.about-data-card { display: grid; gap: var(--clean-space-2); align-content: start; padding: var(--clean-space-3); border: 1px solid var(--hairline); border-radius: var(--clean-radius); background: var(--surface-1); }
+.about-data-card p { margin: 0; color: var(--text-secondary); font: 400 var(--clean-font-control)/1.5 var(--font-prose); }
+.about-data-card .btn { justify-self: start; }
