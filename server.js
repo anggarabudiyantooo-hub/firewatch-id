@@ -2390,33 +2390,85 @@ app.get('/api/smoke-grid-static', async (req, res) => {
   }
 });
 
+/**
+ * Kualitas udara model untuk satu koordinat. Dipakai rute /api/air-point
+ * dan alat agen get_air_quality_at, supaya keduanya membaca cache yang sama
+ * dan tidak menggandakan panggilan berkuota ke Open-Meteo.
+ */
+async function airPointAt(lat, lon) {
+  return cached(`ap:${lat.toFixed(2)},${lon.toFixed(2)}`, 30 * 60 * 1000, async () => {
+    const url = 'https://air-quality-api.open-meteo.com/v1/air-quality'
+      + `?latitude=${lat}&longitude=${lon}&current=pm2_5,pm10,us_aqi,sulphur_dioxide,carbon_monoxide`;
+    const r = await fetchWithRetry(url, {}, 12000, 3);
+    if (!r.ok) {
+      if (r.status === 429) throw new Error('aqp_429_limit');
+      throw new Error('aqp_' + r.status);
+    }
+    const c = (await r.json()).current || {};
+    const aqi = Number(c.us_aqi);
+    if (!Number.isFinite(aqi)) return null;
+    const band = aqiBand(aqi);
+    return {
+      aqi: Math.round(aqi),
+      pm25: Number.isFinite(Number(c.pm2_5)) ? +Number(c.pm2_5).toFixed(1) : null,
+      pm10: Number.isFinite(Number(c.pm10)) ? +Number(c.pm10).toFixed(1) : null,
+      so2: Number.isFinite(Number(c.sulphur_dioxide)) ? +Number(c.sulphur_dioxide).toFixed(1) : null,
+      co: Number.isFinite(Number(c.carbon_monoxide)) ? Math.round(Number(c.carbon_monoxide)) : null,
+      label: band.label, color: band.color, advice: band.advice,
+      validTime: c.time || null
+    };
+  }, { staleMs: 60 * 60 * 1000, background: true });
+}
+
+/** Prakiraan PM2.5 pendek untuk satu koordinat, dari CAMS global. */
+async function pm25ForecastAt(lat, lon) {
+  return cached(`apf:${lat.toFixed(2)},${lon.toFixed(2)}`, 60 * 60 * 1000, async () => {
+    const url = 'https://air-quality-api.open-meteo.com/v1/air-quality'
+      + `?latitude=${lat}&longitude=${lon}&hourly=pm2_5&forecast_hours=12&timezone=UTC&domains=cams_global`;
+    const r = await fetchWithRetry(url, {}, 12000, 2);
+    if (!r.ok) throw new Error('apf_' + r.status);
+    const j = await r.json();
+    const hourly = (j && j.hourly) || {};
+    const times = Array.isArray(hourly.time) ? hourly.time : [];
+    const values = Array.isArray(hourly.pm2_5) ? hourly.pm2_5 : [];
+    const rows = [];
+    for (let i = 0; i < Math.min(times.length, values.length, 12); i++) {
+      const value = Number(values[i]);
+      if (!Number.isFinite(value)) continue;
+      rows.push({ time: String(times[i]), pm25UgM3: +value.toFixed(1) });
+    }
+    if (!rows.length) return null;
+    return {
+      source: 'CAMS global via Open-Meteo',
+      units: 'ug/m3',
+      peakPm25UgM3: rows.reduce((max, row) => Math.max(max, row.pm25UgM3), 0),
+      hours: rows.length,
+      series: rows
+    };
+  }, { staleMs: 3 * 60 * 60 * 1000, background: true });
+}
+
+/** Angin GFS 10 m pada satu koordinat, dari field yang sudah di-cache. */
+async function windPointAt(lat, lon) {
+  const field = await gfsField(0);
+  const sample = sampleAt(field, lat, lon);
+  if (!sample) return null;
+  return {
+    speed: +Number(sample.speed).toFixed(1),
+    from: Math.round(sample.from),
+    to: Math.round((sample.from + 180) % 360),
+    run: field.run || null,
+    validTime: gfsRunValidTime(field.run, field.fhour)
+  };
+}
+
 app.get('/api/air-point', async (req, res) => {
   const lat = Number(req.query.lat), lon = Number(req.query.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
     return res.status(400).json({ error: 'Koordinat tidak valid.' });
   }
   try {
-    const out = await cached(`ap:${lat.toFixed(2)},${lon.toFixed(2)}`, 30 * 60 * 1000, async () => {
-      const url = 'https://air-quality-api.open-meteo.com/v1/air-quality'
-        + `?latitude=${lat}&longitude=${lon}&current=pm2_5,pm10,us_aqi,sulphur_dioxide,carbon_monoxide`;
-      const r = await fetchWithRetry(url, {}, 12000, 3);
-      if (!r.ok) {
-        if (r.status === 429) throw new Error('aqp_429_limit');
-        throw new Error('aqp_' + r.status);
-      }
-      const c = (await r.json()).current || {};
-      const aqi = Number(c.us_aqi);
-      if (!Number.isFinite(aqi)) return null;
-      const band = aqiBand(aqi);
-      return {
-        aqi: Math.round(aqi),
-        pm25: Number.isFinite(Number(c.pm2_5)) ? +Number(c.pm2_5).toFixed(1) : null,
-        pm10: Number.isFinite(Number(c.pm10)) ? +Number(c.pm10).toFixed(1) : null,
-        so2: Number.isFinite(Number(c.sulphur_dioxide)) ? +Number(c.sulphur_dioxide).toFixed(1) : null,
-        co: Number.isFinite(Number(c.carbon_monoxide)) ? Math.round(Number(c.carbon_monoxide)) : null,
-        label: band.label, color: band.color, advice: band.advice
-      };
-    }, { staleMs: 60 * 60 * 1000, background: true });
+    const out = await airPointAt(lat, lon);
     res.json({ lat, lon, air: out });
   } catch (err) {
     // Jika 429, tetap balas null tapi jangan 502, popup akan tampil "tidak tersedia" bukan error
@@ -2545,13 +2597,15 @@ async function handleAskRequest(req, res, mode = 'brief') {
   const language = String(input.lang || 'id').toLowerCase() === 'en' ? 'en' : 'id';
   const challengeClaim = mode === 'challenge' ? String(input.claim || '').slice(0, 1800) : '';
   try {
-    const [overview, attribution, news, volcano, quakes, shelters] = await Promise.all([
+    const [overview, attribution, news, volcano, quakes, shelters, hotspotFeed, pvmbgOfficial] = await Promise.all([
       withDeadline(buildOverview(), {}),
       withDeadline(buildAttribution(), {}),
       withDeadline(getNews(), { articles: [] }),
       withDeadline(scheduler.get('volcano'), {}),
       withDeadline(scheduler.get('quake'), null),
-      withDeadline(scheduler.get('shelter'), null)
+      withDeadline(scheduler.get('shelter'), null),
+      withDeadline(getHotspots(), null, 4000),
+      withDeadline(scheduler.get('pvmbg'), null, 3000)
     ]);
     const hazard = { quakes, shelters };
     const assembledAt = Date.now();
@@ -2563,6 +2617,18 @@ async function handleAskRequest(req, res, mode = 'brief') {
       shelter: publicSchedulerTaskState('shelter', assembledAt)
     };
     const casualties = summarizeCasualties((news && news.articles) || []);
+    // Alat berbasis koordinat butuh himpunan titik api penuh, bukan
+    // subset teratas FRP yang dikirim ke antarmuka. Tanpa ini, hitungan
+    // "di area saya" akan lebih kecil dari kenyataan tanpa penjelasan.
+    const volcanoCoords = new Map((VOLCANO_COORDS.volcanoes || []).map(v => [String(v.name).toLowerCase(), v]));
+    const volcanoPoints = ((pvmbgOfficial && pvmbgOfficial.volcanoes) || []).map(v => {
+      const coord = volcanoCoords.get(String(v.name).toLowerCase());
+      if (!coord) return null;
+      return {
+        name: v.name, lat: coord.lat, lon: coord.lon,
+        level: [v.roman, v.status].filter(Boolean).join(' ') || String(v.level || '')
+      };
+    }).filter(Boolean);
     const ctx = {
       overview,
       attribution,
@@ -2571,7 +2637,16 @@ async function handleAskRequest(req, res, mode = 'brief') {
       hazard,
       casualties,
       sourceState,
-      air: { worst: overview && overview.worstAir }
+      air: { worst: overview && overview.worstAir },
+      hotspotsAll: ((hotspotFeed && hotspotFeed.hotspots) || []).map(h => ({
+        lat: h.lat, lon: h.lon, frp: h.frp, confidence: h.confidence,
+        acq: h.acq, province: provinceOf(h.lat, h.lon)
+      })),
+      regions: REGIONS,
+      volcanoPoints,
+      resolveAirPoint: (lat, lon) => airPointAt(lat, lon),
+      resolvePm25Forecast: (lat, lon) => pm25ForecastAt(lat, lon),
+      resolveWindAt: (lat, lon) => windPointAt(lat, lon)
     };
     res.set('Cache-Control', 'no-store');
 
@@ -2591,6 +2666,8 @@ async function handleAskRequest(req, res, mode = 'brief') {
           indexed: 0,
           updatedAt: new Date().toISOString(),
           provider: 'local-rag',
+        verification: { status: 'local_deterministic', method: 'deterministic_local_answer', unverifiedNumbers: [], repairAttempts: 0 },
+          verification: { status: 'local_deterministic', method: 'deterministic_local_answer', unverifiedNumbers: [], repairAttempts: 0 },
           model: null,
           agent: { turns: 0, toolCalls: 0, tools: [] },
           evidence: [],
@@ -2602,6 +2679,7 @@ async function handleAskRequest(req, res, mode = 'brief') {
         ...localAnswer,
         mode,
         provider: 'local-rag',
+        verification: { status: 'local_deterministic', method: 'deterministic_local_answer', unverifiedNumbers: [], repairAttempts: 0 },
         model: null,
         metaApiConfigured: false,
         notice: 'Meta Model API belum tersambung. Jawaban ini memakai mode lokal dan bukan demonstrasi Muse Spark.'
@@ -2627,6 +2705,7 @@ async function handleAskRequest(req, res, mode = 'brief') {
           indexed: 0,
           updatedAt: new Date().toISOString(),
           provider: 'local-fallback',
+          verification: { status: 'local_deterministic', method: 'deterministic_local_answer', unverifiedNumbers: [], repairAttempts: 0 },
           model: 'muse-spark-1.3',
           agent: { turns: 0, toolCalls: 0, tools: [] },
           evidence: [],
@@ -2639,6 +2718,7 @@ async function handleAskRequest(req, res, mode = 'brief') {
         ...localAnswer,
         mode,
         provider: 'local-fallback',
+        verification: { status: 'local_deterministic', method: 'deterministic_local_answer', unverifiedNumbers: [], repairAttempts: 0 },
         model: 'muse-spark-1.3',
         metaApiConfigured: true,
         failureCode,

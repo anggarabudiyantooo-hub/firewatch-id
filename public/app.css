@@ -1506,6 +1506,15 @@ a.src-pill:hover{border-color:var(--status-alert);color:var(--status-alert)}
 .ask-challenge-btn{display:inline-flex;align-items:center;justify-content:center;max-width:100%;margin:7px 0 2px;padding:7px 9px;border:1px solid var(--status-info);border-radius:6px;background:var(--surface-1);color:var(--status-info);font:700 8.5px/1.3 var(--font-data);letter-spacing:.06em;text-align:left;cursor:pointer}
 .ask-challenge-btn:hover,.ask-challenge-btn:focus-visible{background:var(--surface-2);color:var(--text-primary);outline:2px solid color-mix(in srgb,var(--status-info) 42%,transparent);outline-offset:1px}
 .ask-challenge-btn:disabled{cursor:default;opacity:.72}
+.ask-verify{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 2px;padding:6px 8px;border:1px solid var(--hairline-strong);border-left:2px solid var(--status-nominal);border-radius:6px;background:var(--surface-1)}
+.ask-verify-flagged{border-left-color:var(--status-alert)}
+.ask-verify-label{font:700 8.5px/1.3 var(--font-data);letter-spacing:.05em;color:var(--text-secondary)}
+.ask-verify-flagged .ask-verify-label{color:var(--status-alert)}
+.ask-verify-list{font:600 9px/1.3 var(--font-data);color:var(--status-alert);overflow-wrap:anywhere}
+.ask-verify-note{font:400 9px/1.3 var(--font-prose);color:var(--text-tertiary)}
+.ask-map-hints{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 2px}
+.ask-map-hint-btn{max-width:100%;padding:5px 8px;border:1px solid var(--hairline-strong);border-radius:999px;background:var(--surface-2);color:var(--text-secondary);font:600 8.5px/1.2 var(--font-data);letter-spacing:.03em;cursor:pointer}
+.ask-map-hint-btn:hover,.ask-map-hint-btn:focus-visible{background:var(--surface-3);color:var(--text-primary);outline:2px solid color-mix(in srgb,var(--status-info) 42%,transparent);outline-offset:1px}
 .ask-challenge{margin:9px 0 3px;border:1px solid color-mix(in srgb,var(--status-info) 52%,var(--hairline));border-radius:8px;background:var(--surface-1);overflow:hidden}
 .ask-challenge-summary{padding:8px 9px;color:var(--status-info);font:700 9px/1.35 var(--font-data);letter-spacing:.06em;cursor:pointer;list-style:none}
 .ask-challenge-summary::-webkit-details-marker{display:none}
