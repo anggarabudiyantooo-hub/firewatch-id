@@ -91,7 +91,7 @@ if (typeof app === 'function') {
       '/api/health', '/', '/dashboard', '/reports', '/reports/archive/index.json', weeklyPath,
       '/app.css', '/site.css', '/site-nav.js', '/home.js', '/reports.js', '/report-model.js', '/i18n.js',
       '/smoke-geometry.js', '/smoke-cloud-layer.js', '/smoke-grid-layer.js',
-      '/wind-particles.js', '/wind-viewport.js', '/map-resize.js', '/ui-tooltip.js', '/ui-tooltip.css', '/dashboard-clean.css', '/vendor/leaflet.js'
+      '/wind-particles.js', '/wind-viewport.js', '/map-resize.js', '/ui-tooltip.js', '/ui-tooltip.css', '/dashboard-clean.css', '/dashboard-clean.js', '/vendor/leaflet.js'
     ].filter(Boolean);
     for (const p of paths) {
       try {
