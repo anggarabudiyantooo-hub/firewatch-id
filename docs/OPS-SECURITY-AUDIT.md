@@ -56,11 +56,13 @@ Opsi A: satu password admin bcrypt yang hanya disimpan sebagai hash di env, cook
 
 ## Status implementasi lokal - 4 November 2026
 
-Perbaikan dikerjakan pada `security/lock-operations` berbasis `c8d7c21`;
-commit autentikasi `6704810` ada di branch, sedangkan migrasi UI, route guard,
-redaksi status, rate-limit coverage, tests, dan dokumentasi masih perubahan lokal
-belum dikomit. Tidak ada push, PR, merge, atau deployment. Temuan HTTP produksi
-di snapshot atas tetap berlaku sampai owner menyetujui deployment.
+Perbaikan keamanan kini berada pada branch `security/lock-operations-bundle`
+berbasis `c8d7c21`; PR #18 telah dibuka dan masih menunggu review. Tidak ada merge
+atau deployment. Temuan HTTP produksi di snapshot atas tetap berlaku sampai
+owner menyetujui deployment. Pemindaian CodeQL awal pada PR #18 menandai rate
+limit login/aset, path aset dinamis, dan fixture test. Tindak lanjut ini menambah
+middleware rate limit eksplisit dan memakai path literal untuk aset; hasil CodeQL
+setelah pembaruan branch tetap harus diperiksa pada run CI baru.
 
 Secara lokal, `/operations`, `/insiden*`, `/admin-assets/*`, dan API
 `/api/admin/*` memerlukan sesi; cookie 8 jam memakai bcrypt/HMAC, mutasi memakai
