@@ -2628,7 +2628,12 @@ async function handleAskRequest(req, res, mode = 'brief') {
       if (!coord) return null;
       return {
         name: v.name, lat: coord.lat, lon: coord.lon,
-        level: [v.roman, v.status].filter(Boolean).join(' ') || String(v.level || '')
+        level: [v.roman, v.status].filter(Boolean).join(' ') || String(v.level || ''),
+        // Nomor tingkat ikut dibawa. Tanpa ini model menulis "Level 3 (Siaga)"
+        // dan verifier menandai angka 3 sebagai karangan, padahal itu data resmi.
+        levelNumber: Number.isFinite(Number(v.level)) ? Number(v.level) : null,
+        levelRoman: v.roman || null,
+        levelStatus: v.status || null
       };
     }).filter(Boolean);
     const ctx = {
