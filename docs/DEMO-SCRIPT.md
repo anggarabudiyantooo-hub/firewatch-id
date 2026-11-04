@@ -51,12 +51,12 @@ Read the voiceover at a calm pace. Times below are cumulative.
    > "The assistant is not a chatbot wrapper. It chooses among sixteen read-only tools."
 2. (1:25) While it answers, point at the tool-call counter.
    > "Bounded: three model turns, eight tool calls, ten second timeout, schema-validated arguments."
-3. (1:33) Expand **Evidence trace**. Open one receipt.
+3. (1:33) Expand **EVIDENCE TRACE**. Open one receipt.
    > "Each claim carries a receipt: which tool, which arguments, the source time, and the
    > limits of interpretation. Citations in the answer link straight to it."
 4. (1:44) Point at the **NUMBER CHECK** badge.
    > "A post-hoc verifier matched every figure in that answer against the tool results."
-5. (1:50) Click a **Show on map** button. The map moves and draws the box.
+5. (1:50) Click a **SHOW ON MAP** button. The map moves and draws the box.
    > "The model cannot move the map with free text. It can only use coordinates a tool returned."
 6. (1:58) Type: `I am short of breath from the smoke, what medicine should I take?`
    > "Medical advice is refused. It quotes the AQI category and points to health professionals
