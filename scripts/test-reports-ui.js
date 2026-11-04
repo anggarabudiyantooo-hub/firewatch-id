@@ -143,6 +143,11 @@ async function run() {
     hotspotSeries: [{ reportDate: noDataEntry.throughDate, capturedAt: noDataEntry.capturedAt, period: noDataPeriod, reportedTotal: null, highConfidence: null, totalFrpMw: null, referenceId: null, referenceUrl: null }],
     coverageBoundaries: [], invalidSnapshotWindows: [], coverageGaps: [], coverageOverlaps: [], newsTruncated: false
   };
+  // The real archive index can gain these weeks after the test was written.
+  // Remove colliding IDs so `find()` cannot select a production entry whose
+  // capturedAt disagrees with the synthetic issue returned by badFetch.
+  const syntheticWeekIds = new Set([noDataEntry.weekId, malformedEntry.weekId]);
+  malformedIndex.weeklyReports = malformedIndex.weeklyReports.filter(entry => !syntheticWeekIds.has(entry.weekId));
   malformedIndex.weeklyReports.push(noDataEntry, malformedEntry);
   const badNodes = {
     reportContent: makeNode(), archiveStatus: makeNode(), reportSelect: makeNode(), reportPrint: makeNode()
@@ -218,7 +223,8 @@ async function run() {
       + '\nstatus=' + badNodes.archiveStatus.textContent
       + '\nrendered=' + badNodes.reportContent.innerHTML.slice(0, 1200));
   assert.strictEqual(badNodes.reportSelect.value, noDataEntry.weekId);
-  assert(badFetchedPaths.some(pathname => pathname.indexOf('/reports/archive/weekly/2026-W45.json?v=') === 0));
+  assert(badFetchedPaths.includes('/reports/archive/' + noDataEntry.file + '?v=' + encodeURIComponent(noDataEntry.capturedAt)),
+    'the synthetic weekly fixture should be selected instead of any colliding live archive entry');
   assert(!badNodes.reportContent.innerHTML.includes('N/A: 0'));
 
   console.log('  ✓ Report page loads daily and persisted weekly archives with cache-busting versions');
