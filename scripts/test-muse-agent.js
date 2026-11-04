@@ -411,6 +411,43 @@ async function main() {
     safeFailureCode(new Error('META_API_HTTP_401')) === 'META_API_HTTP_401');
   check('provider response details and arbitrary error text are not exposed',
     safeFailureCode(new Error('Bearer secret, raw response body')) === 'META_API_ERROR');
+
+  // Kode galat penyedia harus terbaca untuk diagnosis, tetapi hanya field
+  // code/type yang disaring. Pesan mentah tidak boleh ikut ke respons.
+  const { safeFailureDetail } = require('../lib/muse-agent');
+  check('sanitized provider code is kept',
+    safeFailureDetail({ providerError: 'invalid_request_error' }) === 'invalid_request_error');
+  check('provider code with spaces, punctuation or secrets is dropped',
+    safeFailureDetail({ providerError: 'Bearer sk-secret' }) === null
+      && safeFailureDetail({ providerError: 'x'.repeat(41) }) === null
+      && safeFailureDetail({}) === null);
+
+  const errorBodyFetch = async () => ({
+    ok: false,
+    status: 400,
+    json: async () => ({ error: { code: 'context_length_exceeded', message: 'raw secret text' } })
+  });
+  let capturedDetail = null;
+  let capturedCode = null;
+  try {
+    await answerWithMuse('Berapa titik api di Riau?', {}, {
+      apiKey: 'test-key', fetchImpl: errorBodyFetch, budgetMs: 4000, timeoutMs: 4000
+    });
+  } catch (error) {
+    capturedCode = safeFailureCode(error);
+    capturedDetail = safeFailureDetail(error);
+  }
+  check('HTTP 400 keeps its status code and exposes only the sanitized provider code',
+    capturedCode === 'META_API_HTTP_400' && capturedDetail === 'context_length_exceeded');
+
+  const opaqueErrorFetch = async () => ({ ok: false, status: 500, json: async () => { throw new Error('not json'); } });
+  let opaqueDetail = 'unset';
+  try {
+    await answerWithMuse('Berapa titik api di Riau?', {}, {
+      apiKey: 'test-key', fetchImpl: opaqueErrorFetch, budgetMs: 4000, timeoutMs: 4000
+    });
+  } catch (error) { opaqueDetail = safeFailureDetail(error); }
+  check('non-JSON provider error body yields no detail rather than throwing', opaqueDetail === null);
   const unknownRequestBodies = [];
   const countedUnknownFetch = async (_url, options) => {
     unknownRequestBodies.push(JSON.parse(options.body));

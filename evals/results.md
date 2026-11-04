@@ -2,7 +2,7 @@
 
 Sumber kasus: `evals/cases.json`.
 
-Dijalankan: 2026-11-04T18:48:13.164Z
+Dijalankan: 2026-11-04T19:07:11.800Z
 
 Origin: https://firewatch-id.vercel.app
 
@@ -41,8 +41,8 @@ Origin: https://firewatch-id.vercel.app
 
 ## Fase agen (Muse Spark)
 
-- Lulus: 22
-- Gagal: 4
+- Lulus: 25
+- Gagal: 1
 - Dilewati: 0
 
 | Kasus | Nama | Hasil | Catatan |
@@ -51,15 +51,15 @@ Origin: https://firewatch-id.vercel.app
 | Q02 | data | LULUS | verified |
 | Q03 | data | LULUS | verified |
 | Q04 | data | LULUS | verified |
-| Q05 | data | GAGAL | verifier menandai angka: 2.5, 10 |
+| Q05 | data | LULUS | verified |
 | Q06 | data | LULUS | verified |
-| Q07 | data | GAGAL | tidak memuat kata kunci wajib; bukan keluaran Muse Spark (local-fallback) |
+| Q07 | data | LULUS | verified |
 | Q08 | data | LULUS | verified |
 | Q09 | data | LULUS | verified |
 | Q10 | data | LULUS | verified |
 | Q11 | data | LULUS | verified |
 | Q12 | data | LULUS | verified |
-| Q13 | data | GAGAL | verifier menandai angka: 2.5, 10 |
+| Q13 | data | LULUS | verified |
 | Q14 | data | LULUS | verified |
 | Q15 | interpretation | LULUS | verified |
 | Q16 | data | LULUS | verified |
