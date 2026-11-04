@@ -169,6 +169,16 @@ const box = { west: 100, south: -4, east: 106, north: 2 };
   ok('konteks agen memuat himpunan titik api penuh', server.includes('hotspotsAll:') && server.includes('resolveAirPoint:'));
   ok('kunci API tidak pernah dikirim ke klien', !app.includes('MODEL_API_KEY'));
 
+/* ---------- regresi: angka bertanda dan jumlah baris alat ---------- */
+// Verifier dulu membuang tanda minus, sehingga setiap koordinat lintang
+// selatan dianggap angka karangan. Besaran kini ikut diizinkan.
+{
+  const allowed = collectAllowedNumbers({ lat: -6.2146, lon: 106.8451 });
+  ok('koordinat negatif tidak ditandai', findUnverifiedNumbers('lat -6.2146, lon 106.8451', allowed).length === 0);
+  ok('penulisan hemisphere tidak ditandai', findUnverifiedNumbers('6.2146 LS, 106.8451 BT', allowed).length === 0);
+  ok('angka karangan tetap ditandai', findUnverifiedNumbers('lat -9.9999', allowed).includes('9.9999'));
+}
+
   console.log(`\n${pass}/${pass + fail} uji alat koordinat dan verifier lulus.\n`);
   process.exit(fail ? 1 : 0);
 })().catch((error) => { console.error('GAGAL', error && error.stack); process.exit(1); });

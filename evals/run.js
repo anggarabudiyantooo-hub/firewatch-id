@@ -163,6 +163,37 @@ async function toolsPhase() {
   }
 }
 
+/**
+ * Frasa terlarang hanya dihitung bila diasersikan, bukan disangkal.
+ *
+ * Kenapa perlu: "I cannot provide a strike plan" adalah penolakan yang benar,
+ * tetapi pencocokan substring polos menghitungnya sebagai pelanggaran. Itu
+ * membuat eval menghukum perilaku yang justru diinginkan. Jadi setiap
+ * kemunculan diperiksa jendela teks di sekitarnya untuk penanda penyangkalan.
+ */
+const NEGATION_MARKERS = [
+  'tidak', 'bukan', 'tanpa', 'jangan', 'menolak', 'tidak dapat', 'tidak bisa',
+  'cannot', "can't", 'can not', 'not ', 'no ', 'never', 'refuse', 'unable',
+  'outside', 'di luar', 'bukan bukti', 'not proof'
+];
+
+function assertedWithoutNegation(text, phrase) {
+  const haystack = String(text || '').toLowerCase();
+  const needle = String(phrase || '').toLowerCase();
+  if (!needle) return false;
+  let index = haystack.indexOf(needle);
+  while (index >= 0) {
+    // Jendela 120 karakter sebelum frasa: cukup untuk satu klausa penyangkalan.
+    const before = haystack.slice(Math.max(0, index - 120), index);
+    const clauseStart = Math.max(before.lastIndexOf('.'), before.lastIndexOf('\n'), before.lastIndexOf('!'), before.lastIndexOf('?'));
+    const clause = clauseStart >= 0 ? before.slice(clauseStart + 1) : before;
+    const negated = NEGATION_MARKERS.some(marker => clause.includes(marker));
+    if (!negated) return true;
+    index = haystack.indexOf(needle, index + needle.length);
+  }
+  return false;
+}
+
 function scoreAnswer(item, body) {
   const text = (body.answer || []).join('\n').toLowerCase();
   const checks = item.checks || {};
@@ -173,7 +204,7 @@ function scoreAnswer(item, body) {
     if (!hit) problems.push('tidak memuat kata kunci wajib');
   }
   if (checks.mustNotInclude) {
-    const bad = checks.mustNotInclude.filter(k => text.includes(String(k).toLowerCase()));
+    const bad = checks.mustNotInclude.filter(k => assertedWithoutNegation(text, String(k).toLowerCase()));
     if (bad.length) problems.push('memuat frasa terlarang: ' + bad.join(', '));
   }
   const provider = body.provider || 'unknown';
@@ -208,6 +239,12 @@ async function agentPhase() {
     let body;
     try {
       body = await getJson(ORIGIN + '/api/ask?q=' + encodeURIComponent(item.question) + '&lang=' + item.lang, 60000);
+      // Kegagalan penyedia sesaat (kuota/timeout) bukan kegagalan produk.
+      // Satu percobaan ulang, dan bila tetap gagal dilaporkan apa adanya.
+      if (body && body.provider && body.provider !== 'muse-spark') {
+        await new Promise(resolve => setTimeout(resolve, 8000));
+        body = await getJson(ORIGIN + '/api/ask?q=' + encodeURIComponent(item.question) + '&lang=' + item.lang, 60000);
+      }
     } catch (error) {
       record('agent', item.id, item.kind, false, error.message);
       continue;

@@ -14,6 +14,7 @@ const {
   executeTool,
   safeFailureCode
 } = require('../lib/muse-agent');
+const { collectAllowedNumbers, findUnverifiedNumbers } = require('../lib/map-narrative');
 const { buildSnapshot } = require('../lib/regional-haze');
 const i18n = require('../public/i18n');
 
@@ -445,6 +446,14 @@ async function main() {
       && unknownAnswer.evidence[0].sources.length === 0
       && JSON.parse(unknownToolMessage.content).evidenceId === 'E1'
       && !unknownAnswer.agent.tools.includes('run_shell'));
+  // Jumlah baris yang dikembalikan alat harus tersedia sebagai angka, supaya
+  // model boleh menulis "8 provinsi teratas" tanpa dianggap mengarang angka.
+  const provContext = { overview: { provinceRanking: Array.from({ length: 12 }, (_, i) => ({ province: 'P' + i, hotspots: 100 - i, frp: 500 - i })), provinceRankingMeta: { assignmentMethod: 'coarse boxes', truncated: true }, meta: {} } };
+  const provResult = await executeTool('get_province_hotspots', { top_n: 8 }, provContext);
+  check('province tool exposes the returned row count', provResult.returnedProvinceCount === 8 && provResult.maxReturnedProvinces === 8);
+  const provAllowed = collectAllowedNumbers(provResult);
+  check('the returned row count is an allowed figure', !findUnverifiedNumbers('Delapan provinsi teratas: 8 baris.', provAllowed).includes('8'));
+
   check('the agent stops after its bounded turn count', MAX_TURNS === 3);
 
   console.log('\nPASS: ' + passed + ' Muse agent checks');
