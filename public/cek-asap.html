@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="id" data-site-title-id="SIAGA.ID - Cek Asap" data-site-title-en="SIAGA.ID - Smoke Check" data-site-description-id="Periksa laporan kabut atau asap warga terhadap data publik: deteksi panas, kualitas udara model, angin, dan status gunung api. Bukan laporan resmi." data-site-description-en="Check a citizen haze or smoke report against public data: thermal detections, modelled air quality, wind, and volcano status. Not an official report.">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Periksa laporan kabut atau asap warga terhadap data publik: deteksi panas, kualitas udara model, angin, dan status gunung api. Bukan laporan resmi." />
+  <meta name="theme-color" content="#0b0c0e" />
+  <title>SIAGA.ID - Cek Asap</title>
+  <link rel="stylesheet" href="/site.css" />
+  <link rel="stylesheet" href="/assistant-widget.css" />
+  <link rel="stylesheet" href="/cek-asap.css" />
+</head>
+<body class="site-page smoke-page">
+  <a class="site-skip-link" href="#content" data-i18n-skip data-site-id="Lewati ke konten utama" data-site-en="Skip to main content">Lewati ke konten utama</a>
+  <header class="site-header">
+    <a class="site-header-brand" href="/" aria-label="SIAGA.ID home">
+      <span class="site-brand-mark" aria-hidden="true">S</span>
+      <span>SIAGA.ID</span>
+      <span class="site-brand-sub" data-i18n-skip data-site-id="Terminal Bencana" data-site-en="Disaster Monitor">Terminal Bencana</span>
+    </a>
+    <div class="site-nav-wrap">
+      <button class="site-nav-toggle" id="siteNavToggle" type="button" aria-controls="siteNav" aria-expanded="false" data-i18n-skip data-site-aria-id="Buka navigasi" data-site-aria-en="Open navigation">
+        <span aria-hidden="true">☰</span><span data-i18n-skip data-site-id="Menu" data-site-en="Menu">Menu</span>
+      </button>
+      <nav class="site-nav-links" id="siteNav" aria-label="Navigasi utama">
+        <a href="/"><span data-i18n-skip data-site-id="Beranda" data-site-en="Home">Beranda</span></a>
+        <a href="/dashboard"><span data-i18n-skip data-site-id="Dashboard" data-site-en="Dashboard">Dashboard</span></a>
+        <a href="/reports"><span data-i18n-skip data-site-id="Laporan" data-site-en="Reports">Laporan</span></a>
+        <a href="/cek-asap" aria-current="page"><span data-i18n-skip data-site-id="Cek Asap" data-site-en="Smoke Check">Cek Asap</span></a>
+      </nav>
+    </div>
+    <div class="site-header-actions">
+      <div class="site-language-switch" role="group" aria-label="Pilih bahasa" data-site-aria-id="Pilih bahasa" data-site-aria-en="Choose language">
+        <button id="langId" type="button" aria-label="Bahasa Indonesia" aria-pressed="true">ID</button>
+        <button id="langEn" type="button" aria-label="English language" aria-pressed="false">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="content" class="site-main">
+    <section class="reports-intro">
+      <p class="site-eyebrow" data-i18n-skip data-site-id="Laporan warga · Diperiksa terhadap data" data-site-en="Citizen report · Checked against data">Laporan warga · Diperiksa terhadap data</p>
+      <h1 class="site-heading" data-i18n-skip data-site-id="Cek Asap" data-site-en="Smoke Check">Cek Asap</h1>
+      <p class="site-lede" data-i18n-skip data-site-id="Kirim foto langit atau cerita singkat, tandai lokasi dan waktunya. Muse Spark hanya menerangkan apa yang terlihat; angka dan putusan dihitung kode dari data publik yang sama dengan dasbor." data-site-en="Send a sky photo or a short description, mark the place and time. Muse Spark only describes what is visible; the figures and the verdict are computed by code from the same public data as the dashboard.">Kirim foto langit atau cerita singkat, tandai lokasi dan waktunya. Muse Spark hanya menerangkan apa yang terlihat; angka dan putusan dihitung kode dari data publik yang sama dengan dasbor.</p>
+    </section>
+
+    <section class="site-section smoke-form-section" aria-labelledby="smokeFormHeading">
+      <h2 id="smokeFormHeading" data-i18n-skip data-site-id="Materi laporan" data-site-en="Report material">Materi laporan</h2>
+      <form id="smokeForm" class="smoke-form" novalidate>
+        <div class="smoke-field">
+          <label for="smokePhoto" data-i18n-skip data-site-id="Foto langit atau lanskap (opsional)" data-site-en="Sky or landscape photo (optional)">Foto langit atau lanskap (opsional)</label>
+          <input id="smokePhoto" type="file" accept="image/jpeg,image/png,image/webp" />
+          <p class="smoke-hint" data-i18n-skip data-site-id="Maksimal 6 MB. Foto dikodekan ulang di peramban sehingga EXIF, termasuk GPS pada foto, dibuang sebelum dikirim." data-site-en="At most 6 MB. The photo is re-encoded in your browser so EXIF, including any GPS tag, is stripped before it is sent.">Maksimal 6 MB. Foto dikodekan ulang di peramban sehingga EXIF, termasuk GPS pada foto, dibuang sebelum dikirim.</p>
+          <figure id="smokePreviewWrap" class="smoke-preview" hidden>
+            <img id="smokePreview" alt="Pratinjau foto laporan" />
+            <figcaption id="smokePreviewInfo"></figcaption>
+          </figure>
+          <button id="smokePhotoClear" class="site-button" type="button" hidden><span data-i18n-skip data-site-id="Hapus foto" data-site-en="Remove photo">Hapus foto</span></button>
+        </div>
+
+        <div class="smoke-field">
+          <label for="smokeText" data-i18n-skip data-site-id="Cerita singkat (opsional bila ada foto)" data-site-en="Short description (optional if a photo is attached)">Cerita singkat (opsional bila ada foto)</label>
+          <textarea id="smokeText" rows="3" maxlength="600" placeholder="Contoh: langit di halaman rumah tampak kelabu dan matahari terlihat samar." data-site-placeholder-id="Contoh: langit di halaman rumah tampak kelabu dan matahari terlihat samar." data-site-placeholder-en="Example: the sky over my yard looks grey and the sun is faint."></textarea>
+        </div>
+
+        <div class="smoke-row">
+          <div class="smoke-field">
+            <label for="smokeLat" data-i18n-skip data-site-id="Lintang" data-site-en="Latitude">Lintang</label>
+            <input id="smokeLat" type="number" step="0.0001" min="-90" max="90" inputmode="decimal" required />
+          </div>
+          <div class="smoke-field">
+            <label for="smokeLon" data-i18n-skip data-site-id="Bujur" data-site-en="Longitude">Bujur</label>
+            <input id="smokeLon" type="number" step="0.0001" min="-180" max="180" inputmode="decimal" required />
+          </div>
+          <div class="smoke-field smoke-field-button">
+            <button id="smokeLocate" class="site-button" type="button"><span data-i18n-skip data-site-id="Gunakan lokasi saya" data-site-en="Use my location">Gunakan lokasi saya</span></button>
+          </div>
+        </div>
+
+        <div class="smoke-field">
+          <label for="smokeTime" data-i18n-skip data-site-id="Waktu pengamatan (waktu peramban Anda)" data-site-en="Observation time (your browser time)">Waktu pengamatan (waktu peramban Anda)</label>
+          <input id="smokeTime" type="datetime-local" />
+        </div>
+
+        <div class="smoke-actions">
+          <button id="smokeSubmit" class="site-button primary" type="submit"><span data-i18n-skip data-site-id="Periksa terhadap data" data-site-en="Check against data">Periksa terhadap data</span></button>
+        </div>
+        <p id="smokeStatus" class="site-status" role="status" aria-live="polite"></p>
+      </form>
+
+      <div class="smoke-privacy">
+        <h3 data-i18n-skip data-site-id="Privasi dan batas" data-site-en="Privacy and limits">Privasi dan batas</h3>
+        <ul>
+          <li data-i18n-skip data-site-id="Foto diteruskan ke Meta Model API hanya untuk dinilai, diproses di memori server selama satu permintaan, lalu dibuang. Tidak disimpan di disk, basis data, atau arsip laporan." data-site-en="The photo is passed to the Meta Model API only to be assessed, held in server memory for one request, then discarded. It is not written to disk, a database, or the report archive.">Foto diteruskan ke Meta Model API hanya untuk dinilai, diproses di memori server selama satu permintaan, lalu dibuang. Tidak disimpan di disk, basis data, atau arsip laporan.</li>
+          <li data-i18n-skip data-site-id="Jangan kirim foto orang, dokumen pribadi, atau plat nomor. Materi seperti itu ditolak dan tidak diproses." data-site-en="Do not send photos of people, personal documents, or number plates. Such material is rejected and not processed.">Jangan kirim foto orang, dokumen pribadi, atau plat nomor. Materi seperti itu ditolak dan tidak diproses.</li>
+          <li data-i18n-skip data-site-id="Hasilnya bukan laporan resmi, bukan nasihat medis, dan bukan tuduhan terhadap pihak mana pun. Darurat: 112 atau hubungi BPBD setempat." data-site-en="The result is not an official report, not medical advice, and not an accusation against anyone. For emergencies call 112 or contact the local disaster agency.">Hasilnya bukan laporan resmi, bukan nasihat medis, dan bukan tuduhan terhadap pihak mana pun. Darurat: 112 atau hubungi BPBD setempat.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="site-section" id="smokeResultSection" aria-labelledby="smokeResultHeading" hidden>
+      <h2 id="smokeResultHeading" data-i18n-skip data-site-id="Hasil pemeriksaan" data-site-en="Check result">Hasil pemeriksaan</h2>
+      <div id="smokeResult"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>SIAGA.ID · <span data-i18n-skip data-site-id="Pemeriksaan laporan warga terhadap data publik; bukan peringatan resmi." data-site-en="Citizen report checked against public data; not an official warning.">Pemeriksaan laporan warga terhadap data publik; bukan peringatan resmi.</span></span>
+    <a href="/dashboard" data-i18n-skip data-site-id="Buka dashboard interaktif" data-site-en="Open interactive dashboard">Buka dashboard interaktif</a>
+    <a href="/tentang-data" data-i18n-skip data-site-id="Tentang data" data-site-en="About the data">Tentang data</a>
+    <a href="/admin-login" data-i18n-skip data-site-id="Operator" data-site-en="Operator">Operator</a>
+  </footer>
+
+  <script src="/i18n.js"></script>
+  <script src="/site-nav.js"></script>
+  <script src="/cek-asap.js"></script>
+  <script src="/assistant-widget.js"></script>
+</body>
+</html>

@@ -1,0 +1,370 @@
+{
+  "origin": "http://127.0.0.1:3000",
+  "ranAt": "2026-11-04T16:13:58.159Z",
+  "summary": {
+    "tool": {
+      "total": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    "agent": {
+      "total": 26,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 26
+    }
+  },
+  "results": [
+    {
+      "phase": "tool",
+      "id": "SETUP",
+      "name": "konteks dari data publik",
+      "passed": true,
+      "detail": "hotspots=2000 feeds=9"
+    },
+    {
+      "phase": "tool",
+      "id": "Q01",
+      "name": "get_hotspots_in_area",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q02",
+      "name": "get_hotspots_in_area",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q03",
+      "name": "get_hotspots_in_area",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q04",
+      "name": "get_places_in_area",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q05",
+      "name": "get_air_quality_at",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q06",
+      "name": "get_wind_at",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q07",
+      "name": "get_air_quality_at",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q08",
+      "name": "get_volcano_near",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q09",
+      "name": "compare_time_windows",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q10",
+      "name": "get_source_health",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q11",
+      "name": "get_source_health",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q12",
+      "name": "get_hotspots_in_area",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q13",
+      "name": "get_air_quality_at",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q14",
+      "name": "get_places_in_area",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q15",
+      "name": "get_hotspots_in_area",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q16",
+      "name": "get_hotspots_in_area",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q17",
+      "name": "get_places_in_area",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q18",
+      "name": "get_wind_at",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q19",
+      "name": "get_volcano_near",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "Q20",
+      "name": "get_air_quality_at",
+      "passed": true,
+      "detail": "available=true"
+    },
+    {
+      "phase": "tool",
+      "id": "ARG",
+      "name": "get_hotspots_in_area menolak argumen rusak",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "phase": "tool",
+      "id": "ARG",
+      "name": "get_air_quality_at menolak argumen rusak",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "phase": "tool",
+      "id": "ARG",
+      "name": "get_places_in_area menolak argumen rusak",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "phase": "agent",
+      "id": "Q01",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q02",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q03",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q04",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q05",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q06",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q07",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q08",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q09",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q10",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q11",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q12",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q13",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q14",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q15",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q16",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q17",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q18",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q19",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "Q20",
+      "name": "data",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "R01",
+      "name": "refusal",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "R02",
+      "name": "refusal",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "R03",
+      "name": "refusal",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "R04",
+      "name": "refusal",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "R05",
+      "name": "refusal",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    },
+    {
+      "phase": "agent",
+      "id": "R06",
+      "name": "refusal",
+      "passed": false,
+      "detail": "--tools-only: fase agen dilewati"
+    }
+  ]
+}
