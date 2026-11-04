@@ -1,0 +1,53 @@
+{
+  "builtAt": "2026-11-04T18:15:22.273Z",
+  "source": "Playwright screen recording of https://firewatch-id.vercel.app plus generated English narration",
+  "totalSeconds": 180,
+  "sizeMb": 7.9,
+  "segments": [
+    {
+      "segment": "01-problem",
+      "recordedSeconds": 18.2,
+      "narrationSeconds": 22.7,
+      "targetSeconds": 20,
+      "outputSeconds": 20,
+      "screenSpeedup": 0.91,
+      "narrationTempo": 1.135
+    },
+    {
+      "segment": "02-report",
+      "recordedSeconds": 55.1,
+      "narrationSeconds": 52.2,
+      "targetSeconds": 53,
+      "outputSeconds": 53,
+      "screenSpeedup": 1.04,
+      "narrationTempo": 1
+    },
+    {
+      "segment": "03-agent",
+      "recordedSeconds": 93.6,
+      "narrationSeconds": 49.6,
+      "targetSeconds": 52,
+      "outputSeconds": 52,
+      "screenSpeedup": 1.8,
+      "narrationTempo": 1
+    },
+    {
+      "segment": "04-smoke-check",
+      "recordedSeconds": 32.7,
+      "narrationSeconds": 35.3,
+      "targetSeconds": 31,
+      "outputSeconds": 31,
+      "screenSpeedup": 1.06,
+      "narrationTempo": 1.138
+    },
+    {
+      "segment": "05-close",
+      "recordedSeconds": 19.6,
+      "narrationSeconds": 27.7,
+      "targetSeconds": 24,
+      "outputSeconds": 24,
+      "screenSpeedup": 0.82,
+      "narrationTempo": 1.155
+    }
+  ]
+}
