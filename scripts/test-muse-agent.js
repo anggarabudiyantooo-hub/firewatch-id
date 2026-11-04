@@ -7,6 +7,8 @@ const {
   META_CHAT_URL,
   META_MODEL,
   MAX_TURNS,
+  DEFAULT_TIMEOUT_MS,
+  TOTAL_BUDGET_MS,
   TOOL_DEFINITIONS,
   answerWithMuse,
   buildDeveloperPrompt,
@@ -454,7 +456,34 @@ async function main() {
   const provAllowed = collectAllowedNumbers(provResult);
   check('the returned row count is an allowed figure', !findUnverifiedNumbers('Delapan provinsi teratas: 8 baris.', provAllowed).includes('8'));
 
-  check('the agent stops after its bounded turn count', MAX_TURNS === 3);
+  // Batas dinaikkan dari 3 ke 4 karena pertanyaan "cari koordinat lalu ambil
+  // data" perlu tiga giliran alat plus satu giliran jawab. Batas tetap ada dan
+  // tetap diuji; yang berubah angkanya, bukan sifatnya.
+  check('the agent stops after its bounded turn count', MAX_TURNS === 4);
+  check('the per-request timeout stays under the serverless budget', DEFAULT_TIMEOUT_MS < TOTAL_BUDGET_MS);
+  check('the total budget leaves room under the 60s function limit', TOTAL_BUDGET_MS <= 50000);
+
+  // Anggaran dinding harus benar-benar menghentikan penyedia yang lambat,
+  // bukan sekadar angka yang tertulis. fetchImpl ini tidak pernah selesai
+  // sampai sinyal abort dibunyikan.
+  const slowFetch = (_url, init) => new Promise((_resolve, reject) => {
+    const fail = () => { const e = new Error('aborted'); e.name = 'AbortError'; reject(e); };
+    if (init && init.signal) {
+      if (init.signal.aborted) return fail();
+      init.signal.addEventListener('abort', fail, { once: true });
+    }
+  });
+  const budgetStarted = Date.now();
+  let budgetCode = '';
+  try {
+    await answerWithMuse('situasi karhutla', { overview: {} }, {
+      apiKey: 'test-key', fetchImpl: slowFetch, budgetMs: 2500, timeoutMs: 60000
+    });
+  } catch (error) { budgetCode = String(error && error.message || ''); }
+  const budgetElapsed = Date.now() - budgetStarted;
+  check('a slow provider is reported as a timeout', budgetCode === 'META_API_TIMEOUT');
+  check('the wall-clock budget caps the wait below the per-request timeout', budgetElapsed < 12000);
+
 
   console.log('\nPASS: ' + passed + ' Muse agent checks');
 }

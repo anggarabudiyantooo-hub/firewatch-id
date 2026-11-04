@@ -77,9 +77,17 @@ Four user-facing results:
   └──────────────────────────────────────────────────────────────┘
 ```
 
-The agent loop is bounded: at most 3 model turns, at most 8 tool calls, a 10 second
+The agent loop is bounded: at most 4 model turns, at most 8 tool calls, a 22 second
 per-request timeout, schema-validated tool arguments, and a 7,000 character cap per
 tool result. The numeric verifier may add exactly one repair request.
+
+Those bounds are also capped by a **48 second total wall-clock budget**, so a slow
+provider cannot overrun the 60 second serverless function limit. Each request gets
+`min(per-request timeout, remaining budget)`, and the loop stops honestly with
+`META_API_TIMEOUT` when less than 3 seconds remain. The turn count was raised from
+3 to 4 after production evals showed that a question needing "resolve coordinates,
+then fetch data, then answer" could not fit in 3 turns; the bound still exists and
+is still tested.
 
 ## 4. Which Meta model does what
 

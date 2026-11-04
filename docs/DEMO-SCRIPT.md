@@ -50,7 +50,7 @@ Read the voiceover at a calm pace. Times below are cumulative.
 1. (1:15) Type: `How many thermal detections are near Pekanbaru in the last 24 hours?`
    > "The assistant is not a chatbot wrapper. It chooses among sixteen read-only tools."
 2. (1:25) While it answers, point at the tool-call counter.
-   > "Bounded: three model turns, eight tool calls, ten second timeout, schema-validated arguments."
+   > "Bounded: four model turns, eight tool calls, a forty-eight second total budget, schema-validated arguments."
 3. (1:33) Expand **EVIDENCE TRACE**. Open one receipt.
    > "Each claim carries a receipt: which tool, which arguments, the source time, and the
    > limits of interpretation. Citations in the answer link straight to it."

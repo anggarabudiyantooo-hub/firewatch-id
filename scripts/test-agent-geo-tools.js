@@ -149,7 +149,10 @@ const box = { west: 100, south: -4, east: 106, north: 2 };
   const geo = agent.TOOL_DEFINITIONS.filter(t => ['get_hotspots_in_area', 'get_air_quality_at', 'get_wind_at', 'get_volcano_near', 'get_places_in_area'].includes(t.function.name));
   ok('argumen koordinat diwajibkan skema', geo.every(t => Array.isArray(t.function.parameters.required) && t.function.parameters.required.length > 0));
   ok('jumlah alat tetap terbatas', agent.TOOL_DEFINITIONS.length === 16, String(agent.TOOL_DEFINITIONS.length));
-  ok('batas putaran dan panggilan alat tidak dilonggarkan', agent.MAX_TURNS === 3 && agent.MAX_TOOL_CALLS === 8);
+  // Batas putaran naik ke 4 (lihat test-muse-agent.js); batas alat tetap 8 dan
+  // anggaran dinding wajib lebih kecil dari batas fungsi serverless 60 detik.
+  ok('batas putaran dan panggilan alat tetap ada', agent.MAX_TURNS === 4 && agent.MAX_TOOL_CALLS === 8);
+  ok('anggaran dinding di bawah batas fungsi serverless', agent.TOTAL_BUDGET_MS <= 50000 && agent.DEFAULT_TIMEOUT_MS < agent.TOTAL_BUDGET_MS);
 
   console.log('\n== antarmuka: cek angka dan tampilkan di peta ==');
   const fs = require('fs');
