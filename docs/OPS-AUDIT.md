@@ -1,9 +1,36 @@
 # Audit Teknis: FireWatch / SIAGA.ID → Operations Center
 
+> Arsip historis. Rekomendasi token RBAC di bagian lama sudah usang. Lihat addendum 4 Nov dan `README.md` / `docs/OPS-SECURITY-AUDIT.md`. Patch di branch belum dideploy, jadi kondisi live masih mengikuti deployment lama.
+
 Tanggal audit: 4 Oktober 2026 · Cakupan: repo produksi `firewatch-id` pada keadaan tip saat audit
 Sifat dokumen: **pembacaan kode + pengukuran langsung**, bukan asumsi. Fase ini **tidak mengubah kode**.
 
-## Addendum keamanan (2 November 2026)
+## Addendum 4 November 2026 - branch pengamanan saat ini
+
+Perbaikan berjalan terpisah pada branch `security/lock-operations`, berbasis
+`c8d7c21`. Commit lokal `6704810` menambahkan autentikasi sesi; pekerjaan
+pelindung halaman/API dan hardening lanjut masih belum dikomit. Belum ada push,
+PR, merge, atau deployment. Karena itu semua temuan paparan yang diukur terhadap
+produksi di audit 4 Nov tetap berlaku sampai owner meninjau dan menerapkan patch.
+
+Implementasi lokal memakai satu password admin bcrypt, cookie sesi HMAC 8 jam,
+CSRF + pemeriksaan Origin untuk mutasi, backoff login, UI privat di luar `public/`,
+dan seluruh API admin pada `/api/admin/*`. `/api/status` kini memakai proyeksi
+kesegaran yang menghapus endpoint, pesan galat, counter retry, log, dan kuota;
+fallback boot tidak lagi membuka stack lewat `?debug=`; `/api/ask` dan challenge
+berbagi bucket AI 12/menit, sedangkan metadata hulu masuk bucket mahal. Cron
+menerima `CRON_SECRET` hanya dari header Bearer. `npm run check` terakhir pada
+worktree lokal lulus; uji auth/login, rate limit, status projection, helper local
+mock, dan Vercel configuration lulus. Ini bukan verifikasi deployment.
+
+Sebelum deployment owner harus memasang `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`,
+dan `CRON_SECRET` sesuai panduan README/PENJADWAL. Nilai secret tidak dicatat di
+repo atau dokumen ini. `MODEL_API_KEY` tidak dibaca atau diubah. Verifikasi
+deployment headers, robots, login, cron, serta regresi produksi belum dapat
+dilakukan sebelum owner menyetujui deploy; jangan menganggap branch lokal telah
+mengamankan domain live.
+
+## Addendum keamanan (2 November 2026, snapshot lama - superseded)
 
 Bagian di bawah adalah potret historis 4 Oktober dan bukan status kode terbaru.
 Audit baca-saja terbaru membuktikan bahwa deployment produksi pada saat itu
@@ -28,12 +55,10 @@ Temuan yang ditangani pada branch `fix/security-ops-hardening` berbasis
   dipindah dari dock Dashboard ke footer Beranda, tanpa menanam panel operasional
   di halaman Dashboard.
 
-Perubahan ini belum di-push atau di-deploy. Sampai merge dan deployment
-berhasil, temuan paparan pada deployment live di atas masih berlaku. Sebelum
-mengaktifkan akses panel, konfigurasi token `OPS_TOKEN_VIEWER`,
-`OPS_TOKEN_OPERATOR`, dan/atau `OPS_TOKEN_ADMIN` di Vercel Production, lalu
-deploy ulang. Jangan mengirim nilai secret melalui chat atau menyimpannya di
-repo.
+Instruksi pada addendum 2 Nov sudah usang: **jangan** memasang atau mengandalkan
+`OPS_TOKEN_VIEWER`, `OPS_TOKEN_OPERATOR`, `OPS_TOKEN_ADMIN`, `OPS_WRITE_TOKEN`,
+atau `OPS_READ_PROTECTED`. Status terbaru dan instruksi owner ada pada addendum
+4 Nov di atas. Perbaikan lokal belum di-deploy; temuan produksi masih berlaku.
 
 ---
 

@@ -3,15 +3,12 @@
 
 Aturan penilaian (dibuat konservatif supaya TIDAK memunculkan alarm palsu):
 
-- GAGAL: sebuah tugas `consecutiveFails >= 3`. Ambang tiga putaran, bukan
-  satu, karena satu kegagalan tunggal masih normal untuk sumber yang
-  sesekali menolak permintaan (mis. MAGMA 500 atau BNPB 520/521).
-- PERINGATAN: tugas punya data (`hasData`) tetapi umurnya > 2,5 x intervalnya
- , aturan yang sama dengan label "TERLAMBAT" di antarmuka.
-  Tugas tanpa data sengaja TIDAK dinilai: pada serverless, instance dingin
-  melaporkan "belum diminta" untuk sumber on-demand (berita, pengungsi,
-  letusan) dan itu bukan kerusakan; menilainya akan memicu alarm palsu
-  setiap kali penjadwal luar menjalankan salinan baru.
+- GAGAL: ringkasan publik menandai `persistentFailure` setelah tiga
+  kegagalan berturut-turut. Jumlah dan rincian galat tidak dipublikasikan.
+- PERINGATAN: tugas punya data dan penjadwal menandai `late` (umur data >
+  2,5 kali interval). Tugas tanpa data sengaja TIDAK dinilai: pada serverless,
+  instance dingin melaporkan "belum diminta" untuk sumber on-demand (berita,
+  pengungsi, letusan), bukan kerusakan.
 
 Keluaran: ringkasan ke stdout + berkas isi tiket (default /tmp/uptime_body.md).
 Kode keluar: 1 bila ada GAGAL (agar alur kerja bisa bercabang), selain itu 0.
@@ -28,13 +25,11 @@ BODY_PATH = "/tmp/uptime_body.md"
 def nilai(payload):
     gagal, peringatan = [], []
     for t in payload.get("tasks", []):
-        label = t.get("label") or t.get("id") or "?"
-        cf = t.get("consecutiveFails") or 0
-        if cf >= 3:
-            sebab = t.get("errorNote")
-            gagal.append("%s, gagal %d× berturut-turut%s" % (label, cf, (", " + sebab) if sebab else ""))
-        elif t.get("hasData") and t.get("ageMs") and t.get("everyMs") and t["ageMs"] > 2.5 * t["everyMs"]:
-            peringatan.append("%s, data tertinggal (%s, seharusnya %s)"
+        label = t.get("label") or "?"
+        if t.get("persistentFailure"):
+            gagal.append("%s, sumber berulang kali gagal (rincian tidak dipublikasikan)" % label)
+        if t.get("late"):
+            peringatan.append("%s, data tertinggal (%s, jadwal %s)"
                               % (label, t.get("ageLabel") or "?", t.get("everyLabel") or "?"))
     return gagal, peringatan
 

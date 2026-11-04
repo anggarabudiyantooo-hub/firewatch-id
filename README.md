@@ -74,7 +74,7 @@ rahasia lewat URL/query string. Rinciannya di `docs/PENJADWAL.md`.
 
 ## Variabel lingkungan
 
-Seluruhnya **opsional untuk aplikasi utama**. Namun, bila tidak ada `OPS_TOKEN_*` atau `OPS_WRITE_TOKEN`, API Operations yang dilindungi sengaja fail-closed (HTTP 503) sampai kredensial dipasang di lingkungan server.
+Sebagian besar variabel **opsional untuk aplikasi publik**. Admin Operations baru aktif setelah owner memasang `ADMIN_PASSWORD_HASH` dan `SESSION_SECRET` di Vercel; bila kosong atau invalid, login admin fail-closed (HTTP 503).
 
 | Variabel | Default | Fungsi |
 |---|---|---|
@@ -86,7 +86,7 @@ Seluruhnya **opsional untuk aplikasi utama**. Namun, bila tidak ada `OPS_TOKEN_*
 | `CDSE_CLIENT_SECRET` | *(kosong)* | Client secret OAuth Copernicus |
 | `CRON_SECRET` | wajib di Vercel Production | `/api/cron` hanya menerima `Authorization: Bearer <secret>`; tanpa secret, endpoint terkunci (503) |
 | `OPS_SLA_*_MIN` | 60/240/1440/4320 | Target SLA per severity untuk metrik & analitik |
-| `DEBUG_KEY` | *(tidak diatur)* | endpoint diagnostik Sentinel hanya dibuka dengan `Authorization: Bearer <secret>`; secret tidak diterima lewat query string |
+| `DEBUG_KEY` | *(tidak diatur)* | endpoint diagnostik Sentinel saja, lewat `Authorization: Bearer <secret>`; fallback boot tidak lagi menerima kunci/stack melalui query |
 
 Pendaftaran kunci FIRMS (gratis): <https://firms.modaps.eosdis.nasa.gov/api/map_key/>
 
@@ -226,7 +226,7 @@ yang sama dengan yang menyuplai dashboard.
 
 | Bagian | Isi | Sumber angka |
 |---|---|---|
-| System Health | jumlah layanan dipantau / sehat / peringatan / tidak tersedia / belum diketahui, plus status aplikasi (uptime, Node, mode penjadwal, mode penyimpanan) | `Scheduler.status()` yang sama dengan `/api/status` |
+| System Health | jumlah layanan dipantau/sehat, status data dan kesegaran | `/api/status` memakai proyeksi publik minimal dari `lib/public-status.js`; rincian internal hanya di endpoint admin bersesi |
 | Data Sources | per sumber: status, kesegaran (FRESH/STALE/CRITICAL/UNKNOWN), waktu respons terakhir, waktu sukses terakhir, jumlah galat, penjeda backoff, endpoint hulu | diukur saat pengambilan; yang belum terukur ditulis **"belum terukur"** |
 | Alerts | aturan `source_down`, `data_critical`, `api_slow`, `hotspot_cluster` + tombol membuat insiden | evaluasi dijalankan pada `/api/cron` (tiap 10 menit) dan bisa dipicu manual |
 | Incidents | siklus OPEN → INVESTIGATING → PENDING → RESOLVED → CLOSED, penugasan, eskalasi, catatan investigasi, timeline, metrik MTTR/SLA dari data nyata; daftar di papan diurutkan menurut **aktivitas terbaru** supaya insiden yang baru dibuat dari alert lama tidak "hilang" | disimpan oleh adaptor penyimpanan (lihat di bawah) |
@@ -234,9 +234,15 @@ yang sama dengan yang menyuplai dashboard.
 | Audit Log | 200 tindakan terakhir: siapa mengubah apa, kapan, termasuk evaluasi alert otomatis | satu dokumen simpanan yang sama dengan insiden (tidak ada log kedua yang bisa berbeda) |
 | Troubleshooting | dugaan + **bukti angka** + langkah pemeriksaan untuk satu sumber, satu alert, atau satu insiden; plus ringkasan armada | aturan tetap atas pengukuran tersimpan (`lib/troubleshoot.js`), **bukan keluaran model bahasa** |
 | Tautan dalam | `?insiden=INC-…` membuka detail di papan; tombol "Salin tautan" | rute baca yang sama |
-| Lembar insiden | `/insiden/INC-…`, satu insiden, satu alamat, untuk dibagikan & dibaca ulang; langkah runbook bisa ditandai dikerjakan | `public/insiden.html` + `public/ops-detail.js` (berkas yang sama dengan kartu detail di papan) |
+| Lembar insiden | `/insiden/INC-…`, satu insiden, satu alamat, untuk dibagikan & dibaca ulang; langkah runbook bisa ditandai dikerjakan | UI privat di `admin-ui/insiden.html` dan dilayani setelah sesi lewat `/admin-assets/*` |
 | Analytics | 14 hari terakhir (bisa `?hari=1..90`): insiden & alert baru per hari, MTTR/SLA per severity, per kategori, per aturan, sumber paling sering muncul | dihitung ulang dari riwayat tersimpan (`lib/analytics.js`), **tidak ada deret nol yang menggantikan "belum ada riwayat"** |
 | Infrastructure | 1 simpul per sumber yang benar-benar dipantau + klien/edge/fungsi/penjadwal; setiap nilai membawa penanda NYATA atau SIMULATED | angka hulu diambil apa adanya dari pengukuran; angka tautan = **SIMULATED** dan ditulis begitu (`lib/infra-sim.js`) |
+
+`GET /api/status` tetap publik untuk panel sumber, tetapi kini hanya mengirim label,
+kesegaran, interval yang ditampilkan ke pengguna, dan flag status ringkas. Endpoint,
+pesan galat, jumlah retry, hitungan kuota, serta log internal tidak ikut dikirim.
+Pemantau uptime memakai flag agregat yang sama; rincian operasional lengkap hanya
+tersedia setelah sesi admin pada `/api/admin/operations/*`.
 
 Setiap bagian papan dimuat sendiri-sendiri. Bila satu endpoint gagal (di Vercel
 tiap permintaan bisa mendarat di instance berbeda, jadi ini wajar), bagian lain
@@ -245,7 +251,7 @@ termuat, papan tidak pernah tampak kosong tanpa keterangan.
 
 ### Troubleshooting: bukan teks karangan
 
-`GET /api/operations/diagnose` menurunkan dugaan dari pengukuran yang sudah
+`GET /api/admin/operations/diagnose` menurunkan dugaan dari pengukuran yang sudah
 tersimpan, status, waktu respons, jumlah gagal berturut, kesegaran, pesan galat
 tersanitasi, dan alert yang menyala, memakai aturan yang dapat diperiksa satu
 per satu. Setiap dugaan **wajib** menyertakan buktinya, dan tingkat "kejelasan
@@ -267,10 +273,10 @@ dikerjakan" di layar dibaca ulang dari timeline itu setiap kali halaman dimuat.
 
 ### Cara masuk
 
-Operations Center adalah halaman tersendiri di `/operations`; panelnya tidak
-ditampilkan di Dashboard, dan tautan pintasnya kini berada di footer halaman
-**Beranda** agar terpisah dari papan data. Tiap insiden punya tautan sendiri:
-`/operations?insiden=INC-2026-00001` membuka detail insiden itu.
+Operations Center adalah halaman admin tersendiri di `/operations`; tidak ada
+tautan pintas dari halaman publik. Masuk melalui `/admin-login`. Tiap insiden
+punya tautan sendiri, misalnya `/operations?insiden=INC-2026-00001`, yang hanya
+bisa dibuka dalam sesi admin.
 
 ### Penyimpanan operasional: apa adanya
 
@@ -290,9 +296,10 @@ didaur ulang, dan itu tertulis di halaman, bukan disembunyikan.
 
 **Cara memasangnya** (langkah rinci, termasuk mengapa tidak perlu basis data
 seperti Neon): [`docs/PENYIMPANAN.md`](docs/PENYIMPANAN.md). Verifikasi setelah
-dipasang memerlukan token VIEWER di environment lokal:
-`python3 scripts/verify-store.py` (baca-saja). `--tulis` memerlukan token
-OPERATOR/ADMIN dan membuat satu insiden uji yang ditutup, tetapi tidak dihapus.
+dipasang memerlukan login admin pada pemeriksaan lokal:
+`python3 scripts/verify-store.py` (baca-saja, password diminta tanpa echo).
+`--tulis` memakai sesi yang sama dan membuat satu insiden uji yang ditutup,
+tetapi tidak dihapus.
 
 Hal serupa berlaku untuk **pengukuran**: di Vercel setiap instance punya memori
 sendiri dan tugas penjadwal hanya berjalan saat `/api/cron` memanggilnya (tiap
@@ -316,80 +323,45 @@ cepat 60 detik sekali agar sumber hulu tidak dihujani permintaan.
 | `OPS_ALERT_DEDUP_MS` | `1800000` | jendela anti-duplikasi per (aturan, subjek) |
 | `OPS_SLA_CRITICAL_MIN` / `…_HIGH_MIN` / `…_MEDIUM_MIN` / `…_LOW_MIN` | `60` / `240` / `1440` / `4320` | target penyelesaian per severity (menit) |
 | `OPS_WARMUP_MS` | `8000` | di Vercel, instance yang belum pernah mengukur apa pun menjalankan satu kali pengukuran beranggaran ini detik saat rute ops dibuka; `0` mematikannya |
-| `OPS_TOKEN_VIEWER` / `OPS_TOKEN_OPERATOR` / `OPS_TOKEN_ADMIN` | *(tidak diatur)* | token akses peran; tanpa salah satunya, API Operations yang dilindungi terkunci (503) |
-| `OPS_WRITE_TOKEN` | *(tidak diatur)* | token lama; tetap dihormati sebagai token tingkat **ADMIN** |
-| `OPS_READ_PROTECTED` | usang, diabaikan | pembacaan data Operations selalu memerlukan VIEWER ke atas; variabel ini tidak dapat menonaktifkan auth |
+| `ADMIN_PASSWORD_HASH` | *(tidak diatur)* | hash bcrypt admin, cost 10-14; kosong berarti login ditutup |
+| `SESSION_SECRET` | *(tidak diatur)* | secret acak minimal 32 byte untuk tanda tangan sesi |
 | `OPS_STORE_FILE` | *(kosong)* | menunjuk berkas simpanan lain untuk mode `file` (pengembangan/uji) |
 | `OPS_GITHUB_TOKEN` / `OPS_GITHUB_REPO` | *(kosong)* | mengaktifkan mode penyimpanan `github` |
 
-### Peran akses (RBAC)
+### Autentikasi admin Operations
 
-| Peran | Boleh |
-|---|---|
-| `VIEWER` | membaca data operasional (termasuk insiden, runbook, metrik, dan audit) |
-| `OPERATOR` | semua di atas + menangani insiden: buat, tugaskan, catatan, eskalasi, selesaikan, tutup, alert → insiden |
-| `ADMIN` | semua di atas + memicu `POST /api/operations/evaluate` (operasi mahal: mengambil data hulu) |
+Akses admin memakai satu password, bukan lagi token bearer/RBAC. Password dibandingkan dengan hash bcrypt di server; sesi memakai cookie `__Host-siaga_admin` bertanda tangan HMAC, `HttpOnly`, `Secure`, `SameSite=Strict`, dan berakhir setelah 8 jam. Token CSRF hanya disimpan di memori tab dan dikirim pada mutasi. Mutasi juga harus memiliki `Origin` same-origin dan `Content-Type: application/json`.
 
-Aturan yang dipegang:
+- Halaman `/operations`, `/operations.html`, `/insiden/:id`, `/insiden.html`, serta aset `/admin-assets/*` memerlukan sesi. Tanpa sesi, halaman mengarah ke `/admin-login`; aset/API memberi 401. Berkas UI privat berada di luar `public/**` dan tidak dapat diambil langsung oleh lapisan static Vercel.
+- Semua API data/aksi admin berada di `/api/admin/*`. Endpoint lama `/api/operations/*`, `/api/incidents`, `/api/alerts`, `/api/runbooks`, dan `/api/data-sources` tidak lagi menjadi jalur admin. Pengecualian publik yang disengaja hanya `/api/alarm`, berupa ringkasan kesehatan minimal tanpa data insiden, alert, audit, atau penyimpanan.
+- Login memakai backoff per IP: jeda bertambah setelah kata sandi salah, lalu dikunci 15 menit setelah delapan kegagalan. Penghitung ini berada di memori tiap instance serverless; cold start atau instance lain dapat memulai penghitung baru.
+- Aksi dan login/logout dicatat sebagai `admin`; password, hash, cookie, CSRF, dan query string tidak ditulis ke log. Header identitas lama `x-ops-actor` tidak dipercaya.
+- Logout menghapus cookie browser. Karena sesi ditandatangani tanpa penyimpanan sesi terpusat, salinan cookie yang sudah dicuri masih berlaku sampai kedaluwarsa 8 jam; lindungi perangkat admin dan jalankan logout di perangkat bersama.
+- Rute publik berbiaya dibatasi per IP: 12/menit untuk `/api/ask` dan `/api/ask/challenge` bersama, 90/menit untuk endpoint hulu, dan 1.200/menit hanya untuk pola ubin gambar. Ini penghenti burst per proses, bukan jaminan kuota global; batas dapat dimulai ulang oleh cold start.
+- Variabel `OPS_TOKEN_VIEWER`, `OPS_TOKEN_OPERATOR`, `OPS_TOKEN_ADMIN`, `OPS_WRITE_TOKEN`, dan `OPS_READ_PROTECTED` adalah konfigurasi lama yang diabaikan. Hapus token lama dari Vercel setelah migrasi selesai.
 
-- **Fail-closed.** Tanpa token peran yang terkonfigurasi, API Operations yang
-  dilindungi menolak baca maupun tulis dengan HTTP 503 dan panel menyatakan
-  akses **TERKUNCI**. Pasang token di Vercel (Production, dan Preview bila
-  diperlukan), lalu deploy ulang. Jangan mengirim atau menyimpan nilainya di
-  repo atau chat; gunakan password manager/secret manager.
-- Semua pembacaan data operasional menuntut token **VIEWER** ke atas; menulis
-  insiden menuntut **OPERATOR**; memicu evaluasi yang mengambil data hulu
-  menuntut **ADMIN**. `OPS_READ_PROTECTED` adalah variabel lama yang diabaikan,
-  sehingga tidak dapat membuka endpoint baca.
-- Dua pengecualian publik yang dibatasi: `/api/operations/access` hanya
-  menunjukkan mode dan nama env yang perlu diperiksa (tidak pernah nilai
-  token), sedangkan `/api/alarm` hanya memberi ringkasan kesehatan untuk
-  monitor luar, tanpa insiden, alert, audit, atau detail penyimpanan.
-- Token dikirim sebagai header `x-ops-token`; token yang dimasukkan lewat
-  panel disimpan di `sessionStorage` tab aktif dan hilang saat tab ditutup.
-  Perbandingan server memakai digest SHA-256 berukuran tetap dan
-  `timingSafeEqual`.
-- `OPS_WRITE_TOKEN` lama diperlakukan sebagai token **ADMIN**, sehingga masih
-  dapat mengakses semua peran.
-- `/api/operations/access` menyebut **nama variable yang diperiksa**
-  (`namaDiperiksa`) dan mana yang **terlihat pada deployment ini** (`terlihat`),
-  nama saja, isinya tidak pernah. `GET /api/operations/health` memuat
-  `application.build` (7 huruf commit yang sedang melayani) untuk membuktikan
-  versi deployment.
-- Nama pelaku tetap dari header `x-ops-actor` (terpisah dari token: peran
-  menentukan *boleh atau tidak*, nama menentukan *siapa* yang tercatat).
+#### Menyiapkan Production
 
-#### Memasang token di Vercel
+1. Di repo lokal, jalankan `node scripts/generate-admin-hash.js`. Masukkan password admin pada prompt tersembunyi; salin hash yang dihasilkan langsung ke Vercel. Jangan kirim password/hash lewat chat, jangan menaruhnya di repo, dan jangan simpan di riwayat shell.
+2. Buat `SESSION_SECRET` acak minimal 32 byte menggunakan password manager atau generator kriptografis tepercaya. Jangan gunakan password admin sebagai session secret.
+3. Di Vercel buka **Project → Settings → Environment Variables**. Isi `ADMIN_PASSWORD_HASH` dan `SESSION_SECRET` untuk **Production**. Tambahkan ke Preview hanya jika diperlukan dan gunakan secret terpisah.
+4. Hapus variabel token RBAC lama dari Vercel, lalu redeploy Production. Bila salah satu variabel admin belum tersedia atau tidak valid, login fail-closed dengan HTTP 503.
+5. Buka `/admin-login`, masuk, lalu periksa bahwa `/operations` dan asetnya hanya termuat dalam sesi. Tidak perlu menyetel token di browser.
 
-1. Buat token acak terpisah untuk VIEWER, OPERATOR, dan ADMIN dengan password
-   manager atau generator kriptografis (minimal 32 byte acak). Jangan mengirim
-   nilainya lewat chat atau menaruhnya di repo; simpan di password manager.
-2. Di Vercel buka **Project → Settings → Environment Variables**; tambahkan
-   `OPS_TOKEN_VIEWER`, `OPS_TOKEN_OPERATOR`, dan `OPS_TOKEN_ADMIN` dengan nilai
-   masing-masing, untuk **Production** (tambahkan Preview hanya bila diperlukan).
-3. Redeploy Production agar variabel masuk ke runtime. Tanpa token, API data
-   Operations tetap terkunci (503). Setelah token tersedia, buka `/operations`
-   dan masukkan hanya token dengan peran yang diperlukan; token disimpan hanya
-   pada tab itu sampai tab ditutup.
+Jangan memasukkan nilai password, hash, atau `SESSION_SECRET` ke file `.env.example`, commit, log, tiket, maupun PR. Nilai Production hanya dimasukkan owner langsung di Vercel. Panduan langkah demi langkah untuk env, GitHub Actions, redeploy, dan verifikasi ada di [`docs/VERCEL-SECURITY-SETUP.md`](docs/VERCEL-SECURITY-SETUP.md).
 
 ### API operasional
 
-`GET /api/operations/health` · `GET /api/data-sources` · `GET /api/alerts` ·
-`POST /api/operations/evaluate` · `POST /api/alerts/:id/incident` ·
-`GET|POST /api/incidents` · `GET|PATCH /api/incidents/:id` ·
-`POST /api/incidents/:id/{assign,notes,escalate,resolve,close}` ·
-`GET /api/runbooks` · `GET /api/runbooks/:id` ·
-`GET /api/operations/metrics` · `GET /api/operations/store` ·
-`GET /api/operations/audit` · `GET /api/operations/analytics?hari=14` ·
-`GET /api/operations/infra`
+Semua jalur berikut berada di bawah sesi admin. Mutasi juga memerlukan CSRF/Origin yang sah.
 
-Penyimpanan: `GET /api/operations/store` (tambahkan `?uji=1` untuk memanggil
-penyimpanan sekarang juga dan melihat langkah yang gagal beserta kode statusnya).
-Insiden: `GET /api/incidents?sort=activity` untuk urutan aktivitas terbaru.
+- Autentikasi: `POST /api/admin/auth/login` · `GET /api/admin/auth/session` · `POST /api/admin/auth/logout`
+- Data: `GET /api/admin/operations/health` · `GET /api/admin/data-sources` · `GET /api/admin/alerts` · `GET|POST /api/admin/incidents` · `GET|PATCH /api/admin/incidents/:id` · `GET /api/admin/runbooks` · `GET /api/admin/runbooks/:id`
+- Aksi: `POST /api/admin/operations/evaluate` · `POST /api/admin/alerts/:id/incident` · `POST /api/admin/incidents/:id/{assign,notes,escalate,resolve,close}`
+- Diagnostik internal: `GET /api/admin/operations/{metrics,store,audit,analytics,infra,diagnose}`
 
-Diagnosa: `GET /api/operations/diagnose` (`?service=`, `?alert=`, `?incident=`, atau kosong untuk ringkasan armada)
+Penyimpanan: `GET /api/admin/operations/store` (tambahkan `?uji=1` untuk memanggil penyimpanan sekarang juga dan melihat langkah yang gagal beserta kode statusnya). Insiden: `GET /api/admin/incidents?sort=activity` untuk urutan aktivitas terbaru. Diagnosa menerima `?service=`, `?alert=`, `?incident=`, atau tanpa query untuk ringkasan armada.
 
-Halaman: `/` (dashboard) · `/operations` (papan operasi) · `/insiden/INC-…` (lembar insiden)
+Halaman: `/` (dashboard publik) · `/admin-login` (login admin, noindex) · `/operations` (papan operasi, sesi wajib) · `/insiden/INC-…` (lembar insiden, sesi wajib).
 
 ### Analitik dan panel infrastruktur (P2)
 
@@ -417,8 +389,8 @@ model terbuka (`rtt-perkiraan-v1`: 40% dari waktu respons hulu yang terukur) dan
 mengisi kekosongan.
 
 Transisi status yang tidak sah ditolak `409`; severity/kategori tak dikenal dan
-judul kosong ditolak `400`. Semua perubahan mencatat nama pelaku bila header
-`x-ops-actor` dikirim.
+judul kosong ditolak `400`. Server menetapkan pelaku `admin` dari sesi yang
+terautentikasi; header identitas dari browser tidak dipercaya.
 
 ---
 
@@ -451,7 +423,8 @@ lib/
   runbooks.js          SOP operasional yang menunjuk berkas nyata di repo
   ops-store.js         adaptor penyimpanan operasional (upstash/github/file/ephemeral)
   ops-github.js        penyimpanan lewat GitHub Issues (mode github)
-  ops-routes.js        seluruh rute /api/operations, /api/incidents, /api/runbooks
+  admin-auth.js        sesi admin, cookie bertanda tangan, CSRF, backoff login
+  ops-routes.js        rute admin terlindungi dan halaman Operations
 data/regions.json      226 permukiman GeoNames
 data/kamera.js         daftar kurasi kanal siaran + dasar pemeriksaannya
 public/
@@ -459,10 +432,12 @@ public/
   app.js               seluruh logika antarmuka
   app.css              sistem desain
   wind-particles.js    animasi partikel angin di kanvas
-  operations.html      halaman Operations Center
+  admin-login.html/js  halaman login publik, tanpa kredensial di berkas
+admin-ui/              halaman, gaya, dan skrip admin; disajikan hanya lewat sesi
+  operations.html      papan Operations Center
   insiden.html         lembar satu insiden (/insiden/INC-…)
-  ops-core.js          inti bersama (el, toast, ambil, kirim, waktu, koreksi jam)
-  ops-detail.js        render detail insiden + langkah runbook (dipakai dua halaman)
+  ops-core.js          cookie sesi, CSRF, permintaan API same-origin
+  ops-detail.js        render detail insiden + langkah runbook
   ops.js / insiden.js  perilaku tiap halaman
   ops.css              gaya papan operasi & lembar insiden
 docs/                  PRD, arsitektur, ERD, desain, audit nilai tetap, peta jalan

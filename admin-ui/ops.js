@@ -11,10 +11,10 @@
   var $ = function (id) { return document.getElementById(id); };
 
   // Inti bersama ada di ops-core.js supaya lembar insiden (/insiden/…) memakai
-  // perilaku yang persis sama: el, toast, ambil, kirim, petugasSaya, waktu, durasi.
+  // perilaku yang persis sama: el, toast, ambil, kirim, waktu, durasi.
   var el = OpsCore.el, toast = OpsCore.toast, ambil = OpsCore.ambil,
       ambilAman = OpsCore.ambilAman, ambilDenganHeader = OpsCore.ambilDenganHeader,
-      kirim = OpsCore.kirim, petugasSaya = OpsCore.petugasSaya,
+      kirim = OpsCore.kirim,
       waktu = OpsCore.waktu, durasi = OpsCore.durasi;
 
   // Jam halaman ini: berjalan tiap detik dan ikut koreksi header server.
@@ -202,7 +202,7 @@
         b.type = 'button';
         b.addEventListener('click', function () {
           b.disabled = true;
-          kirim('/api/alerts/' + a.id + '/incident', 'POST')
+          kirim('/api/admin/alerts/' + a.id + '/incident', 'POST')
             .then(function (r) {
               toast('Insiden ' + r.incident.incidentId + (r.created ? ' dibuat' : ' sudah ada') + '.');
               muatSemua();
@@ -438,29 +438,12 @@
   }
 
   function renderAkses(a) {
-    var peran = a.peranAnda;
-    // Ketika TERKUNCI, sebut NAMA variable yang diperiksa dan mana yang
-    // TERLIHAT pada deployment ini. Nilai token tidak pernah tampil; petunjuk
-    // ini membedakan salah nama env dari env yang belum masuk ke deployment.
-    var NAMA = (a.namaDiperiksa || []).join(', ');
-    var lihat = (a.terlihat || []);
-    var catatanEnv = !NAMA ? '' :
-      ' Diperiksa: ' + NAMA + '.' +
-      (lihat.length ? ' Terlihat di deployment ini: ' + lihat.join(', ') + '.'
-        : ' Tidak satu pun terlihat pada deployment ini, pastikan variabelnya ada untuk lingkungan Production di proyek Vercel yang sama, lalu deploy ulang.');
-    var teks = a.mode === 'terkunci'
-      ? 'Akses: TERKUNCI. Belum ada token peran di server; semua API operasional menolak baca dan tulis. Atur OPS_TOKEN_VIEWER / OPS_TOKEN_OPERATOR / OPS_TOKEN_ADMIN (atau OPS_WRITE_TOKEN), lalu deploy ulang.' + catatanEnv
-      : 'Akses: token aktif. Peran Anda: ' + (peran || 'belum terautentikasi') +
-        '. Semua pembacaan memerlukan VIEWER; menangani insiden butuh ' + a.minTulis +
-        '; memicu evaluasi butuh ' + a.minEvaluasi + '.';
-    $('aksesBaris').textContent = teks;
-    // Form baru relevan setelah server punya setidaknya satu token; bila belum
-    // ada peran pada tab ini, buka form supaya pengguna dapat mengautentikasi.
-    var form = $('formToken');
-    if (form) {
-      form.hidden = a.mode === 'terkunci';
-      if (a.mode === 'token' && !peran) form.open = true;
+    if (!a || !a.authenticated) {
+      $('aksesBaris').textContent = 'Sesi admin tidak aktif.';
+      return;
     }
+    $('aksesBaris').textContent = 'Sesi admin aktif hingga ' + waktu(a.expiresAt) +
+      '. Semua tindakan dicatat sebagai admin.';
   }
 
   /**
@@ -534,7 +517,7 @@
     // pengukuran sumber hulu (beranggaran sampai 8 detik). Diam selama itu
     // membuat halaman tampak rusak, jadi sebabnya ditulis.
     box.textContent = 'menghitung… bila instance ini baru hidup, sumber hulu diukur lebih dulu (sampai 8 detik).';
-    return ambilAman('/api/operations/diagnose' + (sasaran ? '?' + sasaran : '')).then(function (r) {
+    return ambilAman('/api/admin/operations/diagnose' + (sasaran ? '?' + sasaran : '')).then(function (r) {
       if (!r.ok) {
         box.className = 'empty';
         box.textContent = 'Diagnosa gagal dimuat: ' + r.error.message;
@@ -586,7 +569,7 @@
       b.type = 'button';
       b.addEventListener('click', function (ev) {
         ev.preventDefault();
-        ambil('/api/runbooks/' + r.id).then(function (full) {
+        ambil('/api/admin/runbooks/' + r.id).then(function (full) {
           var ol = el('ol', 'steps');
           full.steps.forEach(function (st) { ol.appendChild(el('li', null, st.do)); });
           body.textContent = '';
@@ -628,16 +611,16 @@
     // instance berbeda), SELURUH papan tampak kosong padahal data lain ada.
     // Sekarang yang gagal hanya panelnya sendiri, dan disebutkan apa adanya.
     var janji = [
-      ambilDenganHeader('/api/operations/health'),
-      ambilAman('/api/data-sources'),
-      ambilAman('/api/alerts'),
-      ambilAman('/api/incidents?sort=activity'),
-      ambilAman('/api/operations/metrics'),
-      ambilAman('/api/runbooks'),
-      ambilAman('/api/operations/audit?limit=25'),
+      ambilDenganHeader('/api/admin/operations/health'),
+      ambilAman('/api/admin/data-sources'),
+      ambilAman('/api/admin/alerts'),
+      ambilAman('/api/admin/incidents?sort=activity'),
+      ambilAman('/api/admin/operations/metrics'),
+      ambilAman('/api/admin/runbooks'),
+      ambilAman('/api/admin/operations/audit?limit=25'),
       OpsCore.ambilAkses(),
-      ambilAman('/api/operations/analytics?hari=14'),
-      ambilAman('/api/operations/infra')
+      ambilAman('/api/admin/operations/analytics?hari=14'),
+      ambilAman('/api/admin/operations/infra')
     ];
     var nama = ['Kesehatan layanan', 'Sumber data', 'Alert', 'Insiden', 'Metrik', 'Runbook', 'Log audit', 'Status akses', 'Analitik', 'Infrastruktur'];
 
@@ -651,7 +634,7 @@
         }
         return { ok: true, data: h.data };
       },
-      function (e) { return { ok: false, error: e, url: '/api/operations/health' }; }
+      function (e) { return { ok: false, error: e, url: '/api/admin/operations/health' }; }
     );
 
     return Promise.all([janjiKesehatan].concat(janji.slice(1))).then(function (r) {
@@ -716,7 +699,7 @@
   function nilai() {
     var b = $('btnNilai');
     b.disabled = true;
-    kirim('/api/operations/evaluate', 'POST')
+    kirim('/api/admin/operations/evaluate', 'POST')
       .then(function (r) {
         toast('Evaluasi selesai: ' + r.baru.length + ' alert baru, ' + r.ditutup.length + ' ditutup.');
         muatSemua();
@@ -738,7 +721,7 @@
     if (!judul) return toast('Judul insiden wajib diisi.');
     var b = $('btnBuat');
     b.disabled = true;
-    kirim('/api/incidents', 'POST', {
+    kirim('/api/admin/incidents', 'POST', {
       title: judul,
       description: $('iDeskripsi').value,
       category: sel.value,
@@ -766,26 +749,10 @@
     });
   }
 
-  // --- token akses ---
-  var iToken = $('iToken');
-  if (iToken) {
-    iToken.value = OpsCore.tokenSaya();
-    $('btnToken').addEventListener('click', function () {
-      OpsCore.simpanToken(iToken.value);
-      toast('Token disimpan di tab ini hingga tab ditutup.');
-      muatSemua();
-    });
-    $('btnTokenHapus').addEventListener('click', function () {
-      OpsCore.simpanToken('');
-      iToken.value = '';
-      toast('Token dihapus dari perangkat ini.');
-      muatSemua();
-    });
-  }
   $('btnNilai').addEventListener('click', nilai);
 
   // Jam ikut server tanpa permintaan tambahan: header Date diambil dari balasan
-  // /api/operations/health yang memang sudah dipanggil muatSemua().
+  // /api/admin/operations/health yang memang sudah dipanggil muatSemua().
 
   jam();
   setInterval(jam, 1000);
