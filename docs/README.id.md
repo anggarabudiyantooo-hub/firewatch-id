@@ -1,6 +1,6 @@
 # SIAGA ID: Pemantauan Bencana Real-Time + Operations Center
 
-[![Gerbang uji](https://github.com/anggarabudiyantooo-hub/firewatch-id/actions/workflows/ci.yml/badge.svg)](https://github.com/anggarabudiyantooo-hub/firewatch-id/actions/workflows/ci.yml)
+[![Gerbang uji](https://github.com/anggarabudiyantooo-hub/siaga-id/actions/workflows/ci.yml/badge.svg)](https://github.com/anggarabudiyantooo-hub/siaga-id/actions/workflows/ci.yml)
 
 Pemantauan bencana Indonesia dari sumber resmi dan terbuka: letusan gunung api dan
 sebaran abu, gempa dan tsunami, pengungsi, serta titik api dan asap karhutla.
@@ -17,12 +17,7 @@ sebaran abu, gempa dan tsunami, pengungsi, serta titik api dan asap karhutla.
 | Dokumen | Isi |
 |---|---|
 | `README.md` (berkas ini) | Cara menjalankan, ringkasan fitur, variabel lingkungan |
-| [`docs/PRD.md`](docs/PRD.md) | Product Requirements: masalah, pengguna, lingkup, kriteria keberhasilan |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Arsitektur sistem, alur data, penjadwal, keputusan teknis |
-| [`docs/ERD.md`](docs/ERD.md) | Model data, entitas, relasi, skema respons API |
-| [`docs/DESIGN.md`](docs/DESIGN.md) | Sistem desain: palet, tipografi, tata letak, komponen, aksesibilitas |
-| [`docs/HARDCODED.md`](docs/HARDCODED.md) | **Audit nilai tetap:** apa yang dikeraskan di kode, mengapa, dan mana yang harus dipindah |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Peta jalan menuju siap rilis produksi |
 
 ---
 
@@ -63,12 +58,12 @@ penjadwal luar berhenti.
 
 Untuk monitor luar ada **`GET /api/alarm`**: `200` bila normal, `503` bila ada
 sumber DOWN (kritis → `tingkat:"kritis"`). Penjadwalan dan mengapa jadwal GitHub
-Actions bisa tertunda berjam-jam dijelaskan di **`docs/PENJADWAL.md`**.
+Actions bisa tertunda berjam-jam, jadi `/api/alarm` dipakai sebagai pemeriksa luar.
 
 `CRON_SECRET` wajib dipasang di Vercel Production dan sebagai GitHub Actions
 secret dengan nama sama. `/api/cron` fail-closed (503) di production bila
 rahasia belum diatur, dan hanya menerima `Authorization: Bearer`; jangan kirim
-rahasia lewat URL/query string. Rinciannya di `docs/PENJADWAL.md`.
+rahasia lewat URL/query string.
 
 ---
 
@@ -280,7 +275,7 @@ bisa dibuka dalam sesi admin.
 
 ### Penyimpanan operasional: apa adanya
 
-Proyek ini **tidak punya basis data** (lihat `docs/ERD.md`). Di Vercel setiap
+Proyek ini **tidak punya basis data relasional**. Di Vercel setiap
 instance punya memori sendiri, jadi insiden butuh penyimpanan bersama. Adaptor
 `lib/ops-store.js` memilih otomatis dan **menyatakan modenya di halaman**:
 
@@ -294,9 +289,8 @@ instance punya memori sendiri, jadi insiden butuh penyimpanan bersama. Adaptor
 Tanpa salah satu dari dua mode pertama, insiden akan hilang saat instance
 didaur ulang, dan itu tertulis di halaman, bukan disembunyikan.
 
-**Cara memasangnya** (langkah rinci, termasuk mengapa tidak perlu basis data
-seperti Neon): [`docs/PENYIMPANAN.md`](docs/PENYIMPANAN.md). Verifikasi setelah
-dipasang memerlukan login admin pada pemeriksaan lokal:
+**Cara memasangnya:** pasang variabel lingkungan penyimpanan di Vercel, lalu
+verifikasi. Pemeriksaan lokal memerlukan login admin:
 `python3 scripts/verify-store.py` (baca-saja, password diminta tanpa echo).
 `--tulis` memakai sesi yang sama dan membuat satu insiden uji yang ditutup,
 tetapi tidak dihapus.
@@ -440,10 +434,7 @@ admin-ui/              halaman, gaya, dan skrip admin; disajikan hanya lewat ses
   ops-detail.js        render detail insiden + langkah runbook
   ops.js / insiden.js  perilaku tiap halaman
   ops.css              gaya papan operasi & lembar insiden
-docs/                  PRD, arsitektur, ERD, desain, audit nilai tetap, peta jalan
-docs/OPS-AUDIT.md      audit teknis + rencana upgrade Operations Center
-docs/PENYIMPANAN.md    pilihan penyimpanan operasional + cara memasangnya
-docs/PENJADWAL.md      mengapa jadwal GitHub bisa tertunda + /api/alarm
+docs/                  arsitektur, naskah demo, checklist, video demo
 scripts/verify-store.py  membuktikan penyimpanan benar-benar bertahan
 scripts/check-style.js   gerbang gaya naskah: menolak tanda pisah panjang
 scripts/test-kamera.js   uji panel Siaran
@@ -464,8 +455,6 @@ High yang tersisa. Sisa temuan Low pada putaran itu juga sudah ditangani.
 
 Payload `/api/overview` turun dari 3,64 MB menjadi **328 KB** (52,7 KB
 over-the-wire dengan Brotli), dan TTFB dari 3,05 detik menjadi 67 ms.
-
-Rincian lengkap beserta urutan pengerjaan ada di [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Lisensi dan atribusi
 
