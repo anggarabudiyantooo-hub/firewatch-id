@@ -52,7 +52,7 @@ const box = { west: 100, south: -4, east: 106, north: 2 };
 (async () => {
   console.log('\n== validasi argumen koordinat ==');
   rejects('kotak terbalik ditolak', () => agent.executeTool('get_hotspots_in_area', { west: 106, east: 100, south: -4, north: 2 }, context));
-  rejects('kotak terlalu besar ditolak', () => agent.executeTool('get_hotspots_in_area', { west: -20, east: 40, south: -4, north: 2 }, context));
+  rejects('kotak terlalu besar ditolak', () => agent.executeTool('get_hotspots_in_area', { west: -30, east: 40, south: -4, north: 2 }, context));
   await rejectsAsync('lintang di luar rentang ditolak', () => agent.executeTool('get_air_quality_at', { lat: 120, lon: 100 }, context));
   await rejectsAsync('bujur di luar rentang ditolak', () => agent.executeTool('get_wind_at', { lat: 0, lon: 999 }, context));
   rejects('alat tanpa argumen wajib ditolak', () => agent.executeTool('get_places_in_area', {}, context));

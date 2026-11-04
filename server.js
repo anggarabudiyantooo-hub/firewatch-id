@@ -111,6 +111,7 @@ const publicStatus = require('./lib/public-status');
 const { answer: ragAnswer } = require('./lib/rag');
 const { answerWithMuse, safeFailureCode, META_MODEL } = require('./lib/muse-agent');
 const mapNarrative = require('./lib/map-narrative');
+const smokeCheck = require('./lib/smoke-check');
 const VOLCANO_COORDS = require('./lib/volcano-coords-snapshot');
 const aiHistoryStore = require('./lib/ai-history-store');
 const kamera = require('./lib/kamera');
@@ -158,6 +159,7 @@ app.use(compression());
 // khusus dipasang lebih dulu; body-parser melewati permintaan yang sudah
 // diurai sehingga parser global di bawah tidak menolak bodi ini.
 app.use('/api/map-narrative', express.json({ limit: '4mb' }));
+app.use('/api/cek-asap', express.json({ limit: '4mb' }));
 app.use(express.json({ limit: '32kb' }));
 app.use(helmet({
   contentSecurityPolicy: {
@@ -237,7 +239,7 @@ const RL_AI_PATHS = /^\/(?:ask|ask\/challenge)$/;
 // Narasi bergambar lebih mahal daripada tanya-jawab teks: satu permintaan
 // membawa citra dan memanggil model dengan masukan gambar.
 const RL_AI_IMAGE = 6;
-const RL_AI_IMAGE_PATHS = /^\/map-narrative$/;
+const RL_AI_IMAGE_PATHS = /^\/(?:map-narrative|cek-asap)$/;
 const RL_EXPENSIVE_PATHS = /^\/(?:overview|wind-field|air-quality|smoke-grid-static|smoke-grid|concessions|place|whose-land|air-point|news|hazard|volcano-ash|eruptions|drought|volcano-so2|flights|webcams(?:\/foto)?|cron|sentinel\/(?:meta|diag)|himawari\/meta|aerosol-raster\/meta)(?:\/|$)/;
 
 const hits = new Map();
@@ -2805,6 +2807,63 @@ app.post('/api/map-summary', async (req, res) => {
   }
 });
 
+/* ---------- Cek Asap: laporan warga diperiksa terhadap data ---------- */
+/**
+ * Bukti untuk satu koordinat. Foto tidak pernah masuk ke fungsi ini dan
+ * tidak pernah ditulis ke disk; hanya koordinat dan waktu yang dipakai.
+ */
+async function buildSmokeCheckData(lat, lon) {
+  const [feed, air, wind, pvmbg, eruption] = await Promise.all([
+    withDeadline(getHotspots(), null, 6000),
+    withDeadline(airPointAt(lat, lon).catch(() => null), null, 8000),
+    withDeadline(windPointAt(lat, lon).catch(() => null), null, 8000),
+    withDeadline(scheduler.get('pvmbg'), null, 3000),
+    withDeadline(scheduler.get('eruption'), null, 3000)
+  ]);
+  const coords = new Map((VOLCANO_COORDS.volcanoes || []).map(v => [String(v.name).toLowerCase(), v]));
+  const volcanoes = ((pvmbg && pvmbg.volcanoes) || []).map(v => {
+    const c = coords.get(String(v.name).toLowerCase());
+    return c ? { name: v.name, lat: c.lat, lon: c.lon, level: [v.roman, v.status].filter(Boolean).join(' ') } : null;
+  }).filter(Boolean);
+  const hazeMeta = REGIONAL_HAZE_SNAPSHOT.meta || {};
+  const regionalHaze = (REGIONAL_HAZE_SNAPSHOT.reportedAreas || [])
+    .filter(a => Array.isArray(a.center) && smokeCheck.distanceKm(lat, lon, a.center[0], a.center[1]) <= 400)
+    .slice(0, 3)
+    .map(a => ({
+      title: a.label,
+      source: 'ASMC / NEA / BMKG',
+      publishedAt: (hazeMeta.asmc && hazeMeta.asmc.reportAt) || (hazeMeta.nea && hazeMeta.nea.reportAt) || null
+    }));
+  // null berarti feed TIDAK TERBACA, bukan nol. Membedakan keduanya penting:
+  // "tidak ada deteksi" dan "data deteksi gagal diambil" menghasilkan putusan
+  // yang berbeda untuk laporan warga.
+  return {
+    hotspots: feed && Array.isArray(feed.hotspots) ? feed.hotspots : null,
+    air,
+    wind,
+    volcanoes: pvmbg ? volcanoes : null,
+    ashReports: eruption && Number.isFinite(eruption.total) ? eruption.total : null,
+    regionalHaze
+  };
+}
+
+app.post('/api/cek-asap', async (req, res) => {
+  const body = req.body || {};
+  const validated = smokeCheck.validateInput(body);
+  if (validated.error) return res.status(400).json({ ok: false, error: validated.error });
+  try {
+    const data = await buildSmokeCheckData(validated.lat, validated.lon);
+    const apiKey = String(process.env.MODEL_API_KEY || '').trim();
+    const result = await smokeCheck.checkSmoke(validated, data, { apiKey });
+    res.set('Cache-Control', 'no-store');
+    // Jangan pernah menuliskan gambar atau potongan base64 ke log.
+    return res.json({ ...result, generatedAt: new Date().toISOString(), metaApiConfigured: Boolean(apiKey) });
+  } catch (error) {
+    console.warn('[cek-asap]', error && error.message);
+    return res.status(502).json({ ok: false, error: 'CEK_ASAP_FAILED' });
+  }
+});
+
 app.post('/api/map-narrative', async (req, res) => {
   const body = req.body || {};
   const language = String(body.language || 'id').toLowerCase() === 'en' ? 'en' : 'id';
@@ -3609,7 +3668,7 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
  * menghasilkan URL baru, peramban pengguna tidak akan lagi memakai
  * berkas lama dari cache tanpa perlu hard-refresh manual.
  */
-const ASSET_FILES = ['app.js', 'app.css', 'i18n.js', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'smoke-grid-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css', 'site.css', 'site-nav.js', 'home.js', 'report-model.js', 'reports.js', 'assistant-widget.js', 'assistant-widget.css', 'admin-login.js', 'ui-tooltip.js', 'ui-tooltip.css', 'dashboard-clean.css', 'dashboard-clean.js', 'tentang-data.css', 'map-screenshot.js', 'map-capture-ui.js', 'map-capture.css', 'report-map.js', 'report-capture.js', 'report-capture.css', 'report-pdf.js'];
+const ASSET_FILES = ['app.js', 'app.css', 'i18n.js', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'smoke-grid-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css', 'site.css', 'site-nav.js', 'home.js', 'report-model.js', 'reports.js', 'assistant-widget.js', 'assistant-widget.css', 'admin-login.js', 'ui-tooltip.js', 'ui-tooltip.css', 'dashboard-clean.css', 'dashboard-clean.js', 'tentang-data.css', 'map-screenshot.js', 'map-capture-ui.js', 'map-capture.css', 'report-map.js', 'report-capture.js', 'report-capture.css', 'report-pdf.js', 'cek-asap.js', 'cek-asap.css'];
 let assetVersion = null;
 
 function getAssetVersion() {
@@ -3631,7 +3690,7 @@ function renderIndex() {
   // Fase 2.1: label sudut peta dari BBOX config, bukan hardcoded
   const corners = BBOX_CORNERS; // { nw, ne, sw, se } dari lib/config.js
   let html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
-    .replace(/(href|src)="\/(app\.css|app\.js|i18n\.js|smoke-geometry\.js|smoke-cloud-layer\.js|smoke-grid-layer\.js|wind-particles\.js|wind-viewport\.js|map-resize\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css|site\.css|site-nav\.js|assistant-widget\.css|assistant-widget\.js|ui-tooltip\.css|ui-tooltip\.js|dashboard-clean\.css|dashboard-clean\.js|map-screenshot\.js|map-capture-ui\.js|map-capture\.css|report-capture\.css)"/g,
+    .replace(/(href|src)="\/(app\.css|app\.js|i18n\.js|smoke-geometry\.js|smoke-cloud-layer\.js|smoke-grid-layer\.js|wind-particles\.js|wind-viewport\.js|map-resize\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css|site\.css|site-nav\.js|assistant-widget\.css|assistant-widget\.js|ui-tooltip\.css|ui-tooltip\.js|dashboard-clean\.css|dashboard-clean\.js|map-screenshot\.js|map-capture-ui\.js|map-capture\.css|report-capture\.css|cek-asap\.css)"/g,
       (_m, attr, file) => `${attr}="${file}?v=${v}"`);
   // Inject BBOX corners ke HTML (fallback jika JS belum load)
   try {
@@ -3656,7 +3715,7 @@ function sendIndex(res, status = 200) {
 function renderPublicPage(fileName) {
   const version = getAssetVersion();
   return fs.readFileSync(path.join(__dirname, 'public', fileName), 'utf8')
-    .replace(/(href|src)="\/(site\.css|i18n\.js|site-nav\.js|home\.js|report-model\.js|reports\.js|map-screenshot\.js|map-capture-ui\.js|report-map\.js|report-capture\.js|report-pdf\.js|assistant-widget\.css|assistant-widget\.js|admin-login\.js|app\.css|dashboard-clean\.css|tentang-data\.css|map-capture\.css|report-capture\.css)"/g,
+    .replace(/(href|src)="\/(site\.css|i18n\.js|site-nav\.js|home\.js|report-model\.js|reports\.js|map-screenshot\.js|map-capture-ui\.js|report-map\.js|report-capture\.js|report-pdf\.js|cek-asap\.js|assistant-widget\.css|assistant-widget\.js|admin-login\.js|app\.css|dashboard-clean\.css|tentang-data\.css|map-capture\.css|report-capture\.css|cek-asap\.css)"/g,
       (_match, attr, asset) => `${attr}="/${asset}?v=${version}"`);
 }
 
@@ -3674,6 +3733,9 @@ app.get('/dashboard', (_req, res) => sendIndex(res));
 app.get('/dashboard/', (_req, res) => sendIndex(res));
 app.get('/reports', (_req, res) => sendPublicPage(res, 'reports.html'));
 app.get('/reports/', (_req, res) => sendPublicPage(res, 'reports.html'));
+app.get('/cek-asap', (_req, res) => sendPublicPage(res, 'cek-asap.html'));
+app.get('/cek-asap/', (_req, res) => sendPublicPage(res, 'cek-asap.html'));
+app.get('/smoke-check', (_req, res) => res.redirect(302, '/cek-asap'));
 app.get('/tentang-data', (_req, res) => sendPublicPage(res, 'tentang-data.html'));
 app.get('/tentang-data/', (_req, res) => sendPublicPage(res, 'tentang-data.html'));
 app.get('/metodologi', (_req, res) => res.redirect(302, '/tentang-data'));
@@ -3715,7 +3777,7 @@ app.get('/sitemap.xml', (req, res) => {
   res.type('application/xml').send(
     '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-    ['/', '/dashboard', '/reports'].map((route, index) =>
+    ['/', '/dashboard', '/reports', '/cek-asap', '/tentang-data'].map((route, index) =>
       '  <url>\n'
       + `    <loc>${proto}://${host}${route}</loc>\n`
       + `    <lastmod>${today}</lastmod>\n`
