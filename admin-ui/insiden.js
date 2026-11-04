@@ -38,7 +38,7 @@
 
   // Mode penyimpanan dinyatakan di sini juga: pembaca lembar tautan sering kali
   // tidak pernah melihat papan operasi, dan berhak tahu apakah ini tahan lama.
-  C.ambil('/api/operations/store').then(function (s) {
+  C.ambil('/api/admin/operations/store').then(function (s) {
     if (!s || s.persistent) return;
     var b = C.$('banner');
     b.className = 'banner';
@@ -51,15 +51,9 @@
   aksesEl.id = 'aksesBaris';
   C.$('kartuInsiden').parentNode.insertBefore(aksesEl, C.$('kartuInsiden'));
   C.ambilAkses().then(function (a) {
-    if (!a.ok) return;
-    var x = a.data;
-    if (x.mode === 'terbuka') {
-      aksesEl.textContent = 'Akses: TERBUKA, belum ada token yang dikonfigurasi; tindakan di halaman ini tercatat, tetapi tidak dibatasi peran.';
-    } else if (!x.peranAnda) {
-      aksesEl.textContent = 'Akses: token aktif, peran Anda belum diisi, halaman ini hanya dapat dibaca. Isi token akses di papan operasi untuk menangani insiden.';
-    } else {
-      aksesEl.textContent = 'Akses: token aktif, peran Anda ' + x.peranAnda + '.';
-    }
+    if (!a.ok || !a.data.authenticated) return;
+    aksesEl.textContent = 'Sesi admin aktif hingga ' + C.waktu(a.data.expiresAt) +
+      '. Semua tindakan dicatat sebagai admin.';
   });
 
   C.$('kartuInsiden').setAttribute('aria-busy', 'true');

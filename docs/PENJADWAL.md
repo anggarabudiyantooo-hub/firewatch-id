@@ -107,10 +107,14 @@ Aturan penilaiannya dipilih dengan sadar dan diuji:
 ## 7. Cara memeriksa sendiri kapan saja
 
 ```
-curl -s https://firewatch-id.vercel.app/api/alarm     # 200 atau 503
-curl -s https://firewatch-id.vercel.app/api/status    # ageMs per sumber
-curl -s https://firewatch-id.vercel.app/api/data-sources | grep -o '"status":"[A-Z]*"'
+curl -s https://firewatch-id.vercel.app/api/alarm     # ringkasan kesehatan publik
+curl -s https://firewatch-id.vercel.app/api/status    # status publik terbatas
+# Detail /api/admin/data-sources hanya untuk sesi admin di /operations.
 ```
+
+`/api/status` memberi proyeksi publik yang terbatas: label dan kesegaran sumber,
+serta flag perhatian tanpa jumlah percobaan atau pesan galat. Host endpoint,
+kuota agregat, dan log internal hanya tersedia di endpoint admin bersesi.
 
 Umur tiap sumber (`ageMs`) dibandingkan dengan intervalnya sendiri; ambangnya
 ditampilkan di halaman (`STALE > 1,5× · CRITICAL > 6×`). Bila GitHub Actions

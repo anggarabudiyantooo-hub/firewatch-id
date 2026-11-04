@@ -257,10 +257,8 @@ check('hazard refresh time is reformatted on language changes from its raw times
   /if \(state\.hazardFetchedAt\) \{[\s\S]*?state\.hazardAt = new Date\(state\.hazardFetchedAt\)\.toLocaleTimeString\(getLocale\(\), \{\s*timeZone: 'Asia\/Jakarta'/.test(
     fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8')
   ), true);
-check('scheduler log and last-error clocks use active locale while retaining UTC',
-  /function fmtUtcClock\(value\)[\s\S]*?toLocaleTimeString\(getLocale\(\), \{\s*timeZone: 'UTC'[\s\S]*?\}\) \+ ' UTC'/.test(fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8'))
-    && /lg\.at \? fmtUtcClock\(lg\.at\)/.test(fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8'))
-    && /galat terakhir ' \+ fmtUtcClock\(t\.lastErrorAt\)/.test(fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8')), true);
+check('public source status does not render raw scheduler logs or last-error timestamps',
+  !/recentLogs|lastErrorAt|fmtUtcClock/.test(fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8')), true);
 
 console.log('\n========================================');
 console.log('  ' + passed + ' passed, ' + failed + ' failed');

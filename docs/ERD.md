@@ -273,7 +273,7 @@ alert yang kondisinya hilang ditutup (`RESOLVED`), tidak dihapus.
 | `status` | string | `OPEN` → `INVESTIGATING` → `PENDING` → `RESOLVED` → `CLOSED` (+ `RESOLVED` → `INVESTIGATING`); transisi lain ditolak `409` |
 | `severity`, `category` | string | kategori: `data_source_unavailable`, `data_stale`, `api_performance`, `environmental_event`, `infrastructure`, `lain_lain` |
 | `source` | string | `alert-engine` (membawa `alertId` + bukti) atau `manual` |
-| `assignedTo`, `escalatedTo` | string \| null | diambil dari header `x-ops-actor`/isi permintaan |
+| `assignedTo`, `escalatedTo` | string \| null | nilai tugas pada badan permintaan; pelaku tindakan berasal dari sesi admin, bukan header identitas browser |
 | `detectedAt`, `resolvedAt`, `closedAt` | string \| null | dasar hitung MTTR |
 | `resolution` | string \| null | diisi saat `RESOLVED` |
 | `events[]` | array | `INCIDENT_EVENT` di bawah |
@@ -289,11 +289,11 @@ di repo ini (mis. `lib/scheduler.js`, `/api/status`).
 
 ### STORE_MODE
 `{ mode: 'upstash'|'github'|'file'|'ephemeral', persistent, note, lastError }`,
-dibaca dari `/api/operations/store` dan **ditampilkan di halaman**, supaya tidak
+dibaca dari `/api/admin/operations/store` dan **ditampilkan di halaman**, supaya tidak
 ada yang menyangka insidennya tersimpan padahal hanya ada di memori instance.
 
 ### Metrik
-`GET /api/operations/metrics` menghitung dari insiden yang ada: `total`,
+`GET /api/admin/operations/metrics` menghitung dari insiden yang ada: `total`,
 `terbuka`, `mttrMenit`, `slaPersen`. Tanpa riwayat, nilainya `null` dengan
 catatan `"belum ada riwayat"`, bukan `0` yang bisa disalahartikan sebagai nol menit.
 
