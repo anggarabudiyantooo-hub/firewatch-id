@@ -95,7 +95,9 @@ async function run() {
   assert(fetchedPaths.includes('/reports/archive/' + weekly.file + '?v=' + encodeURIComponent(weekly.capturedAt)));
   assert(nodes.reportContent.innerHTML.includes('Tinjauan Mingguan Peristiwa dan Sumber'));
   assert(nodes.reportContent.innerHTML.includes(weekly.weekId));
-  assert(nodes.reportContent.innerHTML.includes('1/7'));
+  const weeklySnapshotCount = String(weekly.dailySnapshotCount) + '/' + String(weekly.expectedDailySnapshots);
+  assert(nodes.reportContent.innerHTML.includes(weeklySnapshotCount),
+    'weekly snapshot count should render as ' + weeklySnapshotCount);
   assert(nodes.reportContent.innerHTML.includes('Deteksi hotspot per snapshot tersimpan'));
   assert(nodes.reportContent.innerHTML.includes('jendela bergulir dapat bertumpang-tindih'));
   assert.strictEqual(nodes.reportPrint.disabled, false);
