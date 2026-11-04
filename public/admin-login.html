@@ -20,6 +20,10 @@
     button:disabled { opacity: .65; cursor: wait; }
     #status { min-height: 1.5em; margin: 14px 0 0; color: #8c2c27; font-size: .94rem; }
     .foot { border-top: 1px solid #e6ebf2; padding-top: 16px; margin-top: 22px; font-size: .82rem; color: #667386; }
+    .back { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 14px 0 0; font-size: .86rem; }
+    .back a { color: #116b53; font-weight: 650; text-decoration: none; }
+    .back a:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .back a:focus-visible { outline: 3px solid #4bb99c80; outline-offset: 2px; border-radius: 4px; }
     @media (prefers-reduced-motion: no-preference) { main { animation: arrive .22s ease-out both; } @keyframes arrive { from { opacity: .7; transform: translateY(5px); } to { opacity: 1; transform: none; } } }
   </style>
 </head>
@@ -35,6 +39,11 @@
       <p id="status" role="status" aria-live="polite"></p>
     </form>
     <div class="foot">Sesi dilindungi cookie aman dan berakhir otomatis setelah 8 jam.</div>
+    <nav class="back" aria-label="Kembali ke situs">
+      <a href="/">&larr; Kembali ke beranda</a>
+      <a href="/dashboard">Buka dashboard</a>
+      <a href="/tentang-data">Tentang data</a>
+    </nav>
   </main>
   <script src="/admin-login.js"></script>
 </body>

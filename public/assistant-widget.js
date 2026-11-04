@@ -93,6 +93,9 @@
 
   var fab = make('button', 'global-ai-fab');
   fab.id = 'globalAiFab';
+  // Menandai halaman yang punya toggle mengambang supaya footer bisa
+  // menyisakan ruang dan tautannya tidak tertutup toggle.
+  document.body.classList.add('has-global-ai');
   fab.type = 'button';
   fab.setAttribute('aria-controls', 'globalAiPanel');
   fab.setAttribute('aria-expanded', 'false');
