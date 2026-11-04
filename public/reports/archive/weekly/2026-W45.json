@@ -4,24 +4,38 @@
   "timeZone": "Asia/Jakarta",
   "period": {
     "start": "2026-11-02T01:43:35.710Z",
-    "end": "2026-11-03T01:43:35.710Z",
-    "durationHours": 24
+    "end": "2026-11-04T00:05:29.702Z",
+    "durationHours": 46.36499777777778
   },
-  "dailySnapshotCount": 1,
+  "dailySnapshotCount": 2,
   "expectedDailySnapshots": 7,
   "complete": false,
   "temporalComplete": false,
   "sourceCoverageComplete": true,
   "dailyIssuesComplete": false,
   "completeDailySnapshots": 0,
-  "newsRecordCountBeforeCap": 40,
-  "newsRecordCountIncluded": 40,
+  "newsRecordCountBeforeCap": 80,
+  "newsRecordCountIncluded": 80,
   "newsTruncated": false,
   "continuousCoverage": true,
-  "coverageBoundaries": [],
+  "coverageBoundaries": [
+    {
+      "previousDate": "2026-11-03",
+      "nextDate": "2026-11-04",
+      "offsetMinutes": -98.1,
+      "kind": "overlap"
+    }
+  ],
   "invalidSnapshotWindows": [],
   "coverageGaps": [],
-  "coverageOverlaps": [],
+  "coverageOverlaps": [
+    {
+      "previousDate": "2026-11-03",
+      "nextDate": "2026-11-04",
+      "offsetMinutes": -98.1,
+      "kind": "overlap"
+    }
+  ],
   "snapshots": [
     {
       "reportDate": "2026-11-03",
@@ -35,24 +49,37 @@
         "expectedSources": 5
       },
       "quality": "partial"
+    },
+    {
+      "reportDate": "2026-11-04",
+      "period": {
+        "start": "2026-11-03T00:05:29.702Z",
+        "end": "2026-11-04T00:05:29.702Z",
+        "durationHours": 24
+      },
+      "coverage": {
+        "availableSources": 5,
+        "expectedSources": 5
+      },
+      "quality": "partial"
     }
   ],
   "sourceCoverage": {
     "fires": {
-      "availableSnapshots": 1,
-      "fullyCoveredSnapshots": 1,
+      "availableSnapshots": 2,
+      "fullyCoveredSnapshots": 2,
       "partialSnapshots": 0,
       "staleSnapshots": 0,
       "subfeedCoverageBySnapshot": [],
-      "reportedSnapshots": 1,
-      "expectedSnapshots": 1,
+      "reportedSnapshots": 2,
+      "expectedSnapshots": 2,
       "complete": true,
       "referenceId": "ref-1",
       "referenceUrl": "https://firms.modaps.eosdis.nasa.gov/"
     },
     "earthquakes": {
-      "availableSnapshots": 1,
-      "fullyCoveredSnapshots": 1,
+      "availableSnapshots": 2,
+      "fullyCoveredSnapshots": 2,
       "partialSnapshots": 0,
       "staleSnapshots": 0,
       "subfeedCoverageBySnapshot": [
@@ -61,17 +88,23 @@
           "availableFeeds": 3,
           "expectedFeeds": 3,
           "failures": []
+        },
+        {
+          "reportDate": "2026-11-04",
+          "availableFeeds": 3,
+          "expectedFeeds": 3,
+          "failures": []
         }
       ],
-      "reportedSnapshots": 1,
-      "expectedSnapshots": 1,
+      "reportedSnapshots": 2,
+      "expectedSnapshots": 2,
       "complete": true,
-      "referenceId": "ref-45",
+      "referenceId": "ref-85",
       "referenceUrl": "https://www.bmkg.go.id/gempabumi"
     },
     "tsunami": {
-      "availableSnapshots": 1,
-      "fullyCoveredSnapshots": 1,
+      "availableSnapshots": 2,
+      "fullyCoveredSnapshots": 2,
       "partialSnapshots": 0,
       "staleSnapshots": 0,
       "subfeedCoverageBySnapshot": [
@@ -80,34 +113,40 @@
           "availableFeeds": 2,
           "expectedFeeds": 2,
           "failures": []
+        },
+        {
+          "reportDate": "2026-11-04",
+          "availableFeeds": 2,
+          "expectedFeeds": 2,
+          "failures": []
         }
       ],
-      "reportedSnapshots": 1,
-      "expectedSnapshots": 1,
+      "reportedSnapshots": 2,
+      "expectedSnapshots": 2,
       "complete": true,
-      "referenceId": "ref-49",
+      "referenceId": "ref-89",
       "referenceUrl": "https://www.tsunami.gov/"
     },
     "eruptions": {
-      "availableSnapshots": 1,
-      "fullyCoveredSnapshots": 1,
+      "availableSnapshots": 2,
+      "fullyCoveredSnapshots": 2,
       "partialSnapshots": 0,
       "staleSnapshots": 0,
       "subfeedCoverageBySnapshot": [],
-      "reportedSnapshots": 1,
-      "expectedSnapshots": 1,
+      "reportedSnapshots": 2,
+      "expectedSnapshots": 2,
       "complete": true,
       "referenceId": "ref-2",
       "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan"
     },
     "news": {
-      "availableSnapshots": 1,
-      "fullyCoveredSnapshots": 1,
+      "availableSnapshots": 2,
+      "fullyCoveredSnapshots": 2,
       "partialSnapshots": 0,
       "staleSnapshots": 0,
       "subfeedCoverageBySnapshot": [],
-      "reportedSnapshots": 1,
-      "expectedSnapshots": 1,
+      "reportedSnapshots": 2,
+      "expectedSnapshots": 2,
       "complete": true,
       "referenceId": "ref-3",
       "referenceUrl": "https://news.google.com/"
@@ -199,7 +238,7 @@
       "location": "1 km BaratDaya TOMOHON-SULUT",
       "latitude": 1.31,
       "longitude": 124.83,
-      "referenceId": "ref-45",
+      "referenceId": "ref-85",
       "referenceUrl": "https://www.bmkg.go.id/gempabumi",
       "facts": {
         "magnitude": 5.3,
@@ -219,7 +258,7 @@
       "location": "Pusat gempa berada di darat 9 km Utara Kota Jayapura",
       "latitude": -2.49,
       "longitude": 140.66,
-      "referenceId": "ref-45",
+      "referenceId": "ref-85",
       "referenceUrl": "https://www.bmkg.go.id/gempabumi",
       "facts": {
         "magnitude": 2.6,
@@ -429,7 +468,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-17",
+      "referenceId": "ref-31",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxOWDZBTnNKQloxclh5djBZdk1yRF9IV1FaTFlDbWlrU1JkZHQyOWpsRzIxOEFqYjdTZi1mSFBqamdPSHVjZVdiX2lNQ0tCN2ZDTWVBcnladE83RTAyODNsQ0R4WHVEZjFwXzhfaTNvUnMtZWpxWVQwdHhuU2wtRS1DVDNNaTZpYXhtTWR6QUM1aTY1ejFNRUhGVnpjVFhnbVNMdXg1bTFWSFZPQQ?oc=5",
       "facts": {
         "domain": "ANTARA News Manado",
@@ -448,7 +487,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-9",
+      "referenceId": "ref-13",
       "referenceUrl": "https://news.google.com/rss/articles/CBMijwFBVV95cUxQT3ZfNEQ3eEJMZkdMdGlWak8tVTduWVNkVmRqMWMzOVdnNEFWTHVON0VrX05GLW1HSldTX1JNcmU1Y0plWFA5aWtHX0J3bDhreHFrbHVRQ1VTMDlUa1dCYkdVTTYwV2FobU5UT2ZtY2xibE9kd2g0d1lyZFRFalNNT1h0SEVBbjJxZmRjN2JFMA?oc=5",
       "facts": {
         "domain": "RM.ID",
@@ -467,7 +506,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-30",
+      "referenceId": "ref-60",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxQT0NKN3B6cGV2S1JvTVRJRmRYRWtZbGJkVkZTOE1QdVFSaFJ1VEJTMjBSN2l3UlY0TjlwZEF3YWUxWjdYTWJEaWZWUGVvc3Bqbm9EUGhyeTAzN2pRX2FabUJ6MUFLbVBCQmFLc1lIM0x3MDlCWUhLaHRZUkZfamJXTThHMzZ3eTRndU5mUklOS0VVckRwRUVlUDBOWTMzd1c4RGpwbU9pUzl5bVJxSklwLVpEeFhPUzZpX1dr?oc=5",
       "facts": {
         "domain": "Kabar24",
@@ -486,7 +525,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-19",
+      "referenceId": "ref-38",
       "referenceUrl": "https://news.google.com/rss/articles/CBMirgFBVV95cUxNVEYxOF9iaFB5eEthNzl3NUZQN3kyMXFkYTJMRlF2emJxVHVjaUpHZ3kwZmpzR1VjbkI1T3d0RzFWdlJmVGNoSzAyZGxrT1NsRlhhcFRhMm9PMDB3dXlXZUtwbnUwVGpkXzVVMmgxMmxmZTdwbWhBd0t5MkM4YnY2M1gwWlV4MnV1bmQ5UWh6SF9PZXJkdkFnZ3hTald0RDAwUkFhN0tKQTF4YlRnR1E?oc=5",
       "facts": {
         "domain": "Volcano Discovery",
@@ -505,7 +544,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-27",
+      "referenceId": "ref-56",
       "referenceUrl": "https://news.google.com/rss/articles/CBMitgFBVV95cUxQTGRYM0wwRHo5RkY2VUtMVXhJZW1mbUdJTnA5a1NsZlY0TmpNaXNwOHlDc3RXdHhnQ0FLT3h0c2VMQmYzU1dtRF8wN3prNHFmZnk0SVRGQVlTdXBXbm9FSVJmbmFmNWJUTU55T2NyQkFlMExBdDJJaUJXc3FCVFZaWXJLTXNyT0FuNUJydFkyTW9zSFZjR0M3ZjlEYWt6c001NnhYd016SnVZWEpfRXZhUFBWa1lLUQ?oc=5",
       "facts": {
         "domain": "EKSPOSKALTIM",
@@ -524,7 +563,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-31",
+      "referenceId": "ref-63",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE5XQXJRVDZKUzlHSkZ2ai10UG5XcVpTWDduUUcyMElyNDJmMUJHbVljWW1xcUFkSjNmN28waXBPRV9xbDI0OWN4Mzc4dFpYUjhOM3ZjSmFKaHZRdWM?oc=5",
       "facts": {
         "domain": "BBC",
@@ -543,7 +582,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-7",
+      "referenceId": "ref-9",
       "referenceUrl": "https://news.google.com/rss/articles/CBMi5AFBVV95cUxPWTM4RU52NG5UbFBfVS1SQWZGWjZ1Mjl1QnpKUDRWOFlhbFFmb2ZXcVBfZW9XNFgxaHNSUi1ZN2ZyeTcyaTVLSExKZzE2bGkxLTM3R0Vtb0FIRm1MMDNBTHI5TXpUNVp5UU1tWjFmS3ZQUUhXelJJb3NXRWxEXzU1UnIyTFNVbjZyd0VvNkxKTnJEZHZfajNHa1N1TVVpN2NlSi1uTURzUGJJMHJvRXJITW5Ed1BhWVVFNjR1Yl8teGxmbjZoSDlpQzRSYzJ4RGtQNGRfZ3BEUEE2dlFVQmFwclAyT2o?oc=5",
       "facts": {
         "domain": "Tribratanews Polda Sumsel",
@@ -562,7 +601,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-43",
+      "referenceId": "ref-82",
       "referenceUrl": "https://news.google.com/rss/articles/CBMizgFBVV95cUxPcTlZZjZKMHBYaHNUMHBLdXVWQ3cxcEd1SHdIa1FRS1NlbExNclBjajFlMUR3VW5fUWZwSkZ1cElXLWwzSDFpRm13U3RIUHBFUXlPWlY4MjVPYjdxYmYxcmFqQmhydHNuWDVPQWhhN0ZmVTV0YzF4bkRYVWh2bmRLOXZUbkFqTWwzbk9Rd09rVWpRMkxhSzdseG9JbWRucFJfUmlUTzNfVVRIMW9VNERpNTNCeWdCVFozQzdMN2VscDJINWtleWhvT09CVW4tZ9IB0wFBVV95cUxNU3F3a00yRVlmWUNiOTJfcTIzbC1oSGE2aXhNSFBsMEZCM2VEWVR4a3JuZXV5TXZ1aE9iOE5XMHhNdnMtZktfeFZpc2o0dVZpaHUzN2dWSDVaZVpYNW5UQXcxM2V4aWlxb0ZmXzd4NGVPbW11RmNxeVhXdXdmQmhwOEZ6eHFOMGd6YU1RUzFhamtla2RhX3VpVi1IcFo4VlJ6RVVtSGg0T1NndzRmbFZhQ2pfRHRHUXFVT1VBZGcxajhUTEk1RV9BcUxOVk1zSGZpejk0?oc=5",
       "facts": {
         "domain": "Kompas.tv",
@@ -581,7 +620,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-11",
+      "referenceId": "ref-20",
       "referenceUrl": "https://news.google.com/rss/articles/CBMinwFBVV95cUxNWkM2MUNMYlMtaVFfbkFOUDhPSUlwd1NIdDh5Ulk2OHV3X0IwTDdzWWFBRnN4dFZkeTFHVGpJWnNGYURBakJkUmNfbnRfU3V2VTRmd3ZzQ1g2d0lYQVlsWHR0VW1wZjRySTdBN1k1dVV2bjBkOVAxUWpiR1I5Q0hjVXA2VkhjWkVjb3hIQmpYck4tTGZJdzdKc1NCVUxmdVU?oc=5",
       "facts": {
         "domain": "Papuanewsonline.com",
@@ -600,7 +639,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-40",
+      "referenceId": "ref-78",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiywFBVV95cUxOeVRpMWFxdlRsXzRXUEJXYTRsTmVvb2ZfN1BDVXdiY3JHb1JhNUxSZHZRUmdpT0FIaEVjejdCUnF2T1ByaFNJQ29aVTV0T0VYUnJIcktHQWFZWUpMYnVmdlN1TzMwcWpFYl9VcFdHcGJmUGY4N0F3cExvUmJRNXBfS2Q0TmpUREpVRms3eHRPeV9rOS0xYzIxM0Q0eU5zcGtISzJ1UUZCZnRvaC1NOEtDWEl5STZ2ODVXMzNPZ2dtN20xMTREUE80TlhGTdIB0AFBVV95cUxOX3FWMFV3M09lOTNDcVhRczliWEJJbGNEN1g3ZDVtYXVEcFhUdGVkQ0RxWWY2WnFyX2pxV090OUxvWjdFanAzVXQwR3dpTGhQcGtxUHpMZ0hnMHdINUJUQTlGOE05T2ozQlY1OHpkTmpzSFU5UThvMXh0UDhtblpkSlZuOGpXalJGQ0dqUnVabVVfVnlQb0FsN0xOLVJKbld2RGh2ak1TU1VaQ1pOeTZEWmM4bWxGMU45UmNmQ1VHbWRKNW5JTVJVMGhqVGkzYkxs?oc=5",
       "facts": {
         "domain": "CNBC Indonesia",
@@ -619,7 +658,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-16",
+      "referenceId": "ref-29",
       "referenceUrl": "https://news.google.com/rss/articles/CBMipgFBVV95cUxQRjdIY3lPbXlYYkJKdnZ5UXRZSHNCa3dlaElDdWZrYlhjMTVFMmRiRGVOYWlnYlZHUVVCZWhINHo2TjNDRTZvN2V2bENZSGo3OE9GeGpMZEh4ampXWDRLa3dWMGdJbE50a1U1bjhTZUFZaEtSOXdhSDJIcDVhTVl3TzVqLWFoWnpsLVNhM2tlbGxDTVh0QlY1bE44aldVYVNSLVZ4Vm1B?oc=5",
       "facts": {
         "domain": "RRI.co.id",
@@ -638,7 +677,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-42",
+      "referenceId": "ref-80",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiywFBVV95cUxQWGZjNndBVm1ITFFwWmI2ZEVUZk1VRDJOZTMwNjF3WjFVc2FRMk5EQk1CWmVNd29yMEJRRFNtTmJZdzZzSWlGRWZGdzI2cWZUQXdlU0hZN3JGTTVNUzZWZThRdjJqREQwMVVLLWlFd3gyOFFlY1R1aGtVNzNWSldfZlk2RmV5b21McTJGSC0xdnIzOXVTWmpCQng2YnZJRkc2endMNlV1RzAwLV9LekNHSjhXMXBDR25MZ1AxOGZ4V3ZpY3lrLUpfQkJ1OA?oc=5",
       "facts": {
         "domain": "Bisnis.com - Market",
@@ -657,7 +696,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-38",
+      "referenceId": "ref-76",
       "referenceUrl": "https://news.google.com/rss/articles/CBMixwFBVV95cUxPS2ttaDJCejJRSGNmU1Y4cnRFNnVEUWhDejZZckNHcF9mVTNudWhXdGJvX0kzb0NPYzMwSzFZaTJ6UWExc2tyaU0xT2RLaXFReGFYRFQ3amc4U21ZU3VNcnZZcHU0SnItTVpub0pSNVRtYTJsQ29CT2NXTnFpMk9yUjdJb0pqWnlyX3FFTGxvaklMS3kxZ3Y1T3F2Nk9yMDR2YlRwZjVYWEZjRnhkNW12Z2xDOWxNSTgxbGMtX1BmQWV4SHRZLWI40gHMAUFVX3lxTE1ZZHo5NVNPZl82ZUZfcTlfSFllR2xUUU1GSC1DUWJMSXJPMUtzMy1PdGUzR29fb2lQTjZ1bHlaNUM3SWhOUS1maEpWa29wOXJLNDljbFR0cTBkYU8yUVljRWpnLVk4SFVjN1hoSnhsVXp0LUtVRHpZUExVVzE1QThIOXB4emRENmZwNUh4dUI4RlZDdWwyTWtVbEduQVNLYVZrQ3lSNWZoeVFMbUlxN0lmVWtFc0RSc2VydzZzalZiVlRxNVdZRWJLVTNUYg?oc=5",
       "facts": {
         "domain": "CNN Indonesia",
@@ -676,7 +715,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-21",
+      "referenceId": "ref-43",
       "referenceUrl": "https://news.google.com/rss/articles/CBMisAFBVV95cUxNMmxWV1BrQzU2R2xZYVBaSE1JMC00dmlqZU1SRVJMNEp2MXREQkRDN19rMDM1OGdMSGY0eUtuTlB2aFpIaVNTRlp3OURnVEw5dmswdlRqakxHR1ZxNFVNQjUwdU9LOHBHdjRLQkNpYTVtVEZ2bk1DSEJSc0I5eHlGMHlvS3dJTXV5eU9aa2NKSy13X1dIY2c3WUhzWXpnZUhQY1J5TVBINEhjLVVTV0o2ag?oc=5",
       "facts": {
         "domain": "MetroTVNews.com",
@@ -695,7 +734,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-18",
+      "referenceId": "ref-32",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxNenhQLUdTaXE1MVBjd3pDUk9sQ0pHUGlSQUx4RHpKa2ZKcXpUaU5xNy04b04yRFBtQk1fS0tKRmZucnlZUURiV3NBMUJkRmJ6aGFuTXlVRDAxTlh5bHd2ODdDUHNNNndhelV5dXJXNng4VjB0NUhxMExEUzA0VXlJUkphemZYbzRrSHNGX3pHVWVoSmlYTXpCOXg0Q1k3ME1sM1dQaWVyXzdMdknSAbABQVVfeXFMTUVSeVZnakVMbEpCY2F4U0VSbThEXzY0bnF6MWFVSFU4WlJlNmRXejNSVTBmOC0zd2lBR1FacWd4amJWNnJrZWNEcmllbDQ2WE9NcWJRRy1EU3IzZEJSY0c3a250Y0t4LVFhNk1ORnFWN0xGR0hRbkJicTdpeDBRRVBESTQ4RDFxekplQjBpUzN6UHBkQlpNZGJkcmtJR2hwMEVMLXdkWlhmbkt3Y2tGLTM?oc=5",
       "facts": {
         "domain": "ANTARA News",
@@ -733,7 +772,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-34",
+      "referenceId": "ref-68",
       "referenceUrl": "https://news.google.com/rss/articles/CBMixAFBVV95cUxOeEZ2eXpsOHpPZk9ramQ2SmhnZkYyOHdVSVRORkFlbTZ2T3pvQW5XNW9tYUVpcVh6Z1BoU21WRHlNOG1YOEluaDdZUjJaTW9uWFNFZmJRbE5DQWZFSE1OUWlzVE5Lb1V0RGtlR2FqZDRUS2QzelVqekVzOENlU2FkZDJ2dXV1cTFSc2JXRWg5NnlLZS1tLTdDN05CZ0hPT3kyNC1KVWl2bXYySXVVT1ZsaVJWRTVUdXo2amFZQ1ppRG1aUEY5?oc=5",
       "facts": {
         "domain": "Informasi.com",
@@ -752,7 +791,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-5",
+      "referenceId": "ref-7",
       "referenceUrl": "https://news.google.com/rss/articles/CBMi2gFBVV95cUxNZ1V2aGRtZnY1NjA0RDNhcV9UMVFEWmkxd1ZQX2VPSk5GOTk3YXN4VjQ2UVRPMGVpdnA5ZjVzbjROam11eHhRTTNZaDV0b1BULUNGck56ZGZzeVduMWhJTjVTUC1oTUt5eW54d2hVbXMzYUpZUzdTTFl4em5OSXVJY2lKVGpzcEV0NHl0UWF5OHMtTVVJRkQzbFJTSk1kZ09PWV9zRkl3ejI5NlBxTEZTOS1Hd3RfZXBmTnhKUDVmbm9pNHhJTXB2a0RpT3hWQkZKRVljVGZmZ01SZw?oc=5",
       "facts": {
         "domain": "BMKG",
@@ -771,7 +810,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-13",
+      "referenceId": "ref-25",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiowFBVV95cUxOWjVZMGF5N1AtejZiUEVnNVhvX3UxMDk5VWowa3IwSDB6YkJCSExpYS1MM292cmR4U1h0azZlTjBHR1dIM3IxVVdqTU44NnZORW5hTUcxR050UURXSXRXNW16d3NKRk51Y3NGblhYMm1meUxSMk54cG5ieWhVYk1iODl4UG5naGo4QTkwMGhBYlBMYjA5a1dIY1I4RFI1TnQ5R3Iw?oc=5",
       "facts": {
         "domain": "Mongabay.co.id",
@@ -790,7 +829,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-22",
+      "referenceId": "ref-44",
       "referenceUrl": "https://news.google.com/rss/articles/CBMisAFBVV95cUxQanU2MzNLR3A3VTBzamxpTVZhY3p4cGRRRWtMR29hajNTdEhIWGJGX21xRmtpNjFHdWcwT2tyZUxJQ2hzVm5veU5pTFA3RS1Fc1g5RW5MbUh3LWJ1bXlzdkNrYWpnamwwTzRfRFhDd1NqSFQ2R1g4d1B3WldNLVVINUdpUG9kUnYwdVpYUGUwUF83RDJBYzhXbXdyNWFQajUzSGFDb3R5ZDNlZTdPTWRCdA?oc=5",
       "facts": {
         "domain": "RRI.co.id",
@@ -809,7 +848,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-36",
+      "referenceId": "ref-70",
       "referenceUrl": "https://news.google.com/rss/articles/CBMixAFBVV95cUxPLUNjVFl3STV1WjNEQTJfVElTeU02RUI1eGxRRGF4eC1lQzh5cHF5SHcydnFaUHh2RlNkQWRib2E0QXpzZ2l3bzRjUVdfQjE4NTNuY2dkQ3NmVFd5YnB6UVZrNDN2V2ZjMk95aXcwWktvLUlRVEFaOWZSV0o1X3RvcHpMdDJDOGpYc212MlVFb0RYYUF6WXVvakhlWGNDRzRrWmRSRENwTHZaX2dDTTZnSUFHVl8zbGctbU16SU55WGp3Qzlv?oc=5",
       "facts": {
         "domain": "Tribratanews Polda Sumsel",
@@ -828,7 +867,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-37",
+      "referenceId": "ref-71",
       "referenceUrl": "https://news.google.com/rss/articles/CBMixgFBVV95cUxNbzhtWk1XOVJXU3pDbXk3eHcwZGZwNTI5alJiRlFMM0JkbGl1WDhUSDVxNkpqbkxQZ1hHdldPVEdDa0I4QVRBZHlNMnZ4czl2UmdpQjR5aXRIYUJsMXJWWkZkNHNETmVFaTBkWjdkSm0zZGpTTzdVczZYX3R5akxQS3hWeXdCOXNTZl80Qy02Yk5PUDZpZGVvb3E5ZXdUbG1rNVVtRUNpZTh3TVRiZTF2MGJZYi1HXzlQeXBFU2RfWUxpUFVXRmc?oc=5",
       "facts": {
         "domain": "NusaKalimantan.Com",
@@ -847,7 +886,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-35",
+      "referenceId": "ref-69",
       "referenceUrl": "https://news.google.com/rss/articles/CBMixAFBVV95cUxOQWxBbEFFVEQ0UVp1b2E4SFdVZVU5V2N5SVhZenZDYUFKOVFQaldFWFJiVUVTTm1IMW1yMFdTbnFkbkVWM1E5MWFlcnlFa2Q2WDJYbnNKMWlKVlpkc3ZwX3RsdWNqVVJoQWpvSTF6QkM4SnROSUZXdDRZZ2tpVkJoOU9OWFJ5Y2M0NjcwWEtlM1pyejNOa3N2VEpnbURjN2dyaXYxM2k5U1hqUTVSZU9NS3J2TEJoMDRYVGhmdTRuZ2NhMW13?oc=5",
       "facts": {
         "domain": "NusaKalimantan.Com",
@@ -885,7 +924,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-23",
+      "referenceId": "ref-49",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQc3lsRVl5eFAxRU5sWGN5MkJxcWVjVTFXcXNneV85em9lQnBvTVZ2TjVTeXhPZDVBSHhIemhaTS1YWEhKb19xUWQwYWJTZTRNejRqT1NkZTlvRldWYXZ0aVBYQm1zdEk2UGJiUWhqRW96eHhIa3Y1Vk5tOG5CeUpGSTg2aU5ndVdQcXdLbXhORWtPazROeUpYaFRsamtZRWtEbkNQdGpwYWhNc0ZmTlAtSU9nQdIBuAFBVV95cUxNdURjMndSZTdfNC1aSUZOTUliRlpXY3hkMV9PVlV6T0ZPUER4SW91Tk90RVB0ZDRtME1ad3VpVFdKSEZWR044N3VYS1pRRjVzNHRiUVBRZWRvWDNxN241ZnU4cXAxU3d5RjZfX1k5enk0bzFwZnhUZWliQ2UtcmpFYkFmTU5BN1JQcWJkcGFfMGV5ZE51OVYyUmRBNGNDMjBMZTBHS2JpN2FKV18zaWtCeEFyZXc5b253?oc=5",
       "facts": {
         "domain": "Kompas.tv",
@@ -904,7 +943,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-6",
+      "referenceId": "ref-8",
       "referenceUrl": "https://news.google.com/rss/articles/CBMi3gFBVV95cUxONjh1OTlkREtpZnB0bldfMW15UGVMb0tTNjhWeWkycGtscFVOamQ3aVcxSjlLeWtENW5IcXRNdThOMVRmbnZFWkJCYTVvcENrNTRKQ2VnaFB6bGhLSmlpenNnbVZWRHA5c3AyazNBX2V4aDhWYlRLdHk3TXd0ZXZtUVg4RUljSEl0eUp4YXVuRm04SkJBbkpBd0RTY0FHbTJ3OWlIdTBUNnpwYV9RRGRGSnlLRnczXzhROVJEc2ZHZDRSOURvMzBrX0tPc0RFel9rWnFqWTNJZlpLSmxMdnc?oc=5",
       "facts": {
         "domain": "Tribratanews Polda Sumsel",
@@ -942,7 +981,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-10",
+      "referenceId": "ref-18",
       "referenceUrl": "https://news.google.com/rss/articles/CBMimgFBVV95cUxOcFM0c2lQcktBTkNib0VIanpQa0o2eElTUy1XZElmbV9tUkNyRDlTM0JlaGE2eXdwSXNxZnEtY1QxSGRRNVNneC1EZE9ienRpYnNTMVJud0xGSFdUZFVMY1NmazlpZHhuaVFvNmpmLVlUYUVsV0YwQ2JmQnluS2gyZmZJR2daNGNvNWxEakJxSkRPVHU3eFF0V2VB?oc=5",
       "facts": {
         "domain": "Prohealth.id",
@@ -961,7 +1000,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-4",
+      "referenceId": "ref-6",
       "referenceUrl": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxQazJOcEIwRHdJU0lMa3VlVG1Kb1FqRmVxUjV4SHNJWkFHa1JlUEt2WkpoZExMclhWb3NqdFJ1YlF0a2s1OHpzNkdPaGVEM2phVFFOWTNjMVJOUkVTMGFEVVRudG1WT3RHakREMlFwam02aDl2ZlVoTzU4T24tSnZDSWxZWG9pNjFCZmtCSm5PSlNCbXVkNjN2WXZQLW5LaGEwTzhFNU1hcnFyTXpjLTlHMDdZenRUZ1NuT05zd3JOZEVVVi05bERkTl9PU25fNENjaVpBWg?oc=5",
       "facts": {
         "domain": "Harian Jatim",
@@ -980,7 +1019,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-14",
+      "referenceId": "ref-26",
       "referenceUrl": "https://news.google.com/rss/articles/CBMipAFBVV95cUxNODMzd24tZVNHV1ZYX3VrUlFGMGJwbTY3aE9rU1BMQjlBT3dab283ODZFS0RmZFRpOVg2MHNrUkljei1hTERPbUpXV1lSZUEwY2JNVVU4N2R4S1pwSkJDMkpZRWVWQ1g2cDFSdVRJVjVGV1FaVEI4VEJBLUIyTzR1MjlZX1JzWEFiejZFblZOVWdHVF9QaVB3MkVZaGpFNWpyeC1oWQ?oc=5",
       "facts": {
         "domain": "Merah Putih",
@@ -999,7 +1038,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-15",
+      "referenceId": "ref-27",
       "referenceUrl": "https://news.google.com/rss/articles/CBMipAFBVV95cUxPeEwtT3VpR2dzcWRhRzN5YWdZajlmUXdOUHlqejloUXo3Mzg0YjNXUzNiVDE1LXZzN1oyWkkwM3RqbnY1dGprMjNEblBrc2RET0pZaWk5N1JCNUJtZnQ1V1pOYkgyZDh4X2QwNllSZ3hqRjBhUENzTF9mM2hEbWtaaWp1dGFHVHRrM2N3cUlxbXkzSkJ1WVlyOUNMMHE4NXo2TlZQSdIBowFBVV95cUxPLWc3cjVqLWxmNHVuckhVQkplb2MxQXpNT2x3cHRoTmQzMWhnX2tsNWViZGdkNTdQQnVxQXZhLUZyR2d3VTJUd3N2LXhDM1k2bm1BWVk2MnlGcVlENEE0YzZRNnBpZWZqcTQxUUpvU01STWV6anRlaHhVdEdKa0R5dG5YbngwZUZzUnBRRmM4SllzYm1ZaUQxSnUyYXFqYjNtOXlv?oc=5",
       "facts": {
         "domain": "MerahPutih",
@@ -1018,7 +1057,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-24",
+      "referenceId": "ref-50",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQeHREend3VlVYSjBvZEl1UTRrZFQwQnU4SUJmUVlXb003UncxRjdzMi1yTnBRQmdwNHpGMS1aYkRqMXdleDV2Um0tTGtuUlN6WTlVa3M5VUhZakg4bURyMVJvTG9scE5TVUxYS2JZTTlGLVJkU1BMWFJaZjFzS0U3eDAtM2R5dGkzSGtqRW5fWWpQa1Q5b0dQMC1iTDVUWWJST21xSVYzLUFOdFdnQ19Na2c4cw?oc=5",
       "facts": {
         "domain": "republika.co.id",
@@ -1037,7 +1076,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-33",
+      "referenceId": "ref-67",
       "referenceUrl": "https://news.google.com/rss/articles/CBMixAFBVV95cUxOcjRaN1FxN1FiZFcyZW5BckZFcVFHemt5b2ZSNWlrSUhjUFI2NW1meDQybnNBM0lKMUpjeWNiYzJGWnZ2NGVjT1hvMHl2YWNVbEN4dHJTbkliRjY1SjJ5S1BFR0RKWkZrLWoyeWJMTjBZWkxjWDk4NDVaRXdpNXU1bGZJOU03VXZlYzVsNXh4T0JQdUdkOXkycUYzTFZDajRYSG52aXI0djcxbkhjYzNiOEFEZkJxMFRsLVpITWctdXg1ZTRk?oc=5",
       "facts": {
         "domain": "RRI.co.id",
@@ -1075,7 +1114,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-25",
+      "referenceId": "ref-54",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiTEFVX3lxTFBqYUJGcEpVa2UtUHBwR3NoUk5ubXZHV2tqNWFVSjJSX3U1dEk5WEU1S2lRZjJmczFRendOeWhjMjd6eE9LdEJ3VHJIYmE?oc=5",
       "facts": {
         "domain": "atnews.id",
@@ -1094,7 +1133,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-39",
+      "referenceId": "ref-77",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxQOFNYQW9xRVFHcXV4NFFfeDVMQ3dBWGF0ZGtwSEpaV2V2YzhFQjNzV25vSlROZWJkeFNLS1RIakhUZGJkci15ekp6emhTY0V1TWJtYXBUOVVnRTRzeTNUZkxYYnQycU9KazhQVDY4TlpIZVV0NEJ1VzhNUTkxSDVVekNzazloUmZicXVCSGFKNUMwdHlzc1ZnVXVjaWY2VTY0NFVqSmplRnhoRzY2cnktRnk3LW84UHBlNHVZLWJEbG1SUUtvNnJtYg?oc=5",
       "facts": {
         "domain": "RRI.co.id",
@@ -1113,7 +1152,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-8",
+      "referenceId": "ref-10",
       "referenceUrl": "https://news.google.com/rss/articles/CBMidkFVX3lxTE9ObUZCTjA4eHg5RDFnTmlyYXhsenZ1X0dkLTk4ZE9zRmdDSHVXSjdSR29RSHNuUnB5NkFzTE5YR2c3S0p2Z200VndFR3d0Ty1oRDJaMlQzSnRsOGd3WFV3NjF6ZkZiSzlMemIzNXdZcTZFODVUdXc?oc=5",
       "facts": {
         "domain": "Demokratis.co.id",
@@ -1132,7 +1171,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-29",
+      "referenceId": "ref-59",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiugFBVV95cUxPOFluWjZ2V3gyMmw0SHAwOGpFYU1CUTBHYk4yazBmVmpTU2lNZW9yMnZ3bFo0N3dyN2pjVklZT29tX1F1OFFKUmg1NEJCNGVUQ2pCZkZ3X2I3UjEtTVhGR0pYRFpLWjJ6c2I1alB4My1tS1dDRHdOVnA4ZXZ6eGdreGtsRVEyQ3FXU2pGT2Q2NzktSjBBMmRVWkpUVU9oYm9wNzc1ZVFaVktnVnkxaXc4V0h3TW1zZDlBYWc?oc=5",
       "facts": {
         "domain": "Riau Online",
@@ -1151,7 +1190,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-26",
+      "referenceId": "ref-55",
       "referenceUrl": "https://news.google.com/rss/articles/CBMitgFBVV95cUxNN2lhWkJfR2pKYjdFdkxHcG14X19GVUkzNjQzRjd6RlRlcE5Tb0tjMXl4Nzd2dTBFbWtEejhQblZnVVZFTEJOXzlKMUlYUlhXRi1COGJCeUZpdXV2N1VNOGZreEc4dGtuMFNJVi1nZHA1cVpHWTNhaG5SVFRiQ2FfRl94NGZSY0ZQMXVEZHA4aDVTXzNBSXFqMnZDRElHeEFQX0gtaVU0eG9NekJWcTlPMmxVaEhTdw?oc=5",
       "facts": {
         "domain": "PT Suara Dewata Media",
@@ -1170,7 +1209,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-32",
+      "referenceId": "ref-66",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxPdGtFLWNFbzBmQTdSWG9wQThsSURWeTE1N0ctSE9SSzFhaEJLMWlTaFRONEtBSGdvakdJSy0tSnNWcTVDLUgyNGEyRXRlOXdEUnRTSW9pQ2NNbGRPSEt2SHZzRzB5UXVaczBzUnFqQzBVUGJyT3VhREN1VWxKLVl5S3dzVnNzcGdrdVpvSjJNN2NrbnQ2S2NKWG92TlpDeXhjOURpRU40b2xQaFBEcE5aQ3pFUUFnQjVaMTl0WEVxd3ZMd1E?oc=5",
       "facts": {
         "domain": "InfoPublik",
@@ -1189,7 +1228,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-12",
+      "referenceId": "ref-21",
       "referenceUrl": "https://news.google.com/rss/articles/CBMinwFBVV95cUxOLUNJRk9SWEV2UUEyWkpyY3hQR0o4Ukdzc0dGZXdFVl9Ld3c3d3REcko0c1hDc2dvRU92T2VjZnozQXpkVGczVmprbk5PX21WajZUMUpuUkY5NWZHVkNTdmNzNy1pX0dSLTJyUFJGc1N0SlZrVXFHRGYxTHhIVnpJQUlHeVNRWU9pNmpSNGxrRC05ZWszVG1YbGNzTHhYYTg?oc=5",
       "facts": {
         "domain": "Betahita",
@@ -1208,7 +1247,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-28",
+      "referenceId": "ref-58",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxPczVSZThqZkk2bUhIN1UwUXVoQzlhelc1YWJNUzNYX05jYUJNMU0zX04zcUZVMVk4YWZyS0JOaUtZY1E0NFZlcXgtSUQ0Q1htZ280eEM0LUVMY2xKZVUwXy1RMEN0X3hPWE9DeWdtdl9lZkVOUWFUN2JoZFo2YzRqMlpYdjFSN0RUN0h4V0s3WmYxRGh0bU5Dd0ZTYm1kamY3Y01jTlI2MTNNdlJRRG1YclBFTkhvUEEt?oc=5",
       "facts": {
         "domain": "PT Suara Dewata Media",
@@ -1227,7 +1266,7 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-41",
+      "referenceId": "ref-79",
       "referenceUrl": "https://news.google.com/rss/articles/CBMiywFBVV95cUxQb250NmpkVExxc3VVRzJ2dkhTS1M1Tkd2cklndnAzUlI3RTJZTlRsZGJscTRPdkFkUHdBQzhtU09QNUZwak5EUjJxWXlTOVdnTTRRSFA3VXk0QjVVX01vcnV2Qjg4M21TeUJWZGlyUGV3QUpzT3AwVmZJVy1vRUdwTlVWaG9kN1B1SFc2eElVdUpCMHdqUVhhby13VEk1MVhsRnJCZURtWHNpX2YxWHpzUVlaR0VZcU83VklKdzhvcUpUdm1aWktzVjltd9IB0AFBVV95cUxNdDFtSElpWmNSVF9fRkktYTlReWxOcGVpNUlkbk04WE9ROEtZMXY4RFpUSDdKRS13UUVaT3Jxclc0d0lhRDdOb1ZKZXNKX0JBNWRmZXJPV1VIajVxZFVNVXBmeWRoUzA3blp3X2czeGJkX0xkck56eGpHTmhTSmNYSDlfNmNXZGpxSDVkYWlzdWJWZEluUk5XdGI0d3ptX3FsazF0RXRHVFFFcEtOdGNsWXhBeGlnYmFWbVdvb3N0czdBTEE0QS1OMmtvbndoUFFU?oc=5",
       "facts": {
         "domain": "Warta Ekonomi",
@@ -1246,10 +1285,1096 @@
       "location": null,
       "latitude": null,
       "longitude": null,
-      "referenceId": "ref-20",
+      "referenceId": "ref-41",
       "referenceUrl": "https://news.google.com/rss/articles/CBMisAFBVV95cUxNbWhBSTZ5ek9YeExKRDQweXZvX0lpREEzNmtaVHZLN3ZndUFGc1BuV253b2l4MkhsZkNvemhMMUZGSXZ5ZHcyY0tlbjhMMVVKcS1fTlk0dXNtcmF1WngybTktczJxcFZ0V3RKU1JkUTg5cWxSMWlwdmlabjJ6TWtUd1otMFp6MHM4LUpXUldrbEIzUWYyRnlXOHRESzV3M2FxUklUcGQ0MXRUSWtGdzlKTg?oc=5",
       "facts": {
         "domain": "PT Suara Dewata Media",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "eruption:ibu|2026-11-03t02%3A27%3A00.000z|ibu",
+      "type": "eruption",
+      "observedAt": "2026-11-03T02:27:00.000Z",
+      "title": "Ibu - PVMBG observation-post eruption report",
+      "description": "Terjadi erupsi G. Ibu pada hari Selasa, 03 November 2026, pukul 11:27 WIT dengan tinggi kolom abu teramati ± 200 m di atas puncak (± 1525 m di atas permukaan laut). Kolom abu teramati berwarna kelabu dengan intensitas sedang ke arah barat. Erupsi ini terekam di seismograf dengan amplitudo maksimum 28 mm dan durasi 39 detik.",
+      "location": "Ibu",
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-2",
+      "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan",
+      "facts": {
+        "heightM": 200,
+        "bearingLabel": "barat",
+        "durationS": 39
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official eruption report"
+    },
+    {
+      "id": "eruption:dukono|2026-11-03t03%3A15%3A00.000z|dukono",
+      "type": "eruption",
+      "observedAt": "2026-11-03T03:15:00.000Z",
+      "title": "Dukono - PVMBG observation-post eruption report",
+      "description": "Terjadi erupsi G. Dukono pada hari Selasa, 03 November 2026, pukul 12:15 WIT. Visual letusan tidak teramati. Erupsi ini terekam di seismograf dengan amplitudo maksimum 18 mm dan durasi 48.55 detik.",
+      "location": "Dukono",
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-2",
+      "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan",
+      "facts": {
+        "heightM": null,
+        "bearingLabel": null,
+        "durationS": 48.55
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official eruption report"
+    },
+    {
+      "id": "eruption:semeru|2026-11-03t05%3A06%3A00.000z|semeru",
+      "type": "eruption",
+      "observedAt": "2026-11-03T05:06:00.000Z",
+      "title": "Semeru - PVMBG observation-post eruption report",
+      "description": "Terjadi erupsi G. Semeru pada hari Selasa, 03 November 2026, pukul 12:06 WIB. Visual letusan tidak teramati. Erupsi ini terekam di seismograf dengan amplitudo maksimum 22 mm dan durasi 284 detik.",
+      "location": "Semeru",
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-2",
+      "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan",
+      "facts": {
+        "heightM": null,
+        "bearingLabel": null,
+        "durationS": 284
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official eruption report"
+    },
+    {
+      "id": "eruption:semeru|2026-11-03t05%3A52%3A00.000z|semeru",
+      "type": "eruption",
+      "observedAt": "2026-11-03T05:52:00.000Z",
+      "title": "Semeru - PVMBG observation-post eruption report",
+      "description": "Terjadi erupsi G. Semeru pada hari Selasa, 03 November 2026, pukul 12:52 WIB. Visual letusan tidak teramati. Erupsi ini terekam di seismograf dengan amplitudo maksimum 16 mm dan durasi 222 detik.",
+      "location": "Semeru",
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-2",
+      "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan",
+      "facts": {
+        "heightM": null,
+        "bearingLabel": null,
+        "durationS": 222
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official eruption report"
+    },
+    {
+      "id": "eruption:ibu|2026-11-03t06%3A11%3A00.000z|ibu",
+      "type": "eruption",
+      "observedAt": "2026-11-03T06:11:00.000Z",
+      "title": "Ibu - PVMBG observation-post eruption report",
+      "description": "Terjadi erupsi G. Ibu pada hari Selasa, 03 November 2026, pukul 15:11 WIT dengan tinggi kolom abu teramati ± 400 m di atas puncak (± 1725 m di atas permukaan laut). Kolom abu teramati berwarna kelabu dengan intensitas sedang ke arah barat daya. Erupsi ini terekam di seismograf dengan amplitudo maksimum 28 mm dan durasi 47 detik.",
+      "location": "Ibu",
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-2",
+      "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan",
+      "facts": {
+        "heightM": 400,
+        "bearingLabel": "barat daya",
+        "durationS": 47
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official eruption report"
+    },
+    {
+      "id": "eruption:ibu|2026-11-03t06%3A35%3A00.000z|ibu",
+      "type": "eruption",
+      "observedAt": "2026-11-03T06:35:00.000Z",
+      "title": "Ibu - PVMBG observation-post eruption report",
+      "description": "Terjadi erupsi G. Ibu pada hari Selasa, 03 November 2026, pukul 15:35 WIT. Visual letusan tidak teramati. Erupsi ini terekam di seismograf dengan amplitudo maksimum 28 mm dan durasi 52 detik.",
+      "location": "Ibu",
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-2",
+      "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan",
+      "facts": {
+        "heightM": null,
+        "bearingLabel": null,
+        "durationS": 52
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official eruption report"
+    },
+    {
+      "id": "eruption:ibu|2026-11-03t08%3A02%3A00.000z|ibu",
+      "type": "eruption",
+      "observedAt": "2026-11-03T08:02:00.000Z",
+      "title": "Ibu - PVMBG observation-post eruption report",
+      "description": "Terjadi erupsi G. Ibu pada hari Selasa, 03 November 2026, pukul 17:02 WIT. Visual letusan tidak teramati. Erupsi ini terekam di seismograf dengan amplitudo maksimum 19 mm dan durasi 38 detik.",
+      "location": "Ibu",
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-2",
+      "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan",
+      "facts": {
+        "heightM": null,
+        "bearingLabel": null,
+        "durationS": 38
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official eruption report"
+    },
+    {
+      "id": "eruption:ibu|2026-11-03t08%3A04%3A00.000z|ibu",
+      "type": "eruption",
+      "observedAt": "2026-11-03T08:04:00.000Z",
+      "title": "Ibu - PVMBG observation-post eruption report",
+      "description": "Terjadi erupsi G. Ibu pada hari Selasa, 03 November 2026, pukul 17:04 WIT. Visual letusan tidak teramati. Erupsi ini terekam di seismograf dengan amplitudo maksimum 20 mm dan durasi 36 detik.",
+      "location": "Ibu",
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-2",
+      "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan",
+      "facts": {
+        "heightM": null,
+        "bearingLabel": null,
+        "durationS": 36
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official eruption report"
+    },
+    {
+      "id": "earthquake:2026-11-03t11%3A43%3A49%2B00%3A00|-8.27|120.63|4.2",
+      "type": "earthquake",
+      "observedAt": "2026-11-03T11:43:49.000Z",
+      "title": "M4.2 - Pusat gempa berada di laut 42 km Timur Laut Ruteng, Manggarai",
+      "description": "II - III Kab. Nagekeo, II - III Kab. Manggarai",
+      "location": "Pusat gempa berada di laut 42 km Timur Laut Ruteng, Manggarai",
+      "latitude": -8.27,
+      "longitude": 120.63,
+      "referenceId": "ref-85",
+      "referenceUrl": "https://www.bmkg.go.id/gempabumi",
+      "facts": {
+        "magnitude": 4.2,
+        "depthKm": 10,
+        "tsunami": false,
+        "felt": "II - III Kab. Nagekeo, II - III Kab. Manggarai"
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official earthquake record"
+    },
+    {
+      "id": "eruption:ibu|2026-11-03t12%3A23%3A00.000z|ibu",
+      "type": "eruption",
+      "observedAt": "2026-11-03T12:23:00.000Z",
+      "title": "Ibu - PVMBG observation-post eruption report",
+      "description": "Terjadi erupsi G. Ibu pada hari Selasa, 03 November 2026, pukul 21:23 WIT. Visual letusan tidak teramati. Erupsi ini terekam di seismograf dengan amplitudo maksimum 28 mm dan durasi 36 detik.",
+      "location": "Ibu",
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-2",
+      "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan",
+      "facts": {
+        "heightM": null,
+        "bearingLabel": null,
+        "durationS": 36
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official eruption report"
+    },
+    {
+      "id": "eruption:ililewotolok|2026-11-03t15%3A17%3A00.000z|ili%20lewotolok",
+      "type": "eruption",
+      "observedAt": "2026-11-03T15:17:00.000Z",
+      "title": "Ili Lewotolok - PVMBG observation-post eruption report",
+      "description": "Terjadi erupsi G. Ili Lewotolok pada hari Selasa, 03 November 2026, pukul 23:17 WITA dengan tinggi kolom abu teramati ± 200 m di atas puncak (± 1623 m di atas permukaan laut). Kolom abu teramati berwarna putih hingga kelabu dengan intensitas sedang ke arah barat dan barat laut. Erupsi ini terekam di seismograf dengan amplitudo maksimum 40 mm dan durasi 48 detik.",
+      "location": "Ili Lewotolok",
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-2",
+      "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan",
+      "facts": {
+        "heightM": 200,
+        "bearingLabel": "barat",
+        "durationS": 48
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official eruption report"
+    },
+    {
+      "id": "earthquake:2026-11-03t15%3A37%3A50%2B00%3A00|-0.2|123.32|4.8",
+      "type": "earthquake",
+      "observedAt": "2026-11-03T15:37:50.000Z",
+      "title": "M4.8 - Pusat gempa berada di laut 86 km Selatan Kota Gorontalo",
+      "description": "III Kab. Gorontalo, II - III Kab. Bone Bolango, II - III Kab. Gorontalo Utara, II - III Kota Gorontalo, II - III Kab. Banggai, II - III Kab. Banggai Kepulauan",
+      "location": "Pusat gempa berada di laut 86 km Selatan Kota Gorontalo",
+      "latitude": -0.2,
+      "longitude": 123.32,
+      "referenceId": "ref-85",
+      "referenceUrl": "https://www.bmkg.go.id/gempabumi",
+      "facts": {
+        "magnitude": 4.8,
+        "depthKm": 87,
+        "tsunami": false,
+        "felt": "III Kab. Gorontalo, II - III Kab. Bone Bolango, II - III Kab. Gorontalo Utara, II - III Kota Gorontalo, II - III Kab. Banggai, II - III Kab. Banggai Kepulauan"
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official earthquake record"
+    },
+    {
+      "id": "eruption:ililewotolok|2026-11-03t15%3A40%3A00.000z|ili%20lewotolok",
+      "type": "eruption",
+      "observedAt": "2026-11-03T15:40:00.000Z",
+      "title": "Ili Lewotolok - PVMBG observation-post eruption report",
+      "description": "Terjadi erupsi G. Ili Lewotolok pada hari Selasa, 03 November 2026, pukul 23:40 WITA dengan tinggi kolom abu teramati ± 200 m di atas puncak (± 1623 m di atas permukaan laut). Kolom abu teramati berwarna putih hingga kelabu dengan intensitas sedang ke arah barat dan barat laut. Erupsi ini terekam di seismograf dengan amplitudo maksimum 40 mm dan durasi 35 detik.",
+      "location": "Ili Lewotolok",
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-2",
+      "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan",
+      "facts": {
+        "heightM": 200,
+        "bearingLabel": "barat",
+        "durationS": 35
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official eruption report"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmiqwfbvv95cuxpb1fhznhvn2hfqzjovhnvs2vpzmzhy0dqcvlnmmtmvlytulbzn0rfoezlwhnmvguxnc1jyk9lajgtowpin29ychfdmevdbufnzlriv2vqwfhsb3dkt2hurvllvmhacflknwg2dgd4wm9qwtczu3zsnw5zb3lpchntdkp5cujccvhqy1bja1hsy0hqbfjoc1vpc3z",
+      "type": "news",
+      "observedAt": "2026-11-03T16:05:00.000Z",
+      "title": "Menteri LH Jumhur Dalami Dugaan Sabotase di Balik Karhutla | SAPA MALAM",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-33",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxPb1FhZnhVN2hfQzJoVHNVS2VpZmZHY0dQcVlnMmtmVlYtUlBZN0RFOEZlWHNmVGUxNC1JYk9LajgtOWpiN29YcHFDMEVDbUFNZlRiV2VqWFhSb3dkT2hURVllVmhacFlkNWg2dGd4Wm9qWTczU3ZSNW5Zb3lpcHNtdkp5cUJCcVhqY1Bja1hSY0hqbFJOc1Vpc3Z5V2czbGFUemFFRWNjQzV5LXfSAbABQVVfeXFMUDNvTGQza25Ma3VfbEY4QjNkT1YxRkRwY05RNGEwNXozcjJoTEhjdWlPMWx6dy1VOVRMNUJENVNoWDJIZHhZaG9YTDZPZlVxQTJaOFBTSXc5VTJUSkVUUkYxNFZTcXlITmhlZHR2cVprMFNtbkNuM1FVcWZHZ204MlpGU1otMUQ0ZEVTWFZ2SklyV2lfWkZuV0xleFpReFdUUVBqeUtXbjVTSENtRXlyUm8?oc=5",
+      "facts": {
+        "domain": "Kompas.tv",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmiswfbvv95cuxpoxbqtmtnrvdevwd6zehitzmzd1ffnwk3chnhaxvzwxzaoxn6amszcw8zvdfdows4ago1thzswlhlv2nxmhhncmdhxzhwdflkd1nftzi5vnqts0e2owzkmenwzk1yqlrru0zkrvlszlrxy19lt0pwbvzmb1rzmtzfvuo1yty5blhdrvl4rgtvrm1vnwvtwnvonfo",
+      "type": "news",
+      "observedAt": "2026-11-03T16:15:00.000Z",
+      "title": "Dukung Penanganan Karhutla, Koharmatau Siapkan Peralatan Modifikasi Cuaca TNI AU",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-48",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMiswFBVV95cUxPOXBqTmtNRVdEVWd6ZEhITzMzd1FFNWk3cHNhaXVZWXZaOXN6amszcW8zVDFDOWs4aGo1THZsWlhlV2NXMHhncmdhXzhWdFlkd1NfTzI5VnQtS0E2OWZkMENwZk1yQlRrU0ZKRVlSZlRXY19LT0pWbVZMb1RZMTZFVUo1YTY5blhDRVl4RGtvRm1vNWVtWnVoNFo0ZXFtRHhrSUpEZmM4bV9TZ0VHdDhodnFzZw?oc=5",
+      "facts": {
+        "domain": "Mercinews.com",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmirgfbvv95cuxoy3ljejnwowdxaljmylv2ntrwrfltumeybxf4zmi2cxfrwjdjtlh4r0nca0e3cy03m2vznnnismrntkljsfm1s2zuy3u4ufvya1bnvnpwq2j0eee1zgpmrvrvm0vsn0xhmejrq25vmmzzeeuxsepcmmvjd0kwenrqzlbbweruogdab2dbrxffsgron2tjzgdisu5",
+      "type": "news",
+      "observedAt": "2026-11-03T16:29:58.000Z",
+      "title": "Kepala BRIN Saksikan Perjuangan Tim OMC Padamkan Karhutla: Tugas Mulia",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-39",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMirgFBVV95cUxOY3ljejNwOWdXalJmYlV2NTRwRFltUmEybXF4ZmI2cXFRWjdJTlh4R0NCa0E3cy03M2VZNnNiSmRNTklJSFM1S2ZuY3U4UFVya1BNVnpwQ2J0eEE1ZGpMRVRvM0VSN0xhMEJrQ25vMmZzeEUxSEpCMmVjd0kwenRqZlBBWERUOGdab2dBRXFFSGRON2tJZGdiSU5Fdm14THNlSm8wbFBFUG5MVm82SmfSAbMBQVVfeXFMTVM2LWxRd0txcXlIZFdLM2VISjZqeE40a0dkUTZoZC1GSEQ0S21oYzhySVV6YnZXRXppQ2N4MllvOFFSZTlUNTBYbFduTk0xRGxUWEkyVGdFLUViR3M4Q1JfcmlfVDU3UmExNlVTSjFTenJDNTNHOC1SNl95aDljdzh5ZjFPQWRYWWV2UUVHd04zMjh4S3dwV2hicGNRS1U2SUxCYWEyazYzb0JxVGFTRVVLM0k?oc=5",
+      "facts": {
+        "domain": "detikNews",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmizkfvx3lxte9usjd3zfaycenwqut0d1zorjrpuhrkatrqemqzc0dvbwrimwfingvnlwjotw1iwjzzzhriufbztlc5egtwevy2tepjy25pqwy3bwvtmkzvag1qr1fhvfpdt1ywtjrpqq%3Foc%3D5",
+      "type": "news",
+      "observedAt": "2026-11-03T16:34:18.000Z",
+      "title": "Kepala BRIN Tinjau Penyemaian Awan untuk Atasi Karhutla Sumsel",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-83",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE9USjd3ZFAycENwQUt0d1ZORjRpUHRkaTRQemQzc0dVbWRiMWFINGVnLWJoTW1IWjZzZHRiUFBzTlc5eGtweVY2TEpJY25pQWY3bWVTMkZVaG1QR1FhVFpDT1YwTjRPQQ?oc=5",
+      "facts": {
+        "domain": "bsinews.id",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmirafbvv95cuxnufdfsnvkothvu2tktwjkmwtyt3bxdv9dsepyu2m2wetpnwl6yvfytmo5mldrcndbuun1ul9ubxniuw50nklzmi1qlw4wamztthzrblbpchy3zhc2tfhfshu2eef4zfbtlw1psdb3nfzfnddaugm5tu5bdxptceryrwxezgntt29id05vmuxtog11lwg4ehzxowj",
+      "type": "news",
+      "observedAt": "2026-11-03T16:43:00.000Z",
+      "title": "Peduli Karhutla, PKSS Salurkan Ribuan Masker dan Susu Steril",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-34",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMirAFBVV95cUxNUFdfSnVKOThVU2tKTWJKMWtyT3BXdV9DSEpyU2M2WEtpNWl6YVFyTmo5MldrcndBUUN1Ul9ubXNIUW50NklZMi1QLW4wamZTTHZrblBPcHY3ZHc2TFhFSHU2eEF4ZFBTLW1PSDB3NFZfNDdaUGM5TU5BdXpTcERYRWxEZGNtT29id05vMUxtOG11LWg4eHZXOWJ0VlhMa2M3UmdDRVNGN2RhRkpw?oc=5",
+      "facts": {
+        "domain": "Rmol.id",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmipgfbvv95cuxpywviam45venxn1a3zuqws1pungdrte90v3rqbvfvz25qamizvxlfb29qaxjkq3rlvfz1z3q0wjzsbxdocmfkrllib3yyyvjpwmfvbddsau14dzhwy0fxeg1iuwtrwfn6rhy1wtboynvuohzpq1yzc0xuwgrcz2peakl6sfvesnfmyvpsedbqvthauzlhwultaut",
+      "type": "news",
+      "observedAt": "2026-11-03T16:48:00.000Z",
+      "title": "Hubungan dengan Negara Tetangga Terdampak Kebakararan Karhutla, ASEAN Bisa Apa?",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-28",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMipgFBVV95cUxPYWViam45VENXN1A3ZUQwS1puNGdrTE90V3RqbVFVZ25qamIzVXlfb29qaXJkQ3RlVFZ1Z3Q0WjZSbXdocmFkRllib3YyYVJPWmFVbDdSaU14dzhwY0FxeG1IUWtRWFN6RHY1WTBoYnVuOHZpQ1Yzc0xUWGRCZ2pEakl6SFVESnFMYVpSeDBQVThaUzlhWUltaUtlTVdNWFcwOXM5c29n?oc=5",
+      "facts": {
+        "domain": "JPNN.com",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmijgjbvv95cuxqdxjcb2rim3ljog9fqllxn0dntwvhovfzbzktwdvrsmztrvotsfrfytdwcy1ir3pbv3h3b1dcbfpurzfscuh4ztc3m1jkqngyrv9bcehssunozm1fehqwzmjtbmtctxzxdtvhnvbhrw1jzetvu1qza2lwuzleyjnyovlwm0xfoxm2rw5tclrumkntbg1fcex6r1l",
+      "type": "news",
+      "observedAt": "2026-11-03T16:55:43.000Z",
+      "title": "KAPOLSEK KAPUAS HILIR PIMPIN GIAT PATROLI TANGGAP DARURAT KARHUTLA DI WILKUM POLSEK KAPUAS HILIR BERSAMA TIM POSLAP KEC. KAPUAS HILIR",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-12",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMijgJBVV95cUxQdXJCb2RiM3ljOG9FQllXN0dNTWVHOVFZbzktWDVRSmZTRVotSFRFYTdWcy1iR3pBV3h3b1dCbFpURzFScUh4ZTc3M1JKQngyRV9BcEhsSUNOZm1feHQwZmJtbmtCTXZxdTVHNVBhRW1jZEtVU1Qza2lwUzlEYjNyOVlWM0xfOXM2RW5tclRUMkNTbG1fcEx6R1lNS1VyVTRNRmNPdEo5VXdOM0xFVEI2SDc2MWxEc2t3Y1U1dVNLMEgzY3NkU0lHVHZRN2xMU0JuTUJBaHpPNjh6Y1haeDRBSFdLWjZPc0w5eWtkVVhOS3N3VlJaeWs4YXRyd2d0cXNjTlBUUEFXMlR4UVJtclE?oc=5",
+      "facts": {
+        "domain": "ANALISNEWS",
+        "topic": "Tanggap darurat daerah",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmisgfbvv95cuxqsg1sbvi3mkrlq2ndzg5pr3nrow4yqnv2r2xaef9or3k3auxxdhkwzu4wrktkltbxnmxws0rks2hvqwlnaehknzzdrtdpbvy1rjbrdflyq3pgvmhibwdkbupguy0tdhnhsllwddhydlnytgvsefvzqmdaqxlrltdgrgppthfvvufatmvadfvqbgnmazlmnwrqvk9",
+      "type": "news",
+      "observedAt": "2026-11-03T16:58:00.000Z",
+      "title": "RSPO tegaskan akuntabilitas dalam tangani krisis karhutla di Indonesia",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-46",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMisgFBVV95cUxQSG1sbVI3MkRLQ2NDZG5pR3NROW4yQnV2R2xaeF9OR3k3aUxXdHkwZU4wRktKLTBxNmxWS0RkS2hVQWlNaEhkNzZDRTdpbVY1RjBrdFlyQ3pGVmhibWdKbUpGUy0tdHNHSllwdDhydlNyTGVSeFVZQmdaQXlrLTdGRGpPTHFVVUFaTmVadFVQbGNmazlMNWRqVk9DSXF3cFdiS0hQZmpfM05hTTQtVWtmOWx30gG0AUFVX3lxTE9FTVRpdzkxQVgyVTl6ZGF1V1QtTjRZMHJNdVBfeUE4TjFNWFlTNk9jQVNxdUJXdkRHMGVkRm84ZGZBcEVpSFZJVG93SGNNVm1hRTA2bnFZdnRnMmhQQTI2VF80Y21uMFliTm5pR2s4UGJ2V0U5OFRmVjNaaXFhMTNLeHhLMXJoS1pYRGFSRVpxYXVKSlZVUEE3UzNlYmFVMGdTY0c3WF94Q1d2NlhCWmkzYUljRw?oc=5",
+      "facts": {
+        "domain": "ANTARA News",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmioafbvv95cuxnwuvirhn4cnpoatj1uxvraf8tazzdykfgcetfqzc2r2psnngyb25woum4vfn1ahvtnljcs3zxrhhzcetmndvgck1wmgzbndlhn242dfnmnwzzbxb1dtjjzkhtav9yefl5bkfbmmutejzwq3jva2lfamflrhjuc0fxywk2u0fsrnzod0jsqunntkt1x2t0rjnzrg5",
+      "type": "news",
+      "observedAt": "2026-11-03T17:13:00.000Z",
+      "title": "Menhut Pasang Plang di Kawasan Bekas Karhutla Demi Cegah Aktivitas Ilegal",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-24",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMioAFBVV95cUxNWUViRHN4cnpoaTJ1UXVraF8tazZDYkFGcEtfQzc2R2pSNngyb25WOUM4VFN1aHVTNlJCS3ZXRHhZcEtMNDVGck1wMGZBNDlHN242dFNMNWZzbXB1dTJJZkhTaV9yeFl5bkFBMmUtejZwQ3Jva2lFamFLRHJUc0FxYWk2U0FsRnZod0JSQUNNTkt1X2t0RjNZRG5UVUFCVFBt0gGjAUFVX3lxTE13cE1NVTFTY0tRVThLZGZUNEJlNnRfYlRWVnhNMks3Rjdnam5adUFMMWtKdzB0WDhaN0Q4NVZFRDd3dzItWWkzdjYtemFOV3AxQ1U0N3A0N0NFQWpYbEdsaGRXbjJGeEJvYXNEeE5oa0JyYlVwQXF6SU1oRWprU0FyQllZSl9MbWQyS2FvdExrSjFoRzd5cnFBU2I1cWN5TU1KTlU?oc=5",
+      "facts": {
+        "domain": "JPNN.com",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmitafbvv95cuxnnzrvuwngewnqbxlct05mm0xvsvq3clowqza4q2mzogxsmhlxyw5pdhpvq1bgr25cbjncngl0c19manzza3zqeufuyuxyngnfzuppwllbq0fcx1jezmjvsepvzljymgt5sjg3r0tizxjybufpx2ewrxjxdhp5nmk0dxvms3lvejl2vu9vnwtodwy1yte2qxu1yxv",
+      "type": "news",
+      "observedAt": "2026-11-03T17:17:00.000Z",
+      "title": "中程度の地震 M4.0 - Celebes Sea, 124 km 北 から Sangihe Besar , インドネシア 2026年11月4日 01:01 (Makassar時間)",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-52",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNNzRVUWNGeWNqbXlCT05mM0xVSVQ3clowQzA4Q2MzOGxSMHlxYW5PdHpvQ1BGR25CbjNCNGl0c19manZza3ZQeUFuYUxyNGNfZUppWllBQ0FCX1JEZmJvSEpvZlJYMGt5Sjg3R0tIZXJYbUFPX2EwRXJXdHp5Nmk0dXVmS3lvejl2VU9VNWtOdWY1YTE2QXU1YXVXNDNrRDRHZFlXV3dZREh5bUFXcUZnVDRGRHc?oc=5",
+      "facts": {
+        "domain": "Volcano Discovery",
+        "topic": "Jepang",
+        "country": "Jepang"
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmisgfbvv95cuxnnxppeektakrxzuvjdeqzd2pfwhleedferglobvnxzhllew9ibe1wnen0njjnv3brdepyunixqwxss1n2vc1olwlybmtnofzhwfvnzvvecffpnxruc1e3se1yrvziuxljeknwuhpnzelzdmu2quhuzf94uhn5ng5lbfdzu3vuagtbmgv2swhucv9rafzzuzhytvo",
+      "type": "news",
+      "observedAt": "2026-11-03T17:18:14.000Z",
+      "title": "PKSS bagikan masker dan susu untuk warga terdampak karhutla di Kalteng",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-45",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMisgFBVV95cUxNNXppeEktakRXZUVJdEQzd2pFWHlEeDFERGlObVNXZHlleW9ibE1wNEN0NjJnV3BrdEpyUnIxQWxSS1N2VC1OLWlybmtnOFZhWFVnZVVEcFFpNXRUc1E3SE1YRVZIUXljekNWUHpNZElZdmU2QUhUZF94UHN5NG5lbFdzU3VuaGtBMGV2SWhUcV9raFZzUzhYTVoyR1BsRXhIaVk0WUhpRnAwSkx4TFRaa0t30gG0AUFVX3lxTE1hNjF0WDY1ZmtpTWZsUGx6UGZoLTlEYWJNUTFVSTNWOTJwckRzUzVuSl9fcEFEdkN2NUJUVFJuNS1PQWd5WUY2OERfdkdyZy1JdU85OVdBdlQ4WWp2OW1wVmlINGN2cnFlUjd0WHUzVUVwZU53cGZUa0VYdVcxUUh6UVMxSVhVaWlYeDlIenNad2JmYUVJZjdyeHNmczBEVEhrZHdrU28tVFphNlFtWlFMeVZnQw?oc=5",
+      "facts": {
+        "domain": "ANTARA News",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmilgfbvv95cuxpqlzvtuu5v1zkn1drb3jvwwrrtdvgzdawshl3tednz1pwmef4tgrqbhvrv3htswj6zgvccxnncnuym2dlys1rtezptc1now94z1nldi1iqwtscdi0el9cq05lquplr201tzu2ohi2b1h5cefrmfvravlrqm5mmth0dgswrgjomkptckfiedlvltjndw1kmhc%3Fo",
+      "type": "news",
+      "observedAt": "2026-11-03T17:40:43.000Z",
+      "title": "Kasus ISPA di Banggai Terus Meningkat Sejak Juli 2026",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-14",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMilgFBVV95cUxPQlZvTUU5V1ZKN1dRb3JVWWRrTDVGZDAwSHl3TEdNZ1pwMEF4TGRQbHVRV3hTSWJ6ZGVCcXNNcnUyM2dlYS1rTEZPTC1NOW94Z1Nldi1IQWtScDI0el9CQ05lQUplR201TzU2OHI2b1h5cEFrMFVraVlrQm5mMTh0dGswRGJOMkpTckFIeDlvLTJNdW1kMHc?oc=5",
+      "facts": {
+        "domain": "Kilasbanggai.com",
+        "topic": "Dampak kesehatan & pendidikan",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmitafbvv95cuxnr0jqagc1b0ffa185aelhtwnbcmvks1lqtmtfx1r4ulzrden1t1mtv2tfsxjpoxo4tg4yyxpitmxzzlniu29ud21hme0twhuyrs1ozmjsd1vtahm4tw40z0tpeflwa1vpelewzwttcehrszzuzmnkvhbiyuwxawzitnpnykzzdkj3r0pvvv9mckfmejludldln1l",
+      "type": "news",
+      "observedAt": "2026-11-03T18:17:17.000Z",
+      "title": "Kualitas Udara Memburuk, DT Peduli Lubuklinggau Bagikan 2.500 Masker",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-53",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNR0JqaGc1b0Ffa185aElHTWNBcmVKS1lQTmtfX1R4UlZrdEN1T1MtV2tfSXJPOXo4TG4yYXpiTmxzZlNIU29ud21hME0tWHUyRS1oZmJSd1VTaHM4TW40Z0tPeFlWa1VpelEwZWttcEhRSzZuZmNkVHBIYUwxaWZITnpnYkZzdkJ3R0pvVV9MckFMejlUdldLN1lJV3RtbTU4Q0lGcl9vYUhvRnJtWU9FY3djb2M?oc=5",
+      "facts": {
+        "domain": "DT Peduli",
+        "topic": "Dampak kesehatan & pendidikan",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmirafbvv95cuxpcxhwwhjxmvnozvbsvk5zx18tcwjkvvm3am8tqwxtanpkcg9jeg5uqllmsljkqtlqeuxfqvfatzyzuktsrdzlnmnwalzpn0tib2i2s1bvdtnhuwpvvmlov2c4rwtwegjjcjjzx0rxsg45vgdslvg1rfjbymvhqufmvf9ocnjkujvkue9ka2owltq0clbmbuc0yvv",
+      "type": "news",
+      "observedAt": "2026-11-03T18:34:44.000Z",
+      "title": "Video: Bukan Cuma Batuk, Asap Karhutla Bisa Picu Bronkitis!",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-37",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMirAFBVV95cUxPcXhwWHJxMVNoZVBSVk5zX18tcWJkVVM3am8tQWxtanpKcG9jeG5UQllmSlJkQTlqeUxfQVFaTzYzUktsRDZlNmNwalZpN0tIb2I2S1BVdTNhUWpVVmloV2c4RWtweGJJcjJZX0RxSG45VGdsLVg1RFJBYmVhQUFmVF9ocnJKUjVKUE9ka2owLTQ0clBmbUc0YVVtcE9rZ21wbnloYmFaRXFHQUpw?oc=5",
+      "facts": {
+        "domain": "20detik",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmiswfbvv95cuxommrlvf9owglvyvdkznlvswxux0p3zjd1culkmvdwzue0vtvay0xqn1fkbgzryzdpudg2dvjvlvm1depnd0jsd0tncdbwwujjwe9pd25qynreswjouehireq4tgezn0vqul83eg5fsxvwani0tdfmdgo1cmhhsnzrmvg0wkwtb3bhnmviu2i3tgdysdfit2e4tmh",
+      "type": "news",
+      "observedAt": "2026-11-03T18:38:37.000Z",
+      "title": "中程度の地震 M4.2 - Indian Ocean, 263 km 南 から Blitar, インドネシア 2026年11月3日 17:51 (GMT +0)",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-47",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMiswFBVV95cUxOMmRLVF9oWGlVYVdKZnlvSWxuX0p3Zjd1cUlkMVdWZUE0VTVaY0xQN1FKbGZrYzdPUDg2dVJVLVM1dEpnd0JSd0tncDBWWUJJWE9Pd25qYnRESWJOUEhIREQ4TGEzN0VQUl83eG5fSXVwanI0TDFMdGo1cmhhSnZRMVg0Wkwtb3BHNmViU2I3TGdYSDFIT2E4Tmh5UXZiTFhUMUVZLW1FWmgxdHZUV2VZRVY2MA?oc=5",
+      "facts": {
+        "domain": "Volcano Discovery",
+        "topic": "Jepang",
+        "country": "Jepang"
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmilwfbvv95cuxqcg5gtgzjnwremnfznkvlutfyaglecwf3znj4zxznqllucs1gnjz0mljhmlvla3p4aluxsdjuujnuywviuzj4surorkrmn0xtx1dfvulzwklyr0h3tehhmgl3og9uze42ufpvrljrevbxbxk3veitnhnkvm4wvvzuzvhebjuxzlrpy1izahk4lupxd0ltahnf%3F",
+      "type": "news",
+      "observedAt": "2026-11-03T18:43:20.000Z",
+      "title": "今日の地震：Kabupaten Mamuju Utara, 西スラウェシ州, インドネシアまたはその付近の最新地震 過去30日間",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-16",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMilwFBVV95cUxQcG5GTGZjNWREMnFZNkVlUTFYaGlEcWF3ZnJ4ZXZnQllUcS1GNjZ0MlJHMlVLa3p4alUxSDJUUjNUYWViUzJ4SURORkRmN0xTX1dfVUlzWklyR0h3TEhHMGl3OG9UZE42UFpvRlJReVBXbXk3VEItNHNkVm4wVVZUZVhEbjUxZlRPY1IzaHk4LUpXd0ltaHNF?oc=5",
+      "facts": {
+        "domain": "Volcano Discovery",
+        "topic": "Jepang",
+        "country": "Jepang"
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmixwfbvv95cuxpddnuwg1euxbrd2x2ejq2umnnyu5hbwtsz1nxyjfcq3hmzva3uuzry0fnqnhezmfsml8zagzuckncajhxagfuchcytkj5elpyawu3zzbqymnbs0rndfm1vhdnanfvrg1wwdb4muh5qvhwautbztriaufbvy1stzaxewhlyuy4rjexytmwbujsrk8xue5tn1v6yjq",
+      "type": "news",
+      "observedAt": "2026-11-03T18:52:05.000Z",
+      "title": "Video: Balita Sulit Pakai Masker, Gimana Agar Tetap Terlindung dari Kabut Asap?",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-75",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMixwFBVV95cUxPdDNuWG1EUXBrd2x2ejQ2UmNnYU5hbWtsZ1NXYjFCQ3hMZVA3UUZRY0FNQnhEZmFSMl8zaGZUckNCajhXaGFUcHcyTkJ5elpYaWU3ZzBQYmNBS0RndFM1VHdnanFvRG1WWDB4MUh5QVhWaUtBZTRiaUFBVy1STzAxeWhLYUY4RjExYTMwbUJsRk8xUE5TN1V6YjQtN3JBVTF2MjRHRl9YZHNBSUdyTE1LdXFab1pIbnFPbFhOaHBuRTh4dDE3dTRV?oc=5",
+      "facts": {
+        "domain": "20detik",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmi1afbvv95cuxpawjstw9rrfnlctbiy0vjsu11wufpttnxa0y1rs1fajljmerqr0tzbf84mwhxqzvvuw5mtdluotzrv0zstk9rqxpwodvprkfpzgnmutdizvhmntlyrtfyrc01nkhotlppugpozhnuztdmq21mt3kzahbguk01ewhxtmnrb05new93oxbweelqz1pdenp1nnizazd",
+      "type": "news",
+      "observedAt": "2026-11-03T20:15:07.000Z",
+      "title": "Asap yang Dinormalisasi: Karhutla 2026 dan Cara Media Bercerita Halaman 1",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-5",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxPaWJsTW9rRFNLcTBiY0VJSU11WUFPTTNXa0Y1RS1FajlJMERQR0tzbF84MWhXQzVvUW5mTDlUOTZrV0ZsTk9rQXpwODVpRkFPZGNmUTdIZVhmNTlYRTFyRC01NkhOTlpPUGpOZHNUZTdmQ21MT3kzaHBGUk01eWhXTmNRb05NeW93OXBweElqZ1pDenp1NnIzazd4ZkpXRzY4U2ZiZEdEQ2hDWXpmSm5lSy1aTF9ja3RhZlp5SFhFWmo0OU9yX2dMdVlZUjJGT3MtQmVqcQ?oc=5",
+      "facts": {
+        "domain": "Kompasiana.com",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmivwfbvv95cuxntktom2tlx2zownbrajd3q0v0qupleelmbnp4wtr1lvlayzd3sefclxvmq1rwm0xqofzxcwlxzzhlt2uzzfpquwt4blzeanozxzfzn01iwdmwewmzckrnnwnxnnjsblz2axjsu21lm1fxtkg4dmm0evq4ndk4tdhqazlzc2z3qnjpmmhwdm9xm3fgczv3x0nzn0n",
+      "type": "news",
+      "observedAt": "2026-11-03T20:28:00.000Z",
+      "title": "Generasi Muda Tangani Karhutla, Angga Aditya Nugraha Bangga: Atas Kesadaran Diri",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-62",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMivwFBVV95cUxNTktoM2tLX2ZoWnBrajd3Q0V0QUpLeElmbnp4WTR1LVlaYzd3SEFCLXVMQ1RwM0xqOFZxcWlxZzhLT2UzZFpqUWt4blZEanozXzFzN01IWDMweWMzckRnNWNxNnJsblZ2aXJSU21lM1FXTkg4dmM0eVQ4NDk4TDhQazlzc2Z3QnJpMmhwdm9xM3FGczV3X0NzN0NOUXZZUGx5QVBvTk1PU0hvaFdsbHNidnc4Q2FiUER6cW5kZ3lyY9IBxAFBVV95cUxOLWh6Qk5Pal9QSlNjbmR2bi1tRFR1T3drd3BrWUlQUE4tcjZKd0p1LXNYeE03OGlNeDBLVFR4T25CRVJFckd5Um04cE1rU0loMElKTzB1bU9mUkNLNlExTHdhbi1Wd1VkWjNLMl9qdTNwQ0FveWp4Q1JBT2NUbFpkZ2ZzN01UdDJzWndON3RMdEtjdXlUNC1mMGFJWENEdnlsalVLOS04NTVKWkRHZ20wbnpJX0JRQWxUMHRVenhJY3ZodU96?oc=5",
+      "facts": {
+        "domain": "gesuri.id",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "earthquake:2026-11-03t20%3A28%3A35%2B00%3A00|-2.08|121.02|4.1",
+      "type": "earthquake",
+      "observedAt": "2026-11-03T20:28:35.000Z",
+      "title": "M4.1 - Pusat gempa berada di darat 61 km utara Luwu Timur",
+      "description": "II - III Morowali Utara",
+      "location": "Pusat gempa berada di darat 61 km utara Luwu Timur",
+      "latitude": -2.08,
+      "longitude": 121.02,
+      "referenceId": "ref-85",
+      "referenceUrl": "https://www.bmkg.go.id/gempabumi",
+      "facts": {
+        "magnitude": 4.1,
+        "depthKm": 6,
+        "tsunami": false,
+        "felt": "II - III Morowali Utara"
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official earthquake record"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmirafbvv95cuxoeuxrttktzkhbml9qreztytzpsg5trtftc2jzdm1zcnz0y3ziegrdzxdlz0hpwmxqq0szdzjhx25nb3zmoxzjqzhbu1hjrnjnskttnlpwog1it2tzbje3sui1sjf3evutwhzia194svvkti12r0fewg4tyvuwlujmtejlcgxxn2z2cwdnqndhsmp0x3rjeuw2t2c",
+      "type": "news",
+      "observedAt": "2026-11-03T20:36:48.000Z",
+      "title": "Karhutla Sumsel Terus Berulang, Fordes Pertanyakan Kegagalan Tata Kelola Pemerintah",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-35",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMirAFBVV95cUxOeUxRTTktZkhBMl9qREZtYTZpSG5tRTFTc2Jzdm1zcnZ0Y3ZieGRDZXdLZ0hpWmxqQ0szdzJhX25nb3ZmOXZjQzhBU1hJRnJnSktTNlpwOG1iT2tzbjE3SUI1SjF3eVUtWHZia194SVVKTi12R0FEWG4tYVUwLUJMTEJlcGxXN2Z2cWdnQndHSmp0X3RjeUw2T2czN1lFVzBpNE9tSXBrZnlrcDZV?oc=5",
+      "facts": {
+        "domain": "rmolsumsel.id",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmiigfbvv95cuxplxbuvenkunrhuniyvwngbtzowenlbklsqxdpagjfehytylzuzmtmv0hmcgu3mxvaywnpzxlkr0f1zw9hdtrnaxz2y3jnrvrzzuoycu1zutlzoeczx1dlov9uvnrpqk8tejllcux2stgxnddlovb5sfjvx19kd3nfdlvqbldgsvnjque%3Foc%3D5",
+      "type": "news",
+      "observedAt": "2026-11-03T20:46:39.000Z",
+      "title": "Over 3,500 killed from Indonesia wildfires’ air pollution",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-11",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMiigFBVV95cUxPLXBuVENKUnRHUnIyVWNGbTZoWENlbklsQXdPaGJfeHYtYlZUZmtMV0hMcGU3MXVaYWNpZXlkR0F1ZW9HdTRNaXZ2Y3JnRVRZZUoycU1ZUTlZOEczX1dLOV9uVnRPQk8tejlLcUx2STgxNDdlOVB5SFJvX19kd3NFdlVqbldGSVNJQUE?oc=5",
+      "facts": {
+        "domain": "Wildfire Today",
+        "topic": "Singapura",
+        "country": "Singapura"
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmixwfbvv95cuxoylvczhbiuefjavr6ogjyotljuuplyulcc3fmvnh1twiyvwnuq2jieg1nvwm2akramznyutbuukywz2pitghxmdliewj3ejryq2zrww1feupxwkdpm2d4q29tdjkwwhz0ze5ma2zazjqtbjv3zxh4avnpa1rqdflfnfe2alcttelnaugtn05twej6uny5x2lzvxq",
+      "type": "news",
+      "observedAt": "2026-11-03T21:03:09.000Z",
+      "title": "Karhutla di Kalimantan Kembali Meningkat, BNPB: Api Tersimpan di Bawah Gambut!",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-73",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMixwFBVV95cUxOYlVCZHBIUEFjaVR6OGJyOTlJUUplYUlCc3FMVnh1TWIyVWNuQ2JieG1nVWM2akRaMzNYUTBuUkYwZ2pITGhxMDlIeWJ3ejRYQ2ZrWW1FeUpxWkdPM2d4Q29TdjkwWHZ0ZE5ma2ZaZjQtbjV3ZXh4aVNpa1RQdFlFNFE2alctTElnaUgtN05tWEJ6UnY5X2lZVXQ0V1ZRTWIwQ1ZuUkFrSW50YjdMaEhuS3Q4enJkT1RJMm5ReWJORW9uNUowdzBR0gHGAUFVX3lxTE9nUVRYQnpjVkd5aGRrRUtiUWYtSTlFdmxQaDN6cnR4ZVU4U3kwN0ZVUXFRVmpuM1o3TVBmbG8wQTRJUG4ycWJ5WFR2MXNwRGJaem1BVjRhYzZnVGhNa2wyRzNqRzBOOUhGbmJIVkxDZGlwc05mRzlweEprbkRWWURHZkRsdUsxVFBhMjQtMHc2QjNzUkRjS0JxdVd2OWw2dHVwS3hJZEtDT1I0VU9Lcmxza0hIOGdqaFV2bzNacG5fSk4tMFZIQQ?oc=5",
+      "facts": {
+        "domain": "news.okezone.com",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmiwafbvv95cuxntw1tulvzrgy3ytv0dgqtuhlbefrkqth1vfzob3h1cjrjt3jfdtjvqlnbce0xyxjvcwpzcfdxd0txys02quzsouzhzvn3unayvvlxddhncmfpou5rcldsufqyatzkevbzyjhls1njsvrwatvitjyzrvu2tevmq01iqxfictzyuuywv3vmshkxenzbbljcdgxxy2s",
+      "type": "news",
+      "observedAt": "2026-11-03T21:20:37.000Z",
+      "title": "Menteri Temukan Kayu Gelondongan dan Ekskavator di Lokasi Karhutla",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-64",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxNTW1tUlVZRGY3YTV0dGQtUHlBeFRkQTh1VFZOb3h1cjRjT3JFdTJvQlNBcE0xYXJvcWpzcFdXd0tXYS02QUZsOUZhZVN3UnAyVVlXdDhncmFPOU5RcldSUFQyaTZKeVBZYjhlS1NJSVRWaTVITjYzRVU2TEVMQ01iQXFicTZYUUYwV3VMSHkxenZBblJCdGxxY2s1TGcxRVpuVzNaWVFHOE5vQW1lZ202VFNNSVRQYW00Z0VyUldGZmE?oc=5",
+      "facts": {
+        "domain": "CenderawasihPos",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "eruption:semeru|2026-11-03t21%3A21%3A00.000z|semeru",
+      "type": "eruption",
+      "observedAt": "2026-11-03T21:21:00.000Z",
+      "title": "Semeru - PVMBG observation-post eruption report",
+      "description": "Terjadi erupsi G. Semeru pada hari Rabu, 04 November 2026, pukul 04:21 WIB. Visual letusan tidak teramati. Erupsi ini terekam di seismograf dengan amplitudo maksimum 25 mm dan durasi 138 detik.",
+      "location": "Semeru",
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-2",
+      "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan",
+      "facts": {
+        "heightM": null,
+        "bearingLabel": null,
+        "durationS": 138
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official eruption report"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmirafbvv95cuxotfy3rxpoczfoeug2nnnkvfnwbtkzzgc3ylh3nkpfzl94envmvjbxovdlugnaqmtzb0vicfzjt1hvswvnevhuwjdxm2tgn2s3bxpprlntwe5jaut3rw5srneyqxdzy1e4ne1gugviqy1nrnv3wtdht1hpnld4cf9xrhpmztlnevo2wv8zaxpxng44r21yatzvc0z",
+      "type": "news",
+      "observedAt": "2026-11-03T21:39:00.000Z",
+      "title": "中程度の地震 M4.1 - マルク海, 67 km 北東 から Pulau Bakalan , インドネシア 2026年11月3日 21:38 (GMT +0)",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-36",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMirAFBVV95cUxOTFY3RXpoczFOeUg2NnNKVFNwbTkzZGc3Ylh3NkpfZl94enVmVjBXOVdLUGNaQmtZb0VIcFZjT1hVSWVneVhUWjdxM2tGN2s3bXpPRlNtWE5jaUt3RW5sRnEyQXdZY1E4NE1GUGVIQy1NRnV3WTdhT1hpNld4cF9xRHpmZTlNeVo2WV8zaXpXNG44R21YaTZvc0ZrcnJyVEVFN2dSdTNfUTMyWWo0?oc=5",
+      "facts": {
+        "domain": "Volcano Discovery",
+        "topic": "Jepang",
+        "country": "Jepang"
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "eruption:semeru|2026-11-03t22%3A05%3A00.000z|semeru",
+      "type": "eruption",
+      "observedAt": "2026-11-03T22:05:00.000Z",
+      "title": "Semeru - PVMBG observation-post eruption report",
+      "description": "Terjadi erupsi G. Semeru pada hari Rabu, 04 November 2026, pukul 05:05 WIB. Visual letusan tidak teramati. Erupsi ini terekam di seismograf dengan amplitudo maksimum 19 mm dan durasi 267 detik.",
+      "location": "Semeru",
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-2",
+      "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan",
+      "facts": {
+        "heightM": null,
+        "bearingLabel": null,
+        "durationS": 267
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official eruption report"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmimafbvv95cuxnd0fnynn1wephwljta3bzwhrcc21cr1bpuznnvxc5mwvkbljidu5wbenbt0frrhvttwgxdtbymhnmrta5ztjpoc0yuu1gev8xtljqd3a2zdrnajlyn3lxd091mmu4ve14u2t2wer0s081tny2dms4t3jxz3i2z2uwvtbjulrfsdbwdfrxyzfxetzveun0q0e5va%",
+      "type": "news",
+      "observedAt": "2026-11-03T22:12:00.000Z",
+      "title": "BMKG Maluku Ingatkan Warga Waspadai Potensi Karhutla",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-17",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMimAFBVV95cUxNd0FnYnN1WEpHWlJta3BzWHRCc21CR1BPUzNNVXc5MWVKblJidU5wbENBT0FRRHVtTWgxdTBYMHNmRTA5ZTJPOC0yUU1GeV8xTlJqd3A2ZDRNajlYN3lXd091MmU4VE14U2t2WER0S081TnY2dms4T3JxZ3I2Z2UwVTBjUlRfSDBwdFRXYzFxeTZveUN0Q0E5VA?oc=5",
+      "facts": {
+        "domain": "RRI.co.id",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmizgfbvv95cuxpcej3cnp0qmvtx012y0tpue1hytc2rnrrtnpmt2zhulfvsfdya21pytz5dkdfujlozgs5s3zfqvbttgfrzefxc1zlnwppchzkqmdjm1dutgxis25gyjfrag55umc4rlvfv295szj2bvmyrgpcbfqtekm5lwlkbmpqu2i0ls11uuvnelj4szg2c1ljd0nhwtlxs1f",
+      "type": "news",
+      "observedAt": "2026-11-03T22:23:32.000Z",
+      "title": "Peringatan Dini BMKG Hujan Indonesia 5-6 November 2026: 11 Wilayah Peringatan Hujan Sedang-Lebat",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-81",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMizgFBVV95cUxPcEJ3cnp0QmVtX012Y0tPUE1hYTc2RnRRTnpMT2ZhUlFVSFdya21PYTZ5dkdFUjlOZGs5S3ZfQVBtTGFrZEFxc1ZLNWpPcHZKQmdjM1dUTGxIS25GYjFraG55Umc4RlVFV295SzJ2bVMyRGpCbFQtekM5LWlKbmpQU2I0LS11UUVNelJ4Szg2c1lJd0NhWTlxS1FwdVpPTlJTaFFJOUFhZWxDQzFqS2dwWGVUSkNoOEQxR1Bmb1FmWnEwaW9QMjVYYlBTYnJ4Zw?oc=5",
+      "facts": {
+        "domain": "https://www.rakyatpos.id/",
+        "topic": "Gempa & tsunami",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmilwfbvv95cuxonnm0v2hpn3fatmjiv0tvtjbxcmjrcefkoufzx241d3njadfiadvyu2vnauxwqw4yrzbpdwdft3htbuvwaw01y0hsr2xgn1rvdwvoaty0agt5rdbzm3ryc0fitjetnm8yrc1seelfuxhneunsdm9srwtacg1cmkw2rtdjvtl4y0nslthsa2rpm1dybdbztvpj%3F",
+      "type": "news",
+      "observedAt": "2026-11-03T23:01:06.000Z",
+      "title": "Karhutla Bagian dari Takdir, Kalimantan Tengah Butuh Pemimpin yang Berempati",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-15",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMilwFBVV95cUxONnM0V2hpN3FaTmJiV0tvTjBxcmJrcEFkOUFzX241d3NJaDFIaDVYU2VnaUxwQW4yRzBpdWdfT3hTbUVwaW01Y0hsR2xGN1RvdWVoaTY0aGt5RDBzM3Ryc0FITjEtNm8yRC1SeElfUXhneUNsdm9sRWtacG1CMkw2RTdjVTl4Y0NSLThsa2RpM1dybDBZTVpJ?oc=5",
+      "facts": {
+        "domain": "PWMU.CO",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbminwfbvv95cuxom1fpotbytdh0m3dyvkjzchjzr1zpwc1myudjx2puvvjmttk3t1uzrejvoen5nmtxt29ebdnpnwq0bta1uvfisxvltgjut1pwqm1eqwdkmhpsmwzvczrqd1jxrjbir0xua2y2og5krxbym3j1m2ytcjltawrnu3q4m0h0tfnnakk5us1pwezzowruuki2vfbqzhe",
+      "type": "news",
+      "observedAt": "2026-11-03T23:03:11.000Z",
+      "title": "Bimpi Restu: Relawan yang Berjibaku dengan Karhutla Sejak 2018",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-22",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMinwFBVV95cUxOM1FpOTBYTDh0M3dyVkJzcHJZR1ZPWC1mYUdjX2puVVJmTTk3T1UzREJVOEN5NmtxT29EbDNPNWQ0bTA1UVFISXVlTGJUT1pwQm1EQWdkMHpsMWZvczRQd1JxRjBIR0xUa2Y2OG5kRXByM3J1M2YtcjltaWRNU3Q4M0h0TFNNakk5US1PWEZZOWRuUkI2VFBQZHEwRVRhUE0?oc=5",
+      "facts": {
+        "domain": "Betahita",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmi0gfbvv95cuxqdlhlri1omtd0rlfrr01ushe2q2xfq09rztrxb3viy3m2mui2chf4cw9llvpvrdvnvwtymkd6rktbx283ajfbmtdjzgnfcep3y3jha1vzqwx4cgl4s0xrahczv0p1n1d1ce5frnjxeu5mwnlsdljpvkxzmxp5aexjmjftmjhjudh6n3dlouutenvor0tpb2xfwmn",
+      "type": "news",
+      "observedAt": "2026-11-03T23:05:00.000Z",
+      "title": "Prakiraan Cuaca BMKG Hari Ini Rabu 4 November: Waspada Hujan Petir dan Kabut di Sejumlah Wilayah",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-4",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxQdlhLRi1OMTd0RlFRR01uSHE2Q2xfQ09RZTRxb3ViY3M2MUI2cHF4cW9lLVpVRDVNVWtYMkd6RktBX283ajFBMTdjZGNfcEp3Y3JHa1VzQWx4cGl4S0xRaHczV0p1N1d1cE5FRnJxeU5MWnlsdlJpVkxzMXp5aExJMjFTMjhjUDh6N3dlOUUtenVoR0tpb2xfWmN3bmJzODBvUUpCZUVlWmFGUUx4WTdhRmU1c3g0UHJRa25qRDJxN2J5TUpQUWNzVzUyZEpyc0MzeHfSAdcBQVVfeXFMTW81Vzg0X0huN1c2WGk4QUtfbmoyZlBfWG10Vmc3eDBBNk5tM0NiMF9iU1FCU1R5dG9ZZFNERWZCdjZQellKYTZtc0JGUDh6MWpscEJ2Wkd2a1E4Q3hsVy1RTnZZdEJzSnZyb2oySVplNU5HVUVQeFZadjVBR2RMLVhSMUxlamJabU1MSkJLd09wRGJSbExNS0E4Q0FaZ2g5LXBPTjBMSnlFZTFfcDQzSE8zU3l4WnVMUEZRQzdLRUpOb2M1cHVCVkdHYnY2LTU2aUg4V3pKUU0?oc=5",
+      "facts": {
+        "domain": "Kompas.tv",
+        "topic": "Gempa & tsunami",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "eruption:ibu|2026-11-03t23%3A10%3A00.000z|ibu",
+      "type": "eruption",
+      "observedAt": "2026-11-03T23:10:00.000Z",
+      "title": "Ibu - PVMBG observation-post eruption report",
+      "description": "Terjadi erupsi G. Ibu pada hari Rabu, 04 November 2026, pukul 08:10 WIT. Visual letusan tidak teramati. Erupsi ini terekam di seismograf dengan amplitudo maksimum 28 mm dan durasi 33 detik.",
+      "location": "Ibu",
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-2",
+      "referenceUrl": "https://magma.esdm.go.id/v1/gunung-api/informasi-letusan",
+      "facts": {
+        "heightM": null,
+        "bearingLabel": null,
+        "durationS": 33
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "official eruption report"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmivafbvv95cuxornj6udm2qllvagzjbxyzbeqydf85nlhxymlnmhj2bnnvqwhpnjjlaupwoxzhsvhsa2vzrkthef9gvw9wyvnmoeqttkd4rjd6zevycvdanzdobgzlsjbwm1r0rlfgnze1mmfmy2xzsmhjyw1zrw94vxrjqji2aexxqlrfvy1kvnhbafm3vffdm0dlegjcym1obgj",
+      "type": "news",
+      "observedAt": "2026-11-03T23:10:36.000Z",
+      "title": "PVMBG mengingatkan masyarakat dan wisatawan patuhi radius bahaya gunung api",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-61",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMivAFBVV95cUxORnJ6UDM2QllvaGZJbXYzbEQydF85NlhxYmlNMHJ2bnNvQWhPNjJLaUpwOXZHSVhSa2VzRktHeF9GVW9WYVNmOEQtTkd4Rjd6ZEVycVdaNzdObGZLSjBwM1R0RlFGNzE1MmFmY2xzSmhJYW1zRW94VXRjQjI2aExXQlRFVy1KVnhBaFM3VFFDM0dLeGJCYm1obGJSYUJpZFJhanh2ckw1WU9zYXVMSHA3Ulo5MHRKLTI0Mmg2Nw?oc=5",
+      "facts": {
+        "domain": "ANTARA News Mataram",
+        "topic": "Gempa & tsunami",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmixgfbvv95cuxnv3o5skjnmeftdk1amzk4ovbiwtytceftb0xcrwzfuedir2y1slnwaxz5bkhqzzryc0qxrwjdzta4n092d01ymldnmuhvbwc4cek2uxrzt1nzdwvjngsyymd5vgduefdqaee4s3vda29fn2hpt0jondvur2toq3b4rkhutgrvzdnzekrwr0ctu1bgrklyqxr2rdl",
+      "type": "news",
+      "observedAt": "2026-11-03T23:15:00.000Z",
+      "title": "9 Wilayah Masih Berpotensi Awas Kekeringan Awal November 2026, Ini Peringatan Dini BMKG",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-72",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMixgFBVV95cUxNV3o5SkJNMEFtdk1aMzk4OVBIWTYtcEFtb0xCRWZfUEdiR2Y1SlNwaXZ5bkhQZzRyc0QxRWJDZTA4N092d01YMldnMUhvbWc4cEk2UXRzT1NzdWVjNGsyYmd5VGdueFdQaEE4S3VDa29fN2hpT0JoNDVuR2tOQ3B4RkhUTGRVZDNZekRwR0ctU1BGRklyQXR2RDlsY3BRWFg0dXlYZkpZc0QxVEtmb3ZVX3FmVU9UbnA4eU9aWExXMUFBM09meVHSAcsBQVVfeXFMUGRjWGZFVFVNbEZaOVh5MjVBcDdkOE43YnVTSkFodjNsV3NwOG1PeDZzUFBZZHpWTmwyNWE5OXRiNmxFWWVMYXhPd3g4MkJ1Yl9KbzJQSmZFdEZkN2k3Y1BPX0c1SWdfNHNkd0dhUmtiNGVidGhHbTAtUzRNNnRFYVpJVDJRUHZwYVkzcFpJZTNfZ0cwV3RLTHlrbVVxbVFBSG01VkJIS3UzZXUwTjdCY3duOXZzUG1FbkdfVnRmTk9ZdjVFR3NRWlQ3VGM?oc=5",
+      "facts": {
+        "domain": "Kompas.tv",
+        "topic": "Gempa & tsunami",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmimwfbvv95cuxpohffzjbuz21huklbzecxzkzdczl1oul1vhb3cwrzcfbmmtf4ddvrsjb4ujjqwefhltzswjvpztjlugpnyjldb0r2udzet2zwdmjqz2ncsvg2emxhty1nrmgzx2rfunh1mfzscklfzedizw9sythoakqxaxzxdeh1tuzvdwxzltdts3dhv25rcw9lrxvzenuxzs0",
+      "type": "news",
+      "observedAt": "2026-11-03T23:17:03.000Z",
+      "title": "DPD RI Desak Penegakan Hukum dan Pemulihan Menyeluruh Dampak Karhutla",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-19",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMimwFBVV95cUxPOHFfZjBUZ21HUklBZEcxZkZDczl1OUl1VHB3cWRZcFBmMTF4dDVrSjB4UjJqWEFhLTZSWjVpZTJLUGpNYjlDb0R2UDZET2ZWdmJQZ2NCSVg2emxhTy1nRmgzX2RFUnh1MFZscklFZEdIZW9SYThOakQxaXZxdEh1TUZVdWxzLTdTS3dhV25rcW9LRXVZenUxZS02Zw?oc=5",
+      "facts": {
+        "domain": "SumselPost",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmirgfbvv95cuxpavi0we5jrnjza3n5cvbhsv9nrxfaswj0tgxndk1vekktyulob3pwowlovnplui1owup6ee1kbwtwbfb3ahvsvnpysxn2qwczqjy0mupyaehuvehkmtnjtgy2elgxd2vyqtd0bkhdzfz5uwlavklpdjbwug14mkztdgjirxfmm0rutkv0clm3nk5mrdrruxlzdmh",
+      "type": "news",
+      "observedAt": "2026-11-03T23:29:00.000Z",
+      "title": "Karhutla di Samarinda Tembus 354 Kejadian, 949 Ha Hangus Terbakar",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-40",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMirgFBVV95cUxPaVI0WE5JRnJZa3N5cVBhSV9nRXFaSWJ0TGxNdk1vekktYUlOb3pWOWloVnplUi1OWUp6eE1kbWtwbFB3aHVsVnpYSXN2QWczQjY0MUpYaEhuVEhkMTNJTGY2elgxd2VyQTd0bkhDZFZ5UWlaVklPdjBWUG14MkZTdGJiRXFmM0RUTkV0clM3Nk5MRDRrUXlZdmhPVV84LTNoa1dtcGpTa09tdy1uV3c?oc=5",
+      "facts": {
+        "domain": "RRI.co.id",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmisafbvv95cuxnejdwadhpael1lun4q2dkwetyntjrntaxwlvxngs5dep0mzvxwmktx1jlrjvku1d0aw9fwejkvlhptnd4b0i4ovc2nvrdaff2tjhfy2tfvnhxs19xmfbtawtfuvnqoglyeghpt3u4d09lr3o4vtzpbgjiedb1aujnvlm1nlbswlpueg1lylbit0tqn3lzd2zyzkt",
+      "type": "news",
+      "observedAt": "2026-11-03T23:30:00.000Z",
+      "title": "BPBD PPU Catat Nihil Karhutla, Distribusi Air Bersih Terus Berjalan",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-42",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMisAFBVV95cUxNejdWaDhpaEl1LUN4Q2dkWEtyNTJRNTAxWlVxNGs5dEp0MzVXWmktX1JLRjVKU1d0aW9FWEJKVlhPTnd4b0I4OVc2NVRDaFF2TjhFY2tFVnhxS19xMFBTaWtfUVNqOGlYeGhpT3U4d09LR3o4VTZpbGJieDB1aUJnVlM1NlBSWlpUeG1LYlBIT0tqN3lZd2ZyZkthajZpalYyZm14RDhueU1PVmExbmZNZw?oc=5",
+      "facts": {
+        "domain": "RRI.co.id",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmipwfbvv95cuxqtunvqnl3u01vqtdjyzflahbtsfvkbkrmtu9kmgtivlzkd2zownfhvdvgu3lrtmc5egjhuuhyutfsyjrqbu85wnfim0ptqmpnztrpdesxvlnsm0h3mvplc3ntedzvruthc3rgbhfomme2c0r2ckrgouljegnqwws1ovdmswrxdnfdqwfxxy1ib3g0a3jozvvry05",
+      "type": "news",
+      "observedAt": "2026-11-03T23:30:00.000Z",
+      "title": "Karhutla Meluas di Sangatta Selatan, 10 Hektare Lahan Hangus",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-30",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQTUNVQnl3U01vQTdjYzFlaHBTSFVKbkRMTU9KMGtIVlZKd2ZOWnFHVDVGU3lRTmc5eGJhUUhYUTFsYjRQbU85WnFIM0ptQmpNZTRpdEsxVlNsM0h3MVplc3NTeDZvRUtHc3RGbHFoMmE2c0R2ckRGOUlJeGNqWWs1OVdMSWRXdnFDQWFXXy1ib3g0a3JOZVVrY05MbUE2TmJfUFVnTEQwaw?oc=5",
+      "facts": {
+        "domain": "RRI.co.id",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbminwfbvv95cuxqr3v5eusxqlnvqwjvrnq5y2w5z3doevywyl9rmdrxehptutbpdtfrdvvhnjflukftlvpwc2lvejfjb2fpvgrpa0t2mutpvum3chdtvnrtrv93yl96bk04ywxfc28xr2n4s1rhq28zrdq1wtnfvujwz3o4zw1ib0t2ctjfewdmrddyc082qwxbexr5bzk5afd0off",
+      "type": "news",
+      "observedAt": "2026-11-03T23:31:00.000Z",
+      "title": "Kebakaran Lahan Dua Hektare Terjadi di Sangatta Utara",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-23",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMinwFBVV95cUxQR3V5eUsxQlNVQWJvRnQ5Y2w5Z3doeVYwYl9RMDRXeHpTUTBPdTFRdVVHNjFLUkFtLVpWc2lVejFjb2FpVGRPa0t2MUtpVUM3cHdTVnRtRV93Yl96bk04YWxfc28xR2N4S1RHQ28zRDQ1WTNFVUJwZ3o4ZW1Ib0t2cTJFeWdmRDdYc082QWxBeXR5bzk5aFd0OFFObl95M2M?oc=5",
+      "facts": {
+        "domain": "RRI.co.id",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmiwgfbvv95cuxqrv9nzuhubmvoalreowpyz1oxqzi4emdguvb6awpzskvmv0dtwc1jodlgwu5mdxvirlezvkjfcwruzvdprvh6dm5xb2padguwwhext3u0suthvhhlbfb6defwaks4bfvysdc5tmrtemfsodnyehzgslnatzzyeti4teu4sgjuvnrny0tpvxziq0nsa1l2dm1im2t",
+      "type": "news",
+      "observedAt": "2026-11-03T23:35:00.000Z",
+      "title": "BMKG Prediksi 22 Wilayah Berpotensi Diguyur Hujan Hari Ini",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-65",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxQRV9NZUhUbmVOalREOWpyZ1oxQzI4emdGUVB6aWpzSkVmV0dTWC1jODlGWU5MdXViRlEzVkJfcWRUZVdPRVh6dm5Xb2padGUwWHExT3U0SUtHVHhLbFB6dEFWaks4bFVySDc5TmRTemFsODNyeHZGSlNaTzZYeTI4TEU4SGJuVnRNY0tPVXZIQ0Nsa1l2dm1iM2tGN3pGcU11SXFrMGo2UGdFSU51OURBOGxXUGd6NUw1M1dVVGtuQnJfUdIBxwFBVV95cUxPMnpzRVozWUFoNDJVR2xSb2NQRXJvNDJpa3ozS2I3Z3MzbngtQjJKRVRoY1ZGTzQ2RTFINGhpSTNwQXVxM0YwbHlJaEY3Si0ycVNwSC1UNExQSWdpc2l6RjRPb3ZzUkNjNmNPUFlkM3VjSk1FQWdSb21YWUZpUXdVcGJCWGNJWklTZ3ByWVpFVlIwcTFmZFJZYnhieDRHS2MxT2ozLVM5ZGNDNU5rcFVoVWFyU0JpTFllMExhcENqZGhKQjZwcHNN?oc=5",
+      "facts": {
+        "domain": "CNN Indonesia",
+        "topic": "Gempa & tsunami",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmixwfbvv95cuxpbxniyllnvvrny0rnqlb2dwt5otbjrwvzy2dzmxrfeg45mzfjvnuycdnobkpeunflwuhxvmzcu0u1vmu2m3jcbuloaulldfzfndhfu3b5d3libnvlcxrfyzfls2mwuhu4z3brm3byuev5cgh3mgnowwhdt0q2v2fsvvrmmdjna044cvnrr1jioec3znnin1dldmv",
+      "type": "news",
+      "observedAt": "2026-11-03T23:40:00.000Z",
+      "title": "Raksasa Nuklir Asia Diselimuti Kabut Asap, Jadi Polusi Tertinggi Dunia",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-74",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMixwFBVV95cUxPbXNiYllNVVRNY0RNQlB2dWt5OTBJRWVZY2dzMXRfeG45MzFjVnUycDNobkpEUnFlWUhXVmZCU0U1VmU2M3JCbUloaUlLdFZfNDhFU3B5d3libnVlcXRfYzFLS2MwUHU4Z3BrM3ByUEV5cGh3MGNoWWhDT0Q2V2FSVVRMMDJNa044cVNRR1JiOEc3ZnNiN1dldmVJam51TXJkRDFzcVlTTWZsd3I0THFjeUpCeGw1bFlvNHFuWHVMWmtQRmhGVWcw0gHMAUFVX3lxTFBVMlFtWWlKMW9US3ROLUVnNXNLOG9xcS0wRHpOWkVlOG1ib2hzbi1PSjN2TUdPa051WjlPWk9vUnk1Uk8zNjhIUFpNejBhRlJSNHVpQWpRVlk5OUliQlpJeHFzV3FnOUlhQlYwTUY4cFV5Mi1tMUNneUNSOWVSSWdmbklkdl9rejN6X0lhQVNrZFN1bTRObDUxU2l0X2xPcjBvbVBjdXgwQlJFcVF3YWhmRTNEUUlKRm5nOTlINnE5dWRzZ18waFlULUNjUw?oc=5",
+      "facts": {
+        "domain": "CNBC Indonesia",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmiswfbvv95cuxqs1vacxbfreszzwxurezqnwhuu0dymxjubgndrla5uehves1antewrc1wwhbqohruaudurjr2smjwmxbsm092n1lxt2tgltlgmjzgykc1mlpjegf4uhkxms1utvu1etrwahb4t2jgbm9mugpprgzraexlczz4zenkr3bkuzfoclvvzy01a3rzvffyuu9fuudvruz",
+      "type": "news",
+      "observedAt": "2026-11-03T23:49:00.000Z",
+      "title": "Kapolda Kalsel Apresiasi Peran GAPKI dalam Penanggulangan Karhutla",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-51",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQS1VacXBfREszZWxUREZQNWhUU0dyMXJUbGNDRlA5UEhveS1aNTEwRC1wWHBqOHRuaUduRjR2SmJWMXBSM092N1lxT2tGLTlGMjZGYkc1MlpJeGF4UHkxMS1UTVU1eTRwaHB4T2JGbm9MUGppRGZRaExlczZ4ZENKR3BKUzFOclVVZy01a3RzVFFYUU9fUUdvRUZpYXg2emZBZkM5dWZlbnJDdE9nMFpnd0hiQQ?oc=5",
+      "facts": {
+        "domain": "RRI.co.id",
+        "topic": "Kejadian & titik api",
+        "country": ""
+      },
+      "wordingIsSourceOriginal": true,
+      "recordKind": "media headline; not independently verified by this feed"
+    },
+    {
+      "id": "news:https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2Fcbmitwfbvv95cuxnadg0tzbicgtlbzj6mevfodlksuzfzlzqetbyv3pqowpmv1yzy0nqltlnelfmwnn0nwrvu3r2z2vfvc1ruks3wxlzyvfktvloqwlsmknmm1rref8zavvtbunkcgu1q0dfykgyvfm1ndvbx3fbcxbmzwlzumzfdfzpovhrq1nvutgwte9kotb1ywzyowdtywlsm0h",
+      "type": "news",
+      "observedAt": "2026-11-03T23:51:00.000Z",
+      "title": "Singapura Siap Tindak Tegas Pelaku Karhutla saat Pimpin ASEAN 2027",
+      "description": "",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "referenceId": "ref-57",
+      "referenceUrl": "https://news.google.com/rss/articles/CBMitwFBVV95cUxNaDg0TzBicGtLbzJ6MEVfODlkSUZFZlZQeTBYV3pqOWpmV1YzY0NQLTlNelFMWnN0NWRvU3R2Z2VfVC1RUks3WXlZYVFKTVloQWlsMkNmM1RreF8zaVVtbUNKcGU1Q0dfYkgyVFM1NDVBX3FBcXBMZWlZUmZFdFZpOVhRQ1NVUTgwTE9KOTB1YWZYOWdTYWlSM0hyd09oV1lHNENURXlDZ3NNZmF3MVQzbTk1ZlNIN1E?oc=5",
+      "facts": {
+        "domain": "RRI.co.id",
         "topic": "Kejadian & titik api",
         "country": ""
       },
@@ -1265,7 +2390,7 @@
       "publishedAt": "2026-10-22T09:48:00.000Z",
       "summaryId": "Kabut asap lintas batas sedang hingga pekat dilaporkan di sebagian Semenanjung Malaysia, Kalimantan, Sumatra dan Sarawak selatan. Kabut juga diamati di bagian Papua, Maluku dan Sulawesi.",
       "summaryEn": "Moderate to dense transboundary smoke haze was reported over parts of Peninsular Malaysia, Kalimantan, Sumatra and southern Sarawak. Haze was also observed over parts of Papua, Maluku and Sulawesi.",
-      "referenceId": "ref-44",
+      "referenceId": "ref-84",
       "referenceUrl": "https://wis2.asmc.asean.org/regional-haze-situation/",
       "inReportPeriod": false,
       "carryForward": true
@@ -1277,7 +2402,7 @@
       "publishedAt": "2026-10-22T10:00:00.000Z",
       "summaryId": "Kabut asap dari Kalimantan dan Sumatra teramati di kawasan sekitar Singapura. Sebagian berada di lapisan lebih tinggi, dengan pencampuran terbatas ke permukaan.",
       "summaryEn": "Smoke haze from Kalimantan and Sumatra was observed over the surrounding region. Some haze was at higher altitudes above Singapore, with limited mixing to surface levels.",
-      "referenceId": "ref-48",
+      "referenceId": "ref-88",
       "referenceUrl": "https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-22-october-2026",
       "inReportPeriod": false,
       "carryForward": true
@@ -1289,7 +2414,7 @@
       "publishedAt": "2026-10-21T08:35:00.000Z",
       "summaryId": "Siaran resmi BMKG menyatakan citra satelit melihat asap sesaat memasuki Jawa bagian barat, termasuk Jabodetabek, pada 16 Okt dan mulai menjauh pada 17 Okt.",
       "summaryEn": "BMKG's official release says satellite imagery briefly showed smoke entering western Java, including Greater Jakarta, on Oct 16, and moving away on Oct 17.",
-      "referenceId": "ref-46",
+      "referenceId": "ref-86",
       "referenceUrl": "https://www.bmkg.go.id/siaran-pers/bmkg-asap-sempat-terpantau-sesaat-di-jabodetabek-kini-sudah-menjauh",
       "inReportPeriod": false,
       "carryForward": true
@@ -1301,7 +2426,7 @@
       "publishedAt": "2026-10-22T12:06:00.000Z",
       "summaryId": "Angka kasus ISPA adalah laporan kesehatan kumulatif, bukan jumlah penduduk terpapar dan bukan batas plume.",
       "summaryEn": "ARI case counts are cumulative health reports, not counts of exposed people or plume boundaries.",
-      "referenceId": "ref-47",
+      "referenceId": "ref-87",
       "referenceUrl": "https://www.kemkes.go.id/id/kemenkes-kirim-tambahan-masker-rumah-oksigen-diperluas-hadapi-karhutla",
       "inReportPeriod": false,
       "carryForward": true
@@ -1337,6 +2462,24 @@
     },
     {
       "id": "ref-4",
+      "publisher": "Kompas.tv",
+      "title": "Prakiraan Cuaca BMKG Hari Ini Rabu 4 November: Waspada Hujan Petir dan Kabut di Sejumlah Wilayah",
+      "url": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxQdlhLRi1OMTd0RlFRR01uSHE2Q2xfQ09RZTRxb3ViY3M2MUI2cHF4cW9lLVpVRDVNVWtYMkd6RktBX283ajFBMTdjZGNfcEp3Y3JHa1VzQWx4cGl4S0xRaHczV0p1N1d1cE5FRnJxeU5MWnlsdlJpVkxzMXp5aExJMjFTMjhjUDh6N3dlOUUtenVoR0tpb2xfWmN3bmJzODBvUUpCZUVlWmFGUUx4WTdhRmU1c3g0UHJRa25qRDJxN2J5TUpQUWNzVzUyZEpyc0MzeHfSAdcBQVVfeXFMTW81Vzg0X0huN1c2WGk4QUtfbmoyZlBfWG10Vmc3eDBBNk5tM0NiMF9iU1FCU1R5dG9ZZFNERWZCdjZQellKYTZtc0JGUDh6MWpscEJ2Wkd2a1E4Q3hsVy1RTnZZdEJzSnZyb2oySVplNU5HVUVQeFZadjVBR2RMLVhSMUxlamJabU1MSkJLd09wRGJSbExNS0E4Q0FaZ2g5LXBPTjBMSnlFZTFfcDQzSE8zU3l4WnVMUEZRQzdLRUpOb2M1cHVCVkdHYnY2LTU2aUg4V3pKUU0?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T23:05:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-5",
+      "publisher": "Kompasiana.com",
+      "title": "Asap yang Dinormalisasi: Karhutla 2026 dan Cara Media Bercerita Halaman 1",
+      "url": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxPaWJsTW9rRFNLcTBiY0VJSU11WUFPTTNXa0Y1RS1FajlJMERQR0tzbF84MWhXQzVvUW5mTDlUOTZrV0ZsTk9rQXpwODVpRkFPZGNmUTdIZVhmNTlYRTFyRC01NkhOTlpPUGpOZHNUZTdmQ21MT3kzaHBGUk01eWhXTmNRb05NeW93OXBweElqZ1pDenp1NnIzazd4ZkpXRzY4U2ZiZEdEQ2hDWXpmSm5lSy1aTF9ja3RhZlp5SFhFWmo0OU9yX2dMdVlZUjJGT3MtQmVqcQ?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T20:15:07.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-6",
       "publisher": "Harian Jatim",
       "title": "Asap Melintasi Batas Negara, Siapa yang Bertanggung Jawab atas Krisis Kebakaran Hutan di Kalimantan?",
       "url": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxQazJOcEIwRHdJU0lMa3VlVG1Kb1FqRmVxUjV4SHNJWkFHa1JlUEt2WkpoZExMclhWb3NqdFJ1YlF0a2s1OHpzNkdPaGVEM2phVFFOWTNjMVJOUkVTMGFEVVRudG1WT3RHakREMlFwam02aDl2ZlVoTzU4T24tSnZDSWxZWG9pNjFCZmtCSm5PSlNCbXVkNjN2WXZQLW5LaGEwTzhFNU1hcnFyTXpjLTlHMDdZenRUZ1NuT05zd3JOZEVVVi05bERkTl9PU25fNENjaVpBWg?oc=5",
@@ -1345,7 +2488,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-5",
+      "id": "ref-7",
       "publisher": "BMKG",
       "title": "Evaluasi OMC 2026, BMKG Tekankan Pelaksanaan Operasi Berbasis Peringatan Dini untuk Antisipasi Bencana Hidrometeorologi - Berita Utama",
       "url": "https://news.google.com/rss/articles/CBMi2gFBVV95cUxNZ1V2aGRtZnY1NjA0RDNhcV9UMVFEWmkxd1ZQX2VPSk5GOTk3YXN4VjQ2UVRPMGVpdnA5ZjVzbjROam11eHhRTTNZaDV0b1BULUNGck56ZGZzeVduMWhJTjVTUC1oTUt5eW54d2hVbXMzYUpZUzdTTFl4em5OSXVJY2lKVGpzcEV0NHl0UWF5OHMtTVVJRkQzbFJTSk1kZ09PWV9zRkl3ejI5NlBxTEZTOS1Hd3RfZXBmTnhKUDVmbm9pNHhJTXB2a0RpT3hWQkZKRVljVGZmZ01SZw?oc=5",
@@ -1354,7 +2497,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-6",
+      "id": "ref-8",
       "publisher": "Tribratanews Polda Sumsel",
       "title": "Cegah Kebakaran Hutan dan Lahan, Polsek BP Peliung Gencarkan Sosialisasi dan Pasang Spanduk Imbauan",
       "url": "https://news.google.com/rss/articles/CBMi3gFBVV95cUxONjh1OTlkREtpZnB0bldfMW15UGVMb0tTNjhWeWkycGtscFVOamQ3aVcxSjlLeWtENW5IcXRNdThOMVRmbnZFWkJCYTVvcENrNTRKQ2VnaFB6bGhLSmlpenNnbVZWRHA5c3AyazNBX2V4aDhWYlRLdHk3TXd0ZXZtUVg4RUljSEl0eUp4YXVuRm04SkJBbkpBd0RTY0FHbTJ3OWlIdTBUNnpwYV9RRGRGSnlLRnczXzhROVJEc2ZHZDRSOURvMzBrX0tPc0RFel9rWnFqWTNJZlpLSmxMdnc?oc=5",
@@ -1363,7 +2506,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-7",
+      "id": "ref-9",
       "publisher": "Tribratanews Polda Sumsel",
       "title": "Polres Ogan Ilir melalui Polsek Pemulutan Bersama 3 Pilar Gencarkan Patroli dan Himbauan Cegah Karhutla",
       "url": "https://news.google.com/rss/articles/CBMi5AFBVV95cUxPWTM4RU52NG5UbFBfVS1SQWZGWjZ1Mjl1QnpKUDRWOFlhbFFmb2ZXcVBfZW9XNFgxaHNSUi1ZN2ZyeTcyaTVLSExKZzE2bGkxLTM3R0Vtb0FIRm1MMDNBTHI5TXpUNVp5UU1tWjFmS3ZQUUhXelJJb3NXRWxEXzU1UnIyTFNVbjZyd0VvNkxKTnJEZHZfajNHa1N1TVVpN2NlSi1uTURzUGJJMHJvRXJITW5Ed1BhWVVFNjR1Yl8teGxmbjZoSDlpQzRSYzJ4RGtQNGRfZ3BEUEE2dlFVQmFwclAyT2o?oc=5",
@@ -1372,7 +2515,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-8",
+      "id": "ref-10",
       "publisher": "Demokratis.co.id",
       "title": "Karhutla Papua Selatan Ancam Habitat Satwa dan Burung Migran",
       "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE9ObUZCTjA4eHg5RDFnTmlyYXhsenZ1X0dkLTk4ZE9zRmdDSHVXSjdSR29RSHNuUnB5NkFzTE5YR2c3S0p2Z200VndFR3d0Ty1oRDJaMlQzSnRsOGd3WFV3NjF6ZkZiSzlMemIzNXdZcTZFODVUdXc?oc=5",
@@ -1381,7 +2524,25 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-9",
+      "id": "ref-11",
+      "publisher": "Wildfire Today",
+      "title": "Over 3,500 killed from Indonesia wildfires’ air pollution",
+      "url": "https://news.google.com/rss/articles/CBMiigFBVV95cUxPLXBuVENKUnRHUnIyVWNGbTZoWENlbklsQXdPaGJfeHYtYlZUZmtMV0hMcGU3MXVaYWNpZXlkR0F1ZW9HdTRNaXZ2Y3JnRVRZZUoycU1ZUTlZOEczX1dLOV9uVnRPQk8tejlLcUx2STgxNDdlOVB5SFJvX19kd3NFdlVqbldGSVNJQUE?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T20:46:39.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-12",
+      "publisher": "ANALISNEWS",
+      "title": "KAPOLSEK KAPUAS HILIR PIMPIN GIAT PATROLI TANGGAP DARURAT KARHUTLA DI WILKUM POLSEK KAPUAS HILIR BERSAMA TIM POSLAP KEC. KAPUAS HILIR",
+      "url": "https://news.google.com/rss/articles/CBMijgJBVV95cUxQdXJCb2RiM3ljOG9FQllXN0dNTWVHOVFZbzktWDVRSmZTRVotSFRFYTdWcy1iR3pBV3h3b1dCbFpURzFScUh4ZTc3M1JKQngyRV9BcEhsSUNOZm1feHQwZmJtbmtCTXZxdTVHNVBhRW1jZEtVU1Qza2lwUzlEYjNyOVlWM0xfOXM2RW5tclRUMkNTbG1fcEx6R1lNS1VyVTRNRmNPdEo5VXdOM0xFVEI2SDc2MWxEc2t3Y1U1dVNLMEgzY3NkU0lHVHZRN2xMU0JuTUJBaHpPNjh6Y1haeDRBSFdLWjZPc0w5eWtkVVhOS3N3VlJaeWs4YXRyd2d0cXNjTlBUUEFXMlR4UVJtclE?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T16:55:43.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-13",
       "publisher": "RM.ID",
       "title": "Persib Ajak Bobotoh Donasi Korban Karhutla",
       "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxQT3ZfNEQ3eEJMZkdMdGlWak8tVTduWVNkVmRqMWMzOVdnNEFWTHVON0VrX05GLW1HSldTX1JNcmU1Y0plWFA5aWtHX0J3bDhreHFrbHVRQ1VTMDlUa1dCYkdVTTYwV2FobU5UT2ZtY2xibE9kd2g0d1lyZFRFalNNT1h0SEVBbjJxZmRjN2JFMA?oc=5",
@@ -1390,7 +2551,43 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-10",
+      "id": "ref-14",
+      "publisher": "Kilasbanggai.com",
+      "title": "Kasus ISPA di Banggai Terus Meningkat Sejak Juli 2026",
+      "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxPQlZvTUU5V1ZKN1dRb3JVWWRrTDVGZDAwSHl3TEdNZ1pwMEF4TGRQbHVRV3hTSWJ6ZGVCcXNNcnUyM2dlYS1rTEZPTC1NOW94Z1Nldi1IQWtScDI0el9CQ05lQUplR201TzU2OHI2b1h5cEFrMFVraVlrQm5mMTh0dGswRGJOMkpTckFIeDlvLTJNdW1kMHc?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T17:40:43.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-15",
+      "publisher": "PWMU.CO",
+      "title": "Karhutla Bagian dari Takdir, Kalimantan Tengah Butuh Pemimpin yang Berempati",
+      "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxONnM0V2hpN3FaTmJiV0tvTjBxcmJrcEFkOUFzX241d3NJaDFIaDVYU2VnaUxwQW4yRzBpdWdfT3hTbUVwaW01Y0hsR2xGN1RvdWVoaTY0aGt5RDBzM3Ryc0FITjEtNm8yRC1SeElfUXhneUNsdm9sRWtacG1CMkw2RTdjVTl4Y0NSLThsa2RpM1dybDBZTVpJ?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T23:01:06.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-16",
+      "publisher": "Volcano Discovery",
+      "title": "今日の地震：Kabupaten Mamuju Utara, 西スラウェシ州, インドネシアまたはその付近の最新地震 過去30日間",
+      "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxQcG5GTGZjNWREMnFZNkVlUTFYaGlEcWF3ZnJ4ZXZnQllUcS1GNjZ0MlJHMlVLa3p4alUxSDJUUjNUYWViUzJ4SURORkRmN0xTX1dfVUlzWklyR0h3TEhHMGl3OG9UZE42UFpvRlJReVBXbXk3VEItNHNkVm4wVVZUZVhEbjUxZlRPY1IzaHk4LUpXd0ltaHNF?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T18:43:20.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-17",
+      "publisher": "RRI.co.id",
+      "title": "BMKG Maluku Ingatkan Warga Waspadai Potensi Karhutla",
+      "url": "https://news.google.com/rss/articles/CBMimAFBVV95cUxNd0FnYnN1WEpHWlJta3BzWHRCc21CR1BPUzNNVXc5MWVKblJidU5wbENBT0FRRHVtTWgxdTBYMHNmRTA5ZTJPOC0yUU1GeV8xTlJqd3A2ZDRNajlYN3lXd091MmU4VE14U2t2WER0S081TnY2dms4T3JxZ3I2Z2UwVTBjUlRfSDBwdFRXYzFxeTZveUN0Q0E5VA?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T22:12:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-18",
       "publisher": "Prohealth.id",
       "title": "Konsesi Sawit Anggota RSPO Terdeteksi Terbakar, Geopix Desak Sanksi Tegas",
       "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxOcFM0c2lQcktBTkNib0VIanpQa0o2eElTUy1XZElmbV9tUkNyRDlTM0JlaGE2eXdwSXNxZnEtY1QxSGRRNVNneC1EZE9ienRpYnNTMVJud0xGSFdUZFVMY1NmazlpZHhuaVFvNmpmLVlUYUVsV0YwQ2JmQnluS2gyZmZJR2daNGNvNWxEakJxSkRPVHU3eFF0V2VB?oc=5",
@@ -1399,7 +2596,16 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-11",
+      "id": "ref-19",
+      "publisher": "SumselPost",
+      "title": "DPD RI Desak Penegakan Hukum dan Pemulihan Menyeluruh Dampak Karhutla",
+      "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxPOHFfZjBUZ21HUklBZEcxZkZDczl1OUl1VHB3cWRZcFBmMTF4dDVrSjB4UjJqWEFhLTZSWjVpZTJLUGpNYjlDb0R2UDZET2ZWdmJQZ2NCSVg2emxhTy1nRmgzX2RFUnh1MFZscklFZEdIZW9SYThOakQxaXZxdEh1TUZVdWxzLTdTS3dhV25rcW9LRXVZenUxZS02Zw?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T23:17:03.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-20",
       "publisher": "Papuanewsonline.com",
       "title": "TNI Semai 2 Ton NaCl Untuk Dukung Penanganan Karhutla Di Papua Selatan",
       "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxNWkM2MUNMYlMtaVFfbkFOUDhPSUlwd1NIdDh5Ulk2OHV3X0IwTDdzWWFBRnN4dFZkeTFHVGpJWnNGYURBakJkUmNfbnRfU3V2VTRmd3ZzQ1g2d0lYQVlsWHR0VW1wZjRySTdBN1k1dVV2bjBkOVAxUWpiR1I5Q0hjVXA2VkhjWkVjb3hIQmpYck4tTGZJdzdKc1NCVUxmdVU?oc=5",
@@ -1408,7 +2614,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-12",
+      "id": "ref-21",
       "publisher": "Betahita",
       "title": "Kerugian Akibat Karhutla 2026 hingga Oktober Ditaksir Rp565 T",
       "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxOLUNJRk9SWEV2UUEyWkpyY3hQR0o4Ukdzc0dGZXdFVl9Ld3c3d3REcko0c1hDc2dvRU92T2VjZnozQXpkVGczVmprbk5PX21WajZUMUpuUkY5NWZHVkNTdmNzNy1pX0dSLTJyUFJGc1N0SlZrVXFHRGYxTHhIVnpJQUlHeVNRWU9pNmpSNGxrRC05ZWszVG1YbGNzTHhYYTg?oc=5",
@@ -1417,7 +2623,34 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-13",
+      "id": "ref-22",
+      "publisher": "Betahita",
+      "title": "Bimpi Restu: Relawan yang Berjibaku dengan Karhutla Sejak 2018",
+      "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxOM1FpOTBYTDh0M3dyVkJzcHJZR1ZPWC1mYUdjX2puVVJmTTk3T1UzREJVOEN5NmtxT29EbDNPNWQ0bTA1UVFISXVlTGJUT1pwQm1EQWdkMHpsMWZvczRQd1JxRjBIR0xUa2Y2OG5kRXByM3J1M2YtcjltaWRNU3Q4M0h0TFNNakk5US1PWEZZOWRuUkI2VFBQZHEwRVRhUE0?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T23:03:11.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-23",
+      "publisher": "RRI.co.id",
+      "title": "Kebakaran Lahan Dua Hektare Terjadi di Sangatta Utara",
+      "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxQR3V5eUsxQlNVQWJvRnQ5Y2w5Z3doeVYwYl9RMDRXeHpTUTBPdTFRdVVHNjFLUkFtLVpWc2lVejFjb2FpVGRPa0t2MUtpVUM3cHdTVnRtRV93Yl96bk04YWxfc28xR2N4S1RHQ28zRDQ1WTNFVUJwZ3o4ZW1Ib0t2cTJFeWdmRDdYc082QWxBeXR5bzk5aFd0OFFObl95M2M?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T23:31:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-24",
+      "publisher": "JPNN.com",
+      "title": "Menhut Pasang Plang di Kawasan Bekas Karhutla Demi Cegah Aktivitas Ilegal",
+      "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxNWUViRHN4cnpoaTJ1UXVraF8tazZDYkFGcEtfQzc2R2pSNngyb25WOUM4VFN1aHVTNlJCS3ZXRHhZcEtMNDVGck1wMGZBNDlHN242dFNMNWZzbXB1dTJJZkhTaV9yeFl5bkFBMmUtejZwQ3Jva2lFamFLRHJUc0FxYWk2U0FsRnZod0JSQUNNTkt1X2t0RjNZRG5UVUFCVFBt0gGjAUFVX3lxTE13cE1NVTFTY0tRVThLZGZUNEJlNnRfYlRWVnhNMks3Rjdnam5adUFMMWtKdzB0WDhaN0Q4NVZFRDd3dzItWWkzdjYtemFOV3AxQ1U0N3A0N0NFQWpYbEdsaGRXbjJGeEJvYXNEeE5oa0JyYlVwQXF6SU1oRWprU0FyQllZSl9MbWQyS2FvdExrSjFoRzd5cnFBU2I1cWN5TU1KTlU?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T17:13:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-25",
       "publisher": "Mongabay.co.id",
       "title": "Konsesi Sawit Anggota RSPO Alami Kebakaran, Sistem Uji Tuntas Lemah?",
       "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxOWjVZMGF5N1AtejZiUEVnNVhvX3UxMDk5VWowa3IwSDB6YkJCSExpYS1MM292cmR4U1h0azZlTjBHR1dIM3IxVVdqTU44NnZORW5hTUcxR050UURXSXRXNW16d3NKRk51Y3NGblhYMm1meUxSMk54cG5ieWhVYk1iODl4UG5naGo4QTkwMGhBYlBMYjA5a1dIY1I4RFI1TnQ5R3Iw?oc=5",
@@ -1426,7 +2659,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-14",
+      "id": "ref-26",
       "publisher": "Merah Putih",
       "title": "BNPB Kerahkan Modifikasi Cuaca untuk Tekan Karhutla Papua Selatan",
       "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxNODMzd24tZVNHV1ZYX3VrUlFGMGJwbTY3aE9rU1BMQjlBT3dab283ODZFS0RmZFRpOVg2MHNrUkljei1hTERPbUpXV1lSZUEwY2JNVVU4N2R4S1pwSkJDMkpZRWVWQ1g2cDFSdVRJVjVGV1FaVEI4VEJBLUIyTzR1MjlZX1JzWEFiejZFblZOVWdHVF9QaVB3MkVZaGpFNWpyeC1oWQ?oc=5",
@@ -1435,7 +2668,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-15",
+      "id": "ref-27",
       "publisher": "MerahPutih",
       "title": "Prakiraan Cuaca BMKG Selasa 3 November 2026: Hujan Guyur Banyak Kota, Gelombang Tinggi Perlu Diwaspadai",
       "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxPeEwtT3VpR2dzcWRhRzN5YWdZajlmUXdOUHlqejloUXo3Mzg0YjNXUzNiVDE1LXZzN1oyWkkwM3RqbnY1dGprMjNEblBrc2RET0pZaWk5N1JCNUJtZnQ1V1pOYkgyZDh4X2QwNllSZ3hqRjBhUENzTF9mM2hEbWtaaWp1dGFHVHRrM2N3cUlxbXkzSkJ1WVlyOUNMMHE4NXo2TlZQSdIBowFBVV95cUxPLWc3cjVqLWxmNHVuckhVQkplb2MxQXpNT2x3cHRoTmQzMWhnX2tsNWViZGdkNTdQQnVxQXZhLUZyR2d3VTJUd3N2LXhDM1k2bm1BWVk2MnlGcVlENEE0YzZRNnBpZWZqcTQxUUpvU01STWV6anRlaHhVdEdKa0R5dG5YbngwZUZzUnBRRmM4SllzYm1ZaUQxSnUyYXFqYjNtOXlv?oc=5",
@@ -1444,7 +2677,16 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-16",
+      "id": "ref-28",
+      "publisher": "JPNN.com",
+      "title": "Hubungan dengan Negara Tetangga Terdampak Kebakararan Karhutla, ASEAN Bisa Apa?",
+      "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxPYWViam45VENXN1A3ZUQwS1puNGdrTE90V3RqbVFVZ25qamIzVXlfb29qaXJkQ3RlVFZ1Z3Q0WjZSbXdocmFkRllib3YyYVJPWmFVbDdSaU14dzhwY0FxeG1IUWtRWFN6RHY1WTBoYnVuOHZpQ1Yzc0xUWGRCZ2pEakl6SFVESnFMYVpSeDBQVThaUzlhWUltaUtlTVdNWFcwOXM5c29n?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T16:48:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-29",
       "publisher": "RRI.co.id",
       "title": "Karhutla Samarinda Capai 347 Kejadian hingga November 2026",
       "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxQRjdIY3lPbXlYYkJKdnZ5UXRZSHNCa3dlaElDdWZrYlhjMTVFMmRiRGVOYWlnYlZHUVVCZWhINHo2TjNDRTZvN2V2bENZSGo3OE9GeGpMZEh4ampXWDRLa3dWMGdJbE50a1U1bjhTZUFZaEtSOXdhSDJIcDVhTVl3TzVqLWFoWnpsLVNhM2tlbGxDTVh0QlY1bE44aldVYVNSLVZ4Vm1B?oc=5",
@@ -1453,7 +2695,16 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-17",
+      "id": "ref-30",
+      "publisher": "RRI.co.id",
+      "title": "Karhutla Meluas di Sangatta Selatan, 10 Hektare Lahan Hangus",
+      "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQTUNVQnl3U01vQTdjYzFlaHBTSFVKbkRMTU9KMGtIVlZKd2ZOWnFHVDVGU3lRTmc5eGJhUUhYUTFsYjRQbU85WnFIM0ptQmpNZTRpdEsxVlNsM0h3MVplc3NTeDZvRUtHc3RGbHFoMmE2c0R2ckRGOUlJeGNqWWs1OVdMSWRXdnFDQWFXXy1ib3g0a3JOZVVrY05MbUE2TmJfUFVnTEQwaw?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T23:30:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-31",
       "publisher": "ANTARA News Manado",
       "title": "BMKG: Waspadai potensi cuaca ekstrem di Sulut hingga 8 November",
       "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxOWDZBTnNKQloxclh5djBZdk1yRF9IV1FaTFlDbWlrU1JkZHQyOWpsRzIxOEFqYjdTZi1mSFBqamdPSHVjZVdiX2lNQ0tCN2ZDTWVBcnladE83RTAyODNsQ0R4WHVEZjFwXzhfaTNvUnMtZWpxWVQwdHhuU2wtRS1DVDNNaTZpYXhtTWR6QUM1aTY1ejFNRUhGVnpjVFhnbVNMdXg1bTFWSFZPQQ?oc=5",
@@ -1462,7 +2713,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-18",
+      "id": "ref-32",
       "publisher": "ANTARA News",
       "title": "Korban TPPO tentara bayaran Rusia ada dari mantan TNI dan Polri",
       "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxNenhQLUdTaXE1MVBjd3pDUk9sQ0pHUGlSQUx4RHpKa2ZKcXpUaU5xNy04b04yRFBtQk1fS0tKRmZucnlZUURiV3NBMUJkRmJ6aGFuTXlVRDAxTlh5bHd2ODdDUHNNNndhelV5dXJXNng4VjB0NUhxMExEUzA0VXlJUkphemZYbzRrSHNGX3pHVWVoSmlYTXpCOXg0Q1k3ME1sM1dQaWVyXzdMdknSAbABQVVfeXFMTUVSeVZnakVMbEpCY2F4U0VSbThEXzY0bnF6MWFVSFU4WlJlNmRXejNSVTBmOC0zd2lBR1FacWd4amJWNnJrZWNEcmllbDQ2WE9NcWJRRy1EU3IzZEJSY0c3a250Y0t4LVFhNk1ORnFWN0xGR0hRbkJicTdpeDBRRVBESTQ4RDFxekplQjBpUzN6UHBkQlpNZGJkcmtJR2hwMEVMLXdkWlhmbkt3Y2tGLTM?oc=5",
@@ -1471,7 +2722,52 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-19",
+      "id": "ref-33",
+      "publisher": "Kompas.tv",
+      "title": "Menteri LH Jumhur Dalami Dugaan Sabotase di Balik Karhutla | SAPA MALAM",
+      "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxPb1FhZnhVN2hfQzJoVHNVS2VpZmZHY0dQcVlnMmtmVlYtUlBZN0RFOEZlWHNmVGUxNC1JYk9LajgtOWpiN29YcHFDMEVDbUFNZlRiV2VqWFhSb3dkT2hURVllVmhacFlkNWg2dGd4Wm9qWTczU3ZSNW5Zb3lpcHNtdkp5cUJCcVhqY1Bja1hSY0hqbFJOc1Vpc3Z5V2czbGFUemFFRWNjQzV5LXfSAbABQVVfeXFMUDNvTGQza25Ma3VfbEY4QjNkT1YxRkRwY05RNGEwNXozcjJoTEhjdWlPMWx6dy1VOVRMNUJENVNoWDJIZHhZaG9YTDZPZlVxQTJaOFBTSXc5VTJUSkVUUkYxNFZTcXlITmhlZHR2cVprMFNtbkNuM1FVcWZHZ204MlpGU1otMUQ0ZEVTWFZ2SklyV2lfWkZuV0xleFpReFdUUVBqeUtXbjVTSENtRXlyUm8?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T16:05:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-34",
+      "publisher": "Rmol.id",
+      "title": "Peduli Karhutla, PKSS Salurkan Ribuan Masker dan Susu Steril",
+      "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxNUFdfSnVKOThVU2tKTWJKMWtyT3BXdV9DSEpyU2M2WEtpNWl6YVFyTmo5MldrcndBUUN1Ul9ubXNIUW50NklZMi1QLW4wamZTTHZrblBPcHY3ZHc2TFhFSHU2eEF4ZFBTLW1PSDB3NFZfNDdaUGM5TU5BdXpTcERYRWxEZGNtT29id05vMUxtOG11LWg4eHZXOWJ0VlhMa2M3UmdDRVNGN2RhRkpw?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T16:43:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-35",
+      "publisher": "rmolsumsel.id",
+      "title": "Karhutla Sumsel Terus Berulang, Fordes Pertanyakan Kegagalan Tata Kelola Pemerintah",
+      "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxOeUxRTTktZkhBMl9qREZtYTZpSG5tRTFTc2Jzdm1zcnZ0Y3ZieGRDZXdLZ0hpWmxqQ0szdzJhX25nb3ZmOXZjQzhBU1hJRnJnSktTNlpwOG1iT2tzbjE3SUI1SjF3eVUtWHZia194SVVKTi12R0FEWG4tYVUwLUJMTEJlcGxXN2Z2cWdnQndHSmp0X3RjeUw2T2czN1lFVzBpNE9tSXBrZnlrcDZV?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T20:36:48.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-36",
+      "publisher": "Volcano Discovery",
+      "title": "中程度の地震 M4.1 - マルク海, 67 km 北東 から Pulau Bakalan , インドネシア 2026年11月3日 21:38 (GMT +0)",
+      "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxOTFY3RXpoczFOeUg2NnNKVFNwbTkzZGc3Ylh3NkpfZl94enVmVjBXOVdLUGNaQmtZb0VIcFZjT1hVSWVneVhUWjdxM2tGN2s3bXpPRlNtWE5jaUt3RW5sRnEyQXdZY1E4NE1GUGVIQy1NRnV3WTdhT1hpNld4cF9xRHpmZTlNeVo2WV8zaXpXNG44R21YaTZvc0ZrcnJyVEVFN2dSdTNfUTMyWWo0?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T21:39:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-37",
+      "publisher": "20detik",
+      "title": "Video: Bukan Cuma Batuk, Asap Karhutla Bisa Picu Bronkitis!",
+      "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxPcXhwWHJxMVNoZVBSVk5zX18tcWJkVVM3am8tQWxtanpKcG9jeG5UQllmSlJkQTlqeUxfQVFaTzYzUktsRDZlNmNwalZpN0tIb2I2S1BVdTNhUWpVVmloV2c4RWtweGJJcjJZX0RxSG45VGdsLVg1RFJBYmVhQUFmVF9ocnJKUjVKUE9ka2owLTQ0clBmbUc0YVVtcE9rZ21wbnloYmFaRXFHQUpw?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T18:34:44.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-38",
       "publisher": "Volcano Discovery",
       "title": "軽い地震 M3.1 - マルク海, 20 km 南 から Pulau Latalata , インドネシア 2026年11月3日 07:44 (GMT +9)",
       "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxNVEYxOF9iaFB5eEthNzl3NUZQN3kyMXFkYTJMRlF2emJxVHVjaUpHZ3kwZmpzR1VjbkI1T3d0RzFWdlJmVGNoSzAyZGxrT1NsRlhhcFRhMm9PMDB3dXlXZUtwbnUwVGpkXzVVMmgxMmxmZTdwbWhBd0t5MkM4YnY2M1gwWlV4MnV1bmQ5UWh6SF9PZXJkdkFnZ3hTald0RDAwUkFhN0tKQTF4YlRnR1E?oc=5",
@@ -1480,7 +2776,25 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-20",
+      "id": "ref-39",
+      "publisher": "detikNews",
+      "title": "Kepala BRIN Saksikan Perjuangan Tim OMC Padamkan Karhutla: Tugas Mulia",
+      "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxOY3ljejNwOWdXalJmYlV2NTRwRFltUmEybXF4ZmI2cXFRWjdJTlh4R0NCa0E3cy03M2VZNnNiSmRNTklJSFM1S2ZuY3U4UFVya1BNVnpwQ2J0eEE1ZGpMRVRvM0VSN0xhMEJrQ25vMmZzeEUxSEpCMmVjd0kwenRqZlBBWERUOGdab2dBRXFFSGRON2tJZGdiSU5Fdm14THNlSm8wbFBFUG5MVm82SmfSAbMBQVVfeXFMTVM2LWxRd0txcXlIZFdLM2VISjZqeE40a0dkUTZoZC1GSEQ0S21oYzhySVV6YnZXRXppQ2N4MllvOFFSZTlUNTBYbFduTk0xRGxUWEkyVGdFLUViR3M4Q1JfcmlfVDU3UmExNlVTSjFTenJDNTNHOC1SNl95aDljdzh5ZjFPQWRYWWV2UUVHd04zMjh4S3dwV2hicGNRS1U2SUxCYWEyazYzb0JxVGFTRVVLM0k?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T16:29:58.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-40",
+      "publisher": "RRI.co.id",
+      "title": "Karhutla di Samarinda Tembus 354 Kejadian, 949 Ha Hangus Terbakar",
+      "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxPaVI0WE5JRnJZa3N5cVBhSV9nRXFaSWJ0TGxNdk1vekktYUlOb3pWOWloVnplUi1OWUp6eE1kbWtwbFB3aHVsVnpYSXN2QWczQjY0MUpYaEhuVEhkMTNJTGY2elgxd2VyQTd0bkhDZFZ5UWlaVklPdjBWUG14MkZTdGJiRXFmM0RUTkV0clM3Nk5MRDRrUXlZdmhPVV84LTNoa1dtcGpTa09tdy1uV3c?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T23:29:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-41",
       "publisher": "PT Suara Dewata Media",
       "title": "Larangan Pembakaran Lahan Ditegakkan agar Karhutla Tak Berulang",
       "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxNbWhBSTZ5ek9YeExKRDQweXZvX0lpREEzNmtaVHZLN3ZndUFGc1BuV253b2l4MkhsZkNvemhMMUZGSXZ5ZHcyY0tlbjhMMVVKcS1fTlk0dXNtcmF1WngybTktczJxcFZ0V3RKU1JkUTg5cWxSMWlwdmlabjJ6TWtUd1otMFp6MHM4LUpXUldrbEIzUWYyRnlXOHRESzV3M2FxUklUcGQ0MXRUSWtGdzlKTg?oc=5",
@@ -1489,7 +2803,16 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-21",
+      "id": "ref-42",
+      "publisher": "RRI.co.id",
+      "title": "BPBD PPU Catat Nihil Karhutla, Distribusi Air Bersih Terus Berjalan",
+      "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxNejdWaDhpaEl1LUN4Q2dkWEtyNTJRNTAxWlVxNGs5dEp0MzVXWmktX1JLRjVKU1d0aW9FWEJKVlhPTnd4b0I4OVc2NVRDaFF2TjhFY2tFVnhxS19xMFBTaWtfUVNqOGlYeGhpT3U4d09LR3o4VTZpbGJieDB1aUJnVlM1NlBSWlpUeG1LYlBIT0tqN3lZd2ZyZkthajZpalYyZm14RDhueU1PVmExbmZNZw?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T23:30:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-43",
       "publisher": "MetroTVNews.com",
       "title": "Cegah Api Meluas, Polisi dan Warga Padamkan Kebakaran Lahan di Merauke",
       "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxNMmxWV1BrQzU2R2xZYVBaSE1JMC00dmlqZU1SRVJMNEp2MXREQkRDN19rMDM1OGdMSGY0eUtuTlB2aFpIaVNTRlp3OURnVEw5dmswdlRqakxHR1ZxNFVNQjUwdU9LOHBHdjRLQkNpYTVtVEZ2bk1DSEJSc0I5eHlGMHlvS3dJTXV5eU9aa2NKSy13X1dIY2c3WUhzWXpnZUhQY1J5TVBINEhjLVVTV0o2ag?oc=5",
@@ -1498,7 +2821,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-22",
+      "id": "ref-44",
       "publisher": "RRI.co.id",
       "title": "Penanggulangan Karhutla Perlu Teknologi dan Partisipasi Masyarakat",
       "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxQanU2MzNLR3A3VTBzamxpTVZhY3p4cGRRRWtMR29hajNTdEhIWGJGX21xRmtpNjFHdWcwT2tyZUxJQ2hzVm5veU5pTFA3RS1Fc1g5RW5MbUh3LWJ1bXlzdkNrYWpnamwwTzRfRFhDd1NqSFQ2R1g4d1B3WldNLVVINUdpUG9kUnYwdVpYUGUwUF83RDJBYzhXbXdyNWFQajUzSGFDb3R5ZDNlZTdPTWRCdA?oc=5",
@@ -1507,7 +2830,43 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-23",
+      "id": "ref-45",
+      "publisher": "ANTARA News",
+      "title": "PKSS bagikan masker dan susu untuk warga terdampak karhutla di Kalteng",
+      "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxNNXppeEktakRXZUVJdEQzd2pFWHlEeDFERGlObVNXZHlleW9ibE1wNEN0NjJnV3BrdEpyUnIxQWxSS1N2VC1OLWlybmtnOFZhWFVnZVVEcFFpNXRUc1E3SE1YRVZIUXljekNWUHpNZElZdmU2QUhUZF94UHN5NG5lbFdzU3VuaGtBMGV2SWhUcV9raFZzUzhYTVoyR1BsRXhIaVk0WUhpRnAwSkx4TFRaa0t30gG0AUFVX3lxTE1hNjF0WDY1ZmtpTWZsUGx6UGZoLTlEYWJNUTFVSTNWOTJwckRzUzVuSl9fcEFEdkN2NUJUVFJuNS1PQWd5WUY2OERfdkdyZy1JdU85OVdBdlQ4WWp2OW1wVmlINGN2cnFlUjd0WHUzVUVwZU53cGZUa0VYdVcxUUh6UVMxSVhVaWlYeDlIenNad2JmYUVJZjdyeHNmczBEVEhrZHdrU28tVFphNlFtWlFMeVZnQw?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T17:18:14.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-46",
+      "publisher": "ANTARA News",
+      "title": "RSPO tegaskan akuntabilitas dalam tangani krisis karhutla di Indonesia",
+      "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxQSG1sbVI3MkRLQ2NDZG5pR3NROW4yQnV2R2xaeF9OR3k3aUxXdHkwZU4wRktKLTBxNmxWS0RkS2hVQWlNaEhkNzZDRTdpbVY1RjBrdFlyQ3pGVmhibWdKbUpGUy0tdHNHSllwdDhydlNyTGVSeFVZQmdaQXlrLTdGRGpPTHFVVUFaTmVadFVQbGNmazlMNWRqVk9DSXF3cFdiS0hQZmpfM05hTTQtVWtmOWx30gG0AUFVX3lxTE9FTVRpdzkxQVgyVTl6ZGF1V1QtTjRZMHJNdVBfeUE4TjFNWFlTNk9jQVNxdUJXdkRHMGVkRm84ZGZBcEVpSFZJVG93SGNNVm1hRTA2bnFZdnRnMmhQQTI2VF80Y21uMFliTm5pR2s4UGJ2V0U5OFRmVjNaaXFhMTNLeHhLMXJoS1pYRGFSRVpxYXVKSlZVUEE3UzNlYmFVMGdTY0c3WF94Q1d2NlhCWmkzYUljRw?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T16:58:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-47",
+      "publisher": "Volcano Discovery",
+      "title": "中程度の地震 M4.2 - Indian Ocean, 263 km 南 から Blitar, インドネシア 2026年11月3日 17:51 (GMT +0)",
+      "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxOMmRLVF9oWGlVYVdKZnlvSWxuX0p3Zjd1cUlkMVdWZUE0VTVaY0xQN1FKbGZrYzdPUDg2dVJVLVM1dEpnd0JSd0tncDBWWUJJWE9Pd25qYnRESWJOUEhIREQ4TGEzN0VQUl83eG5fSXVwanI0TDFMdGo1cmhhSnZRMVg0Wkwtb3BHNmViU2I3TGdYSDFIT2E4Tmh5UXZiTFhUMUVZLW1FWmgxdHZUV2VZRVY2MA?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T18:38:37.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-48",
+      "publisher": "Mercinews.com",
+      "title": "Dukung Penanganan Karhutla, Koharmatau Siapkan Peralatan Modifikasi Cuaca TNI AU",
+      "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxPOXBqTmtNRVdEVWd6ZEhITzMzd1FFNWk3cHNhaXVZWXZaOXN6amszcW8zVDFDOWs4aGo1THZsWlhlV2NXMHhncmdhXzhWdFlkd1NfTzI5VnQtS0E2OWZkMENwZk1yQlRrU0ZKRVlSZlRXY19LT0pWbVZMb1RZMTZFVUo1YTY5blhDRVl4RGtvRm1vNWVtWnVoNFo0ZXFtRHhrSUpEZmM4bV9TZ0VHdDhodnFzZw?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T16:15:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-49",
       "publisher": "Kompas.tv",
       "title": "Prakiraan Cuaca Hari Ini 3 November 2026: BMKG Sebut 28 Kota Siap-Siap Hujan",
       "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQc3lsRVl5eFAxRU5sWGN5MkJxcWVjVTFXcXNneV85em9lQnBvTVZ2TjVTeXhPZDVBSHhIemhaTS1YWEhKb19xUWQwYWJTZTRNejRqT1NkZTlvRldWYXZ0aVBYQm1zdEk2UGJiUWhqRW96eHhIa3Y1Vk5tOG5CeUpGSTg2aU5ndVdQcXdLbXhORWtPazROeUpYaFRsamtZRWtEbkNQdGpwYWhNc0ZmTlAtSU9nQdIBuAFBVV95cUxNdURjMndSZTdfNC1aSUZOTUliRlpXY3hkMV9PVlV6T0ZPUER4SW91Tk90RVB0ZDRtME1ad3VpVFdKSEZWR044N3VYS1pRRjVzNHRiUVBRZWRvWDNxN241ZnU4cXAxU3d5RjZfX1k5enk0bzFwZnhUZWliQ2UtcmpFYkFmTU5BN1JQcWJkcGFfMGV5ZE51OVYyUmRBNGNDMjBMZTBHS2JpN2FKV18zaWtCeEFyZXc5b253?oc=5",
@@ -1516,7 +2875,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-24",
+      "id": "ref-50",
       "publisher": "republika.co.id",
       "title": "El Nino Sangat Kuat, Karhutla Papua Selatan Belum Sepenuhnya Padam",
       "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQeHREend3VlVYSjBvZEl1UTRrZFQwQnU4SUJmUVlXb003UncxRjdzMi1yTnBRQmdwNHpGMS1aYkRqMXdleDV2Um0tTGtuUlN6WTlVa3M5VUhZakg4bURyMVJvTG9scE5TVUxYS2JZTTlGLVJkU1BMWFJaZjFzS0U3eDAtM2R5dGkzSGtqRW5fWWpQa1Q5b0dQMC1iTDVUWWJST21xSVYzLUFOdFdnQ19Na2c4cw?oc=5",
@@ -1525,7 +2884,34 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-25",
+      "id": "ref-51",
+      "publisher": "RRI.co.id",
+      "title": "Kapolda Kalsel Apresiasi Peran GAPKI dalam Penanggulangan Karhutla",
+      "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQS1VacXBfREszZWxUREZQNWhUU0dyMXJUbGNDRlA5UEhveS1aNTEwRC1wWHBqOHRuaUduRjR2SmJWMXBSM092N1lxT2tGLTlGMjZGYkc1MlpJeGF4UHkxMS1UTVU1eTRwaHB4T2JGbm9MUGppRGZRaExlczZ4ZENKR3BKUzFOclVVZy01a3RzVFFYUU9fUUdvRUZpYXg2emZBZkM5dWZlbnJDdE9nMFpnd0hiQQ?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T23:49:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-52",
+      "publisher": "Volcano Discovery",
+      "title": "中程度の地震 M4.0 - Celebes Sea, 124 km 北 から Sangihe Besar , インドネシア 2026年11月4日 01:01 (Makassar時間)",
+      "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNNzRVUWNGeWNqbXlCT05mM0xVSVQ3clowQzA4Q2MzOGxSMHlxYW5PdHpvQ1BGR25CbjNCNGl0c19manZza3ZQeUFuYUxyNGNfZUppWllBQ0FCX1JEZmJvSEpvZlJYMGt5Sjg3R0tIZXJYbUFPX2EwRXJXdHp5Nmk0dXVmS3lvejl2VU9VNWtOdWY1YTE2QXU1YXVXNDNrRDRHZFlXV3dZREh5bUFXcUZnVDRGRHc?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T17:17:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-53",
+      "publisher": "DT Peduli",
+      "title": "Kualitas Udara Memburuk, DT Peduli Lubuklinggau Bagikan 2.500 Masker",
+      "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNR0JqaGc1b0Ffa185aElHTWNBcmVKS1lQTmtfX1R4UlZrdEN1T1MtV2tfSXJPOXo4TG4yYXpiTmxzZlNIU29ud21hME0tWHUyRS1oZmJSd1VTaHM4TW40Z0tPeFlWa1VpelEwZWttcEhRSzZuZmNkVHBIYUwxaWZITnpnYkZzdkJ3R0pvVV9MckFMejlUdldLN1lJV3RtbTU4Q0lGcl9vYUhvRnJtWU9FY3djb2M?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T18:17:17.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-54",
       "publisher": "atnews.id",
       "title": "KMHDI Mendesak Polri Tuntaskan Kasus Karhutla: 245 Tersangka Perorangan dan 20 Korporasi Harus Diproses Hukum",
       "url": "https://news.google.com/rss/articles/CBMiTEFVX3lxTFBqYUJGcEpVa2UtUHBwR3NoUk5ubXZHV2tqNWFVSjJSX3U1dEk5WEU1S2lRZjJmczFRendOeWhjMjd6eE9LdEJ3VHJIYmE?oc=5",
@@ -1534,7 +2920,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-26",
+      "id": "ref-55",
       "publisher": "PT Suara Dewata Media",
       "title": "Penanganan Karhutla Menyatukan Pemadaman dan Perlindungan Kesehatan",
       "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxNN2lhWkJfR2pKYjdFdkxHcG14X19GVUkzNjQzRjd6RlRlcE5Tb0tjMXl4Nzd2dTBFbWtEejhQblZnVVZFTEJOXzlKMUlYUlhXRi1COGJCeUZpdXV2N1VNOGZreEc4dGtuMFNJVi1nZHA1cVpHWTNhaG5SVFRiQ2FfRl94NGZSY0ZQMXVEZHA4aDVTXzNBSXFqMnZDRElHeEFQX0gtaVU0eG9NekJWcTlPMmxVaEhTdw?oc=5",
@@ -1543,7 +2929,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-27",
+      "id": "ref-56",
       "publisher": "EKSPOSKALTIM",
       "title": "Lahan Pakan Terbakar Karhutla, Peternak Samarinda Rogoh Kocek Lebih Dalam",
       "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxQTGRYM0wwRHo5RkY2VUtMVXhJZW1mbUdJTnA5a1NsZlY0TmpNaXNwOHlDc3RXdHhnQ0FLT3h0c2VMQmYzU1dtRF8wN3prNHFmZnk0SVRGQVlTdXBXbm9FSVJmbmFmNWJUTU55T2NyQkFlMExBdDJJaUJXc3FCVFZaWXJLTXNyT0FuNUJydFkyTW9zSFZjR0M3ZjlEYWt6c001NnhYd016SnVZWEpfRXZhUFBWa1lLUQ?oc=5",
@@ -1552,7 +2938,16 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-28",
+      "id": "ref-57",
+      "publisher": "RRI.co.id",
+      "title": "Singapura Siap Tindak Tegas Pelaku Karhutla saat Pimpin ASEAN 2027",
+      "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxNaDg0TzBicGtLbzJ6MEVfODlkSUZFZlZQeTBYV3pqOWpmV1YzY0NQLTlNelFMWnN0NWRvU3R2Z2VfVC1RUks3WXlZYVFKTVloQWlsMkNmM1RreF8zaVVtbUNKcGU1Q0dfYkgyVFM1NDVBX3FBcXBMZWlZUmZFdFZpOVhRQ1NVUTgwTE9KOTB1YWZYOWdTYWlSM0hyd09oV1lHNENURXlDZ3NNZmF3MVQzbTk1ZlNIN1E?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T23:51:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-58",
       "publisher": "PT Suara Dewata Media",
       "title": "Pemerintah Percepat Penggunaan Anggaran Karhutla untuk Logistik Warga",
       "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxPczVSZThqZkk2bUhIN1UwUXVoQzlhelc1YWJNUzNYX05jYUJNMU0zX04zcUZVMVk4YWZyS0JOaUtZY1E0NFZlcXgtSUQ0Q1htZ280eEM0LUVMY2xKZVUwXy1RMEN0X3hPWE9DeWdtdl9lZkVOUWFUN2JoZFo2YzRqMlpYdjFSN0RUN0h4V0s3WmYxRGh0bU5Dd0ZTYm1kamY3Y01jTlI2MTNNdlJRRG1YclBFTkhvUEEt?oc=5",
@@ -1561,7 +2956,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-29",
+      "id": "ref-59",
       "publisher": "Riau Online",
       "title": "Usai Kebakaran Hutan, Ancaman Banjir Mengintai Wilayah Bekas Karhutla",
       "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxPOFluWjZ2V3gyMmw0SHAwOGpFYU1CUTBHYk4yazBmVmpTU2lNZW9yMnZ3bFo0N3dyN2pjVklZT29tX1F1OFFKUmg1NEJCNGVUQ2pCZkZ3X2I3UjEtTVhGR0pYRFpLWjJ6c2I1alB4My1tS1dDRHdOVnA4ZXZ6eGdreGtsRVEyQ3FXU2pGT2Q2NzktSjBBMmRVWkpUVU9oYm9wNzc1ZVFaVktnVnkxaXc4V0h3TW1zZDlBYWc?oc=5",
@@ -1570,7 +2965,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-30",
+      "id": "ref-60",
       "publisher": "Kabar24",
       "title": "BNPB Catatkan 1.043 Kasus Karhutla, Kerahkan Operasi Modifikasi Cuaca",
       "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxQT0NKN3B6cGV2S1JvTVRJRmRYRWtZbGJkVkZTOE1QdVFSaFJ1VEJTMjBSN2l3UlY0TjlwZEF3YWUxWjdYTWJEaWZWUGVvc3Bqbm9EUGhyeTAzN2pRX2FabUJ6MUFLbVBCQmFLc1lIM0x3MDlCWUhLaHRZUkZfamJXTThHMzZ3eTRndU5mUklOS0VVckRwRUVlUDBOWTMzd1c4RGpwbU9pUzl5bVJxSklwLVpEeFhPUzZpX1dr?oc=5",
@@ -1579,7 +2974,25 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-31",
+      "id": "ref-61",
+      "publisher": "ANTARA News Mataram",
+      "title": "PVMBG mengingatkan masyarakat dan wisatawan patuhi radius bahaya gunung api",
+      "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxORnJ6UDM2QllvaGZJbXYzbEQydF85NlhxYmlNMHJ2bnNvQWhPNjJLaUpwOXZHSVhSa2VzRktHeF9GVW9WYVNmOEQtTkd4Rjd6ZEVycVdaNzdObGZLSjBwM1R0RlFGNzE1MmFmY2xzSmhJYW1zRW94VXRjQjI2aExXQlRFVy1KVnhBaFM3VFFDM0dLeGJCYm1obGJSYUJpZFJhanh2ckw1WU9zYXVMSHA3Ulo5MHRKLTI0Mmg2Nw?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T23:10:36.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-62",
+      "publisher": "gesuri.id",
+      "title": "Generasi Muda Tangani Karhutla, Angga Aditya Nugraha Bangga: Atas Kesadaran Diri",
+      "url": "https://news.google.com/rss/articles/CBMivwFBVV95cUxNTktoM2tLX2ZoWnBrajd3Q0V0QUpLeElmbnp4WTR1LVlaYzd3SEFCLXVMQ1RwM0xqOFZxcWlxZzhLT2UzZFpqUWt4blZEanozXzFzN01IWDMweWMzckRnNWNxNnJsblZ2aXJSU21lM1FXTkg4dmM0eVQ4NDk4TDhQazlzc2Z3QnJpMmhwdm9xM3FGczV3X0NzN0NOUXZZUGx5QVBvTk1PU0hvaFdsbHNidnc4Q2FiUER6cW5kZ3lyY9IBxAFBVV95cUxOLWh6Qk5Pal9QSlNjbmR2bi1tRFR1T3drd3BrWUlQUE4tcjZKd0p1LXNYeE03OGlNeDBLVFR4T25CRVJFckd5Um04cE1rU0loMElKTzB1bU9mUkNLNlExTHdhbi1Wd1VkWjNLMl9qdTNwQ0FveWp4Q1JBT2NUbFpkZ2ZzN01UdDJzWndON3RMdEtjdXlUNC1mMGFJWENEdnlsalVLOS04NTVKWkRHZ20wbnpJX0JRQWxUMHRVenhJY3ZodU96?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T20:28:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-63",
       "publisher": "BBC",
       "title": "Indonesia's toxic haze is giving its neighbours a political headache",
       "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE5XQXJRVDZKUzlHSkZ2ai10UG5XcVpTWDduUUcyMElyNDJmMUJHbVljWW1xcUFkSjNmN28waXBPRV9xbDI0OWN4Mzc4dFpYUjhOM3ZjSmFKaHZRdWM?oc=5",
@@ -1588,7 +3001,25 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-32",
+      "id": "ref-64",
+      "publisher": "CenderawasihPos",
+      "title": "Menteri Temukan Kayu Gelondongan dan Ekskavator di Lokasi Karhutla",
+      "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxNTW1tUlVZRGY3YTV0dGQtUHlBeFRkQTh1VFZOb3h1cjRjT3JFdTJvQlNBcE0xYXJvcWpzcFdXd0tXYS02QUZsOUZhZVN3UnAyVVlXdDhncmFPOU5RcldSUFQyaTZKeVBZYjhlS1NJSVRWaTVITjYzRVU2TEVMQ01iQXFicTZYUUYwV3VMSHkxenZBblJCdGxxY2s1TGcxRVpuVzNaWVFHOE5vQW1lZ202VFNNSVRQYW00Z0VyUldGZmE?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T21:20:37.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-65",
+      "publisher": "CNN Indonesia",
+      "title": "BMKG Prediksi 22 Wilayah Berpotensi Diguyur Hujan Hari Ini",
+      "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxQRV9NZUhUbmVOalREOWpyZ1oxQzI4emdGUVB6aWpzSkVmV0dTWC1jODlGWU5MdXViRlEzVkJfcWRUZVdPRVh6dm5Xb2padGUwWHExT3U0SUtHVHhLbFB6dEFWaks4bFVySDc5TmRTemFsODNyeHZGSlNaTzZYeTI4TEU4SGJuVnRNY0tPVXZIQ0Nsa1l2dm1iM2tGN3pGcU11SXFrMGo2UGdFSU51OURBOGxXUGd6NUw1M1dVVGtuQnJfUdIBxwFBVV95cUxPMnpzRVozWUFoNDJVR2xSb2NQRXJvNDJpa3ozS2I3Z3MzbngtQjJKRVRoY1ZGTzQ2RTFINGhpSTNwQXVxM0YwbHlJaEY3Si0ycVNwSC1UNExQSWdpc2l6RjRPb3ZzUkNjNmNPUFlkM3VjSk1FQWdSb21YWUZpUXdVcGJCWGNJWklTZ3ByWVpFVlIwcTFmZFJZYnhieDRHS2MxT2ozLVM5ZGNDNU5rcFVoVWFyU0JpTFllMExhcENqZGhKQjZwcHNN?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T23:35:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-66",
       "publisher": "InfoPublik",
       "title": "Di Balik Bantuan Presiden, Ini yang Dilakukan Bupati Pulang Pisau untuk Karhutla",
       "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxPdGtFLWNFbzBmQTdSWG9wQThsSURWeTE1N0ctSE9SSzFhaEJLMWlTaFRONEtBSGdvakdJSy0tSnNWcTVDLUgyNGEyRXRlOXdEUnRTSW9pQ2NNbGRPSEt2SHZzRzB5UXVaczBzUnFqQzBVUGJyT3VhREN1VWxKLVl5S3dzVnNzcGdrdVpvSjJNN2NrbnQ2S2NKWG92TlpDeXhjOURpRU40b2xQaFBEcE5aQ3pFUUFnQjVaMTl0WEVxd3ZMd1E?oc=5",
@@ -1597,7 +3028,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-33",
+      "id": "ref-67",
       "publisher": "RRI.co.id",
       "title": "Bupati Pulpis Distribusikan Sapras Karhutla, Polres Terima Dukungan Peralatan",
       "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxOcjRaN1FxN1FiZFcyZW5BckZFcVFHemt5b2ZSNWlrSUhjUFI2NW1meDQybnNBM0lKMUpjeWNiYzJGWnZ2NGVjT1hvMHl2YWNVbEN4dHJTbkliRjY1SjJ5S1BFR0RKWkZrLWoyeWJMTjBZWkxjWDk4NDVaRXdpNXU1bGZJOU03VXZlYzVsNXh4T0JQdUdkOXkycUYzTFZDajRYSG52aXI0djcxbkhjYzNiOEFEZkJxMFRsLVpITWctdXg1ZTRk?oc=5",
@@ -1606,7 +3037,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-34",
+      "id": "ref-68",
       "publisher": "Informasi.com",
       "title": "BMKG Peringatkan Hujan Lebat di Sejumlah Wilayah Indonesia Hari Ini, Berikut Daftarnya",
       "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxOeEZ2eXpsOHpPZk9ramQ2SmhnZkYyOHdVSVRORkFlbTZ2T3pvQW5XNW9tYUVpcVh6Z1BoU21WRHlNOG1YOEluaDdZUjJaTW9uWFNFZmJRbE5DQWZFSE1OUWlzVE5Lb1V0RGtlR2FqZDRUS2QzelVqekVzOENlU2FkZDJ2dXV1cTFSc2JXRWg5NnlLZS1tLTdDN05CZ0hPT3kyNC1KVWl2bXYySXVVT1ZsaVJWRTVUdXo2amFZQ1ppRG1aUEY5?oc=5",
@@ -1615,7 +3046,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-35",
+      "id": "ref-69",
       "publisher": "NusaKalimantan.Com",
       "title": "Bupati Pulang Pisau Jelaskan Rincian Penggunaan Banpres Penanganan Karhutla Rp20 Miliar",
       "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxOQWxBbEFFVEQ0UVp1b2E4SFdVZVU5V2N5SVhZenZDYUFKOVFQaldFWFJiVUVTTm1IMW1yMFdTbnFkbkVWM1E5MWFlcnlFa2Q2WDJYbnNKMWlKVlpkc3ZwX3RsdWNqVVJoQWpvSTF6QkM4SnROSUZXdDRZZ2tpVkJoOU9OWFJ5Y2M0NjcwWEtlM1pyejNOa3N2VEpnbURjN2dyaXYxM2k5U1hqUTVSZU9NS3J2TEJoMDRYVGhmdTRuZ2NhMW13?oc=5",
@@ -1624,7 +3055,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-36",
+      "id": "ref-70",
       "publisher": "Tribratanews Polda Sumsel",
       "title": "Bhabinkamtibmas Polsek Betung Sosialisasikan Pencegahan Karhutla di Lubuk Karet",
       "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxPLUNjVFl3STV1WjNEQTJfVElTeU02RUI1eGxRRGF4eC1lQzh5cHF5SHcydnFaUHh2RlNkQWRib2E0QXpzZ2l3bzRjUVdfQjE4NTNuY2dkQ3NmVFd5YnB6UVZrNDN2V2ZjMk95aXcwWktvLUlRVEFaOWZSV0o1X3RvcHpMdDJDOGpYc212MlVFb0RYYUF6WXVvakhlWGNDRzRrWmRSRENwTHZaX2dDTTZnSUFHVl8zbGctbU16SU55WGp3Qzlv?oc=5",
@@ -1633,7 +3064,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-37",
+      "id": "ref-71",
       "publisher": "NusaKalimantan.Com",
       "title": "Status Tanggap Darurat Karhutla Berakhir 13 November, Bupati Berharap Hujan Kembali Turun",
       "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxNbzhtWk1XOVJXU3pDbXk3eHcwZGZwNTI5alJiRlFMM0JkbGl1WDhUSDVxNkpqbkxQZ1hHdldPVEdDa0I4QVRBZHlNMnZ4czl2UmdpQjR5aXRIYUJsMXJWWkZkNHNETmVFaTBkWjdkSm0zZGpTTzdVczZYX3R5akxQS3hWeXdCOXNTZl80Qy02Yk5PUDZpZGVvb3E5ZXdUbG1rNVVtRUNpZTh3TVRiZTF2MGJZYi1HXzlQeXBFU2RfWUxpUFVXRmc?oc=5",
@@ -1642,7 +3073,43 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-38",
+      "id": "ref-72",
+      "publisher": "Kompas.tv",
+      "title": "9 Wilayah Masih Berpotensi Awas Kekeringan Awal November 2026, Ini Peringatan Dini BMKG",
+      "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxNV3o5SkJNMEFtdk1aMzk4OVBIWTYtcEFtb0xCRWZfUEdiR2Y1SlNwaXZ5bkhQZzRyc0QxRWJDZTA4N092d01YMldnMUhvbWc4cEk2UXRzT1NzdWVjNGsyYmd5VGdueFdQaEE4S3VDa29fN2hpT0JoNDVuR2tOQ3B4RkhUTGRVZDNZekRwR0ctU1BGRklyQXR2RDlsY3BRWFg0dXlYZkpZc0QxVEtmb3ZVX3FmVU9UbnA4eU9aWExXMUFBM09meVHSAcsBQVVfeXFMUGRjWGZFVFVNbEZaOVh5MjVBcDdkOE43YnVTSkFodjNsV3NwOG1PeDZzUFBZZHpWTmwyNWE5OXRiNmxFWWVMYXhPd3g4MkJ1Yl9KbzJQSmZFdEZkN2k3Y1BPX0c1SWdfNHNkd0dhUmtiNGVidGhHbTAtUzRNNnRFYVpJVDJRUHZwYVkzcFpJZTNfZ0cwV3RLTHlrbVVxbVFBSG01VkJIS3UzZXUwTjdCY3duOXZzUG1FbkdfVnRmTk9ZdjVFR3NRWlQ3VGM?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T23:15:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-73",
+      "publisher": "news.okezone.com",
+      "title": "Karhutla di Kalimantan Kembali Meningkat, BNPB: Api Tersimpan di Bawah Gambut!",
+      "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxOYlVCZHBIUEFjaVR6OGJyOTlJUUplYUlCc3FMVnh1TWIyVWNuQ2JieG1nVWM2akRaMzNYUTBuUkYwZ2pITGhxMDlIeWJ3ejRYQ2ZrWW1FeUpxWkdPM2d4Q29TdjkwWHZ0ZE5ma2ZaZjQtbjV3ZXh4aVNpa1RQdFlFNFE2alctTElnaUgtN05tWEJ6UnY5X2lZVXQ0V1ZRTWIwQ1ZuUkFrSW50YjdMaEhuS3Q4enJkT1RJMm5ReWJORW9uNUowdzBR0gHGAUFVX3lxTE9nUVRYQnpjVkd5aGRrRUtiUWYtSTlFdmxQaDN6cnR4ZVU4U3kwN0ZVUXFRVmpuM1o3TVBmbG8wQTRJUG4ycWJ5WFR2MXNwRGJaem1BVjRhYzZnVGhNa2wyRzNqRzBOOUhGbmJIVkxDZGlwc05mRzlweEprbkRWWURHZkRsdUsxVFBhMjQtMHc2QjNzUkRjS0JxdVd2OWw2dHVwS3hJZEtDT1I0VU9Lcmxza0hIOGdqaFV2bzNacG5fSk4tMFZIQQ?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T21:03:09.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-74",
+      "publisher": "CNBC Indonesia",
+      "title": "Raksasa Nuklir Asia Diselimuti Kabut Asap, Jadi Polusi Tertinggi Dunia",
+      "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxPbXNiYllNVVRNY0RNQlB2dWt5OTBJRWVZY2dzMXRfeG45MzFjVnUycDNobkpEUnFlWUhXVmZCU0U1VmU2M3JCbUloaUlLdFZfNDhFU3B5d3libnVlcXRfYzFLS2MwUHU4Z3BrM3ByUEV5cGh3MGNoWWhDT0Q2V2FSVVRMMDJNa044cVNRR1JiOEc3ZnNiN1dldmVJam51TXJkRDFzcVlTTWZsd3I0THFjeUpCeGw1bFlvNHFuWHVMWmtQRmhGVWcw0gHMAUFVX3lxTFBVMlFtWWlKMW9US3ROLUVnNXNLOG9xcS0wRHpOWkVlOG1ib2hzbi1PSjN2TUdPa051WjlPWk9vUnk1Uk8zNjhIUFpNejBhRlJSNHVpQWpRVlk5OUliQlpJeHFzV3FnOUlhQlYwTUY4cFV5Mi1tMUNneUNSOWVSSWdmbklkdl9rejN6X0lhQVNrZFN1bTRObDUxU2l0X2xPcjBvbVBjdXgwQlJFcVF3YWhmRTNEUUlKRm5nOTlINnE5dWRzZ18waFlULUNjUw?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T23:40:00.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-75",
+      "publisher": "20detik",
+      "title": "Video: Balita Sulit Pakai Masker, Gimana Agar Tetap Terlindung dari Kabut Asap?",
+      "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxPdDNuWG1EUXBrd2x2ejQ2UmNnYU5hbWtsZ1NXYjFCQ3hMZVA3UUZRY0FNQnhEZmFSMl8zaGZUckNCajhXaGFUcHcyTkJ5elpYaWU3ZzBQYmNBS0RndFM1VHdnanFvRG1WWDB4MUh5QVhWaUtBZTRiaUFBVy1STzAxeWhLYUY4RjExYTMwbUJsRk8xUE5TN1V6YjQtN3JBVTF2MjRHRl9YZHNBSUdyTE1LdXFab1pIbnFPbFhOaHBuRTh4dDE3dTRV?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T18:52:05.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-76",
       "publisher": "CNN Indonesia",
       "title": "BMKG Ungkap Daftar 21 Daerah Berpotensi Diguyur Hujan Hari Ini",
       "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxPS2ttaDJCejJRSGNmU1Y4cnRFNnVEUWhDejZZckNHcF9mVTNudWhXdGJvX0kzb0NPYzMwSzFZaTJ6UWExc2tyaU0xT2RLaXFReGFYRFQ3amc4U21ZU3VNcnZZcHU0SnItTVpub0pSNVRtYTJsQ29CT2NXTnFpMk9yUjdJb0pqWnlyX3FFTGxvaklMS3kxZ3Y1T3F2Nk9yMDR2YlRwZjVYWEZjRnhkNW12Z2xDOWxNSTgxbGMtX1BmQWV4SHRZLWI40gHMAUFVX3lxTE1ZZHo5NVNPZl82ZUZfcTlfSFllR2xUUU1GSC1DUWJMSXJPMUtzMy1PdGUzR29fb2lQTjZ1bHlaNUM3SWhOUS1maEpWa29wOXJLNDljbFR0cTBkYU8yUVljRWpnLVk4SFVjN1hoSnhsVXp0LUtVRHpZUExVVzE1QThIOXB4emRENmZwNUh4dUI4RlZDdWwyTWtVbEduQVNLYVZrQ3lSNWZoeVFMbUlxN0lmVWtFc0RSc2VydzZzalZiVlRxNVdZRWJLVTNUYg?oc=5",
@@ -1651,7 +3118,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-39",
+      "id": "ref-77",
       "publisher": "RRI.co.id",
       "title": "Bupati Pulang Pisau Beberkan Penggunaan Dana Rp20 Miliar Banpres untuk Karhutla",
       "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxQOFNYQW9xRVFHcXV4NFFfeDVMQ3dBWGF0ZGtwSEpaV2V2YzhFQjNzV25vSlROZWJkeFNLS1RIakhUZGJkci15ekp6emhTY0V1TWJtYXBUOVVnRTRzeTNUZkxYYnQycU9KazhQVDY4TlpIZVV0NEJ1VzhNUTkxSDVVekNzazloUmZicXVCSGFKNUMwdHlzc1ZnVXVjaWY2VTY0NFVqSmplRnhoRzY2cnktRnk3LW84UHBlNHVZLWJEbG1SUUtvNnJtYg?oc=5",
@@ -1660,7 +3127,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-40",
+      "id": "ref-78",
       "publisher": "CNBC Indonesia",
       "title": "Induk Emiten Salim Grup Disorot Singapura soal Karhutla, Ini Kata SIMP",
       "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxOeVRpMWFxdlRsXzRXUEJXYTRsTmVvb2ZfN1BDVXdiY3JHb1JhNUxSZHZRUmdpT0FIaEVjejdCUnF2T1ByaFNJQ29aVTV0T0VYUnJIcktHQWFZWUpMYnVmdlN1TzMwcWpFYl9VcFdHcGJmUGY4N0F3cExvUmJRNXBfS2Q0TmpUREpVRms3eHRPeV9rOS0xYzIxM0Q0eU5zcGtISzJ1UUZCZnRvaC1NOEtDWEl5STZ2ODVXMzNPZ2dtN20xMTREUE80TlhGTdIB0AFBVV95cUxOX3FWMFV3M09lOTNDcVhRczliWEJJbGNEN1g3ZDVtYXVEcFhUdGVkQ0RxWWY2WnFyX2pxV090OUxvWjdFanAzVXQwR3dpTGhQcGtxUHpMZ0hnMHdINUJUQTlGOE05T2ozQlY1OHpkTmpzSFU5UThvMXh0UDhtblpkSlZuOGpXalJGQ0dqUnVabVVfVnlQb0FsN0xOLVJKbld2RGh2ak1TU1VaQ1pOeTZEWmM4bWxGMU45UmNmQ1VHbWRKNW5JTVJVMGhqVGkzYkxs?oc=5",
@@ -1669,7 +3136,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-41",
+      "id": "ref-79",
       "publisher": "Warta Ekonomi",
       "title": "Menteri LH Kantongi Laporan Intelijen: Ada Motif Politik Jatuhkan Pemerintah di Balik Karhutla",
       "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxQb250NmpkVExxc3VVRzJ2dkhTS1M1Tkd2cklndnAzUlI3RTJZTlRsZGJscTRPdkFkUHdBQzhtU09QNUZwak5EUjJxWXlTOVdnTTRRSFA3VXk0QjVVX01vcnV2Qjg4M21TeUJWZGlyUGV3QUpzT3AwVmZJVy1vRUdwTlVWaG9kN1B1SFc2eElVdUpCMHdqUVhhby13VEk1MVhsRnJCZURtWHNpX2YxWHpzUVlaR0VZcU83VklKdzhvcUpUdm1aWktzVjltd9IB0AFBVV95cUxNdDFtSElpWmNSVF9fRkktYTlReWxOcGVpNUlkbk04WE9ROEtZMXY4RFpUSDdKRS13UUVaT3Jxclc0d0lhRDdOb1ZKZXNKX0JBNWRmZXJPV1VIajVxZFVNVXBmeWRoUzA3blp3X2czeGJkX0xkck56eGpHTmhTSmNYSDlfNmNXZGpxSDVkYWlzdWJWZEluUk5XdGI0d3ptX3FsazF0RXRHVFFFcEtOdGNsWXhBeGlnYmFWbVdvb3N0czdBTEE0QS1OMmtvbndoUFFU?oc=5",
@@ -1678,7 +3145,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-42",
+      "id": "ref-80",
       "publisher": "Bisnis.com - Market",
       "title": "Klarifikasi Grup Salim INDF-SIMP Soal Karhutla dan Panggilan Otoritas Singapura",
       "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxQWGZjNndBVm1ITFFwWmI2ZEVUZk1VRDJOZTMwNjF3WjFVc2FRMk5EQk1CWmVNd29yMEJRRFNtTmJZdzZzSWlGRWZGdzI2cWZUQXdlU0hZN3JGTTVNUzZWZThRdjJqREQwMVVLLWlFd3gyOFFlY1R1aGtVNzNWSldfZlk2RmV5b21McTJGSC0xdnIzOXVTWmpCQng2YnZJRkc2endMNlV1RzAwLV9LekNHSjhXMXBDR25MZ1AxOGZ4V3ZpY3lrLUpfQkJ1OA?oc=5",
@@ -1687,7 +3154,16 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-43",
+      "id": "ref-81",
+      "publisher": "https://www.rakyatpos.id/",
+      "title": "Peringatan Dini BMKG Hujan Indonesia 5-6 November 2026: 11 Wilayah Peringatan Hujan Sedang-Lebat",
+      "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxPcEJ3cnp0QmVtX012Y0tPUE1hYTc2RnRRTnpMT2ZhUlFVSFdya21PYTZ5dkdFUjlOZGs5S3ZfQVBtTGFrZEFxc1ZLNWpPcHZKQmdjM1dUTGxIS25GYjFraG55Umc4RlVFV295SzJ2bVMyRGpCbFQtekM5LWlKbmpQU2I0LS11UUVNelJ4Szg2c1lJd0NhWTlxS1FwdVpPTlJTaFFJOUFhZWxDQzFqS2dwWGVUSkNoOEQxR1Bmb1FmWnEwaW9QMjVYYlBTYnJ4Zw?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T22:23:32.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-82",
       "publisher": "Kompas.tv",
       "title": "Menteri LH Jumhur dapat Bocoran Intelijen soal Motif Karhutla: Ada Sinyal Rusak Citra Pemerintah",
       "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxPcTlZZjZKMHBYaHNUMHBLdXVWQ3cxcEd1SHdIa1FRS1NlbExNclBjajFlMUR3VW5fUWZwSkZ1cElXLWwzSDFpRm13U3RIUHBFUXlPWlY4MjVPYjdxYmYxcmFqQmhydHNuWDVPQWhhN0ZmVTV0YzF4bkRYVWh2bmRLOXZUbkFqTWwzbk9Rd09rVWpRMkxhSzdseG9JbWRucFJfUmlUTzNfVVRIMW9VNERpNTNCeWdCVFozQzdMN2VscDJINWtleWhvT09CVW4tZ9IB0wFBVV95cUxNU3F3a00yRVlmWUNiOTJfcTIzbC1oSGE2aXhNSFBsMEZCM2VEWVR4a3JuZXV5TXZ1aE9iOE5XMHhNdnMtZktfeFZpc2o0dVZpaHUzN2dWSDVaZVpYNW5UQXcxM2V4aWlxb0ZmXzd4NGVPbW11RmNxeVhXdXdmQmhwOEZ6eHFOMGd6YU1RUzFhamtla2RhX3VpVi1IcFo4VlJ6RVVtSGg0T1NndzRmbFZhQ2pfRHRHUXFVT1VBZGcxajhUTEk1RV9BcUxOVk1zSGZpejk0?oc=5",
@@ -1696,7 +3172,16 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-44",
+      "id": "ref-83",
+      "publisher": "bsinews.id",
+      "title": "Kepala BRIN Tinjau Penyemaian Awan untuk Atasi Karhutla Sumsel",
+      "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE9USjd3ZFAycENwQUt0d1ZORjRpUHRkaTRQemQzc0dVbWRiMWFINGVnLWJoTW1IWjZzZHRiUFBzTlc5eGtweVY2TEpJY25pQWY3bWVTMkZVaG1QR1FhVFpDT1YwTjRPQQ?oc=5",
+      "sourceType": "secondary media report",
+      "publishedAt": "2026-11-03T16:34:18.000Z",
+      "accessedAt": "2026-11-04T00:05:29.702Z"
+    },
+    {
+      "id": "ref-84",
       "publisher": "ASMC",
       "title": "Regional haze situation report",
       "url": "https://wis2.asmc.asean.org/regional-haze-situation/",
@@ -1705,7 +3190,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-45",
+      "id": "ref-85",
       "publisher": "BMKG",
       "title": "BMKG earthquake information",
       "url": "https://www.bmkg.go.id/gempabumi",
@@ -1714,7 +3199,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-46",
+      "id": "ref-86",
       "publisher": "BMKG",
       "title": "Jakarta smoke observation report",
       "url": "https://www.bmkg.go.id/siaran-pers/bmkg-asap-sempat-terpantau-sesaat-di-jabodetabek-kini-sudah-menjauh",
@@ -1723,7 +3208,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-47",
+      "id": "ref-87",
       "publisher": "Ministry of Health of Indonesia",
       "title": "Health-impact report",
       "url": "https://www.kemkes.go.id/id/kemenkes-kirim-tambahan-masker-rumah-oksigen-diperluas-hadapi-karhutla",
@@ -1732,7 +3217,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-48",
+      "id": "ref-88",
       "publisher": "Singapore National Environment Agency",
       "title": "Haze situation update",
       "url": "https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-22-october-2026",
@@ -1741,7 +3226,7 @@
       "accessedAt": "2026-11-03T01:43:35.710Z"
     },
     {
-      "id": "ref-49",
+      "id": "ref-89",
       "publisher": "NOAA / Pacific Tsunami Warning Center",
       "title": "Tsunami bulletins",
       "url": "https://www.tsunami.gov/",
@@ -1852,13 +3337,115 @@
       },
       "referenceId": "ref-1",
       "referenceUrl": "https://firms.modaps.eosdis.nasa.gov/"
+    },
+    {
+      "reportDate": "2026-11-04",
+      "capturedAt": "2026-11-04T00:05:29.702Z",
+      "period": {
+        "start": "2026-11-03T00:05:29.702Z",
+        "end": "2026-11-04T00:05:29.702Z",
+        "durationHours": 24
+      },
+      "reportedTotal": 5190,
+      "highConfidence": 108,
+      "totalFrpMw": 36953,
+      "windowHours": 24,
+      "truncated": true,
+      "provinceRanking": [
+        {
+          "province": "Kalimantan Tengah",
+          "hotspots": 1225,
+          "frpMw": 11417
+        },
+        {
+          "province": "Papua Selatan",
+          "hotspots": 872,
+          "frpMw": 5648
+        },
+        {
+          "province": "Jambi",
+          "hotspots": 400,
+          "frpMw": 2993
+        },
+        {
+          "province": "Kalimantan Barat",
+          "hotspots": 370,
+          "frpMw": 2692
+        },
+        {
+          "province": "Nusa Tenggara Timur",
+          "hotspots": 300,
+          "frpMw": 2120
+        },
+        {
+          "province": "Kalimantan Timur",
+          "hotspots": 285,
+          "frpMw": 1198
+        },
+        {
+          "province": "Sumatera Selatan",
+          "hotspots": 282,
+          "frpMw": 1768
+        },
+        {
+          "province": "Maluku",
+          "hotspots": 270,
+          "frpMw": 1467
+        },
+        {
+          "province": "Sulawesi Tengah",
+          "hotspots": 193,
+          "frpMw": 1831
+        },
+        {
+          "province": "Maluku Utara",
+          "hotspots": 155,
+          "frpMw": 622
+        },
+        {
+          "province": "Nusa Tenggara Barat",
+          "hotspots": 124,
+          "frpMw": 981
+        },
+        {
+          "province": "Bangka Belitung",
+          "hotspots": 82,
+          "frpMw": 594
+        },
+        {
+          "province": "Sulawesi Tenggara",
+          "hotspots": 82,
+          "frpMw": 379
+        },
+        {
+          "province": "Gorontalo",
+          "hotspots": 58,
+          "frpMw": 371
+        },
+        {
+          "province": "Sulawesi Utara",
+          "hotspots": 53,
+          "frpMw": 458
+        }
+      ],
+      "provinceRankingMeta": {
+        "assignmentMethod": "coarse rectangular province boxes",
+        "assignedDetectionCount": 5020,
+        "unassignedDetectionCount": 170,
+        "availableProvinceCount": 31,
+        "returnedProvinceCount": 15,
+        "maxReturned": 15,
+        "truncated": true
+      },
+      "referenceId": "ref-1",
+      "referenceUrl": "https://firms.modaps.eosdis.nasa.gov/"
     }
   ],
   "notes": {
     "method": "Weekly evidence is derived from the available daily snapshots. Event records are deduplicated by stable source identifiers. Hotspot observations remain a per-snapshot series and are not summed; gaps, overlaps, capped news records, or unavailable sources are disclosed."
   },
   "weekId": "2026-W45",
-  "throughDate": "2026-11-03",
-  "capturedAt": "2026-11-03T01:43:35.710Z",
+  "throughDate": "2026-11-04",
+  "capturedAt": "2026-11-04T00:05:29.702Z",
   "quality": "partial"
 }
