@@ -86,13 +86,14 @@ not new features**.
 | 2026-11-05 | `aad1601` | Cron race condition: three workflows pushed to `main` with a bare `git push`, so a slow CAMS download lost its artifact when the archive cron pushed first (`! [rejected] ... fetch first`). They now share `scripts/ci-commit-push.sh`, which fetches and rebases before retrying and never force-pushes. Guard test added. |
 | 2026-11-05 | `2221f43` | Privacy defect: `/api/map-narrative` really does send the PNG to Meta, but the Reports page and README claimed images were "never uploaded". Added an explicit consent checkbox gating the narrative button, corrected the ID/EN privacy text, and removed the operator link from public footers. Guard test added. |
 | 2026-11-05 | `58e7fe9` | Reports page: labelled `?demo=1` fixture mode for repeatable recordings, and a 12-second bound on every archive read so a hung request cannot leave "Loading..." on screen forever. |
+| 2026-11-05 | (this commit) | Reports page: summary card above the issue body, assembled by code from the archive file (period, FIRMS totals, coarse-box province count, source status, record count, three-sentence narrative) with the method folded into an accordion. AQI/PM2.5 and regency counts are shown as unavailable because the daily archive does not store them. |
 
 No new capability was added after the window closed. Every row above either fixes a defect
 found by running the eval against production, corrects an ID/EN label, or produces the demo
 artefacts. The feature set was frozen at the end of 4 Nov. The three 5 Nov rows above are
-defect fixes and recording aids, not new product features; the per-layer capture toggles and
-the pinned summary card that were requested in the same pass were **not** built, and README
-section 7 lists them as gaps.
+defect fixes and recording aids, not new product features. The summary card requested in the
+same pass was built and is listed above; the per-layer capture toggles, the frame picker and
+the one-click "build a report now" were **not** built, and README section 7 lists them as gaps.
 
 **Author metadata was normalised on 5 Nov.** Commits made through an assistant had been
 recorded under a tool identity (`Arena Agent`). They were rewritten to the repository owner's

@@ -495,6 +495,82 @@
           + (summary ? '<span class="report-source-quote" data-i18n-skip>' + escapeHtml(summary) + '</span>' : '') + '</li>';
       }).join('') + '</ul></section>';
   }
+  /**
+   * Kartu ringkasan di atas isi laporan.
+   *
+   * Semua angka di sini dibaca dari berkas arsip yang sedang dilihat, bukan
+   * dihitung ulang dan bukan diminta ke model. Arsip harian tidak menyimpan
+   * AQI/PM2.5 dan tidak menyimpan daftar kabupaten, jadi keduanya dinyatakan
+   * tidak tersedia, bukan dikarang dan bukan ditulis nol. Peringkat yang ada
+   * adalah provinsi lewat kotak kasar, dan itu disebut apa adanya.
+   */
+  function renderSummaryCard(snapshot) {
+    var hot = snapshot.observations && snapshot.observations.hotspots;
+    var cov = snapshot.coverage || {};
+    var events = Array.isArray(snapshot.events) ? snapshot.events : [];
+    var ranking = hot && Array.isArray(hot.provinceRanking) ? hot.provinceRanking : [];
+    var meta = hot && hot.provinceRankingMeta || null;
+    var refs = referenceMap(snapshot.references || []);
+
+    function tile(label, value, note) {
+      return '<div class="report-sum-tile"><dt>' + escapeHtml(label) + '</dt><dd>' + value + '</dd>'
+        + (note ? '<p class="report-sum-note">' + escapeHtml(note) + '</p>' : '') + '</div>';
+    }
+    var tiles = [];
+    tiles.push(tile(copy('Periode', 'Period'),
+      escapeHtml(formatDate(snapshot.period && snapshot.period.start, true) + ' - ' + formatDate(snapshot.period && snapshot.period.end, true)),
+      copy('Jendela ', 'Window ') + fmtNumber(snapshot.period && snapshot.period.durationHours, 0) + copy(' jam, waktu WIB.', ' hours, WIB time.')));
+    tiles.push(tile(copy('Deteksi titik api', 'Hotspot detections'),
+      hot ? '<strong>' + escapeHtml(fmtNumber(hot.reportedTotal, 0)) + '</strong>' + citation(hot.referenceId, refs)
+          : escapeHtml(copy('tidak tersedia', 'unavailable')),
+      hot ? copy('Keyakinan tinggi: ', 'High confidence: ') + fmtNumber(hot.highConfidence, 0) + '. ' + copy('Deteksi panas, bukan luas terbakar.', 'Heat detections, not burned area.')
+          : copy('Tidak tersedia di arsip ini; bukan nol.', 'Unavailable in this issue; not zero.')));
+    tiles.push(tile(copy('Provinsi terdampak (kotak kasar)', 'Provinces matched (coarse boxes)'),
+      meta ? '<strong>' + escapeHtml(fmtNumber(meta.availableProvinceCount, 0)) + '</strong>'
+           : escapeHtml(copy('tidak tersedia', 'unavailable')),
+      meta ? copy('Kotak persegi kasar, bukan batas administratif. Kabupaten/kota tidak disimpan di arsip ini.', 'Coarse rectangular boxes, not administrative borders. Regencies/cities are not stored in this issue.')
+           : copy('Arsip ini tidak memuat perincian wilayah.', 'This issue carries no regional breakdown.')));
+    tiles.push(tile(copy('AQI / PM2.5 tertinggi', 'Worst AQI / PM2.5'),
+      escapeHtml(copy('tidak disimpan di arsip', 'not stored in the archive')),
+      copy('Gunakan Tangkap peta di atas untuk angka model CAMS terkini. Nilai model bukan pengukuran stasiun dan bukan khusus asap.', 'Use Capture map above for current CAMS model figures. Model values are not station measurements and are not smoke-specific.')));
+    tiles.push(tile(copy('Status sumber', 'Source status'),
+      '<strong>' + escapeHtml(fmtNumber(cov.availableSources, 0) + '/' + fmtNumber(cov.expectedSources, 0)) + '</strong>',
+      copy('Feed yang gagal berarti tidak tersedia, bukan nol.', 'A failed feed means unavailable, not zero.')));
+    tiles.push(tile(copy('Rekaman bertaut sumber', 'Source-linked records'),
+      '<strong>' + escapeHtml(fmtNumber(events.length, 0)) + '</strong>',
+      copy('Hanya rekaman berwaktu dan berujukan valid yang dihitung.', 'Only records with a valid time and reference are counted.')));
+
+    // Narasi ringkas disusun kode dari angka di atas, bukan oleh model.
+    var sentences = [];
+    if (hot) {
+      sentences.push(copy('Dalam jendela ', 'Within the ') + fmtNumber(snapshot.period && snapshot.period.durationHours, 0)
+        + copy(' jam ini NASA FIRMS melaporkan ', ' hours of this window NASA FIRMS reported ')
+        + fmtNumber(hot.reportedTotal, 0) + copy(' deteksi panas, ', ' heat detections, ')
+        + fmtNumber(hot.highConfidence, 0) + copy(' di antaranya berkeyakinan tinggi.', ' of them at high confidence.'));
+    } else {
+      sentences.push(copy('Ringkasan titik api tidak tersedia pada edisi ini, dan itu tidak berarti nol.', 'The hotspot summary is unavailable in this issue, which does not mean zero.'));
+    }
+    if (ranking.length) {
+      sentences.push(copy('Deteksi terbanyak berada di ', 'Most detections fell in ') + ranking[0].province
+        + ' (' + fmtNumber(ranking[0].hotspots, 0) + ')'
+        + (ranking[1] ? copy(' disusul ', ' followed by ') + ranking[1].province + ' (' + fmtNumber(ranking[1].hotspots, 0) + ')' : '')
+        + copy(', menurut kotak provinsi kasar.', ', using coarse province boxes.'));
+    }
+    sentences.push(fmtNumber(cov.availableSources, 0) + '/' + fmtNumber(cov.expectedSources, 0)
+      + copy(' feed tersedia saat pengambilan, sehingga edisi ini bertanda ', ' feeds were available at capture time, so this issue is marked ')
+      + (snapshot.quality === 'complete' ? copy('lengkap.', 'complete.') : copy('parsial.', 'partial.')));
+
+    var method = snapshot.notes && snapshot.notes.method ? String(snapshot.notes.method) : '';
+    return '<section class="report-summary" aria-label="' + escapeHtml(copy('Ringkasan edisi', 'Issue summary')) + '">'
+      + '<h2 class="report-sum-title">' + escapeHtml(copy('Ringkasan edisi ini', 'This issue at a glance')) + '</h2>'
+      + '<p class="report-sum-narrative">' + escapeHtml(sentences.join(' ')) + '</p>'
+      + '<dl class="report-sum-grid">' + tiles.join('') + '</dl>'
+      + '<details class="report-sum-method"><summary>' + escapeHtml(copy('Metode dan keterbatasan', 'Method and limitations')) + '</summary>'
+      + '<p>' + escapeHtml(method || copy('Metode tidak tercatat pada edisi ini.', 'No method was recorded in this issue.')) + '</p>'
+      + '<p>' + escapeHtml(copy('Angka pada kartu ini dibaca dari berkas arsip, bukan diminta ke model. Miniatur peta tidak dibuat otomatis: gunakan Tangkap peta untuk menyertakan gambar berlegenda dan beratribusi.', 'Figures on this card are read from the archive file, not requested from a model. A map thumbnail is not generated automatically: use Capture map to attach an image carrying its legend and attribution.')) + '</p>'
+      + '</details></section>';
+  }
+
   function renderDaily(snapshot) {
     var references = snapshot.references || [];
     var refs = referenceMap(references);
@@ -717,7 +793,7 @@
           if (status) status.textContent = copy('Gagal memuat edisi terpilih.', 'Could not load the selected issue.');
           return;
         }
-        html = renderDaily(snapshot);
+        html = renderSummaryCard(snapshot) + renderDaily(snapshot);
         reportQuality = snapshot.quality;
         if (status) status.textContent = copy('Snapshot ', 'Snapshot ') + snapshot.reportDate + ' · ' + copy('diambil ', 'captured ') + formatDate(snapshot.capturedAt, true)
           + ' · ' + fmtNumber(snapshot.coverage && snapshot.coverage.availableSources, 0) + '/' + fmtNumber(snapshot.coverage && snapshot.coverage.expectedSources, 0) + copy(' feed tersedia.', ' feeds available.');

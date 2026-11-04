@@ -137,6 +137,7 @@ Optional manual browser tests (need Playwright, Chromium and a running server):
 npx playwright install chromium
 node scripts/manual-map-capture.js     # 22 checks, desktop + mobile + image consent + failure mode
 node scripts/manual-reports-demo.js    # 11 checks, demo label, archive timeout, 390px
+node scripts/manual-report-summary.js  # 21 checks, summary card, accordion, ID/EN, 390px
 node scripts/manual-agent-ui.js        # 10 checks, assistant panel
 node scripts/manual-smoke-check.js     # 29 checks, Cek Asap
 ```
@@ -229,11 +230,17 @@ timeouts, and the tests for all of it. **Not done, and not claimed anywhere:**
   hazard radius, concession borders) and a `Now/+6/+12/+18h` frame picker inside the capture
   panel. Today the capture records whichever layers are already active on the dashboard, and
   the two-frame comparison uses two captures taken by hand.
-- A summary card pinned above the report body (period, hotspot count, regencies in the model
-  area, worst AQI/PM2.5, source status, map thumbnail, 2-3 sentence narrative) with the
-  methodology text folded into an accordion.
 - A one-click "Build a report now" that composes an issue from the latest data. The empty
   state currently points at "Capture map" instead of doing it automatically.
+
+The summary card was built after that list was written: `/reports` now opens with a card
+carrying the period, FIRMS detection count and high-confidence subset, provinces matched by
+coarse boxes, source status, source-linked record count, and a three-sentence narrative
+assembled by code, with the method folded into an accordion. Two requested fields are
+deliberately shown as **unavailable rather than invented**: the daily archive stores no
+AQI/PM2.5 and no regency list, so the card says so and points at "Capture map" for current
+CAMS model figures. No map thumbnail is generated automatically; a capture must be attached
+by the operator so the image carries its own legend and attribution.
 
 These are listed as gaps rather than described as features. Nothing above is presented as
 shipped, and no fixture is presented as live.

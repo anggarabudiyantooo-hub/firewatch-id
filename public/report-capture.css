@@ -83,3 +83,37 @@
   font-size: 12px;
   font-weight: 600;
 }
+
+.report-summary {
+  margin: 0 0 22px;
+  padding: 16px 18px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.06);
+}
+.report-sum-title { margin: 0 0 8px; font-size: 17px; }
+.report-sum-narrative { margin: 0 0 14px; font-size: 14px; line-height: 1.6; }
+.report-sum-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.report-sum-tile {
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+}
+.report-sum-tile dt { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.75; }
+.report-sum-tile dd { margin: 4px 0 0; font-size: 14px; line-height: 1.45; }
+.report-sum-note { margin: 6px 0 0; font-size: 11px; line-height: 1.5; opacity: 0.8; }
+.report-sum-method { margin-top: 14px; font-size: 12px; line-height: 1.6; }
+.report-sum-method summary { cursor: pointer; font-weight: 600; }
+.report-sum-method p { margin: 8px 0 0; }
+@media (max-width: 600px) {
+  .report-sum-grid { grid-template-columns: 1fr; }
+}
+@media print {
+  .report-summary { break-inside: avoid; }
+  .report-sum-method { display: none; }
+}
