@@ -8,6 +8,9 @@ Do not tick a box you have not actually verified.
 - [x] `https://github.com/anggarabudiyantooo-hub/siaga-id` is public: the unauthenticated
       API returns 200. Still open it in a private window yourself before submitting.
 - [x] Default branch is `main` and contains the merged hackathon work (verified via the API).
+      Submission repository is **`siaga-id`**; the earlier `firewatch-id` repository is now
+      private and returns 404 anonymously. Full unmodified git history was carried over, so
+      every SHA quoted in `HACKATHON.md` still resolves (35 of 35 checked).
 - [x] `README.md` is on `main` and **all 14 internal links resolve** (each fetched from the
       API at `ref=main`, zero broken).
 - [x] `HACKATHON.md`, `docs/DEMO-SCRIPT.md`, `evals/results.md`, `LICENSE`,
@@ -126,6 +129,24 @@ Test in a private window, on desktop and on a phone:
 - [x] Methodology content still present: the static gate asserts the exact Indonesian
       literals (`bukan khusus asap`, `bukan PM2.5 permukaan`,
       `Area transparan bukan bukti udara bersih`, and the rest) and fails if any is removed.
+
+## 7b. Repository move (done 5 Nov, before the deadline)
+
+- [x] New public repository `siaga-id` created; `main` = the cleaned submission tree.
+- [x] 16 pre-hackathon documents removed (PRD, DESIGN, ERD, ROADMAP, HARDCODED,
+      FEATURE_FULLSCREEN, three dashboard-clean-ui notes, OPS-AUDIT, OPS-SECURITY-AUDIT,
+      PENJADWAL, PENYIMPANAN, AUDIT-ABU-ANGIN, HACKATHON_AI, CHANGELOG). Every reference to
+      them in README, README.id and source comments was rewritten, leaving **zero dead links**.
+- [x] `HACKATHON.md` section 1.6 quarantines the 7 commits made on 5 Nov WIB as post-window
+      finalisation, so the claimed window stays exactly 27 Oct - 4 Nov.
+- [x] Demo segment 05 re-recorded against the new repository, because the old recording showed
+      a GitHub page that would now 404. Video rebuilt: still 180.0s, frame inspected.
+- [x] Old repository set private; **live site re-checked immediately afterwards**: all five
+      public routes still 200 and `/api/ask` still returns `muse-spark` / `verified`.
+- [ ] **Owner action:** Vercel is still connected to the old, now-private repository. The
+      deployed site keeps working, but pushes to `siaga-id` will not deploy until the Vercel
+      project is reconnected to the new repository. The Vercel connector returned
+      "Access denied" for this account, so this could not be done here.
 
 ## 8b. Only the repository owner can tick these
 
