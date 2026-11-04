@@ -684,7 +684,15 @@
       + '<section class="report-section"><h2>5. ' + escapeHtml(copy('Referensi', 'References')) + '</h2>' + renderReferences(references) + '</section>';
   }
 
+  // Kartu ringkasan lives above the capture panel, so a reader sees the shape
+  // of the issue before the tools. It is cleared whenever an issue cannot be
+  // shown, so a stale card never sits above an error message.
+  function renderSummaryInto(html) {
+    var host = document.getElementById('reportSummaryHost');
+    if (host) host.innerHTML = html || '';
+  }
   function emptyReport(message) {
+    renderSummaryInto('');
     var content = document.getElementById('reportContent');
     if (content) content.innerHTML = '<div class="site-empty">' + escapeHtml(message) + '</div>';
     var print = document.getElementById('reportPrint');
@@ -793,7 +801,8 @@
           if (status) status.textContent = copy('Gagal memuat edisi terpilih.', 'Could not load the selected issue.');
           return;
         }
-        html = renderSummaryCard(snapshot) + renderDaily(snapshot);
+        renderSummaryInto(renderSummaryCard(snapshot));
+        html = renderDaily(snapshot);
         reportQuality = snapshot.quality;
         if (status) status.textContent = copy('Snapshot ', 'Snapshot ') + snapshot.reportDate + ' · ' + copy('diambil ', 'captured ') + formatDate(snapshot.capturedAt, true)
           + ' · ' + fmtNumber(snapshot.coverage && snapshot.coverage.availableSources, 0) + '/' + fmtNumber(snapshot.coverage && snapshot.coverage.expectedSources, 0) + copy(' feed tersedia.', ' feeds available.');
@@ -804,6 +813,7 @@
           if (status) status.textContent = copy('Gagal memuat arsip mingguan.', 'Could not load the weekly archive.');
           return;
         }
+        renderSummaryInto('');
         html = renderWeekly(issue);
         reportQuality = issue.quality || (issue.complete ? 'complete' : 'partial');
         if (status) status.textContent = fmtNumber(issue.dailySnapshotCount, 0) + '/' + fmtNumber(issue.expectedDailySnapshots, 0) + ' '

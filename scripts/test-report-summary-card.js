@@ -23,8 +23,17 @@ function ok(label, fn) {
 }
 
 console.log('== kartu dipasang di atas isi laporan ==');
-ok('kartu dibangun sebelum isi laporan harian', () => {
-  assert.match(src, /html = renderSummaryCard\(snapshot\) \+ renderDaily\(snapshot\);/);
+ok('kartu ditulis ke wadah di atas panel tangkapan', () => {
+  assert.match(src, /renderSummaryInto\(renderSummaryCard\(snapshot\)\);/);
+  const html = fs.readFileSync(path.join(root, 'public', 'reports.html'), 'utf8');
+  const host = html.indexOf('id="reportSummaryHost"');
+  const capture = html.indexOf('id="tangkapan-peta"');
+  const body = html.indexOf('id="reportContent"');
+  assert.ok(host > 0 && host < capture && capture < body, 'kartu harus di atas panel tangkapan dan badan laporan');
+});
+ok('kartu dibersihkan saat edisi gagal atau mingguan', () => {
+  assert.match(src, /function emptyReport\(message\) \{\s*renderSummaryInto\(''\);/);
+  assert.match(src, /renderSummaryInto\(''\);\s*html = renderWeekly\(issue\);/);
 });
 ok('semua angka dibaca dari snapshot, bukan fetch baru', () => {
   const body = src.slice(src.indexOf('function renderSummaryCard'), src.indexOf('function renderDaily(snapshot)'));
