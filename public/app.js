@@ -2764,15 +2764,6 @@
       .catch(function () { /* panel disembunyikan bila gagal */ });
   }
 
-  /** Panel transparansi: kapan tiap sumber terakhir berhasil diperbarui. */
-  function fmtUtcClock(value) {
-    var date = new Date(value);
-    if (!Number.isFinite(date.getTime())) return String(value || '').slice(11, 19) + ' UTC';
-    return date.toLocaleTimeString(getLocale(), {
-      timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit'
-    }) + ' UTC';
-  }
-
   function renderStatus() {
     var panel = $('statusPanel');
     var body = $('statusBody');
@@ -2789,39 +2780,10 @@
     var frac = s.total ? s.healthy / s.total : 0;
     put('srcTxt', s.healthy + '/' + s.total + ' sumber aktif');
     put('srcHealthy', s.healthy + '/' + s.total);
-    put('srcQ429', s.quota ? String(s.quota['429'] || 0) : '-');
-    put('srcQ5xx', s.quota ? String(s.quota['5xx'] || 0) : '-');
-    put('srcRuns', s.summary ? s.summary.totalRuns + ' / ' + s.summary.totalFails : '-');
     var chipDot = $('srcDot');
     if (chipDot) {
       chipDot.className = 'dot ' + (frac >= 1 ? 'd-nominal' : frac >= .5 ? 'd-caution'
         : frac > 0 ? 'd-alert' : 'd-danger');
-    }
-
-    // Fase 2.2: alert kritis menonjol di atas
-    if (s.criticalAlerts && s.criticalAlerts.length) {
-      var alertBox = el('div', 'st-alert-box');
-      
-      alertBox.appendChild(el('div', '', '⚠️ ' + s.criticalAlerts.length + ' tugas kritis gagal berturut:'));
-      s.criticalAlerts.forEach(function (a) {
-        alertBox.appendChild(el('div', '', '• ' + a.id + ': ' + a.message));
-      });
-      body.appendChild(alertBox);
-    }
-
-    // Fase 2.2: ringkasan kuota & log
-    if (s.quota || s.summary) {
-      var qBox = el('div', 'st-quota');
-      
-      if (s.quota) {
-        var qText = 'Kuota: 429=' + (s.quota['429']||0) + ' · 5xx=' + (s.quota['5xx']||0) + ' · total=' + (s.quota.total||0);
-        if (s.quota.last429At) qText += ' · terakhir 429: ' + s.quota.last429At.slice(11,19);
-        qBox.appendChild(el('span', '', qText));
-      }
-      if (s.summary) {
-        qBox.appendChild(el('span', '', 'Runs: ' + s.summary.totalRuns + ' · Fails: ' + s.summary.totalFails));
-      }
-      body.appendChild(qBox);
     }
 
     // Baris per sumber mengikuti bentuk audit: .kv dengan label di kiri dan
@@ -2883,32 +2845,27 @@
       // Status ditulis dengan kata yang berarti, bukan sekadar umur:
       // penguna harus bisa membedakan "hidup", "lambat", "masih cache
       // terakhir" dan "tidak aktif", tanpa perlu menebak dari angka.
-      var late = t.ageMs != null && t.everyMs > 0 && t.ageMs > t.everyMs * 2.5;
+      var late = typeof t.late === 'boolean'
+        ? t.late : (t.ageMs != null && t.everyMs > 0 && t.ageMs > t.everyMs * 2.5);
       var fAt = feedStamp(t.id);
       var fAge = fAt != null ? Date.now() - fAt : null;
       var fedFresh = fAge != null && fAge <= Math.max(t.everyMs * 3, 30 * 60000);
       var right;
       if (fedFresh && !t.hasData) right = 'AKTIF · data di halaman ' + agoLabel(fAge);
-      else if (!t.hasData && t.runs === 0 && onDemandMode) right = 'ON-DEMAND · belum diminta';
+      else if (!t.hasData && !t.requested && onDemandMode) right = 'ON-DEMAND · belum diminta';
       else if (!t.hasData) right = 'TIDAK AKTIF';
       else if (!t.healthy) right = 'CACHE ' + t.ageLabel;
       else if (late) right = 'TERLAMBAT · ' + t.ageLabel;
       else right = 'AKTIF · ' + t.ageLabel;
-      if (t.consecutiveFails) right += ' · gagal ' + t.consecutiveFails + '×';
-      // Sejak penjadwal menjeda sumber yang terus gagal, lambatnya pembaruan
-      // punya sebab yang harus terbaca, bukan sumber yang diam-diam lupa.
-      if (t.backoff) right += ' · dijeda 30 mnt agar sumber tak dihujani';
       var rightEl = el('b', null, right);
-      if (!t.healthy || late) rightEl.classList.add('kv-bad');
+      if (!t.healthy || late || t.needsAttention) rightEl.classList.add('kv-bad');
       row.appendChild(rightEl);
-      row.title = t.everyLabel + ' · run ' + t.runs + '/' + t.fails +
-        (fAge != null ? ' · data di halaman ' + agoLabel(fAge) : '') +
-        (t.lastErrorAt ? ' · galat terakhir ' + fmtUtcClock(t.lastErrorAt) : '');
+      row.title = t.everyLabel + (t.requested ? ' · sumber pernah diminta' : ' · belum diminta') +
+        (fAge != null ? ' · data di halaman ' + agoLabel(fAge) : '');
       body.appendChild(row);
-      if (t.alert) body.appendChild(el('div', 'st-task-alert', t.alert));
-      if (t.errorNote && (!t.healthy || !t.hasData)) {
+      if (!t.healthy || late || t.needsAttention) {
         body.appendChild(el('div', 'st-task-alert',
-          'Penyebab: ' + t.errorNote + ', angka dari sumber ini belum terverifikasi saat ini.'));
+          'Data sumber belum diperbarui sesuai jadwal. Rincian operasional tidak dipublikasikan.'));
       }
     });
     if (onDemandMode) {
@@ -2919,23 +2876,6 @@
         'belum menerima permintaan itu, bukan bahwa sumbernya mati.'));
     }
 
-    // Fase 2.2: log terstruktur terbaru
-    if (s.recentLogs && s.recentLogs.length) {
-      var logBox = el('div', 'st-logs');
-      
-      var logTitle = el('div', '', 'Log terbaru:');
-      
-      logBox.appendChild(logTitle);
-      s.recentLogs.slice(0,10).forEach(function (lg) {
-        var l = el('div', 'st-log');
-      l.className = 'st-log st-log-' + (lg.level || 'info');
-        l.textContent = (lg.at ? fmtUtcClock(lg.at) : '') + ' [' + (lg.level || 'info') + '] '
-          + (lg.task || '') + ' ' + (lg.message || '').slice(0, 120);
-        l.title = JSON.stringify(lg);
-        logBox.appendChild(l);
-      });
-      body.appendChild(logBox);
-    }
   }
 
   function loadStatus() {
