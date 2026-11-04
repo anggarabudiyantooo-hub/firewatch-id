@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/assistant-widget.css" />
 <link rel="stylesheet" href="/ui-tooltip.css" />
 <link rel="stylesheet" href="/dashboard-clean.css" />
+<link rel="stylesheet" href="/map-capture.css" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111a24'/%3E%3Cpath d='M16 5c3 5-1 6 1 9 1.4 2.1 4-1 4-1 1.6 2.4 2 4.4 2 6a7 7 0 11-14 0c0-4 3-7 4-9 1.2-2.4 2-4 3-5z' fill='%23ff6b35'/%3E%3C/svg%3E" />
 </head>
 <body class="bloomberg">
@@ -137,6 +138,7 @@
         <span class="micro">Peta interaktif, Indonesia · EPSG:4326 · WGS84</span>
         <span class="micro" id="mapCount">NASA FIRMS · 24 jam</span>
         <span class="micro" id="legendPoints"></span>
+        <button id="mapCaptureBtn" class="btn btn-ghost map-capture-btn" type="button" aria-label="Tangkap peta untuk laporan">Tangkap peta</button>
         <button id="layerDrawerBtn" class="btn btn-ghost layer-drawer-btn" type="button" aria-controls="inspector" aria-expanded="false">Lapisan</button>
         <button id="mapFullscreenBtn" class="btn-fullscreen" type="button" aria-label="Peta layar penuh" aria-pressed="false" title="Layar penuh (F), ESC untuk keluar"><span class="fs-ic" aria-hidden="true">⛶</span><span class="fs-txt">FULL</span></button>
       </div>
@@ -800,6 +802,8 @@
 <script src="/app.js"></script>
 <script src="/assistant-widget.js"></script>
 <script src="/v3-ui.js"></script>
+<script src="/map-screenshot.js"></script>
+<script src="/map-capture-ui.js"></script>
 <script src="/dashboard-clean.js"></script>
 
 </body>
