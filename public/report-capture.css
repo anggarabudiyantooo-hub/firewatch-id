@@ -72,3 +72,14 @@
   .report-capture-frame img { border: 1px solid #bbb; }
   .report-capture-narrative { border-color: #bbb; }
 }
+
+.report-demo-badge {
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  border: 1px solid #b45309;
+  border-radius: 6px;
+  background: rgba(180, 83, 9, 0.12);
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 600;
+}

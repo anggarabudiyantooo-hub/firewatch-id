@@ -3,6 +3,14 @@
   if (!window || !document || !window.SiagaReportModel) return;
 
   var model = window.SiagaReportModel;
+  // Mode demo: ?demo=1 memakai arsip tersimpan apa adanya dan berhenti menyegarkan
+  // indeks, supaya rekaman video menghasilkan tampilan yang sama setiap kali.
+  // Fixture tidak pernah disajikan sebagai data live: labelnya dipasang di layar.
+  var DEMO = (function () {
+    try { return new URLSearchParams(window.location.search).get('demo') === '1'; }
+    catch (_error) { return false; }
+  })();
+  var FETCH_TIMEOUT_MS = 12000;
   var archiveEntries = [];
   var weeklyEntries = [];
   var snapshotsByDate = new Map();
@@ -22,6 +30,19 @@
     });
   }
   function safeUrl(value) { return model.safeUrl(value); }
+  // Setiap pembacaan arsip dibatasi waktu. Tanpa ini permintaan yang menggantung
+  // meninggalkan teks "Membuka snapshot..." selamanya tanpa pesan galat.
+  async function fetchJson(url, options) {
+    var controller = new AbortController();
+    var timer = setTimeout(function () { controller.abort(); }, FETCH_TIMEOUT_MS);
+    try {
+      var response = await fetch(url, Object.assign({}, options || {}, { signal: controller.signal }));
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return await response.json();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
   function isRecord(value) { return !!value && typeof value === 'object' && !Array.isArray(value); }
   function validWeeklyIssue(issue, entry) {
     if (!isRecord(issue) || issue.schemaVersion !== 1 || issue.type !== 'weekly'
@@ -635,9 +656,7 @@
     if (snapshotsByDate.has(entry.date)) return snapshotsByDate.get(entry.date);
     try {
       var version = entry.capturedAt ? '?v=' + encodeURIComponent(entry.capturedAt) : '';
-      var response = await fetch('/reports/archive/' + encodeURIComponent(entry.file) + version, { headers: { Accept: 'application/json' } });
-      if (!response.ok) throw new Error('HTTP ' + response.status);
-      var snapshot = await response.json();
+      var snapshot = await fetchJson('/reports/archive/' + encodeURIComponent(entry.file) + version, { headers: { Accept: 'application/json' } });
       if (!snapshot || snapshot.schemaVersion !== 1 || snapshot.reportDate !== entry.date
         || (entry.capturedAt && snapshot.capturedAt !== entry.capturedAt)) throw new Error('archive schema mismatch');
       snapshotsByDate.set(entry.date, snapshot);
@@ -650,9 +669,7 @@
     if (weeklyById.has(entry.weekId)) return weeklyById.get(entry.weekId);
     try {
       var version = entry.capturedAt ? '?v=' + encodeURIComponent(entry.capturedAt) : '';
-      var response = await fetch('/reports/archive/weekly/' + encodeURIComponent(entry.weekId + '.json') + version, { headers: { Accept: 'application/json' } });
-      if (!response.ok) throw new Error('HTTP ' + response.status);
-      var issue = await response.json();
+      var issue = await fetchJson('/reports/archive/weekly/' + encodeURIComponent(entry.weekId + '.json') + version, { headers: { Accept: 'application/json' } });
       if (!validWeeklyIssue(issue, entry)) throw new Error('weekly archive schema mismatch');
       weeklyById.set(entry.weekId, issue);
       return issue;
@@ -734,9 +751,7 @@
   async function loadArchive() {
     var status = document.getElementById('archiveStatus');
     try {
-      var response = await fetch('/reports/archive/index.json', { headers: { Accept: 'application/json' }, cache: 'no-cache' });
-      if (!response.ok) throw new Error('HTTP ' + response.status);
-      var index = await response.json();
+      var index = await fetchJson('/reports/archive/index.json', { headers: { Accept: 'application/json' }, cache: DEMO ? 'force-cache' : 'no-cache' });
       if (!index || index.schemaVersion !== 1 || !Array.isArray(index.reports)) throw new Error('unsupported archive index');
       archiveEntries = index.reports.filter(function (entry) {
         return entry && /^\d{4}-\d{2}-\d{2}$/.test(String(entry.date || ''))
@@ -754,8 +769,8 @@
     } catch (_error) {
       archiveEntries = [];
       weeklyEntries = [];
-      if (status) status.textContent = copy('Indeks arsip tidak dapat dimuat. Coba muat ulang halaman nanti.', 'The archive index could not be loaded. Try reloading the page later.');
-      emptyReport(copy('Arsip belum dapat diakses. Tidak ada laporan historis yang dibuat-buat.', 'The archive is unavailable. No historical report has been fabricated.'));
+      if (status) status.textContent = copy('Indeks arsip tidak dapat dimuat dalam 12 detik. Jaringan atau server bermasalah.', 'The archive index did not load within 12 seconds. The network or server is unavailable.');
+      emptyReport(copy('Arsip belum dapat diakses. Tidak ada laporan historis yang dibuat-buat. Anda masih bisa menyusun laporan dari data terbaru lewat tombol Tangkap peta di atas.', 'The archive is unavailable. No historical report has been fabricated. You can still build a report from the latest data using the Capture map button above.'));
     }
   }
 
@@ -777,5 +792,24 @@
   var printButton = document.getElementById('reportPrint');
   if (printButton) printButton.addEventListener('click', function () { if (!printButton.disabled) window.print(); });
   window.addEventListener('siaga:languagechange', function () { optionsForMode(); return renderSelected(); });
+  // Label mode demo dipasang di layar, bukan hanya di konsol: fixture tidak
+  // boleh terlihat seperti data live bagi penonton rekaman.
+  function markDemo() {
+    if (!DEMO || document.getElementById('reportDemoBadge')) return;
+    var badge = document.createElement('p');
+    badge.id = 'reportDemoBadge';
+    badge.className = 'report-demo-badge';
+    badge.setAttribute('role', 'status');
+    badge.setAttribute('data-i18n-skip', '');
+    badge.textContent = copy('Demo data: arsip tersimpan, bukan data live.', 'Demo data: stored archive, not live data.');
+    var host = document.getElementById('archiveStatus');
+    if (host && host.parentNode) host.parentNode.insertBefore(badge, host);
+    else document.body.insertBefore(badge, document.body.firstChild);
+  }
+  markDemo();
+  window.addEventListener('siaga:languagechange', function () {
+    var badge = document.getElementById('reportDemoBadge');
+    if (badge) badge.textContent = copy('Demo data: arsip tersimpan, bukan data live.', 'Demo data: stored archive, not live data.');
+  });
   loadArchive();
 })(typeof window !== 'undefined' ? window : null, typeof document !== 'undefined' ? document : null);

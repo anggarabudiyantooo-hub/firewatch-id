@@ -71,7 +71,13 @@ async function run() {
   const window = {
     SiagaI18n: { getLanguage() { return language; } },
     SiagaReportModel: model,
-    addEventListener(name, callback) { windowListeners[name] = callback; },
+    location: { search: '' },
+    // Peramban nyata menjalankan SEMUA listener untuk satu nama peristiwa.
+    // Harness dulu menyimpan satu saja, sehingga listener kedua menimpa yang
+    // pertama dan uji bahasa gagal padahal kodenya benar.
+    addEventListener(name, callback) {
+      (windowListeners[name] = windowListeners[name] || []).push(callback);
+    },
     print() { printCount++; }
   };
   const fetchedPaths = [];
@@ -89,7 +95,9 @@ async function run() {
     return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(value)) };
   };
   const source = fs.readFileSync(path.join(root, 'public', 'reports.js'), 'utf8');
-  vm.runInNewContext(source, { window, document, fetch, URL, console, setTimeout, clearTimeout });
+  // AbortController dan URLSearchParams dipakai reports.js untuk batas waktu
+  // arsip dan mode demo; keduanya API peramban nyata, jadi harness sediakan.
+  vm.runInNewContext(source, { window, document, fetch, URL, URLSearchParams, AbortController, console, setTimeout, clearTimeout });
   await new Promise(resolve => setTimeout(resolve, 25));
   assert(nodes.reportContent.innerHTML.includes('Catatan Situasi Bencana Indonesia'));
   assert(nodes.reportContent.innerHTML.includes('<svg class="report-chart-svg"'));
@@ -111,7 +119,7 @@ async function run() {
   assert.strictEqual(nodes.reportPrint.disabled, false);
 
   language = 'en';
-  await windowListeners['siaga:languagechange']();
+  for (const listener of windowListeners['siaga:languagechange'] || []) await listener();
   assert(nodes.reportContent.innerHTML.includes('Weekly Review of Events and Sources'));
   assert(nodes.reportContent.innerHTML.includes('Abstract'));
   nodes.reportPrint.listeners.click();
@@ -171,6 +179,7 @@ async function run() {
   const badWindow = {
     SiagaI18n: { getLanguage() { return 'id'; } },
     SiagaReportModel: model,
+    location: { search: '' },
     addEventListener() {}, print() {}
   };
   const badFetchedPaths = [];
@@ -198,7 +207,7 @@ async function run() {
     }
     return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(value)) };
   };
-  vm.runInNewContext(source, { window: badWindow, document: badDocument, fetch: badFetch, URL, console, setTimeout, clearTimeout });
+  vm.runInNewContext(source, { window: badWindow, document: badDocument, fetch: badFetch, URL, URLSearchParams, AbortController, console, setTimeout, clearTimeout });
   await new Promise(resolve => setTimeout(resolve, 25));
   await badTabs[1].listeners.click();
   assert(badNodes.reportContent.innerHTML.includes('Berkas arsip mingguan tidak dapat dibaca'));
