@@ -268,9 +268,11 @@ distinguishes a content-filter refusal from an outage, suggesting a rephrase onl
 refusal case.
 
 **Run-to-run variance matters more than the headline number.** Earlier runs scored 13/26,
-then 22/26 three times with different failing cases, then 25/26. Only after the three fixes
-above did the same cases pass repeatedly. A single eval number would overstate reliability,
-so the progression is disclosed rather than just the best run.
+then 22/26 three times with *different* failing cases, then 25/26 **twice in a row with the
+identical single failure (Q18)**. Only after the three fixes above did the same cases pass
+repeatedly. A single eval number would overstate reliability, so the progression is disclosed
+rather than just the best run. The last two runs are the ones to trust: the score is now
+stable, and the one failure has a known external cause rather than being random.
 
 Full per-case detail: [`evals/results.md`](evals/results.md).
 Reproduce with `npm run eval --origin=<your-deployment>`.
