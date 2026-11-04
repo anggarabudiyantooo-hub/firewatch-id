@@ -237,3 +237,16 @@
   .global-ai-fab,
   .global-ai-panel { display: none !important; }
 }
+
+/* Toggle "Tanya AI" mengambang di kanan bawah, sedangkan tautan footer
+   (termasuk Operator) berada di baris yang sama. Footer menyisakan ruang
+   bawah setinggi toggle supaya tautannya naik dan tidak pernah tertutup. */
+body.has-global-ai .site-footer { padding-bottom: 84px; }
+
+@media (max-width: 600px) {
+  body.has-global-ai .site-footer { padding-bottom: 76px; }
+}
+
+@media print {
+  body.has-global-ai .site-footer { padding-bottom: 18px; }
+}
