@@ -18,6 +18,15 @@
     'English language': 'Bahasa Inggris',
     'Perbesar': 'Zoom in',
     'Perkecil': 'Zoom out',
+    // Frasa utuh harus menang atas entri per-kata. Tanpa ini "keyakinan tinggi"
+    // diterjemahkan sebagian menjadi "Confidence tinggi" di antarmuka Inggris.
+    'keyakinan tinggi': 'High confidence',
+    'Keyakinan tinggi': 'High confidence',
+    'FRP tinggi': 'High FRP',
+    'rendah': 'Low',
+    'Rendah': 'Low',
+    'Tangkap peta': 'Capture map',
+    'Tangkap peta untuk laporan': 'Capture map for a report',
     'Baik': 'Good',
     'Tidak sehat': 'Unhealthy',
     'Tidak sehat bagi kelompok sensitif': 'Unhealthy for sensitive groups',

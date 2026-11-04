@@ -136,6 +136,17 @@ const emptyData = { hotspots: null, air: null, wind: null, volcanoes: null, ashR
     read('public/home.html').includes('href="/cek-asap"') && read('public/reports.html').includes('href="/cek-asap"'));
   ok('metodologi menjelaskan Cek Asap', read('public/tentang-data.html').includes('Bagaimana Cek Asap menilai laporan warga?'));
 
-  console.log(`\n${pass}/${pass + fail} uji Cek Asap lulus.\n`);
+  
+// Kategori AQI harus ikut bahasa keluaran; antarmuka Inggris tidak boleh
+// menampilkan "AQI 191 (Tidak sehat)".
+{
+  const base = { hotspots: [], air: { aqi: 191, pm25: 140, label: 'Tidak sehat' }, wind: null, volcanoes: [], regionalHaze: [] };
+  const idEv = smoke.gatherEvidence({ lat: 0.5, lon: 101.5, language: 'id', description: 'langit kelabu' }, base);
+  const enEv = smoke.gatherEvidence({ lat: 0.5, lon: 101.5, language: 'en', description: 'grey sky' }, base);
+  ok('AQI category is localized to English', enEv.air.point.category === 'Unhealthy', String(enEv.air.point.category));
+  ok('AQI category stays Indonesian for ID', idEv.air.point.category === 'Tidak sehat', String(idEv.air.point.category));
+}
+
+console.log(`\n${pass}/${pass + fail} uji Cek Asap lulus.\n`);
   process.exit(fail ? 1 : 0);
 })().catch((error) => { console.error('GAGAL', error && error.stack); process.exit(1); });

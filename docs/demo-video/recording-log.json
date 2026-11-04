@@ -1,0 +1,81 @@
+{
+  "origin": "https://firewatch-id.vercel.app",
+  "recordedAt": "2026-11-04T18:13:02.057Z",
+  "log": [
+    {
+      "segment": "02-report",
+      "text": "clicked Capture map",
+      "at": "2026-11-04T18:09:29.972Z"
+    },
+    {
+      "segment": "02-report",
+      "text": "PNG composited with legend and timestamp",
+      "at": "2026-11-04T18:09:35.023Z"
+    },
+    {
+      "segment": "02-report",
+      "text": "requested AI narrative from image",
+      "at": "2026-11-04T18:09:39.069Z"
+    },
+    {
+      "segment": "02-report",
+      "text": "added snapshot to report",
+      "at": "2026-11-04T18:09:58.550Z"
+    },
+    {
+      "segment": "02-report",
+      "text": "PDF downloaded to docs/demo-video/demo-report.pdf",
+      "at": "2026-11-04T18:10:05.689Z"
+    },
+    {
+      "segment": "02-report",
+      "text": "saved docs/demo-video/segments/02-report.webm",
+      "at": "2026-11-04T18:10:10.414Z"
+    },
+    {
+      "segment": "03-agent",
+      "text": "asked: How many thermal detections are near Pekanbaru in the last 24 hours?",
+      "at": "2026-11-04T18:10:37.969Z"
+    },
+    {
+      "segment": "03-agent",
+      "text": "expanded evidence trace",
+      "at": "2026-11-04T18:11:22.746Z"
+    },
+    {
+      "segment": "03-agent",
+      "text": "asked a medical question to show the refusal",
+      "at": "2026-11-04T18:11:29.894Z"
+    },
+    {
+      "segment": "03-agent",
+      "text": "saved docs/demo-video/segments/03-agent.webm",
+      "at": "2026-11-04T18:11:52.215Z"
+    },
+    {
+      "segment": "04-smoke-check",
+      "text": "uploaded the test sky fixture",
+      "at": "2026-11-04T18:12:14.964Z"
+    },
+    {
+      "segment": "04-smoke-check",
+      "text": "submitted for a verdict",
+      "at": "2026-11-04T18:12:21.052Z"
+    },
+    {
+      "segment": "04-smoke-check",
+      "text": "saved docs/demo-video/segments/04-smoke-check.webm",
+      "at": "2026-11-04T18:12:43.899Z"
+    },
+    {
+      "segment": "05-close",
+      "text": "build log shown on GitHub",
+      "at": "2026-11-04T18:13:00.572Z"
+    },
+    {
+      "segment": "05-close",
+      "text": "saved docs/demo-video/segments/05-close.webm",
+      "at": "2026-11-04T18:13:02.020Z"
+    }
+  ]
+}

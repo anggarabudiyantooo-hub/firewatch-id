@@ -260,6 +260,24 @@ check('hazard refresh time is reformatted on language changes from its raw times
 check('public source status does not render raw scheduler logs or last-error timestamps',
   !/recentLogs|lastErrorAt|fmtUtcClock/.test(fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8')), true);
 
+// Regresi paritas ID/EN yang terlihat pada rekaman video demo.
+// Entri per-kata dulu membuat "keyakinan tinggi" menjadi "Confidence tinggi",
+// dan tombol tangkap peta tidak diterjemahkan sama sekali.
+const PARITY = {
+  'keyakinan tinggi': 'High confidence',
+  'rendah': 'Low',
+  'FRP tinggi': 'High FRP',
+  'Tangkap peta': 'Capture map',
+  'Tangkap peta untuk laporan': 'Capture map for a report'
+};
+for (const [id, en] of Object.entries(PARITY)) {
+  check('full phrase wins over word entries: ' + id, i18n.translate(id, 'en'), en);
+}
+// Tidak boleh ada kata Indonesia yang tersisa pada keluaran Inggris.
+for (const [id, en] of Object.entries(PARITY)) {
+  check('no Indonesian residue in: ' + en, /tinggi|rendah|peta|laporan/i.test(en), false);
+}
+
 console.log('\n========================================');
 console.log('  ' + passed + ' passed, ' + failed + ' failed');
 console.log('========================================');
