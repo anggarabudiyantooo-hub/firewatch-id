@@ -3418,7 +3418,7 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
  * menghasilkan URL baru, peramban pengguna tidak akan lagi memakai
  * berkas lama dari cache tanpa perlu hard-refresh manual.
  */
-const ASSET_FILES = ['app.js', 'app.css', 'i18n.js', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'smoke-grid-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css', 'site.css', 'site-nav.js', 'home.js', 'report-model.js', 'reports.js', 'assistant-widget.js', 'assistant-widget.css', 'admin-login.js'];
+const ASSET_FILES = ['app.js', 'app.css', 'i18n.js', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'smoke-grid-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css', 'site.css', 'site-nav.js', 'home.js', 'report-model.js', 'reports.js', 'assistant-widget.js', 'assistant-widget.css', 'admin-login.js', 'ui-tooltip.js', 'ui-tooltip.css', 'dashboard-clean.css', 'dashboard-clean.js', 'tentang-data.css'];
 let assetVersion = null;
 
 function getAssetVersion() {
@@ -3440,7 +3440,7 @@ function renderIndex() {
   // Fase 2.1: label sudut peta dari BBOX config, bukan hardcoded
   const corners = BBOX_CORNERS; // { nw, ne, sw, se } dari lib/config.js
   let html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
-    .replace(/(href|src)="\/(app\.css|app\.js|i18n\.js|smoke-geometry\.js|smoke-cloud-layer\.js|smoke-grid-layer\.js|wind-particles\.js|wind-viewport\.js|map-resize\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css|site\.css|site-nav\.js|assistant-widget\.css|assistant-widget\.js)"/g,
+    .replace(/(href|src)="\/(app\.css|app\.js|i18n\.js|smoke-geometry\.js|smoke-cloud-layer\.js|smoke-grid-layer\.js|wind-particles\.js|wind-viewport\.js|map-resize\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css|site\.css|site-nav\.js|assistant-widget\.css|assistant-widget\.js|ui-tooltip\.css|ui-tooltip\.js|dashboard-clean\.css|dashboard-clean\.js)"/g,
       (_m, attr, file) => `${attr}="${file}?v=${v}"`);
   // Inject BBOX corners ke HTML (fallback jika JS belum load)
   try {
@@ -3465,7 +3465,7 @@ function sendIndex(res, status = 200) {
 function renderPublicPage(fileName) {
   const version = getAssetVersion();
   return fs.readFileSync(path.join(__dirname, 'public', fileName), 'utf8')
-    .replace(/(href|src)="\/(site\.css|i18n\.js|site-nav\.js|home\.js|report-model\.js|reports\.js|assistant-widget\.css|assistant-widget\.js|admin-login\.js)"/g,
+    .replace(/(href|src)="\/(site\.css|i18n\.js|site-nav\.js|home\.js|report-model\.js|reports\.js|assistant-widget\.css|assistant-widget\.js|admin-login\.js|app\.css|dashboard-clean\.css|tentang-data\.css)"/g,
       (_match, attr, asset) => `${attr}="/${asset}?v=${version}"`);
 }
 
@@ -3483,6 +3483,9 @@ app.get('/dashboard', (_req, res) => sendIndex(res));
 app.get('/dashboard/', (_req, res) => sendIndex(res));
 app.get('/reports', (_req, res) => sendPublicPage(res, 'reports.html'));
 app.get('/reports/', (_req, res) => sendPublicPage(res, 'reports.html'));
+app.get('/tentang-data', (_req, res) => sendPublicPage(res, 'tentang-data.html'));
+app.get('/tentang-data/', (_req, res) => sendPublicPage(res, 'tentang-data.html'));
+app.get('/metodologi', (_req, res) => res.redirect(302, '/tentang-data'));
 app.get(['/admin-login', '/admin-login.html'], (_req, res) => {
   res.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
   return sendPublicPage(res, 'admin-login.html', 200, 'private, no-store, max-age=0');

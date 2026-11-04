@@ -41,7 +41,7 @@
 
   // dock tabs
   const dtabs=[...document.querySelectorAll(".dock-tab")];
-  function dselect(i,focus){
+  function dselect(i,focus,expand){
     dtabs.forEach((t,j)=>{
       const on=i===j;
       t.setAttribute("aria-selected",String(on)); t.tabIndex=on?0:-1;
@@ -50,9 +50,9 @@
       if(panel){ panel.hidden=!on; panel.classList.toggle("on",on); }
     });
     const dock=document.getElementById("dock");
-    if(dock){ dock.classList.remove("collapsed"); }
+    if(dock && expand!==false){ dock.classList.remove("collapsed"); }
     const toggle=document.getElementById("dockToggle");
-    if(toggle) toggle.setAttribute("aria-expanded","true");
+    if(toggle && dock) toggle.setAttribute("aria-expanded",String(!dock.classList.contains("collapsed")));
     if(focus) dtabs[i].focus();
     // Dock mengubah ukuran area peta tanpa mengubah ukuran jendela.
     invalidateMapSize(180);
@@ -119,7 +119,7 @@
 
   // Ensure initial state
   if(itabs.length) iselect(0);
-  if(dtabs.length) dselect(0);
+  if(dtabs.length) dselect(0,false,false);
 })();
 })();
 
