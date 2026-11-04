@@ -30,4 +30,14 @@ assert.ok(server.includes("'ui-tooltip.js'"));
 assert.ok(server.includes("'ui-tooltip.css'"));
 assert.ok(/test-ui-tooltip\.js/.test(pkg));
 console.log('  LULUS tooltip: hover, fokus, klik, long-press, Esc, aria, dan batas lebar');
-console.log('\n1/1 uji tooltip lulus.');
+
+// Regresi keamanan: isi tooltip tidak boleh ditafsirkan sebagai HTML aktif.
+assert.ok(!/\.innerHTML/.test(js), 'tooltip tidak boleh memakai innerHTML');
+assert.ok(!/\.outerHTML\s*=/.test(js), 'tooltip tidak boleh menulis outerHTML');
+assert.ok(!/insertAdjacentHTML/.test(js), 'tooltip tidak boleh memakai insertAdjacentHTML');
+assert.ok(js.includes('createTextNode'), 'teks tooltip harus masuk lewat createTextNode');
+assert.ok(js.includes('ALLOWED_TAGS') && js.includes('DROP_TAGS'), 'tag tooltip harus dibatasi daftar izin');
+assert.ok(js.includes('function safeHref'), 'href tautan tooltip harus disaring');
+assert.ok(/setAttribute\('rel', 'noopener noreferrer'\)/.test(js), 'tautan tooltip harus memakai rel noopener');
+console.log('  LULUS tooltip: penyaringan markup, tanpa innerHTML, href dan rel aman');
+console.log('\n2/2 uji tooltip lulus.');

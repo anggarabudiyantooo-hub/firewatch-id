@@ -29,13 +29,70 @@
     return tip;
   }
 
-  function sourceFor(trigger) {
-    var id = trigger.getAttribute('data-tooltip-target');
-    if (id) {
-      var source = document.getElementById(id);
-      if (source) return source.innerHTML;
+  // Hanya tag presentasi ringan yang diizinkan. Semua atribut dibuang kecuali
+  // href pada tautan http(s)/relatif, sehingga markup sumber tidak pernah
+  // ditafsirkan sebagai HTML aktif di dalam tooltip.
+  var ALLOWED_TAGS = ['B', 'STRONG', 'I', 'EM', 'BR', 'SPAN', 'SMALL', 'CODE', 'A'];
+  var DROP_TAGS = ['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'LINK', 'META', 'SVG', 'MATH', 'TEMPLATE'];
+
+  function safeHref(value) {
+    var href = String(value || '').trim();
+    if (!href) return null;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(href)) {
+      return /^https?:$/i.test(href.split(':')[0]) ? href : null;
     }
-    return trigger.getAttribute('data-tooltip-text') || '';
+    if (href.indexOf('//') === 0) return null;
+    return href;
+  }
+
+  // Menyalin isi sumber menjadi simpul DOM baru. Teks selalu masuk lewat
+  // createTextNode, jadi metakarakter tidak ditafsirkan sebagai markup.
+  function buildContent(sourceNode) {
+    var fragment = document.createDocumentFragment();
+    if (!sourceNode) return fragment;
+    var walk = function (from, to) {
+      for (var i = 0; i < from.childNodes.length; i++) {
+        var node = from.childNodes[i];
+        if (node.nodeType === 3) {
+          to.appendChild(document.createTextNode(node.nodeValue));
+          continue;
+        }
+        if (node.nodeType !== 1) continue;
+        var tag = node.tagName.toUpperCase();
+        if (DROP_TAGS.indexOf(tag) >= 0) continue;
+        if (ALLOWED_TAGS.indexOf(tag) < 0) {
+          walk(node, to);
+          continue;
+        }
+        var clean = document.createElement(tag.toLowerCase());
+        if (tag === 'A') {
+          var href = safeHref(node.getAttribute('href'));
+          if (href) {
+            clean.setAttribute('href', href);
+            clean.setAttribute('rel', 'noopener noreferrer');
+            clean.setAttribute('target', '_blank');
+          }
+        }
+        walk(node, clean);
+        to.appendChild(clean);
+      }
+    };
+    walk(sourceNode, fragment);
+    return fragment;
+  }
+
+  function renderInto(trigger) {
+    while (tip.firstChild) tip.removeChild(tip.firstChild);
+    var id = trigger.getAttribute('data-tooltip-target');
+    var source = id ? document.getElementById(id) : null;
+    if (source) {
+      tip.appendChild(buildContent(source));
+      return true;
+    }
+    var text = trigger.getAttribute('data-tooltip-text');
+    if (!text) return false;
+    tip.appendChild(document.createTextNode(text));
+    return true;
   }
 
   function clearTimers() {
@@ -61,15 +118,13 @@
   }
 
   function open(trigger, pin) {
-    var html = sourceFor(trigger);
-    if (!html) return;
     ensureTip();
+    if (!renderInto(trigger)) return;
     if (activeTrigger && activeTrigger !== trigger) {
       activeTrigger.removeAttribute('aria-describedby');
     }
     activeTrigger = trigger;
     pinned = !!pin;
-    tip.innerHTML = html;
     tip.hidden = false;
     trigger.setAttribute('aria-describedby', tip.id);
     position();
@@ -82,7 +137,7 @@
     pinned = false;
     if (tip) {
       tip.hidden = true;
-      tip.innerHTML = '';
+      while (tip.firstChild) tip.removeChild(tip.firstChild);
     }
   }
 
@@ -170,7 +225,7 @@
   window.addEventListener('scroll', position, true);
   window.addEventListener('siaga:languagechange', function () {
     if (activeTrigger && tip && !tip.hidden) {
-      tip.innerHTML = sourceFor(activeTrigger);
+      renderInto(activeTrigger);
       position();
     }
   });

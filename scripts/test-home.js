@@ -77,11 +77,10 @@ const payloads = {
 (async () => {
   const homeMarkup = fs.readFileSync(path.join(__dirname, '..', 'public', 'home.html'), 'utf8');
   const dashboardMarkup = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
-  assert(/<footer class="site-footer">[\s\S]*href="\/operations"/.test(homeMarkup),
-    'Operations shortcut should live in the Home footer');
-  assert(!dashboardMarkup.includes('href="/operations"') && !dashboardMarkup.includes('dock-ops'),
-    'Dashboard should not contain an Operations shortcut');
-  console.log('  ✓ Operations shortcut is in the Home footer, not the Dashboard');
+  assert(!homeMarkup.includes('href="/operations"') && !dashboardMarkup.includes('href="/operations"')
+    && !dashboardMarkup.includes('dock-ops'),
+  'Operations must not be linked from public pages');
+  console.log('  ✓ Operations has no public shortcut from Home or Dashboard');
 
   const page = await mount('id', payloads);
   const html = page.nodes.homeEvents.innerHTML;
