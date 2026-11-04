@@ -198,12 +198,115 @@
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
   }
 
+
+  // --- Tab Tampilan: umpan balik saat kontrol terkunci raster asap ---
+  var SMOKE_IDS = ['lyPm25', 'lyAod', 'lyDust', 'lySmoke'];
+  var pendingBase = null;
+
+  function activeSmokeIds() {
+    var out = [];
+    for (var i = 0; i < SMOKE_IDS.length; i++) {
+      var box = byId(SMOKE_IDS[i]);
+      if (box && box.checked) out.push(SMOKE_IDS[i]);
+    }
+    return out;
+  }
+
+  function tr(text) {
+    var i18n = window.SiagaI18n;
+    if (i18n && i18n.getLanguage() === 'en') return i18n.translate(text, 'en');
+    return text;
+  }
+
+  function ensureTampilanNote() {
+    var note = byId('tampilanNote');
+    if (note) return note;
+    var panel = byId('p-tampilan');
+    if (!panel) return null;
+    var host = panel.querySelector('.scroll') || panel;
+    note = document.createElement('div');
+    note.id = 'tampilanNote';
+    note.className = 'tampilan-note';
+    note.setAttribute('role', 'status');
+    note.hidden = true;
+    var span = document.createElement('span');
+    span.className = 'tampilan-note-text';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'tampilanRasterOff';
+    btn.className = 'tampilan-note-action';
+    btn.addEventListener('click', function () {
+      var ids = activeSmokeIds();
+      for (var i = 0; i < ids.length; i++) {
+        var box = byId(ids[i]);
+        box.checked = false;
+        box.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (pendingBase) {
+        var sel = byId('baseSel');
+        if (sel) {
+          sel.value = pendingBase;
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        pendingBase = null;
+      }
+      setTimeout(syncTampilanNote, 60);
+    });
+    note.appendChild(span);
+    note.appendChild(btn);
+    host.insertBefore(note, host.firstChild);
+    return note;
+  }
+
+  function syncTampilanNote() {
+    var note = ensureTampilanNote();
+    if (!note) return;
+    var smoke = activeSmokeIds();
+    var hima = byId('himaSel');
+    var text = '';
+    if (smoke.length && pendingBase && pendingBase !== 'gelap') {
+      text = tr('Peta dasar dikunci Gelap selama raster asap aktif.');
+    } else if (smoke.length && hima && hima.value) {
+      text = tr('Citra satelit tertutup raster asap yang aktif.');
+    }
+    if (!text) {
+      note.hidden = true;
+      return;
+    }
+    note.querySelector('.tampilan-note-text').textContent = text;
+    note.querySelector('.tampilan-note-action').textContent = tr('Matikan raster asap');
+    note.hidden = false;
+  }
+
+  function setupTampilan() {
+    var panel = byId('p-tampilan');
+    if (!panel) return;
+    // Fase capture pada leluhur berjalan sebelum handler app.js di elemen
+    // target, jadi nilai yang dipilih pengguna masih sempat direkam sebelum
+    // app.js mengembalikannya ke Gelap.
+    panel.addEventListener('change', function (event) {
+      if (event.target && event.target.id === 'baseSel') pendingBase = event.target.value;
+    }, true);
+    panel.addEventListener('change', function () { setTimeout(syncTampilanNote, 0); });
+    var layerPanel = byId('layerPanel');
+    if (layerPanel) {
+      layerPanel.addEventListener('change', function () {
+        pendingBase = null;
+        setTimeout(syncTampilanNote, 60);
+      });
+    }
+    document.addEventListener('siaga:languagechange', syncTampilanNote);
+    window.addEventListener('siaga:languagechange', syncTampilanNote);
+    syncTampilanNote();
+  }
+
   function boot() {
     syncLayerUI();
     watchLegend();
     setupDrawer();
     setupShortcuts();
     setupSkeletons();
+    setupTampilan();
     if (window.matchMedia('(min-width: 769px)').matches) {
       var layerTab = byId('t-lapisan');
       if (layerTab) layerTab.click();
@@ -215,5 +318,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  window.DashboardClean = { sync: syncLayerUI, syncLegend: syncMapLegend, skeletonize: skeletonizeNode };
+  window.DashboardClean = { sync: syncLayerUI, syncLegend: syncMapLegend, skeletonize: skeletonizeNode, syncTampilan: syncTampilanNote };
 })();
