@@ -268,14 +268,17 @@ const PARITY = {
   'rendah': 'Low',
   'FRP tinggi': 'High FRP',
   'Tangkap peta': 'Capture map',
-  'Tangkap peta untuk laporan': 'Capture map for a report'
+  'Tangkap peta untuk laporan': 'Capture map for a report',
+  'Debu': 'Dust',
+  'uji lintas-sumber': 'compare sources',
+  'atau nasihat medis · Darurat: ikuti otoritas setempat.': 'or medical advice · Emergency: follow your local authorities.'
 };
 for (const [id, en] of Object.entries(PARITY)) {
   check('full phrase wins over word entries: ' + id, i18n.translate(id, 'en'), en);
 }
 // Tidak boleh ada kata Indonesia yang tersisa pada keluaran Inggris.
 for (const [id, en] of Object.entries(PARITY)) {
-  check('no Indonesian residue in: ' + en, /tinggi|rendah|peta|laporan/i.test(en), false);
+  check('no Indonesian residue in: ' + en, /tinggi|rendah|peta|laporan|debu|nasihat|otoritas/i.test(en), false);
 }
 
 console.log('\n========================================');

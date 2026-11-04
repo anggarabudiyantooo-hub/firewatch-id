@@ -24,7 +24,9 @@
     // menampilkan kalimat campur "Not an official warning atau nasihat medis".
     'atau nasihat medis · Darurat: ikuti otoritas setempat.': 'or medical advice · Emergency: follow your local authorities.',
     'Muse Spark memakai tool data baca-saja saat Meta API aktif; mode lokal ditandai sebagai fallback. Pertanyaan dan fakta publik terpilih dikirim ke Meta saat API aktif.': 'Muse Spark uses read-only data tools when the Meta API is active; local mode is labelled as a fallback. Your question and selected public facts are sent to Meta when the API is active.',
-    'uji lintas-sumber': 'cross-check sources',
+    'uji lintas-sumber': 'compare sources',
+    'Debu': 'Dust',
+    'Debu model dekat permukaan': 'Modelled near-surface dust',
     'keyakinan tinggi': 'High confidence',
     'Keyakinan tinggi': 'High confidence',
     'FRP tinggi': 'High FRP',
