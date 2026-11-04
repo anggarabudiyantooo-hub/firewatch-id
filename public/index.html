@@ -137,6 +137,7 @@
         <span class="micro">Peta interaktif, Indonesia · EPSG:4326 · WGS84</span>
         <span class="micro" id="mapCount">NASA FIRMS · 24 jam</span>
         <span class="micro" id="legendPoints"></span>
+        <button id="layerDrawerBtn" class="btn btn-ghost layer-drawer-btn" type="button" aria-controls="inspector" aria-expanded="false">Lapisan</button>
         <button id="mapFullscreenBtn" class="btn-fullscreen" type="button" aria-label="Peta layar penuh" aria-pressed="false" title="Layar penuh (F), ESC untuk keluar"><span class="fs-ic" aria-hidden="true">⛶</span><span class="fs-txt">FULL</span></button>
       </div>
       <svg class="map-svg" viewBox="0 0 960 546" preserveAspectRatio="none" role="img"
@@ -365,7 +366,8 @@
 
 </section>
 
-  <div class="side-stack inspector" role="complementary" aria-label="Panel inspeksi">
+  <div class="side-stack inspector" id="inspector" role="complementary" aria-label="Panel inspeksi">
+  <button id="inspectorClose" class="inspector-close" type="button" aria-label="Tutup panel">✕</button>
   <div class="seg" role="tablist" aria-label="Mode inspeksi">
     <button role="tab" aria-selected="true" id="t-perhatian" aria-controls="p-perhatian" tabindex="0">Perhatian</button>
     <button role="tab" aria-selected="false" id="t-lapisan" aria-controls="p-lapisan" tabindex="-1">Lapisan</button>
@@ -541,14 +543,14 @@
       <div class="ui-tip-source" id="tip-lyQuake" hidden>Gempa BMKG 24 jam terakhir. Magnitudo dan kedalaman dapat direvisi setelah kejadian.</div>
       <div class="ui-tip-source" id="tip-lyShelter" hidden>Titik dan jumlah pengungsi dari BNPB GIS. Angka mengikuti pembaruan petugas dan dapat tertinggal dari keadaan lapangan.</div>
       <div class="ui-tip-source" id="tip-lyFire" hidden>Titik api NASA FIRMS VIIRS 24 jam. Hotspot adalah anomali panas satelit, tidak selalu kebakaran hutan. FRP adalah daya radiasi api dalam MW.</div>
-      <div class="ui-tip-source" id="tip-smoke-mode" hidden>Pilih satu overlay utama: PM2.5, AOD, debu, atau plume. PM2.5 adalah total model, bukan konsentrasi asap spesifik. Plume indikatif bukan model dispersi resmi.</div>
+      <div class="ui-tip-source" id="tip-smoke-mode" hidden>Pilih satu overlay utama: PM2.5, AOD, debu, atau plume. PM2.5 adalah total model, bukan konsentrasi asap spesifik. Produk ini bukan khusus asap. Plume indikatif bukan model dispersi resmi.</div>
       <div class="ui-tip-source" id="tip-lyRegionalHaze" hidden>Laporan kabut dan observasi asap regional dari ASMC, NEA, dan BMKG. Area kabut digeneralisasi; bukan batas resmi atau konsentrasi terukur.</div>
-      <div class="ui-tip-source" id="tip-lyAerosol" hidden>Indeks aerosol satelit NASA OMPS NOAA-21. Mengukur aerosol kolom atmosfer, bukan PM2.5 permukaan. Area transparan berarti tidak ada retrieval, bukan udara bersih.</div>
+      <div class="ui-tip-source" id="tip-lyAerosol" hidden>Aerosol satelit: NASA OMPS NOAA-21. Mengukur aerosol kolom atmosfer, bukan PM2.5 permukaan. Area transparan bukan bukti udara bersih; itu berarti tidak ada retrieval. Atribusi: NASA GIBS / OMPS NOAA-21.</div>
       <div class="ui-tip-source" id="tip-lyImpact" hidden>Pusat kota/kabupaten yang beririsan dengan plume indikatif. Bukan laporan dampak resmi, jumlah orang terpapar, atau pengukuran kesehatan.</div>
       <div class="ui-tip-source" id="tip-lyAir" hidden>Kualitas udara US AQI dari model CAMS via Open-Meteo, bukan pembacaan stasiun darat. Gunakan filter untuk membatasi sel yang ditampilkan.</div>
       <div class="ui-tip-source" id="tip-lyWind" hidden>Animasi partikel angin dari medan model mandiri, bukan pengamatan. Tidak diselaraskan dengan waktu CAMS atau linimasa plume. Angin 10 m tidak mewakili ketinggian asap.</div>
       <div class="ui-tip-source" id="tip-lyConc" hidden>Batas konsesi Global Forest Watch. Titik api di dalam konsesi tidak otomatis berarti perusahaan itu membakar; gunakan sebagai indikasi awal, bukan bukti hukum.</div>
-      <div class="ui-tip-source" id="tip-lyFlights" hidden>Pesawat sipil dari jaringan ADS-B publik. Jaringan penerima tidak rapat: ketiadaan pesawat bukan berarti tidak ada penerbangan. Bukan radar resmi.</div>
+      <div class="ui-tip-source" id="tip-lyFlights" hidden>Pesawat sipil dari jaringan ADS-B publik. Jaringan penerima tidak rapat: ketiadaan pesawat bukan berarti tidak ada penerbangan. Tidak ada lapisan militer maupun jet pribadi. Bukan radar resmi.</div>
     </div>
         <div class="tabpanel" id="p-tampilan" role="tabpanel" aria-labelledby="t-tampilan" hidden>
       <div class="scroll" style="padding:0 12px 12px">
@@ -735,34 +737,15 @@
 </main>
 
 
-<footer class="foot">
-  <div class="foot-grid">
-    <div class="foot-col">
-      <div class="foot-lab">MISI</div>
-      <p class="foot-p">Platform pemantauan bencana untuk kepentingan publik dan edukasi. Data diperbarui otomatis dari sumber resmi.</p>
-      <div class="foot-refs"><span>&rarr; BNPB</span><span>&rarr; BMKG</span><span>&rarr; PVMBG / MAGMA ESDM</span></div>
-    </div>
-    <div class="foot-col foot-emg">
-      <div class="foot-lab">DARURAT</div>
-      <div class="emg-box"><b>112</b><span>NOMOR DARURAT</span></div>
-    </div>
-    <div class="foot-col foot-right">
-      <div class="foot-lab">FUNGSI CEPAT</div>
-      <nav class="fkeys" aria-label="Lompat ke bagian">
-        <a class="fkey" href="#map"><b>F1</b><span>PETA</span></a>
-        <a class="fkey" href="#eventsPanel"><b>F2</b><span>KEJADIAN</span></a>
-        <a class="fkey" href="#hazardPanel"><b>F3</b><span>GEMPA</span></a>
-        <a class="fkey" href="#so2Panel"><b>F4</b><span>GUNUNG API</span></a>
-        <a class="fkey" href="#news"><b>F5</b><span>BERITA</span></a>
-        <a class="fkey" href="#sourcePanel"><b>F6</b><span>SUMBER</span></a>
-        <a class="fkey" href="#" id="footAi"><b>F7</b><span>AI</span></a>
-        <a class="fkey" href="#statusPanel"><b>F8</b><span>STATUS</span></a>
-      </nav>
-      <div class="foot-lab" style="margin-top:10px">CAKUPAN</div>
-      <p class="foot-p">Seluruh Indonesia · 94,5&deg;-141,5&deg;BT / 11,5&deg;LS-6,5&deg;LU<br />EPSG:4326 · WGS84</p>
-    </div>
-  </div>
-  <div class="foot-btm">SIAGA.ID · TERMINAL BENCANA · DATA PUBLIK · BUKAN PENGGANTI SUMBER RESMI</div>
+<footer class="foot safety-bar" role="contentinfo">
+  <span class="safety-item"><b>Bukan peringatan resmi</b></span>
+  <span class="safety-item">Darurat <b>112</b></span>
+  <a href="https://www.bmkg.go.id" target="_blank" rel="noopener noreferrer">BMKG</a>
+  <a href="https://bnpb.go.id" target="_blank" rel="noopener noreferrer">BNPB</a>
+  <a href="https://magma.esdm.go.id" target="_blank" rel="noopener noreferrer">PVMBG</a>
+  <a href="/tentang-data">Tentang data</a>
+  <span class="safety-item safety-misi">Misi: pemantauan dini</span>
+  <span class="safety-item safety-coverage">Indonesia · WGS84</span>
 </footer>
 
 <!-- AI Asisten Popup, draggable, menggantikan panel Kueri data Fase 3.6 -->

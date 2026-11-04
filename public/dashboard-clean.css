@@ -1,4 +1,4 @@
-/* Dashboard clean UI: panel lapisan ringkas,Disclosure progresif, dan polesan visual. */
+/* Dashboard clean UI: panel lapisan ringkas, disclosure progresif, dan polesan visual. */
 
 :root {
   --clean-space-1: 4px;
@@ -190,7 +190,19 @@
   overflow-x: auto;
   padding: var(--clean-space-2) var(--clean-space-3);
   min-height: 0;
+  height: auto;
   scrollbar-width: thin;
+}
+#statsPanel.kpi-rail .kpi { min-height: 0; }
+@media (min-width: 769px) {
+  .inspector { width: var(--inspector-w); min-width: 0; }
+  .stage, #main-bloomberg-grid { grid-template-columns: 1fr var(--inspector-w); }
+}
+.inspector .seg button { font-size: 11px; padding: 6px 8px; }
+@media (max-width: 768px) {
+  .stage, #main-bloomberg-grid { grid-template-columns: 1fr; }
+  #main { height: calc(100vh - 44px - 36px); overflow-y: auto; }
+  .map-card { height: 56vh; min-height: 320px; }
 }
 #statsPanel.kpi-rail .kpi {
   flex: 0 0 auto;
@@ -252,3 +264,114 @@
 .about-data-card { display: grid; gap: var(--clean-space-2); align-content: start; padding: var(--clean-space-3); border: 1px solid var(--hairline); border-radius: var(--clean-radius); background: var(--surface-1); }
 .about-data-card p { margin: 0; color: var(--text-secondary); font: 400 var(--clean-font-control)/1.5 var(--font-prose); }
 .about-data-card .btn { justify-self: start; }
+
+/* Safety bar permanen: satu baris ringkas */
+.foot.safety-bar {
+  display: flex !important;
+  align-items: center;
+  gap: var(--clean-space-3);
+  padding: var(--clean-space-2) var(--clean-space-3);
+  border-top: 1px solid var(--hairline);
+  background: var(--chrome);
+  color: var(--text-secondary);
+  font: 500 var(--clean-font-control)/1.3 var(--font-prose);
+  overflow-x: auto;
+  white-space: nowrap;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36px;
+  z-index: 60;
+}
+@media (min-width: 769px) {
+  #main { height: calc(100vh - 53px - 36px); }
+}
+@media (max-width: 768px) {
+  #main { padding-bottom: 44px; }
+}
+.foot.safety-bar a { color: var(--clean-accent); text-decoration: none; }
+.foot.safety-bar a:hover { text-decoration: underline; text-underline-offset: 2px; }
+.foot.safety-bar b { color: var(--text-primary); }
+.safety-misi { color: var(--text-tertiary); }
+.safety-coverage { margin-left: auto; color: var(--text-tertiary); }
+
+/* Drawer lapisan di mobile */
+.map-head { position: relative; z-index: 800; }
+.layer-drawer-btn { display: none; position: relative; z-index: 801; pointer-events: auto; }
+.inspector-close { display: none; }
+@media (max-width: 768px) {
+  .layer-drawer-btn { display: inline-flex; align-items: center; min-height: 32px; }
+  #inspector {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    bottom: 0 !important;
+    height: auto !important;
+    width: min(320px, 86vw);
+    z-index: 1500;
+    transform: translateX(-105%);
+    transition: transform var(--clean-duration) ease;
+    background: var(--chrome);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    padding-top: var(--clean-space-4);
+  }
+  body.layer-drawer-open #inspector { transform: translateX(0); }
+  body.layer-drawer-open::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 1400;
+    background: rgba(0, 0, 0, 0.4);
+  }
+  .inspector-close {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    top: var(--clean-space-2);
+    right: var(--clean-space-2);
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--hairline);
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .safety-coverage, .safety-misi { display: none; }
+}
+
+/* Skeleton loading */
+.skeleton {
+  display: inline-block;
+  width: 84px;
+  height: 10px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: clean-skeleton 1.4s ease infinite;
+}
+@keyframes clean-skeleton {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+/* Kurangi dekorasi: kapital dan aksen berlebihan */
+.micro,
+.dock-tab,
+.chip,
+.hz-title { text-transform: none; letter-spacing: 0.02em; }
+.dock { border-radius: var(--clean-radius); }
+.dock-body { height: 168px; }
+.card,
+.ev,
+.map-card,
+.inspector { border-radius: var(--clean-radius); }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+  #inspector,
+  .foot.safety-bar,
+  .dock { transition: none; }
+}
