@@ -567,7 +567,7 @@
   </div><!-- #main-bloomberg-grid -->
 
   <!-- DOK 7 TAB, cakupan penuh 11 panel asli -->
-  <section class="dock" id="dock" aria-label="Dok data">
+  <section class="dock collapsed" id="dock" aria-label="Dok data">
     <div class="dock-head">
       <div class="dock-tabs" role="tablist" aria-label="Pilih panel data">
       <button class="dock-tab" role="tab" aria-selected="true" aria-controls="d-linimasa" id="dt-linimasa" tabindex="0">Linimasa</button>
@@ -580,7 +580,7 @@
       <button class="dock-tab" role="tab" aria-selected="false" aria-controls="d-siaran" id="dt-siaran" tabindex="-1">Siaran</button>
       <span class="dock-spacer">
         <span class="micro" id="dockHint">8 panel · klik untuk pindah</span>
-        <button class="collapse" id="dockToggle" type="button" aria-expanded="true" aria-label="Lipat dok">
+        <button class="collapse" id="dockToggle" type="button" aria-expanded="false" aria-label="Lipat dok">
           <svg width="10" height="10" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" fill="none"><path d="M6 9l6 6 6-6"/></svg>
         </button>
       </span>
@@ -743,11 +743,13 @@
              karena aplikasi mereka memakai kunci mereka. Jadi bagian ini
              menyatakan keadaannya apa adanya, bukan menampilkan daftar kosong
              yang tampak seperti "tidak ada kamera". -->
-        <div class="siaran-head" style="margin-top:12px">
-          <span class="micro">KAMERA WEB KOMUNITAS (WINDY)</span>
-          <span class="siaran-note" id="windyMeta">Memeriksa keadaan sumber…</span>
+        <div id="windySection" hidden>
+          <div class="siaran-head" style="margin-top:12px">
+            <span class="micro">KAMERA WEB KOMUNITAS (WINDY)</span>
+            <span class="siaran-note" id="windyMeta"></span>
+          </div>
+          <div id="daftarWindy" class="siaran-grid"></div>
         </div>
-        <div id="daftarWindy" class="siaran-grid"></div>
       </div>
 
     </div>
