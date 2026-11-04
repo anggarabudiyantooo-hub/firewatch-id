@@ -8,8 +8,10 @@
 (function (window, document) {
   if (!window || !document) return;
 
-  var STORAGE_KEY = 'siaga.mapCapture.v1';
+  var STORAGE_KEY = 'siaga.mapCapture.v2';
+  var MAX_FRAMES = 2;
   var last = null;
+  var targetMapId = 'map';
 
   function english() {
     return !!(window.SiagaI18n && window.SiagaI18n.getLanguage() === 'en');
@@ -75,7 +77,11 @@
     });
     var btnReport = el('button', 'map-capture-btn', t('Tambahkan ke laporan', 'Add to report'));
     btnReport.type = 'button';
-    btnReport.addEventListener('click', sendToReport);
+    btnReport.id = 'mapCaptureToReport';
+    btnReport.addEventListener('click', async function () {
+      btnReport.disabled = true;
+      try { await sendToReport(); } finally { btnReport.disabled = false; }
+    });
     actions.appendChild(btnNarrate);
     actions.appendChild(btnPng);
     actions.appendChild(btnReport);
@@ -126,7 +132,8 @@
     });
   }
 
-  async function open() {
+  async function open(options) {
+    targetMapId = (options && options.mapId) || 'map';
     var dialog = ensureDialog();
     dialog.hidden = false;
     var narrative = document.getElementById('mapCaptureNarrative');
@@ -134,7 +141,7 @@
     narrative.textContent = '';
     setStatus(t('Menangkap peta…', 'Capturing map…'), 'info');
     try {
-      last = await window.MapScreenshot.capture({ language: english() ? 'en' : 'id' });
+      last = await window.MapScreenshot.capture({ language: english() ? 'en' : 'id', mapId: targetMapId });
     } catch (error) {
       last = null;
       var code = String(error && error.message || 'CAPTURE_FAILED');
@@ -148,8 +155,60 @@
     }
     document.getElementById('mapCaptureImg').src = last.dataUrl;
     renderMeta(last.meta);
+    loadSummary();
     var extra = last.warnings.length ? ' ' + t('Sebagian lapisan dilewati.', 'Some layers were skipped.') : '';
     setStatus(t('Tangkapan siap. Atribusi dan disclaimer sudah ada di dalam gambar.', 'Snapshot ready. Attribution and disclaimer are embedded in the image.') + extra, 'ok');
+  }
+
+  /**
+   * Angka dihitung lebih dulu tanpa memanggil model, supaya laporan tetap
+   * punya ringkasan numerik walau pengguna tidak meminta narasi AI.
+   */
+  async function loadSummary() {
+    if (!last) return;
+    var current = last;
+    try {
+      var response = await fetch('/api/map-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meta: last.meta, language: english() ? 'en' : 'id' })
+      });
+      var body = await response.json().catch(function () { return null; });
+      if (!response.ok || !body || !body.ok || last !== current) return;
+      last.structured = body.structured;
+      renderSummary(body.structured);
+    } catch (error) { /* ringkasan tetap kosong dan dilaporkan apa adanya */ }
+  }
+
+  function renderSummary(structured) {
+    var box = document.getElementById('mapCaptureMeta');
+    if (!box || !structured) return;
+    var fire = structured.fire || {};
+    var air = structured.air || {};
+    var wind = structured.wind || {};
+    var rows = [];
+    if (fire.hotspotsInFrame != null) {
+      rows.push([t('Deteksi dalam bingkai', 'Detections in frame'),
+        fire.hotspotsInFrame + ' (' + t('keyakinan tinggi ', 'high confidence ') + fire.highConfidenceInFrame + ')']);
+      rows.push(['FRP', fire.totalFrpInFrameMw + ' MW']);
+    }
+    if (air.worstPointsInFrame && air.worstPointsInFrame.length) {
+      rows.push([t('AQI model terburuk', 'Worst modelled AQI'),
+        air.worstPointsInFrame[0].aqi + ' (' + air.worstPointsInFrame[0].category + ')']);
+    }
+    if (wind.sample) {
+      rows.push([t('Angin model', 'Modelled wind'), wind.sample.blowingToward + ', ' + wind.sample.speedMs + ' m/s']);
+    }
+    rows.forEach(function (row) {
+      box.appendChild(el('dt', null, row[0]));
+      box.appendChild(el('dd', null, String(row[1])));
+    });
+    if (rows.length) {
+      var note = el('dd', 'map-capture-meta-note',
+        t('Angka dihitung kode dari data publik, bukan oleh model.', 'Figures are computed by code from public data, not by the model.'));
+      box.appendChild(el('dt', null, ''));
+      box.appendChild(note);
+    }
   }
 
   async function requestNarrative() {
@@ -194,7 +253,14 @@
       }
       last.narrative = body.narrative || '';
       last.narrativeModel = body.model || '';
+      last.narrativeProvider = body.provider || '';
+      last.structured = body.structured || null;
       last.unverifiedNumbers = body.unverifiedNumbers || [];
+      if (body.provider === 'local-fallback') {
+        box.appendChild(el('p', 'map-capture-narrative-warn',
+          t('Muse Spark tidak tersedia (' + (body.failureCode || 'tanpa kode') + '). Narasi di atas disusun oleh kode dari data, bukan oleh model.',
+            'Muse Spark was unavailable (' + (body.failureCode || 'no code') + '). The narrative above was assembled by code from data, not by the model.')));
+      }
     } catch (error) {
       box.textContent = t('Narasi AI gagal diminta. Jaringan atau kuota bermasalah.', 'Could not request the AI narrative. Network or quota problem.');
     } finally {
@@ -202,18 +268,51 @@
     }
   }
 
-  function sendToReport() {
+  function onReportsPage() {
+    return /^\/reports/.test(window.location.pathname);
+  }
+
+  /**
+   * Serah-terima lewat sessionStorage, bukan server: tidak ada gambar
+   * pengguna yang diunggah atau disimpan di backend. Maksimal dua frame
+   * supaya kuota penyimpanan peramban tidak jebol; frame tertua dibuang.
+   */
+  async function sendToReport() {
     if (!last) return;
+    // Ringkasan angka wajib ada sebelum masuk laporan. Bila permintaan
+    // awal belum selesai, tunggu di sini alih-alih menyimpan laporan
+    // tanpa angka.
+    if (!last.structured) {
+      setStatus(t('Menghitung ringkasan angka dari data…', 'Computing the numeric summary from data…'), 'info');
+      await loadSummary();
+    }
+    var frame = {
+      dataUrl: last.dataUrl,
+      width: last.width,
+      height: last.height,
+      meta: last.meta,
+      narrative: last.narrative || '',
+      narrativeModel: last.narrativeModel || '',
+      narrativeProvider: last.narrativeProvider || '',
+      structured: last.structured || null,
+      unverifiedNumbers: last.unverifiedNumbers || [],
+      capturedAt: last.meta && last.meta.capturedAt || new Date().toISOString()
+    };
     try {
-      var payload = {
-        dataUrl: last.dataUrl,
-        meta: last.meta,
-        narrative: last.narrative || '',
-        narrativeModel: last.narrativeModel || '',
-        unverifiedNumbers: last.unverifiedNumbers || [],
-        savedAt: new Date().toISOString()
-      };
-      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      var existing = null;
+      try { existing = JSON.parse(window.sessionStorage.getItem(STORAGE_KEY) || 'null'); } catch (error) { existing = null; }
+      var frames = existing && Array.isArray(existing.frames) ? existing.frames : [];
+      frames.push(frame);
+      while (frames.length > MAX_FRAMES) frames.shift();
+      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ frames: frames, savedAt: new Date().toISOString() }));
+      window.dispatchEvent(new CustomEvent('siaga:reportcapture'));
+      if (onReportsPage()) {
+        setStatus(frames.length > 1
+          ? t('Dua frame tersimpan sebagai sebelum dan sesudah.', 'Two frames saved as before and after.')
+          : t('Tangkapan ditambahkan ke laporan di bawah.', 'Snapshot added to the report below.'), 'ok');
+        window.setTimeout(hide, 700);
+        return;
+      }
       setStatus(t('Tersimpan untuk laporan. Membuka halaman Laporan…', 'Saved for the report. Opening Reports…'), 'ok');
       window.setTimeout(function () { window.location.href = '/reports#tangkapan-peta'; }, 500);
     } catch (error) {
@@ -224,8 +323,9 @@
 
   function boot() {
     var btn = document.getElementById('mapCaptureBtn');
-    if (!btn) return;
-    btn.addEventListener('click', function () { open(); });
+    if (btn) btn.addEventListener('click', function () { open({ mapId: 'map' }); });
+    var reportBtn = document.getElementById('reportMapCaptureBtn');
+    if (reportBtn) reportBtn.addEventListener('click', function () { open({ mapId: 'reportMap' }); });
     window.addEventListener('siaga:languagechange', function () {
       var dialog = document.getElementById('mapCaptureDialog');
       if (dialog && !dialog.hidden && last) renderMeta(last.meta);

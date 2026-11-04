@@ -1,0 +1,74 @@
+/* Blok tangkapan peta dan peta kecil di halaman Laporan. */
+
+.report-capture-section { display: grid; gap: 14px; }
+.report-capture-section h2 { margin: 0; font-size: clamp(20px, 3vw, 27px); letter-spacing: -.025em; }
+
+.report-map-shell { display: grid; gap: 10px; }
+.report-map-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.report-map-tools label { display: inline-flex; align-items: center; gap: 6px; font: 500 12px/1.2 var(--site-font, system-ui, sans-serif); }
+.report-map-tools select {
+  min-height: 30px; padding: 0 8px; border-radius: 8px;
+  border: 1px solid var(--site-line, #2a2e35);
+  background: var(--site-surface, #14161a); color: inherit;
+  font: 500 12px/1 var(--site-font, system-ui, sans-serif);
+}
+.report-map-frame-label { font: 600 11px/1 ui-monospace, monospace; color: var(--site-muted, #9aa2ad); }
+
+#reportMap {
+  height: 320px; width: 100%;
+  border: 1px solid var(--site-line, #2a2e35); border-radius: 12px;
+  background: #0b0c0e; overflow: hidden;
+}
+#reportMap .leaflet-control-attribution { font-size: 10px; background: rgba(11, 12, 14, .82); color: #9aa2ad; }
+#reportMap .leaflet-control-attribution a { color: #7fb4ff; }
+#reportMap .leaflet-bar a {
+  background: #14161a; color: #e8eaed; border-bottom-color: #2a2e35;
+}
+#reportMap .leaflet-bar a:hover { background: #22262c; }
+#reportMap .leaflet-bar { border-color: #2a2e35; }
+
+.report-map-legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.report-map-legend li { display: inline-flex; align-items: center; gap: 6px; font: 500 11px/1.2 ui-monospace, monospace; color: var(--site-muted, #9aa2ad); }
+.report-map-legend span.swatch { width: 10px; height: 10px; border-radius: 2px; border: 1px solid rgba(255,255,255,.25); }
+
+.report-capture-grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+.report-capture-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.report-capture-frame { margin: 0; display: grid; gap: 10px; }
+.report-capture-frame-label { font: 700 11px/1 ui-monospace, monospace; letter-spacing: .08em; color: var(--site-muted, #9aa2ad); text-transform: uppercase; }
+.report-capture-frame img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--site-line, #2a2e35); }
+
+.report-capture-summary {
+  display: grid; grid-template-columns: minmax(120px, auto) minmax(0, 1fr);
+  gap: 4px 14px; margin: 0;
+  font: 500 12px/1.45 var(--site-font, system-ui, sans-serif);
+}
+.report-capture-summary dt { color: var(--site-muted, #9aa2ad); }
+.report-capture-summary dd { margin: 0; overflow-wrap: anywhere; }
+
+.report-capture-note { margin: 0; font: 400 11.5px/1.5 var(--site-font, system-ui, sans-serif); color: var(--site-muted, #9aa2ad); }
+.report-capture-empty { margin: 0; font: 400 13px/1.55 var(--site-font, system-ui, sans-serif); color: var(--site-muted, #9aa2ad); }
+
+.report-capture-narrative {
+  display: grid; gap: 8px; padding: 14px;
+  border: 1px solid var(--site-line, #2a2e35); border-left: 3px solid #f0a35e;
+  border-radius: 10px;
+}
+.report-capture-narrative-label { margin: 0; font: 600 11px/1.45 ui-monospace, monospace; color: #f0a35e; }
+.report-capture-narrative-text { display: grid; gap: 6px; }
+.report-capture-narrative-text p { margin: 0; font: 400 13px/1.6 var(--site-font, system-ui, sans-serif); }
+.report-capture-warn { margin: 0; font: 500 11.5px/1.45 ui-monospace, monospace; color: #ff9b8f; }
+.report-capture-main-actions { margin-top: 4px; }
+
+@media (max-width: 760px) {
+  .report-capture-grid.two { grid-template-columns: minmax(0, 1fr); }
+  #reportMap { height: 260px; }
+  .report-capture-summary { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .report-capture-summary dd { margin-bottom: 6px; }
+}
+
+@media print {
+  .report-map-shell, .report-capture-actions, #reportCaptureStatus { display: none !important; }
+  .report-capture-section { break-inside: avoid; }
+  .report-capture-frame img { border: 1px solid #bbb; }
+  .report-capture-narrative { border-color: #bbb; }
+}

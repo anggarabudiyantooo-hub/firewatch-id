@@ -67,6 +67,39 @@ ok('kunci API hanya dibaca di server', server.includes('process.env.MODEL_API_KE
 ok('kotak pandang divalidasi di server', server.includes('mapNarrative.normalizeBox(body.meta && body.meta.bounds)'));
 ok('angka dihitung dari data server, bukan kiriman klien', server.includes('buildMapNarrativeData(queryBox)'));
 
+console.log('\n== integrasi halaman Laporan ==');
+const reportsHtml = read('public/reports.html');
+const reportMap = read('public/report-map.js');
+const reportCapture = read('public/report-capture.js');
+const reportPdf = read('public/report-pdf.js');
+ok('seksi tangkapan ada di laporan', reportsHtml.includes('id="tangkapan-peta"') && reportsHtml.includes('id="reportCaptureBody"'));
+ok('tombol tangkap peta ada di laporan', reportsHtml.includes('id="reportMapCaptureBtn"'));
+ok('leaflet dan aset baru dimuat di laporan',
+  reportsHtml.includes('src="/vendor/leaflet.js"') && reportsHtml.includes('src="/report-pdf.js"') && reportsHtml.includes('src="/report-capture.js"'));
+ok('aset laporan didaftarkan di server',
+  server.includes("'report-map.js'") && server.includes("'report-capture.js'") && server.includes("'report-pdf.js'") && server.includes("'report-capture.css'"));
+ok('peta laporan memakai crossOrigin anonymous', reportMap.includes("crossOrigin: 'anonymous'"));
+ok('peta laporan memakai kontrak konteks yang sama', reportMap.includes('window.SiagaMapContext = function ()'));
+ok('batas render 2000 dilaporkan, tidak disembunyikan',
+  reportMap.includes('renderedHotspotLimit') && reportMap.includes('maksimal 2000 deteksi teratas FRP'));
+ok('narasi menyebut batas render sebagai keterbatasan',
+  read('lib/map-narrative.js').includes('subset teratas FRP yang dibatasi'));
+ok('gambar tidak diunggah ke server',
+  reportCapture.includes('sessionStorage') && !reportCapture.includes("fetch('/api/upload"));
+ok('maksimal dua frame disimpan', ui.includes('MAX_FRAMES = 2') && reportCapture.includes('slice(0, 2)'));
+ok('ringkasan angka diminta sebelum masuk laporan',
+  ui.includes('await loadSummary();') && ui.includes("fetch('/api/map-summary'"));
+ok('rute ringkasan tanpa model terdaftar', server.includes("app.post('/api/map-summary'"));
+ok('PDF ditulis tanpa dependensi eksternal',
+  reportPdf.includes('%PDF-1.4') && reportPdf.includes('/DCTDecode') && !reportPdf.includes('import('));
+ok('PDF satu halaman', reportPdf.includes('/Count 1') && reportPdf.includes('/MediaBox [0 0 '));
+ok('PDF memuat disclaimer dan 112', reportPdf.includes('Bukan peringatan resmi. Darurat: 112.'));
+ok('PDF menandai pemotongan bila teks kelebihan', reportPdf.includes('dipotong agar laporan tetap satu halaman'));
+ok('PDF menyebut fallback bila model tidak dipakai', reportPdf.includes('Muse Spark tidak tersedia'));
+ok('uji manual peramban tersedia dan tidak masuk gerbang CI',
+  fs.existsSync(path.join(root, 'scripts/manual-map-capture.js'))
+  && !JSON.parse(read('package.json')).scripts.check.includes('manual-map-capture'));
+
 console.log('\n== unit: angka narasi wajib berasal dari data ==');
 const meta = {
   bounds: { west: 100, south: -4, east: 106, north: 2 },
