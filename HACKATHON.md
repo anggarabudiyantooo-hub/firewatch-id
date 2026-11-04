@@ -48,7 +48,10 @@ Branch used for this submission: `feat/hackathon-ai`
 | 2026-11-04 | `e254dae` | `evals/cases.json` (20 data questions + 6 refusal cases) and `evals/run.js` with a no-key tool phase and a key-gated agent phase that reports SKIPPED rather than passing. |
 | 2026-11-04 | `2ad88e0` | `scripts/audit-secrets.js` in the test gate (tracked files and git history, values never printed), English `README.md`, this build log, `docs/DEMO-SCRIPT.md`, `docs/PRE-SUBMIT-CHECKLIST.md`. The previous Indonesian README was moved to `docs/README.id.md`, not deleted. |
 | 2026-11-05 | `351c61f` | Agent wall-clock budget (48 s) and turn bound raised to 4, after production evals showed repeated `META_API_TIMEOUT` and `META_API_TURN_LIMIT` rather than model error. |
-| 2026-11-05 | this commit | `find_place` tool so the agent resolves a named city instead of asking the user for a bounding box; ID/EN parity fixes for the map legend, capture button, assistant footer and AQI category; the 3-minute demo video and its recorder. |
+| 2026-11-05 | `510bf7e` | `find_place` tool so the agent resolves a named city instead of asking the user for a bounding box. The prompt had literally instructed it to ask. |
+| 2026-11-05 | `2849364`, `988127e` | ID/EN parity fixes found by inspecting demo video frames: map legend, capture button, assistant footer, quick chip, dust tab and the AQI category. Regression tests added. |
+| 2026-11-05 | `1283c38` | Verifier no longer reads pollutant names as quantities. `PM2.5` was scanned as the figure 2.5 and `PM10` as 10, flagging correct air-quality answers. |
+| 2026-11-05 | `988127e` | The 3-minute demo video, its Playwright recorder and its assembler. |
 | 2026-11-04 | `a95216a` | Fixes found by running the agent eval against production: the numeric verifier rejected every negative latitude, `get_province_hotspots` hid its own row count, and the harness scored correct refusals as violations. Regression tests added (42 agent checks, 66 coordinate-tool checks). |
 
 ### 1.5 Supporting work inside the window

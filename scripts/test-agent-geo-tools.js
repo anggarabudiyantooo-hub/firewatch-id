@@ -212,6 +212,17 @@ const box = { west: 100, south: -4, east: 106, north: 2 };
     ok('satuan angin 10 m bukan angka', findUnverifiedNumbers('GFS 10 m wind at 4.6 m/s.', collectAllowedNumbers({ speedMs: 4.6 })).length === 0);
     ok('angka karangan di kalimat PM2.5 tetap ditandai', findUnverifiedNumbers('PM2.5 is 999 ug/m3.', air).includes('999'));
   }
+
+  // Nomor tingkat gunung harus ikut di hasil alat. Sebelumnya server hanya
+  // mengirim "III Siaga", sehingga "Level 3" ditandai sebagai angka karangan.
+  {
+    const ctx = { volcanoPoints: [{ name: 'Merapi', lat: -7.54, lon: 110.446, level: 'III Siaga', levelNumber: 3, levelRoman: 'III', levelStatus: 'Siaga' }] };
+    const vol = await agent.executeTool('get_volcano_near', { lat: -7.7956, lon: 110.3695, radius_km: 100 }, ctx);
+    ok('alat gunung memaparkan nomor tingkat resmi', vol.volcanoes[0].levelNumber === 3);
+    const volAllowed = collectAllowedNumbers(vol);
+    ok('Level 3 tidak ditandai sebagai karangan', !findUnverifiedNumbers('Merapi, Level 3 (Siaga).', volAllowed).includes('3'));
+    ok('jarak karangan tetap ditandai', findUnverifiedNumbers('Merapi is 999 km away.', volAllowed).includes('999'));
+  }
 }
 
   console.log(`\n${pass}/${pass + fail} uji alat koordinat dan verifier lulus.\n`);
