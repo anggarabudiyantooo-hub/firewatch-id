@@ -11,7 +11,7 @@ Live: <https://firewatch-id.vercel.app> · Repo: <https://github.com/anggarabudi
 
 ---
 
-## 1. The problem
+## 1. The problem 
 
 During Indonesian haze and fire seasons, a resident sees a grey sky and has three
 questions that no single official page answers quickly:
