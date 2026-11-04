@@ -122,7 +122,7 @@ npm run eval:tools                                            # deterministic ev
 - **P2 SAM 3.1 smoke/burn-area segmentation.** Skipped deliberately: an unvalidated km²
   figure is exactly the kind of number this project refuses to publish.
 - **P2 Muse Voice Transcribe.** Skipped to keep the window focused on P0 and P1.
-- **Agent-phase eval is not a perfect score: 25/26.** The first production run scored 13/26
+- **Agent-phase eval is not a perfect score: 25/26, reproduced twice.** The first production run scored 13/26
   and exposed two real product bugs and two harness bugs, all fixed in `a95216a`. Three later
   runs found three more product bugs (wall-clock budget, pollutant names read as quantities,
   volcano level losing its numeric form), fixed in `351c61f`, `1283c38` and `b9de6f2`.
@@ -130,5 +130,7 @@ npm run eval:tools                                            # deterministic ev
   question** (`content_policy_violation`); the English and reworded Indonesian equivalents
   answer normally. That case was deliberately not reworded to reach 26/26. Instead the
   fallback message was corrected to say "declined", not "unreachable" (`f0fb474`).
+  Two consecutive production runs scored 25/26 with the identical single failure, so the
+  score is stable rather than a lucky run.
   Numbers are recorded in `evals/results.md` and are not rounded up. The tool phase runs
   anywhere; the agent phase needs `MODEL_API_KEY` and is reported SKIPPED without it.

@@ -79,9 +79,10 @@ Test in a private window, on desktop and on a phone:
       secret audit 0 real findings.
 - [x] `npm run eval:tools` reports tool 24/24 and agent 26 SKIPPED without a key, which is
       the intended behaviour. Note it rewrites `evals/results.*`; restore them afterwards.
-- [x] `node evals/run.js --origin=https://firewatch-id.vercel.app` run five times against the
+- [x] `node evals/run.js --origin=https://firewatch-id.vercel.app` run six times against the
       keyed deployment. Tool 24/24 every run. Agent progressed 13/26 -> 22/26 -> 22/26 ->
-      22/26 -> **25/26** as each run exposed a real bug that was then fixed in code.
+      22/26 -> **25/26 -> 25/26** as each run exposed a real bug that was then fixed in code.
+      The last two runs failed the identical single case, so the score is now stable.
       The last failure (Q18) is Meta's content filter refusing one Indonesian phrasing;
       it was left in place rather than reworded. `evals/results.md` and the README carry the
       numbers, the progression and that explanation.
