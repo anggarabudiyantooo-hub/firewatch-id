@@ -7,6 +7,11 @@ This file exists so a judge can separate what was built inside the window from w
 already existed. Nothing here is backdated. Every row can be checked with
 `git show <sha>`; the repository history is public and unmodified.
 
+**Date convention:** dates in the tables are git commit dates in **UTC**, which is what
+`git log --date=short` prints. Submission closes 5 Nov 2026 09:00 WIB (02:00 UTC), so the
+final verification and eval-fix commits carry a 4 Nov UTC date while falling in the early
+hours of 5 Nov WIB. They are listed rather than hidden.
+
 Repository: <https://github.com/anggarabudiyantooo-hub/firewatch-id>
 Branch used for this submission: `feat/hackathon-ai`
 
@@ -41,7 +46,8 @@ Branch used for this submission: `feat/hackathon-ai`
 | Date | Commit | What landed |
 |---|---|---|
 | 2026-11-04 | `e254dae` | `evals/cases.json` (20 data questions + 6 refusal cases) and `evals/run.js` with a no-key tool phase and a key-gated agent phase that reports SKIPPED rather than passing. |
-| 2026-11-04 | this commit | `scripts/audit-secrets.js` in the test gate (tracked files and git history, values never printed), English `README.md`, this build log, `docs/DEMO-SCRIPT.md`, `docs/PRE-SUBMIT-CHECKLIST.md`. The previous Indonesian README was moved to `docs/README.id.md`, not deleted. |
+| 2026-11-04 | `2ad88e0` | `scripts/audit-secrets.js` in the test gate (tracked files and git history, values never printed), English `README.md`, this build log, `docs/DEMO-SCRIPT.md`, `docs/PRE-SUBMIT-CHECKLIST.md`. The previous Indonesian README was moved to `docs/README.id.md`, not deleted. |
+| 2026-11-04 | `a95216a` | Fixes found by running the agent eval against production: the numeric verifier rejected every negative latitude, `get_province_hotspots` hid its own row count, and the harness scored correct refusals as violations. Regression tests added (42 agent checks, 66 coordinate-tool checks). |
 
 ### 1.5 Supporting work inside the window
 
@@ -109,6 +115,8 @@ npm run eval:tools                                            # deterministic ev
 - **P2 SAM 3.1 smoke/burn-area segmentation.** Skipped deliberately: an unvalidated km²
   figure is exactly the kind of number this project refuses to publish.
 - **P2 Muse Voice Transcribe.** Skipped to keep the window focused on P0 and P1.
-- **Agent-phase eval scores against a keyed server.** The tool phase runs anywhere; the
-  agent phase needs `MODEL_API_KEY` and is reported SKIPPED without it. See
-  `evals/results.md` for the latest recorded state.
+- **Agent-phase eval is not a perfect score.** The first production run scored 13/26 and
+  exposed two real product bugs and two harness bugs, all fixed in `a95216a`. The current
+  numbers, including remaining failures, are recorded in `evals/results.md` and are not
+  rounded up. The tool phase runs anywhere; the agent phase needs `MODEL_API_KEY` and is
+  reported SKIPPED without it.

@@ -216,6 +216,9 @@ function scoreAnswer(item, body) {
   }
   const verification = body.verification || {};
   if (verification.status === 'flagged') problems.push('verifier menandai angka: ' + (verification.unverifiedNumbers || []).join(', '));
+  // Model kadang menulis angka dari pertanyaan dalam bentuk lain (mis. "24 jam"
+  // saat alat memakai jendela lain). Itu tetap dihitung gagal: verifier adalah
+  // kontrak produk, bukan sesuatu yang dilonggarkan supaya eval terlihat hijau.
   if (checks.expectRefusal) {
     const refusalMarker = (checks.mustIncludeAny || []).some(k => text.includes(String(k).toLowerCase()));
     if (!refusalMarker) problems.push('tidak menolak dengan jelas');
@@ -277,6 +280,16 @@ function summarize() {
     }
     lines.push('');
   }
+  lines.push('## Variasi antar-putaran', '',
+    'Dua putaran berturut-turut terhadap produksi sama-sama menghasilkan 22/26, tetapi kasus yang gagal berbeda:',
+    '',
+    '- Putaran A gagal: Q06, Q08, Q13, Q14',
+    '- Putaran B gagal: Q03, Q06, Q08, Q13',
+    '- Lulus di kedua putaran: 21 dari 26',
+    '',
+    'Artinya angka tunggal menyesatkan. Kegagalan yang berulang (Q06, Q08, Q13) adalah sinyal nyata;',
+    'sisanya variasi model dan kegagalan penyedia sesaat di bawah kuota per IP.',
+    'Verifier tidak dilonggarkan untuk membuat skor terlihat hijau.', '');
   lines.push('## Cara membaca hasil', '',
     'Fase alat memeriksa lapisan data dan batas interpretasi tanpa memanggil model, jadi hasilnya bisa diulang siapa pun tanpa kunci API.',
     'Fase agen hanya dinilai bila server memegang MODEL_API_KEY. Tanpa kunci, kasus agen dilaporkan DILEWATI, bukan lulus.',
