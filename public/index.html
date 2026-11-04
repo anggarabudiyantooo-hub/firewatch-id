@@ -351,11 +351,17 @@
       <div id="mapHint" class="map-hint" role="status" aria-live="polite" aria-atomic="true" hidden></div>
       <div id="windBadge" class="wind-badge" role="note" aria-live="polite" aria-atomic="true" hidden></div>
       <div id="pm25PointInfo" class="pm25-point-info" role="status" aria-live="off" aria-atomic="true" hidden></div>
-      <button id="mapFsExit" class="map-fs-exit" type="button" aria-label="Keluar layar penuh" hidden>✕ KELUAR FULLSCREEN (ESC)</button></div>
-      <div id="confSummary" hidden></div>
-      <div id="airLegend" hidden></div>
-      <div id="ashLegend" hidden></div>
-      <div id="himaInfo" hidden></div>
+      <button id="mapFsExit" class="map-fs-exit" type="button" aria-label="Keluar layar penuh" hidden>✕ KELUAR FULLSCREEN (ESC)</button>
+      <details id="mapLegend" class="map-legend" hidden>
+        <summary><span>Legenda</span><span class="layer-badge" id="mapLegendBadge" hidden>Model</span></summary>
+        <div class="map-legend-body">
+          <div id="confSummary" hidden></div>
+          <div id="airLegend" hidden></div>
+          <div id="ashLegend" hidden></div>
+          <div id="pm25Legend" class="pm25-legend" role="group" aria-label="Legenda variabel raster CAMS aktif dan atribusinya" hidden></div>
+          <div id="himaInfo" hidden></div>
+        </div>
+      </details></div>
 
 </section>
 
@@ -437,7 +443,6 @@
               <div id="pm25Status" class="pm25-status layer-status" role="status" aria-live="polite" aria-busy="false" hidden></div>
               <div id="plumeCoverageStatus" class="plume-coverage-status layer-status" role="status" aria-live="polite" hidden></div>
             </div>
-            <div id="pm25Legend" class="pm25-legend" role="group" aria-label="Legenda variabel raster CAMS aktif dan atribusinya" hidden></div>
 
             <div class="layer-row" data-layer-row="lyRegionalHaze" data-tooltip-target="tip-lyRegionalHaze">
               <svg class="layer-ic" aria-hidden="true"><use href="#i-haze"></use></svg>
@@ -833,6 +838,7 @@
 <script src="/app.js"></script>
 <script src="/assistant-widget.js"></script>
 <script src="/v3-ui.js"></script>
+<script src="/dashboard-clean.js"></script>
 
 </body>
 </html>

@@ -181,3 +181,69 @@
   .layer-row,
   .seg-option span { transition: none; }
 }
+
+/* Ikhtisar sebagai strip chip ringkas di dekat atas peta */
+:root { --inspector-w: 280px; }
+#statsPanel.kpi-rail {
+  display: flex;
+  gap: var(--clean-space-2);
+  overflow-x: auto;
+  padding: var(--clean-space-2) var(--clean-space-3);
+  min-height: 0;
+  scrollbar-width: thin;
+}
+#statsPanel.kpi-rail .kpi {
+  flex: 0 0 auto;
+  min-width: 118px;
+  padding: var(--clean-space-2) var(--clean-space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--clean-radius);
+  background: var(--surface-1);
+  box-shadow: none;
+}
+#statsPanel.kpi-rail .kpi-top { margin-bottom: 2px; }
+#statsPanel.kpi-rail .kpi-num { font-size: 18px; line-height: 1.1; }
+#statsPanel.kpi-rail .kpi-sub { display: none; }
+
+/* Legenda pojok peta yang bisa dilipat */
+.map-legend {
+  position: absolute;
+  left: var(--clean-space-2);
+  bottom: 28px;
+  z-index: 650;
+  box-sizing: border-box;
+  max-width: min(280px, calc(100% - 16px));
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--clean-radius);
+  background: rgba(12, 16, 21, 0.92);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  color: var(--text-secondary);
+  font: 400 var(--clean-font-control)/1.4 var(--font-prose);
+}
+.map-legend[hidden] { display: none !important; }
+.map-legend > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--clean-space-2);
+  padding: var(--clean-space-2) var(--clean-space-3);
+  cursor: pointer;
+  list-style: none;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.map-legend > summary::-webkit-details-marker { display: none; }
+.map-legend-body {
+  display: grid;
+  gap: var(--clean-space-2);
+  padding: 0 var(--clean-space-3) var(--clean-space-3);
+  max-height: 220px;
+  overflow-y: auto;
+}
+.map-legend-body > div { margin: 0; }
+.map-legend .pm25-legend { border: 0; padding: 0; background: transparent; }
+
+@media (max-width: 768px) {
+  :root { --inspector-w: 260px; }
+  #statsPanel.kpi-rail .kpi { min-width: 104px; }
+  .map-legend { bottom: 24px; max-width: calc(100% - 16px); }
+}
