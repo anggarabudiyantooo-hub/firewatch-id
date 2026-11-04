@@ -300,6 +300,44 @@
     syncTampilanNote();
   }
 
+
+  // --- Letak toggle AI: jangan menutupi dok maupun safety bar ---
+  function placeAiFab() {
+    var bar = document.querySelector('.foot.safety-bar');
+    var dock = byId('dock');
+    // Diukur dari geometri sebenarnya, bukan penjumlahan tinggi, supaya
+    // celah bawah dok dan padding ikut terhitung dan tidak menyisakan
+    // tumpang tindih satu piksel.
+    var anchorTop = null;
+    if (dock && window.matchMedia('(min-width: 769px)').matches) {
+      anchorTop = dock.getBoundingClientRect().top;
+    } else if (bar) {
+      anchorTop = bar.getBoundingClientRect().top;
+    }
+    var offset = anchorTop === null
+      ? 72
+      : Math.max(12, Math.round(window.innerHeight - anchorTop) + 8);
+    document.documentElement.style.setProperty('--ai-fab-bottom', offset + 'px');
+  }
+
+  function setupAiFabPlacement() {
+    placeAiFab();
+    window.addEventListener('resize', placeAiFab);
+    if (window.ResizeObserver) {
+      var observer = new ResizeObserver(placeAiFab);
+      var dock = byId('dock');
+      var bar = document.querySelector('.foot.safety-bar');
+      if (dock) observer.observe(dock);
+      if (bar) observer.observe(bar);
+    }
+    var toggle = byId('dockToggle');
+    if (toggle) toggle.addEventListener('click', function () { setTimeout(placeAiFab, 220); });
+    document.addEventListener('click', function (event) {
+      var tab = event.target && event.target.closest ? event.target.closest('.dock-tab') : null;
+      if (tab) setTimeout(placeAiFab, 220);
+    });
+  }
+
   function boot() {
     syncLayerUI();
     watchLegend();
@@ -307,6 +345,7 @@
     setupShortcuts();
     setupSkeletons();
     setupTampilan();
+    setupAiFabPlacement();
     if (window.matchMedia('(min-width: 769px)').matches) {
       var layerTab = byId('t-lapisan');
       if (layerTab) layerTab.click();
@@ -318,5 +357,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  window.DashboardClean = { sync: syncLayerUI, syncLegend: syncMapLegend, skeletonize: skeletonizeNode, syncTampilan: syncTampilanNote };
+  window.DashboardClean = { sync: syncLayerUI, syncLegend: syncMapLegend, skeletonize: skeletonizeNode, syncTampilan: syncTampilanNote, placeAiFab: placeAiFab };
 })();
