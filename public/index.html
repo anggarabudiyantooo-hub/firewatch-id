@@ -327,6 +327,7 @@
            pengganti sementara dari prototipe dan tidak memuat data nyata. -->
       <div id="mapWrap"><div id="map"></div>
       <div id="mapHint" class="map-hint" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+      <div id="windBadge" class="wind-badge" role="note" aria-live="polite" aria-atomic="true" hidden></div>
       <div id="pm25PointInfo" class="pm25-point-info" role="status" aria-live="off" aria-atomic="true" hidden></div>
       <button id="mapFsExit" class="map-fs-exit" type="button" aria-label="Keluar layar penuh" hidden>✕ KELUAR FULLSCREEN (ESC)</button></div>
       <div id="confSummary" hidden></div>
@@ -372,8 +373,8 @@
         <div class="row"><span class="rl">Pusat kota dalam plume model</span><label class="chk" style="margin:0"><input type="checkbox" id="lyImpact" /><span class="sr-only">Pusat kota/kabupaten dalam plume indikatif, bukan laporan dampak resmi</span></label></div>
         <div class="row"><span class="rl">Abu vulkanik</span><label class="chk" style="margin:0"><input type="checkbox" id="lyAsh" /><span class="sr-only">Abu vulkanik</span></label></div>
         <div class="row"><span class="rl">Kualitas udara (US AQI)</span><label class="chk" style="margin:0"><input type="checkbox" id="lyAir" /><span class="sr-only">Kualitas udara US AQI</span></label></div>
-        <div class="row"><span class="rl">Animasi partikel angin</span><label class="chk" style="margin:0"><input type="checkbox" id="lyWind" aria-describedby="windParticlesNote" /><span class="sr-only">Animasi partikel angin; saat raster CAMS aktif, frame mengikuti waktu dan grid model</span></label></div>
-        <div id="windParticlesNote" class="smoke-mode-note" role="note">Saat raster CAMS aktif, partikel hanya bergerak bila frame angin selaras tersedia; tidak menggunakan data Open-Meteo langsung dari browser.</div>
+        <div class="row"><span class="rl">Animasi partikel angin</span><label class="chk" style="margin:0"><input type="checkbox" id="lyWind" aria-describedby="windParticlesNote" /><span class="sr-only">Animasi partikel angin; medan model mandiri, tidak diselaraskan dengan waktu CAMS atau linimasa plume</span></label></div>
+        <div id="windParticlesNote" class="smoke-mode-note" role="note">Aliran angin adalah medan model mandiri, bukan pengamatan, dan tidak diselaraskan dengan waktu raster CAMS atau linimasa plume. Sumber serta waktu berlaku model tampil pada badge angin; inspeksi titik juga menampilkan sampel saat raster CAMS aktif.</div>
         <div class="row"><span class="rl">Gempa</span><label class="chk" style="margin:0"><input type="checkbox" id="lyQuake" /><span class="sr-only">Gempa</span></label></div>
         <div class="row"><span class="rl">Pengungsi</span><label class="chk" style="margin:0"><input type="checkbox" id="lyShelter" /><span class="sr-only">Pengungsi</span></label></div>
         <div class="row"><span class="rl">Batas konsesi</span><label class="chk" style="margin:0"><input type="checkbox" id="lyConc" checked /><span class="sr-only">Batas konsesi</span></label></div>
@@ -668,6 +669,7 @@
     <div class="ask-chips">
       <button type="button" class="chip" data-q="Buat briefing situasi kebakaran terkini: hotspot, provinsi teratas, dan batas model plume" data-q-en="Create a current fire situation brief: hotspots, top provinces, and plume-model limits">briefing</button>
       <button type="button" class="chip" data-q="Apa yang dilaporkan ASMC, NEA, dan BMKG, dan apa yang belum pasti?" data-q-en="What do ASMC, NEA, and BMKG report, and what remains uncertain?">cek sumber</button>
+      <button type="button" class="chip" data-q="Bandingkan bukti hotspot, model plume, kualitas udara CAMS, dan laporan asap regional. Tampilkan waktu data tiap sumber, perbedaan yang terlihat, dan apa yang belum bisa disimpulkan." data-q-en="Compare hotspot detections, modeled plume, CAMS air quality, and regional haze reports. Show each source time, any visible mismatch, and what cannot yet be concluded.">uji lintas-sumber</button>
       <button type="button" class="chip" data-q="siapa perusahaan yang bertanggung jawab" data-q-en="Which companies are responsible for the fires?">konsesi</button>
       <button type="button" class="chip" data-q="provinsi mana paling banyak titik api" data-q-en="Which provinces have the most fire hotspots?">provinsi</button>
       <button type="button" class="chip" data-q="bagaimana kualitas udara" data-q-en="What does the modeled air-quality data show?">udara</button>

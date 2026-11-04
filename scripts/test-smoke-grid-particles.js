@@ -31,7 +31,7 @@ const frame = {
   ]
 };
 
-console.log('\n== sinkronisasi partikel angin dengan grid PM2.5 ==');
+console.log('\n== flow angin model mandiri ==');
 particles.setField(frame, { preserveParticles: true });
 assert.equal(seedCalls, 0);
 const wind = particles._lookup(0.5, 100.5);
@@ -45,20 +45,21 @@ particles.setField(frame);
 assert.equal(seedCalls, 1);
 console.log('  LULUS perubahan area/grid tetap menginisialisasi ulang posisi partikel');
 
-assert.ok(/function smokeWindFrame\(\)/.test(app));
-assert.ok(/var frame = frames\[index\]/.test(app));
-assert.ok(/frame\.targetTime/.test(app) && /frame\.validTime/.test(app));
-assert.ok(/Math\.abs\(camsMs - windTargetMs\) > 90 \* 60 \* 1000/.test(app));
-assert.ok(/Math\.abs\(camsMs - windValidMs\) > 90 \* 60 \* 1000/.test(app));
+assert.ok(/function independentWindTimelineNote\(\)/.test(app));
+assert.ok(/var field = state\.windOn \? state\.wind : null;/.test(app));
+assert.ok(app.includes("q += '&wind=0';"));
+assert.ok(app.includes('not synchronized to the selected CAMS or plume time.'));
+assert.ok(app.includes('tidak diselaraskan dengan waktu CAMS atau plume yang dipilih.'));
+assert.ok(/if \(state\.windOn\) loadWind\(\);/.test(app));
+assert.ok(app.includes('state.windPending = true;'));
+assert.ok(app.includes('if (pending && state.windOn) loadWind();'));
 assert.ok(/state\.particles\.setField\(field, \{ preserveParticles: !!preserveParticlePositions \}\)/.test(app));
 assert.ok(/function ensureForecastLayers\(skipCachedFrameDraw\)/.test(app));
 assert.ok(/loadAir\(!!skipCachedFrameDraw\)/.test(app));
 assert.ok(/ensureForecastLayers\(true\);/.test(app));
 assert.ok(/if \(modelRasterIsOn\(\)\) drawActiveModelRaster\(true\)/.test(app));
-assert.ok(/function smokeWindTimelineNote\(\)/.test(app));
-assert.ok(/aligned to CAMS/.test(app) && /selaras dengan CAMS/.test(app));
 assert.ok(/productTag = kind === 'pm25'/.test(app) && /'AOD'/.test(app) && /'DEBU'/.test(app));
-console.log('  LULUS CAMS dan angin dipilih dengan indeks sama, target waktu divalidasi, dan timeline mempertahankan jejak');
+console.log('  LULUS flow angin tetap mandiri dari CAMS/playback dan memakai medan /api/wind-field');
 
 assert.ok(source.includes('if (ts - last > 33)'));
 assert.ok(source.includes("'(prefers-reduced-motion: reduce)'"));

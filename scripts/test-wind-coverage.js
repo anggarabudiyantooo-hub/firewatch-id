@@ -106,7 +106,7 @@ async function main() {
     la1: 90, lo1: 0, di: 1, dj: 1, ni: 360, nj: 181,
     u: new Float32Array(gridSize).fill(3),
     v: new Float32Array(gridSize).fill(4),
-    run: 'fixture'
+    run: '20261022 00Z', fhour: 0
   };
   windGfs.fetchWindField = async () => model;
 
@@ -151,6 +151,8 @@ async function main() {
     assert.equal(surface.status, 200);
     assert.equal(surface.body.step, 2);
     assert.equal(surface.body.wrapCenter, 118);
+    assert.equal(surface.body.validTime, '2026-10-22T00:00:00.000Z');
+    assert.equal(surface.body.fhour, 0);
     assert.ok(surface.body.count > 0);
     assert.ok(surface.body.points.some(point => point.lon < 84.5));
     assert.ok(surface.body.points.some(point => point.lon > 151.5));
