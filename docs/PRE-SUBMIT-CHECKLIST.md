@@ -5,7 +5,7 @@ Do not tick a box you have not actually verified.
 
 ## 1. Repository is reachable
 
-- [x] `https://github.com/anggarabudiyantooo-hub/firewatch-id` is public: the unauthenticated
+- [x] `https://github.com/anggarabudiyantooo-hub/siaga-id` is public: the unauthenticated
       API returns 200. Still open it in a private window yourself before submitting.
 - [x] Default branch is `main` and contains the merged hackathon work (verified via the API).
 - [x] `README.md` is on `main` and **all 14 internal links resolve** (each fetched from the

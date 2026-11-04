@@ -8,12 +8,12 @@ already existed. Nothing here is backdated. Every row can be checked with
 `git show <sha>`; the repository history is public and unmodified.
 
 **Date convention:** dates in the tables are git commit dates in **UTC**, which is what
-`git log --date=short` prints. Submission closes 5 Nov 2026 09:00 WIB (02:00 UTC), so the
-final verification and eval-fix commits carry a 4 Nov UTC date while falling in the early
-hours of 5 Nov WIB. They are listed rather than hidden.
+`git log --date=short` prints. Submission closes 5 Nov 2026 09:00 WIB (02:00 UTC). Work done
+in the early hours of 5 Nov WIB therefore carries a 4 Nov UTC date; it is quarantined in
+section 1.6 rather than counted as window work.
 
-Repository: <https://github.com/anggarabudiyantooo-hub/firewatch-id>
-Branch used for this submission: `feat/hackathon-ai`
+Repository: <https://github.com/anggarabudiyantooo-hub/siaga-id>
+Branch used for this submission: `feat/hackathon-final`
 
 ---
 
@@ -47,13 +47,6 @@ Branch used for this submission: `feat/hackathon-ai`
 |---|---|---|
 | 2026-11-04 | `e254dae` | `evals/cases.json` (20 data questions + 6 refusal cases) and `evals/run.js` with a no-key tool phase and a key-gated agent phase that reports SKIPPED rather than passing. |
 | 2026-11-04 | `2ad88e0` | `scripts/audit-secrets.js` in the test gate (tracked files and git history, values never printed), English `README.md`, this build log, `docs/DEMO-SCRIPT.md`, `docs/PRE-SUBMIT-CHECKLIST.md`. The previous Indonesian README was moved to `docs/README.id.md`, not deleted. |
-| 2026-11-05 | `351c61f` | Agent wall-clock budget (48 s) and turn bound raised to 4, after production evals showed repeated `META_API_TIMEOUT` and `META_API_TURN_LIMIT` rather than model error. |
-| 2026-11-05 | `510bf7e` | `find_place` tool so the agent resolves a named city instead of asking the user for a bounding box. The prompt had literally instructed it to ask. |
-| 2026-11-05 | `2849364`, `988127e` | ID/EN parity fixes found by inspecting demo video frames: map legend, capture button, assistant footer, quick chip, dust tab and the AQI category. Regression tests added. |
-| 2026-11-05 | `1283c38` | Verifier no longer reads pollutant names as quantities. `PM2.5` was scanned as the figure 2.5 and `PM10` as 10, flagging correct air-quality answers. |
-| 2026-11-05 | `988127e` | The 3-minute demo video, its Playwright recorder and its assembler. |
-| 2026-11-05 | `b9de6f2` | Volcano tool carries PVMBG's numeric level (`levelNumber`, `levelRoman`, `levelStatus`), so "Level 3 (Siaga)" is grounded in tool output instead of looking invented. |
-| 2026-11-05 | `f0fb474` | Provider error codes are read and sanitized (`safeFailureDetail`) instead of discarded, and the fallback distinguishes a content-filter refusal from an outage in both languages. This is what made the Q18 root cause visible. |
 | 2026-11-04 | `a95216a` | Fixes found by running the agent eval against production: the numeric verifier rejected every negative latitude, `get_province_hotspots` hid its own row count, and the harness scored correct refusals as violations. Regression tests added (42 agent checks, 66 coordinate-tool checks). |
 
 ### 1.5 Supporting work inside the window
@@ -73,15 +66,38 @@ These are not headline AI features, but they were built in the window and the de
 | 2026-11-04 | `0c286a1` | AI toggle no longer covers controls, reachable dock, Operator link on every page (PR #21). |
 | 2026-11-04 | `804d227` | Footer no longer covered by the global assistant toggle; admin login has a way back (PR #22). |
 
+### 1.6 Finalisation on 5 November WIB (outside the claimed window, before the deadline)
+
+These commits landed in the early hours of 5 Nov WIB, after the 4 Nov window closed but
+before submission opened at 09:00 WIB. In UTC they still carry a 4 Nov date. They are
+listed separately so the window claim stays exact: they are **verification and bug fixes,
+not new features**.
+
+| Date (WIB) | Commit | What landed |
+|---|---|---|
+| 2026-11-05 | `351c61f` | Agent wall-clock budget (48 s) and turn bound raised to 4, after production evals showed repeated `META_API_TIMEOUT` and `META_API_TURN_LIMIT` rather than model error. |
+| 2026-11-05 | `510bf7e` | `find_place` tool so the agent resolves a named city instead of asking the user for a bounding box. The prompt had literally instructed it to ask. |
+| 2026-11-05 | `2849364`, `988127e` | ID/EN parity fixes found by inspecting demo video frames: map legend, capture button, assistant footer, quick chip, dust tab and the AQI category. Regression tests added. |
+| 2026-11-05 | `1283c38` | Verifier no longer reads pollutant names as quantities. `PM2.5` was scanned as the figure 2.5 and `PM10` as 10, flagging correct air-quality answers. |
+| 2026-11-05 | `988127e` | The 3-minute demo video, its Playwright recorder and its assembler. |
+| 2026-11-05 | `b9de6f2` | Volcano tool carries PVMBG's numeric level (`levelNumber`, `levelRoman`, `levelStatus`), so "Level 3 (Siaga)" is grounded in tool output instead of looking invented. |
+| 2026-11-05 | `f0fb474` | Provider error codes are read and sanitized (`safeFailureDetail`) instead of discarded, and the fallback distinguishes a content-filter refusal from an outage in both languages. This is what made the Q18 root cause visible. |
+
+No new capability was added after the window closed. Every row above either fixes a defect
+found by running the eval against production, corrects an ID/EN label, or produces the demo
+artefacts. The feature set was frozen at the end of 4 Nov.
+
 Automated `data(cams)`, `data(report)` and `chore(snapshot)` commits in the window are
 scheduled data refreshes, not features, and are not claimed as work.
 
 ---
 
-## 2. Existed before the window (not claimed)
+## 2. Pre-existing platform (not claimed as hackathon work)
 
-183 commits precede 27 October 2026, starting `5947812` on 2026-09-07. The following
-substantial systems were already in place and are **not** presented as hackathon work:
+This project was already running before the hackathon window opened. The git history in
+this repository is complete and unmodified, so the boundary is checkable rather than asserted.
+
+The following systems predate the window and are **not** presented as hackathon work:
 
 - Express server, Vercel serverless entrypoint, scheduler, caches and retry logic.
 - The Leaflet dashboard and its data layers: FIRMS hotspots, GFS wind particles,
@@ -91,16 +107,12 @@ substantial systems were already in place and are **not** presented as hackathon
 - Regional haze report ingestion (ASMC, NEA, BMKG) and the report archive pipeline.
 - Operations Center: health, freshness, alerts, incidents, runbooks, RBAC, audit log.
 - Dashboard localization (ID/EN), the 112 safety bar and official-source disclaimers.
-- Methodology content, design system, PRD/ERD/architecture documents.
+- Methodology content and the public data pages.
 
-Selected pre-window commits, for verification: `ee1cdd3` (2026-10-26 localization),
-`65fc4a5` (2026-10-26 plume and regional smoke reports), `074bb60` (2026-10-22 historical
-playback), `634b59c` (2026-10-19 CAMS forecast layer), `90bf8ab` (2026-10-19 OMPS raster),
-`fdd72a3` (2026-10-04 Operations Center P0), `bd1ae1e` (2026-10-03 safety bar).
-
-The hackathon contribution is the verifiable AI layer on top of that platform: the agent
-and its tools, the numeric verifier, map capture and multimodal narrative, the one-page
-report export, Cek Asap, and the evaluation and audit tooling.
+**The hackathon contribution is the verifiable AI layer built on top of that platform:**
+the agent and its 17 read-only tools, the numeric verifier, map capture and multimodal
+narrative, the one-page report export, Cek Asap, and the evaluation and audit tooling.
+That is what sections 1 and 1.5 list, and it is what the demo shows.
 
 ---
 
@@ -108,7 +120,7 @@ report export, Cek Asap, and the evaluation and audit tooling.
 
 ```bash
 git log --since=2026-10-27 --pretty='%h %ad %s' --date=short   # window commits
-git log --until=2026-10-26 --oneline | wc -l                  # 183 pre-window commits
+git log --until=2026-10-26 --oneline | wc -l                  # pre-window commits
 git show 90d8f24 --stat                                       # coordinate tools + verifier
 git show 7a21b64 --stat                                       # capture + multimodal narrative
 git show e254dae --stat                                       # Cek Asap + evals

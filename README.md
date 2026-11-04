@@ -2,9 +2,9 @@
 
 **Meta Global AI Developer Hackathon submission · Track: Build for Your World**
 
-[![Test gate](https://github.com/anggarabudiyantooo-hub/firewatch-id/actions/workflows/ci.yml/badge.svg)](https://github.com/anggarabudiyantooo-hub/firewatch-id/actions/workflows/ci.yml)
+[![Test gate](https://github.com/anggarabudiyantooo-hub/siaga-id/actions/workflows/ci.yml/badge.svg)](https://github.com/anggarabudiyantooo-hub/siaga-id/actions/workflows/ci.yml)
 
-Live: <https://firewatch-id.vercel.app> · Repo: <https://github.com/anggarabudiyantooo-hub/firewatch-id> · License: [MIT](LICENSE)
+Live: <https://firewatch-id.vercel.app> · Repo: <https://github.com/anggarabudiyantooo-hub/siaga-id> · License: [MIT](LICENSE)
 
 > A public-interest tool, **not a replacement for official sources**. For emergency
 > decisions follow BMKG, BNPB/BPBD, PVMBG and KLHK. Emergency number in Indonesia: **112**.
@@ -321,8 +321,5 @@ Full source table and methodology: [`docs/README.id.md`](docs/README.id.md) and 
 | [`docs/PRE-SUBMIT-CHECKLIST.md`](docs/PRE-SUBMIT-CHECKLIST.md) | final submission checklist |
 | [`docs/README.id.md`](docs/README.id.md) | the original Indonesian README, kept in full |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | system architecture, data flow, scheduler |
-| [`docs/PRD.md`](docs/PRD.md) | product requirements |
-| [`docs/ERD.md`](docs/ERD.md) | data model and API response schemas |
-| [`docs/DESIGN.md`](docs/DESIGN.md) | design system and accessibility |
 | [`evals/results.md`](evals/results.md) | latest eval run |
-| [CONTRIBUTING](CONTRIBUTING.md) · [SECURITY](SECURITY.md) · [CHANGELOG](CHANGELOG.md) | process and history |
+| [CONTRIBUTING](CONTRIBUTING.md) · [SECURITY](SECURITY.md) | contribution and security policy |

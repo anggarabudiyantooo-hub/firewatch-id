@@ -48,10 +48,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/anggarabudiyantooo-hub/firewatch-id.git"
+    "url": "git+https://github.com/anggarabudiyantooo-hub/siaga-id.git"
   },
   "homepage": "https://firewatch-id.vercel.app",
   "bugs": {
-    "url": "https://github.com/anggarabudiyantooo-hub/firewatch-id/issues"
+    "url": "https://github.com/anggarabudiyantooo-hub/siaga-id/issues"
   }
 }
