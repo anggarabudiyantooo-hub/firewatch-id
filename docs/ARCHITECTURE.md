@@ -251,9 +251,12 @@ produk serta validasi zoom dan ubin.
 
 Rate limit diterapkan server-side per IP: 240/menit untuk rute normal, 90/menit
 untuk endpoint yang dapat memicu kerja hulu, 1.200/menit hanya untuk pola petak,
-dan 12/menit gabungan untuk `/api/ask` + `/api/ask/challenge`. Penghitung berada
-di `Map` per proses; ini pembatas burst, bukan kuota provider lintas instance,
-dan cold start dapat mengawali jatah baru.
+dan 12/menit gabungan untuk `/api/ask` + `/api/ask/challenge`. Login admin juga
+memiliki batas eksplisit 12/15 menit ditambah backoff kegagalan; aset admin
+`/admin-assets/*` dibatasi 120/menit. Pembatas login/aset memakai store memori
+per proses (`express-rate-limit`); batas umum juga berada di `Map` per proses.
+Semua batas adalah pembatas burst, bukan kuota provider lintas instance, dan cold
+start dapat mengawali jatah baru.
 
 ## 6. Batasan yang diketahui
 

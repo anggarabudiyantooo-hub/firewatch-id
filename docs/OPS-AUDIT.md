@@ -7,21 +7,23 @@ Sifat dokumen: **pembacaan kode + pengukuran langsung**, bukan asumsi. Fase ini 
 
 ## Addendum 4 November 2026 - branch pengamanan saat ini
 
-Perbaikan berjalan terpisah pada branch `security/lock-operations`, berbasis
-`c8d7c21`. Commit lokal `6704810` menambahkan autentikasi sesi; pekerjaan
-pelindung halaman/API dan hardening lanjut masih belum dikomit. Belum ada push,
-PR, merge, atau deployment. Karena itu semua temuan paparan yang diukur terhadap
-produksi di audit 4 Nov tetap berlaku sampai owner meninjau dan menerapkan patch.
+Perbaikan berada pada branch `security/lock-operations-bundle`, berbasis
+`c8d7c21`, dan telah dipush ke PR #18. PR masih terbuka; belum ada merge atau
+deployment. Karena itu semua temuan paparan yang diukur terhadap produksi pada
+audit 4 Nov tetap berlaku sampai owner meninjau dan menerapkan patch.
 
-Implementasi lokal memakai satu password admin bcrypt, cookie sesi HMAC 8 jam,
+Implementasi memakai satu password admin bcrypt, cookie sesi HMAC 8 jam,
 CSRF + pemeriksaan Origin untuk mutasi, backoff login, UI privat di luar `public/`,
-dan seluruh API admin pada `/api/admin/*`. `/api/status` kini memakai proyeksi
-kesegaran yang menghapus endpoint, pesan galat, counter retry, log, dan kuota;
-fallback boot tidak lagi membuka stack lewat `?debug=`; `/api/ask` dan challenge
-berbagi bucket AI 12/menit, sedangkan metadata hulu masuk bucket mahal. Cron
-menerima `CRON_SECRET` hanya dari header Bearer. `npm run check` terakhir pada
-worktree lokal lulus; uji auth/login, rate limit, status projection, helper local
-mock, dan Vercel configuration lulus. Ini bukan verifikasi deployment.
+dan seluruh API admin pada `/api/admin/*`. Login kini juga dibatasi eksplisit
+12/15 menit dan aset privat 120/menit; kedua limiter memakai memori per proses.
+Path aset dipilih dari cabang nama tetap, tidak lagi menggabungkan nilai request
+ke jalur filesystem. `/api/status` memakai proyeksi kesegaran tanpa endpoint,
+pesan galat, counter retry, log, atau kuota; fallback boot tak membuka stack
+lewat `?debug=`; `/api/ask` dan challenge berbagi bucket AI 12/menit, metadata
+hulu masuk bucket mahal, dan cron menerima `CRON_SECRET` hanya dari Bearer.
+`npm run check` terakhir pada snapshot awal lulus. CodeQL awal PR #18 menandai
+limiter/path/fixture; commit tindak lanjut menanganinya dan hasil scan baru harus
+diperiksa setelah CI berjalan. Ini bukan verifikasi deployment.
 
 Sebelum deployment owner harus memasang `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`,
 dan `CRON_SECRET` sesuai panduan README/PENJADWAL. Nilai secret tidak dicatat di

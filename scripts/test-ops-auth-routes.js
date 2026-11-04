@@ -4,10 +4,17 @@
 const assert = require('node:assert/strict');
 const bcrypt = require('bcryptjs');
 const express = require('express');
+const rateLimit = require('express-rate-limit').rateLimit;
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const adminAuth = require('../lib/admin-auth');
+const loginPageTestLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 120,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false
+});
 
 const envKeys = [
   'OPS_TOKEN_VIEWER', 'OPS_TOKEN_OPERATOR', 'OPS_TOKEN_ADMIN', 'OPS_WRITE_TOKEN', 'OPS_READ_PROTECTED',
@@ -61,7 +68,8 @@ async function run() {
     getHotspots: async () => ({ hotspots: [] }),
     getAssetVersion: () => '0123456789'
   });
-  app.get('/admin-login', (_req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'admin-login.html')));
+  app.get('/admin-login', loginPageTestLimiter,
+    (_req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'admin-login.html')));
   app.use(express.static(path.join(__dirname, '..', 'public')));
   const cronAuth = require('../lib/cron-auth');
   const secretMatch = require('../lib/secret-match');
@@ -189,6 +197,10 @@ async function run() {
       [result.response.status, /no-store/.test(result.response.headers.get('cache-control')),
         /noindex/.test(result.response.headers.get('x-robots-tag')),
         /x-ops-token/i.test(String(result.body))], [200, true, true, false]);
+    check('asset admin mengirim header pembatas permintaan',
+      !!result.response.headers.get('ratelimit-policy'), true);
+    result = await request(base, '/admin-assets/' + encodeURIComponent('../server.js'), { cookie });
+    check('asset admin menolak nama path di luar allowlist', result.response.status, 404);
 
     result = await request(base, '/api/admin/operations/health');
     check('session cookie required on reads', result.response.status, 401);

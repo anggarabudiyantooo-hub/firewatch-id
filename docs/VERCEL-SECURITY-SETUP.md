@@ -1,9 +1,10 @@
 # Panduan owner: menyiapkan keamanan Operations di Vercel
 
 Panduan ini menyiapkan env Production untuk branch keamanan setelah perubahan
-kode ditinjau dan benar-benar masuk ke deployment. Saat ini patch masih lokal di
-`security/lock-operations`; belum ada push, PR, atau deployment. **Jangan anggap
-`firewatch-id.vercel.app` sudah terlindungi sebelum deployment baru diverifikasi.**
+kode ditinjau dan benar-benar masuk ke deployment. Perubahan berada pada branch
+`security/lock-operations-bundle` dan PR #18; belum di-merge atau di-deploy.
+**Jangan anggap `firewatch-id.vercel.app` sudah terlindungi sebelum deployment
+baru diverifikasi.**
 
 Jangan kirim password, hash, `SESSION_SECRET`, atau `CRON_SECRET` melalui chat,
 tiket, PR, atau commit. Owner membuat dan memasukkan nilainya langsung pada
@@ -151,8 +152,10 @@ namun salinan cookie yang dicuri tetap berlaku sampai expiry.
 - Cookie sesi `__Host-siaga_admin`: HMAC, `HttpOnly`, `Secure`, `SameSite=Strict`,
   8 jam.
 - Mutasi API admin memerlukan sesi, Origin same-origin, token CSRF, dan JSON.
-- Login backoff dan rate limits berada di memori tiap instance serverless; batas
-  dapat di-reset saat cold start/instance berganti dan bukan kuota global.
+- Login dibatasi hingga 12 permintaan per 15 menit dengan backoff tambahan setelah
+  kredensial gagal; aset admin dibatasi 120 permintaan per menit. Keduanya memakai
+  limiter memori per instance serverless; batas dapat di-reset saat cold start/
+  instance berganti dan bukan kuota global.
 - `noindex` dan `robots.txt` hanya kebijakan mesin pencari, **bukan** kontrol
   akses. Kontrol akses adalah pemeriksaan sesi server-side.
 - Ganti `SESSION_SECRET` akan membatalkan semua sesi yang sedang berlaku.

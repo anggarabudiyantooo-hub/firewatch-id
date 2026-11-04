@@ -61,6 +61,9 @@ async function run() {
       assert.equal(response.status, 503);
       assert.doesNotMatch(JSON.stringify(unavailableBody), /SESSION_SECRET|ADMIN_PASSWORD_HASH/);
     });
+    check('login mengirim header express-rate-limit', () => {
+      assert.ok(response.headers.get('ratelimit-policy'));
+    });
     response = await fetch(base + '/api/admin/auth/session');
     check('tanpa sesi, endpoint session mengembalikan 401', () => assert.equal(response.status, 401));
 
