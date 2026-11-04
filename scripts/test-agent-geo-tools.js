@@ -202,6 +202,16 @@ const box = { west: 100, south: -4, east: 106, north: 2 };
   ok('koordinat negatif tidak ditandai', findUnverifiedNumbers('lat -6.2146, lon 106.8451', allowed).length === 0);
   ok('penulisan hemisphere tidak ditandai', findUnverifiedNumbers('6.2146 LS, 106.8451 BT', allowed).length === 0);
   ok('angka karangan tetap ditandai', findUnverifiedNumbers('lat -9.9999', allowed).includes('9.9999'));
+
+  // Nama polutan dan satuan bukan besaran. "PM2.5" dulu terbaca sebagai angka
+  // 2.5 sehingga jawaban kualitas udara yang benar ditandai karangan.
+  {
+    const air = collectAllowedNumbers({ aqi: 67, pm25UgM3: 13.3 });
+    ok('nama PM2.5 bukan angka', findUnverifiedNumbers('Modelled PM2.5 is 13.3 ug/m3 and AQI is 67.', air).length === 0);
+    ok('nama PM10 bukan angka', findUnverifiedNumbers('PM10 is not reported.', air).length === 0);
+    ok('satuan angin 10 m bukan angka', findUnverifiedNumbers('GFS 10 m wind at 4.6 m/s.', collectAllowedNumbers({ speedMs: 4.6 })).length === 0);
+    ok('angka karangan di kalimat PM2.5 tetap ditandai', findUnverifiedNumbers('PM2.5 is 999 ug/m3.', air).includes('999'));
+  }
 }
 
   console.log(`\n${pass}/${pass + fail} uji alat koordinat dan verifier lulus.\n`);

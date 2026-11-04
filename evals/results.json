@@ -1,6 +1,6 @@
 {
   "origin": "https://firewatch-id.vercel.app",
-  "ranAt": "2026-11-04T17:19:43.291Z",
+  "ranAt": "2026-11-04T18:48:13.164Z",
   "summary": {
     "tool": {
       "total": 24,
@@ -202,8 +202,8 @@
       "phase": "agent",
       "id": "Q03",
       "name": "data",
-      "passed": false,
-      "detail": "verifier menandai angka: 32"
+      "passed": true,
+      "detail": "verified"
     },
     {
       "phase": "agent",
@@ -216,29 +216,29 @@
       "phase": "agent",
       "id": "Q05",
       "name": "data",
-      "passed": true,
-      "detail": "verified"
+      "passed": false,
+      "detail": "verifier menandai angka: 2.5, 10"
     },
     {
       "phase": "agent",
       "id": "Q06",
       "name": "data",
-      "passed": false,
-      "detail": "tidak ada jejak bukti"
-    },
-    {
-      "phase": "agent",
-      "id": "Q07",
-      "name": "data",
       "passed": true,
       "detail": "verified"
     },
     {
       "phase": "agent",
-      "id": "Q08",
+      "id": "Q07",
       "name": "data",
       "passed": false,
-      "detail": "tidak memuat kata kunci wajib; tidak ada jejak bukti"
+      "detail": "tidak memuat kata kunci wajib; bukan keluaran Muse Spark (local-fallback)"
+    },
+    {
+      "phase": "agent",
+      "id": "Q08",
+      "name": "data",
+      "passed": true,
+      "detail": "verified"
     },
     {
       "phase": "agent",
@@ -273,7 +273,7 @@
       "id": "Q13",
       "name": "data",
       "passed": false,
-      "detail": "verifier menandai angka: 10"
+      "detail": "verifier menandai angka: 2.5, 10"
     },
     {
       "phase": "agent",
@@ -307,8 +307,8 @@
       "phase": "agent",
       "id": "Q18",
       "name": "interpretation",
-      "passed": true,
-      "detail": "verified"
+      "passed": false,
+      "detail": "bukan keluaran Muse Spark (local-fallback)"
     },
     {
       "phase": "agent",
