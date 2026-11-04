@@ -227,10 +227,14 @@
     if (!series || !series.length) return '<p class="report-note">' + escapeHtml(copy('Tidak ada ringkasan hotspot yang terarsip pada edisi ini; ketiadaan data bukan berarti nol deteksi.', 'No hotspot summary is archived for this issue; missing data does not mean zero detections.')) + '</p>';
     var rows = series.map(function (item) {
       var ref = item.referenceId ? citation(item.referenceId, refs) : '';
+      var total = chartNumber(item.reportedTotal);
+      var high = chartNumber(item.highConfidence);
+      if (total !== null && high !== null && high > total) high = null;
+      var frp = chartNumber(item.totalFrpMw);
       return '<tr><td>' + escapeHtml(formatDate(item.reportDate + 'T12:00:00+07:00', false)) + '</td><td>'
-        + escapeHtml(item.reportedTotal == null ? copy('tidak tersedia', 'unavailable') : fmtNumber(item.reportedTotal, 0))
-        + '</td><td>' + escapeHtml(fmtNumber(item.highConfidence, 0))
-        + '</td><td>' + escapeHtml(item.totalFrpMw == null ? copy('tidak tersedia', 'not available') : fmtNumber(item.totalFrpMw, 0) + ' MW')
+        + (total === null ? 'N/A' : escapeHtml(fmtNumber(total, 0)))
+        + '</td><td>' + (high === null ? 'N/A' : escapeHtml(fmtNumber(high, 0)))
+        + '</td><td>' + (frp === null ? 'N/A' : escapeHtml(fmtNumber(frp, 0) + ' MW'))
         + (item.truncated ? ' · ' + escapeHtml(copy('rekaman dikurangi', 'records capped')) : '') + ref + '</td></tr>';
     }).join('');
     return '<div class="report-table-wrap"><table class="report-table"><thead><tr><th>' + escapeHtml(copy('Tanggal tangkapan', 'Capture date')) + '</th><th>' + escapeHtml(copy('Deteksi dilaporkan', 'Reported detections')) + '</th><th>' + escapeHtml(copy('Keyakinan tinggi', 'High confidence')) + '</th><th>FRP</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
@@ -395,8 +399,8 @@
     var barWidth = Math.min(30, Math.max(10, slotWidth * 0.28));
     var title = copy('Deteksi hotspot per snapshot tersimpan', 'Hotspot detections by archived snapshot');
     var description = copy(
-      'Setiap kelompok batang mewakili satu snapshot. Total deteksi dan subset keyakinan tinggi tidak dijumlahkan menjadi total mingguan; nilai yang tidak tersedia dibiarkan kosong.',
-      'Each bar group represents one snapshot. Total detections and the high-confidence subset are not added into a weekly total; unavailable values are left blank.'
+      'Setiap kelompok batang mewakili satu snapshot. Total deteksi dan subset keyakinan tinggi tidak dijumlahkan menjadi total mingguan; nilai yang tidak tersedia ditandai N/A.',
+      'Each bar group represents one snapshot. Total detections and the high-confidence subset are not added into a weekly total; unavailable values are marked N/A.'
     );
     var svg = '<svg class="report-chart-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-labelledby="weekly-hotspot-title weekly-hotspot-desc">'
       + '<title id="weekly-hotspot-title">' + escapeHtml(title) + '</title>'
