@@ -5,8 +5,8 @@ Do not tick a box you have not actually verified.
 
 ## 1. Repository is reachable
 
-- [ ] `https://github.com/anggarabudiyantooo-hub/firewatch-id` opens **in a private window
-      without logging in**. If it does not, make the repo public in Settings before anything else.
+- [x] `https://github.com/anggarabudiyantooo-hub/firewatch-id` is public: the unauthenticated
+      API returns 200. Still open it in a private window yourself before submitting.
 - [ ] Default branch contains the merged hackathon work.
 - [ ] `README.md` renders on the repo home page and its internal links resolve.
 - [ ] `HACKATHON.md`, `docs/DEMO-SCRIPT.md`, `evals/results.md` are present on the default branch.
@@ -14,8 +14,8 @@ Do not tick a box you have not actually verified.
 
 ## 2. No secrets anywhere
 
-- [ ] `node scripts/audit-secrets.js` passes on a **full clone** (not shallow). It scans tracked
-      files and git history and prints locations, never values.
+- [x] `node scripts/audit-secrets.js` passes on a **full clone** (not shallow): 227 tracked
+      files, 242 commits, 0 real findings. It prints locations, never values.
 - [ ] `.env` is not tracked and never was: `git log --all --diff-filter=A --name-only | grep '\.env$'`
       returns nothing.
 - [ ] No API key in `public/`, in screenshots, or in the demo video.
@@ -26,7 +26,8 @@ Do not tick a box you have not actually verified.
 
 ## 3. Admin surface is locked
 
-- [ ] `/operations` and `/api/admin/*` redirect an anonymous visitor to `/admin-login`.
+- [x] `/operations` returns 303 to `/admin-login` and `/api/admin/status` returns 401 for an
+      anonymous visitor (verified against production).
 - [ ] `ADMIN_PASSWORD_HASH` is a bcrypt hash (cost >= 12) stored only in Vercel env vars.
 - [ ] `SESSION_SECRET` is at least 32 random bytes, stored only in Vercel env vars.
 - [ ] Legacy `OPS_TOKEN_*` variables removed from Vercel; they no longer authenticate.
@@ -60,8 +61,9 @@ Test in a private window, on desktop and on a phone:
 
 - [ ] `npm ci && npm run check` exits 0 (style, secret audit, all test files).
 - [ ] `npm run eval:tools` reports the tool phase passing.
-- [ ] `npm run eval --origin=https://firewatch-id.vercel.app` run against the keyed deployment;
-      `evals/results.md` committed with the real numbers, including any failures.
+- [x] `node evals/run.js --origin=https://firewatch-id.vercel.app` run twice against the keyed
+      deployment. Tool 24/24. Agent 22/26 both runs, but different cases failed; only 21/26
+      passed in both. `evals/results.md` and the README carry those numbers and the variance.
 - [ ] Manual browser suites run and their screenshots committed:
       `node scripts/manual-map-capture.js`, `node scripts/manual-agent-ui.js`,
       `node scripts/manual-smoke-check.js`.
@@ -94,3 +96,4 @@ Test in a private window, on desktop and on a phone:
       both the capture chrome and the narrative disclose this.
 - [ ] The Meta Model API public preview is documented as US-only; other regions fall back.
 - [ ] Agent-phase eval results depend on a keyed server and are marked SKIPPED without one.
+- [ ] The agent eval is 22/26 with run-to-run variance, not a clean sweep. Say so if asked.
