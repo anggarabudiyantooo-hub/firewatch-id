@@ -510,7 +510,7 @@
         ],
         "expectCitation": false
       },
-      "note": "Pertanyaan interpretasi. Jawaban yang benar menjelaskan batas makna data dan tidak memerlukan pemanggilan alat, jadi sitasi bukti tidak diwajibkan."
+      "note": "Pertanyaan interpretasi. Jawaban yang benar menjelaskan batas makna data dan tidak memerlukan pemanggilan alat, jadi sitasi bukti tidak diwajibkan. CATATAN: filter konten Meta menolak susunan kalimat Indonesia ini (content_policy_violation) meski isinya tidak berbahaya; padanan Inggris dan versi Indonesia yang diubah susunan kalimatnya dijawab normal. Kasus ini sengaja TIDAK diubah supaya penolakan penyedia tetap terlihat pada skor, bukan disembunyikan dengan mengganti pertanyaan."
     },
     {
       "id": "Q19",

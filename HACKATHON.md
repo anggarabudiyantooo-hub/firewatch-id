@@ -52,6 +52,8 @@ Branch used for this submission: `feat/hackathon-ai`
 | 2026-11-05 | `2849364`, `988127e` | ID/EN parity fixes found by inspecting demo video frames: map legend, capture button, assistant footer, quick chip, dust tab and the AQI category. Regression tests added. |
 | 2026-11-05 | `1283c38` | Verifier no longer reads pollutant names as quantities. `PM2.5` was scanned as the figure 2.5 and `PM10` as 10, flagging correct air-quality answers. |
 | 2026-11-05 | `988127e` | The 3-minute demo video, its Playwright recorder and its assembler. |
+| 2026-11-05 | `b9de6f2` | Volcano tool carries PVMBG's numeric level (`levelNumber`, `levelRoman`, `levelStatus`), so "Level 3 (Siaga)" is grounded in tool output instead of looking invented. |
+| 2026-11-05 | `f0fb474` | Provider error codes are read and sanitized (`safeFailureDetail`) instead of discarded, and the fallback distinguishes a content-filter refusal from an outage in both languages. This is what made the Q18 root cause visible. |
 | 2026-11-04 | `a95216a` | Fixes found by running the agent eval against production: the numeric verifier rejected every negative latitude, `get_province_hotspots` hid its own row count, and the harness scored correct refusals as violations. Regression tests added (42 agent checks, 66 coordinate-tool checks). |
 
 ### 1.5 Supporting work inside the window
@@ -120,8 +122,13 @@ npm run eval:tools                                            # deterministic ev
 - **P2 SAM 3.1 smoke/burn-area segmentation.** Skipped deliberately: an unvalidated km²
   figure is exactly the kind of number this project refuses to publish.
 - **P2 Muse Voice Transcribe.** Skipped to keep the window focused on P0 and P1.
-- **Agent-phase eval is not a perfect score.** The first production run scored 13/26 and
-  exposed two real product bugs and two harness bugs, all fixed in `a95216a`. The current
-  numbers, including remaining failures, are recorded in `evals/results.md` and are not
-  rounded up. The tool phase runs anywhere; the agent phase needs `MODEL_API_KEY` and is
-  reported SKIPPED without it.
+- **Agent-phase eval is not a perfect score: 25/26.** The first production run scored 13/26
+  and exposed two real product bugs and two harness bugs, all fixed in `a95216a`. Three later
+  runs found three more product bugs (wall-clock budget, pollutant names read as quantities,
+  volcano level losing its numeric form), fixed in `351c61f`, `1283c38` and `b9de6f2`.
+  The one remaining failure, Q18, is **Meta's content filter refusing a harmless Indonesian
+  question** (`content_policy_violation`); the English and reworded Indonesian equivalents
+  answer normally. That case was deliberately not reworded to reach 26/26. Instead the
+  fallback message was corrected to say "declined", not "unreachable" (`f0fb474`).
+  Numbers are recorded in `evals/results.md` and are not rounded up. The tool phase runs
+  anywhere; the agent phase needs `MODEL_API_KEY` and is reported SKIPPED without it.

@@ -37,5 +37,24 @@ ok('skrip login tetap dimuat', login.includes('src="/admin-login.js"'));
 ok('halaman login tetap noindex', /content="noindex, nofollow, noarchive"/.test(login));
 ok('tidak ada kredensial tertanam di halaman', !/ghp_|password\s*=\s*["'][^"']+["']/.test(login));
 
+console.log('\n== fallback membedakan penolakan dari layanan mati ==');
+// Penolakan filter konten bukan "tidak terjangkau". Keduanya harus berbeda
+// supaya pengguna tahu bahwa mengubah kalimat bisa membantu.
+ok('widget membaca kode galat penyedia yang sudah disaring',
+  /data\.failureDetail === 'content_policy_violation'/.test(widgetJs));
+ok('penolakan diberi saran ubah kalimat, dua bahasa',
+  /Coba ubah susunan kalimatnya/.test(widgetJs) && /Try rephrasing it/.test(widgetJs));
+ok('fallback biasa tetap memakai pesan umum',
+  /Muse Spark tidak berhasil menjawab; hasil berikut memakai fallback lokal\./.test(widgetJs)
+    && /Muse Spark did not answer; the following result uses the local fallback\./.test(widgetJs));
+ok('pesan penolakan tidak menyebut kunci atau badan respons mentah',
+  !/apiKey|Bearer /.test(widgetJs));
+const serverSrc = read('server.js');
+ok('server mengirim failureDetail yang sudah disaring, bukan pesan mentah',
+  /const failureDetail = safeFailureDetail\(error\);/.test(serverSrc)
+    && /failureDetail,/.test(serverSrc));
+ok('notice server membedakan penolakan kebijakan konten',
+  /failureDetail === 'content_policy_violation'/.test(serverSrc));
+
 console.log(`\n${pass}/${pass + fail} uji toggle global dan login lulus.\n`);
 process.exit(fail ? 1 : 0);
