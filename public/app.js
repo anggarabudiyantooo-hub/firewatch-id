@@ -6268,6 +6268,110 @@
     return node;
   }
 
+  /**
+   * "Tampilkan di peta": jawaban asisten boleh menggerakkan peta, tetapi
+   * hanya lewat petunjuk yang dihasilkan alat (kotak atau titik), bukan
+   * teks bebas dari model. Lapisan yang diminta dinyalakan lewat sakelar
+   * yang sama dengan yang dipakai pengguna, supaya status UI tetap jujur.
+   */
+  var askHighlight = null;
+  function applyAskMapHint(hint) {
+    if (!hint || typeof hint !== 'object' || !map) return false;
+    if (!askHighlight) askHighlight = L.layerGroup().addTo(map);
+    askHighlight.clearLayers();
+    var moved = false;
+    if (hint.kind === 'bbox' && hint.bounds) {
+      var b = hint.bounds;
+      var south = Number(b.south), north = Number(b.north), west = Number(b.west), east = Number(b.east);
+      if ([south, north, west, east].every(Number.isFinite) && north > south && east > west) {
+        L.rectangle([[south, west], [north, east]], {
+          color: '#7fb4ff', weight: 1.5, fill: false, dashArray: '4 3', interactive: false
+        }).addTo(askHighlight);
+        map.fitBounds([[south, west], [north, east]], { padding: [24, 24] });
+        moved = true;
+      }
+    } else if (hint.kind === 'point') {
+      var lat = Number(hint.lat), lon = Number(hint.lon);
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        var radiusKm = Number(hint.radiusKm);
+        if (Number.isFinite(radiusKm) && radiusKm > 0) {
+          L.circle([lat, lon], {
+            radius: radiusKm * 1000, color: '#7fb4ff', weight: 1.5, fillOpacity: 0.06, interactive: false
+          }).addTo(askHighlight);
+        }
+        L.circleMarker([lat, lon], {
+          radius: 6, color: '#7fb4ff', weight: 2, fillColor: '#7fb4ff', fillOpacity: 0.35
+        }).addTo(askHighlight);
+        map.setView([lat, lon], Math.max(map.getZoom(), Number.isFinite(radiusKm) && radiusKm > 0 ? 8 : 9));
+        moved = true;
+      }
+    }
+    if (typeof hint.layer === 'string' && /^ly[A-Za-z0-9]{1,20}$/.test(hint.layer)) {
+      var toggle = document.getElementById(hint.layer);
+      if (toggle && !toggle.checked) {
+        toggle.checked = true;
+        toggle.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
+    if (moved) {
+      try { map.invalidateSize(); } catch (error) { /* noop */ }
+      var card = document.querySelector('.map-card') || $('map');
+      if (card && typeof card.scrollIntoView === 'function') card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    return moved;
+  }
+
+  function renderAskVerification(verification, english) {
+    if (!verification || typeof verification !== 'object') return null;
+    var flagged = verification.status === 'flagged';
+    var local = verification.status === 'local_deterministic';
+    var wrap = el('div', 'ask-verify' + (flagged ? ' ask-verify-flagged' : ''));
+    var label = flagged
+      ? (english ? 'NUMBER CHECK: some figures unverified' : 'CEK ANGKA: sebagian angka belum terverifikasi')
+      : local
+        ? (english ? 'NUMBER CHECK: computed by code, not by the model' : 'CEK ANGKA: dihitung kode, bukan oleh model')
+        : (english ? 'NUMBER CHECK: every figure matched a tool result' : 'CEK ANGKA: semua angka cocok dengan hasil alat');
+    wrap.appendChild(el('span', 'ask-verify-label', label));
+    if (flagged && Array.isArray(verification.unverifiedNumbers) && verification.unverifiedNumbers.length) {
+      wrap.appendChild(el('span', 'ask-verify-list', verification.unverifiedNumbers.join(', ')));
+    }
+    if (verification.repairAttempts) {
+      wrap.appendChild(el('span', 'ask-verify-note', english
+        ? 'The model was asked to correct its figures once.'
+        : 'Model sudah diminta memperbaiki angkanya satu kali.'));
+    }
+    wrap.setAttribute('data-i18n-skip', '');
+    return wrap;
+  }
+
+  function renderAskMapHints(hints, english) {
+    if (!Array.isArray(hints) || !hints.length) return null;
+    var wrap = el('div', 'ask-map-hints');
+    wrap.appendChild(el('span', 'ask-src-lab', english ? 'SHOW ON MAP' : 'TAMPILKAN DI PETA'));
+    hints.slice(0, 4).forEach(function (hint) {
+      if (!hint || typeof hint !== 'object') return;
+      var label;
+      if (hint.kind === 'bbox' && hint.bounds) {
+        label = (english ? 'Area ' : 'Area ') + Number(hint.bounds.west).toFixed(2) + ',' + Number(hint.bounds.south).toFixed(2)
+          + ' → ' + Number(hint.bounds.east).toFixed(2) + ',' + Number(hint.bounds.north).toFixed(2);
+      } else if (hint.kind === 'point') {
+        label = (english ? 'Point ' : 'Titik ') + Number(hint.lat).toFixed(3) + ', ' + Number(hint.lon).toFixed(3)
+          + (hint.radiusKm ? ' · r ' + hint.radiusKm + ' km' : '');
+      } else return;
+      var button = el('button', 'ask-map-hint-btn', label);
+      button.type = 'button';
+      button.setAttribute('data-i18n-skip', '');
+      button.addEventListener('click', function () {
+        var moved = applyAskMapHint(hint);
+        button.textContent = moved ? label + ' ✓' : label;
+      });
+      wrap.appendChild(button);
+    });
+    if (wrap.childNodes.length < 2) return null;
+    wrap.setAttribute('data-i18n-skip', '');
+    return wrap;
+  }
+
   function renderAsk(d, targetBox) {
     var box = targetBox || $('askOut');
     clear(box);
@@ -6298,6 +6402,10 @@
       else if (/^(Catatan:|Ketidakpastian|Uncertainty|bukan advisory|bukan sertifikat|indikatif)/i.test(line)) cls += ' ask-note';
       box.appendChild(renderAskAnswerLine(line, cls, evidenceIds, box, english));
     });
+    var verifyBadge = renderAskVerification(d.verification, english);
+    if (verifyBadge) box.appendChild(verifyBadge);
+    var mapHintRow = renderAskMapHints(d.mapHints, english);
+    if (mapHintRow) box.appendChild(mapHintRow);
     if (d.provider === 'muse-spark') {
       var evidenceTrail = renderAskEvidence(d.evidence);
       if (evidenceTrail) box.appendChild(evidenceTrail);
