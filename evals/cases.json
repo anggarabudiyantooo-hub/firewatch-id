@@ -368,7 +368,7 @@
       "id": "Q14",
       "kind": "data",
       "lang": "en",
-      "question": "Which settlement centers fall inside the map frame around Palembang?",
+      "question": "Which settlement centers fall inside the box 103 to 106 east and -4 to -1 south?",
       "tool": {
         "name": "get_places_in_area",
         "args": {
@@ -391,7 +391,8 @@
           "evacuate"
         ],
         "expectCitation": true
-      }
+      },
+      "note": "Kotak disebut eksplisit. Versi sebelumnya bertanya \"the map frame around Palembang\" tanpa kotak, sehingga model benar ketika meminta koordinat; kasus itu tidak dapat diuji."
     },
     {
       "id": "Q15",
