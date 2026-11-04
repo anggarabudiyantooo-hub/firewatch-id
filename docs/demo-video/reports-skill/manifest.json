@@ -1,0 +1,76 @@
+{
+  "generatedAt": "2026-11-04T22:35:44.947Z",
+  "filmedAt": "2026-11-04T22:34:31.085Z",
+  "stage": {
+    "width": 1440,
+    "height": 900,
+    "fps": 60,
+    "stillScale": 2,
+    "video": {
+      "width": 1440,
+      "height": 900,
+      "crf": 18,
+      "webmCrf": 32
+    }
+  },
+  "themes": [
+    "dark"
+  ],
+  "tours": {
+    "dark": null
+  },
+  "scenes": [
+    {
+      "scene": "reports",
+      "title": "A report that shows its work",
+      "blurb": "The summary card sits above the tools, reads only the archive, and says unavailable instead of inventing numbers.",
+      "ref": null,
+      "assets": {
+        "dark": {
+          "stills": [
+            "dark/reports-summary.png",
+            "dark/reports-unavailable.png",
+            "dark/reports-method.png",
+            "dark/reports-capture-panel.png",
+            "dark/reports-demo.png"
+          ],
+          "mp4": "dark/reports.mp4",
+          "webm": null,
+          "poster": "dark/reports.poster.jpg",
+          "seconds": 34.02,
+          "fps": 34.2,
+          "worstGapMs": 78,
+          "motionSeconds": 9.44,
+          "motionGaps": 299,
+          "gaps": [
+            {
+              "label": "<=17ms (60fps)",
+              "count": 48
+            },
+            {
+              "label": "<=34ms (30fps)",
+              "count": 168
+            },
+            {
+              "label": "<=50ms (20fps)",
+              "count": 63
+            },
+            {
+              "label": "<=100ms (10fps)",
+              "count": 20
+            },
+            {
+              "label": "<=250ms",
+              "count": 0
+            },
+            {
+              "label": "slower",
+              "count": 0
+            }
+          ],
+          "spoken": 6
+        }
+      }
+    }
+  ]
+}

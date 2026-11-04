@@ -144,6 +144,12 @@ node scripts/manual-smoke-check.js     # 29 checks, Cek Asap
 
 Screenshots and the generated PDF land in `docs/screenshots/map-capture/`.
 
+A second, narrated tour of the Reports page lives in
+[`docs/demo-video/reports-skill/`](docs/demo-video/reports-skill/): 34 s, 1440x900, English
+voice-over, five retina stills, filmed with the `video-demo` skill at commit `0982971`. Its README
+states the source of the footage (a pinned copy, not the live URL, because Vercel still serves the
+archive repo), the measured 34.2 fps of real paint, and why the capture dialog is not in the take.
+
 ### Environment variables
 
 | Variable | Needed for | Notes |
