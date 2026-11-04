@@ -129,6 +129,16 @@ async function segment(browser, name, fn) {
     }, { timeout: 45000 }).catch(() => note('02-report', 'numeric summary slow'));
     await settle(page, 4000);
 
+    // Gambar hanya dikirim ke Meta setelah persetujuan eksplisit. Rekaman
+    // harus menunjukkan langkah itu, bukan melewatinya.
+    const consent = page.locator('#mapCaptureConsent');
+    if (await consent.count()) {
+      await consent.scrollIntoViewIfNeeded();
+      await settle(page, 1500);
+      await consent.check();
+      note('02-report', 'consented to send the image to Meta');
+      await settle(page, 2500);
+    }
     const narrate = page.locator('#mapCaptureNarrate');
     if (await narrate.count()) {
       await narrate.click();

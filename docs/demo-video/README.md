@@ -46,3 +46,18 @@ committed: the final MP4, the five narration clips, `recording-log.json`,
   (the agent segment runs at about 1.4x). Nothing was cut to hide a failure.
 - `build-report.json` records the exact speed factor applied to every segment.
 - Data changes between runs. A re-record will show different hotspot counts.
+- **The segments were filmed against two different sources, and this is stated
+  rather than hidden.** Segments 01, 03, 04 and 05 were recorded against the live
+  URL on 4 Nov. Segment 02 (Reports) was **re-recorded on 5 Nov from a pinned copy
+  of this repo at `0982971`**, served by `node server.js`.
+- Why segment 02 was replaced: the live URL is still wired to the private archive
+  repo, so it served the **old, false** privacy sentence "Images stay in your
+  browser and are never uploaded". The image *is* sent to Meta when the user
+  consents. Shipping a submission video with that sentence on screen would have
+  put a known-false privacy claim in front of the judges. The re-recorded segment
+  shows the corrected text, the summary card above the capture panel, and the
+  explicit consent checkbox before the narrative is requested.
+- `scripts/record-demo.js` now ticks `#mapCaptureConsent` before clicking narrate,
+  so the recording demonstrates the consent step instead of bypassing it.
+- Re-record all five segments from production once the Vercel project points at
+  this repo, so the whole video has one source again.

@@ -1,6 +1,6 @@
 {
-  "origin": "https://firewatch-id.vercel.app",
-  "recordedAt": "2026-11-04T20:52:20.114Z",
+  "origin": "http://127.0.0.1:3100",
+  "recordedAt": "2026-11-04T22:41:22.308Z",
   "log": [
     {
       "segment": "04-smoke-check",
@@ -16,36 +16,6 @@
       "segment": "04-smoke-check",
       "text": "saved docs/demo-video/segments/04-smoke-check.webm",
       "at": "2026-11-04T18:12:43.899Z"
-    },
-    {
-      "segment": "02-report",
-      "text": "clicked Capture map",
-      "at": "2026-11-04T18:24:23.165Z"
-    },
-    {
-      "segment": "02-report",
-      "text": "PNG composited with legend and timestamp",
-      "at": "2026-11-04T18:24:28.229Z"
-    },
-    {
-      "segment": "02-report",
-      "text": "requested AI narrative from image",
-      "at": "2026-11-04T18:24:32.287Z"
-    },
-    {
-      "segment": "02-report",
-      "text": "added snapshot to report",
-      "at": "2026-11-04T18:24:48.597Z"
-    },
-    {
-      "segment": "02-report",
-      "text": "PDF downloaded to docs/demo-video/demo-report.pdf",
-      "at": "2026-11-04T18:24:55.782Z"
-    },
-    {
-      "segment": "02-report",
-      "text": "saved docs/demo-video/segments/02-report.webm",
-      "at": "2026-11-04T18:25:00.580Z"
     },
     {
       "segment": "03-agent",
@@ -76,6 +46,41 @@
       "segment": "05-close",
       "text": "saved docs/demo-video/segments/05-close.webm",
       "at": "2026-11-04T20:52:20.077Z"
+    },
+    {
+      "segment": "02-report",
+      "text": "clicked Capture map",
+      "at": "2026-11-04T22:40:48.217Z"
+    },
+    {
+      "segment": "02-report",
+      "text": "PNG composited with legend and timestamp",
+      "at": "2026-11-04T22:40:53.267Z"
+    },
+    {
+      "segment": "02-report",
+      "text": "consented to send the image to Meta",
+      "at": "2026-11-04T22:40:58.843Z"
+    },
+    {
+      "segment": "02-report",
+      "text": "requested AI narrative from image",
+      "at": "2026-11-04T22:41:01.400Z"
+    },
+    {
+      "segment": "02-report",
+      "text": "added snapshot to report",
+      "at": "2026-11-04T22:41:10.454Z"
+    },
+    {
+      "segment": "02-report",
+      "text": "PDF downloaded to docs/demo-video/demo-report.pdf",
+      "at": "2026-11-04T22:41:17.572Z"
+    },
+    {
+      "segment": "02-report",
+      "text": "saved docs/demo-video/segments/02-report.webm",
+      "at": "2026-11-04T22:41:22.264Z"
     }
   ]
 }
