@@ -15,3 +15,7 @@
 .about-safety { border: 1px solid var(--hairline); border-radius: 10px; padding: 12px 16px; color: var(--text-secondary); font: 400 12px/1.5 var(--font-prose); }
 .about-safety a { color: var(--clean-accent); }
 @media (max-width: 600px) { .about-data { padding: 16px 12px 40px; } .about-data h1 { font-size: 19px; } }
+
+.about-ops { margin: 12px 0 0; font: 500 12px/1.4 var(--font-data, ui-monospace, monospace); }
+.about-ops a { color: var(--text-tertiary, #8b929c); text-decoration: none; }
+.about-ops a:hover { text-decoration: underline; text-underline-offset: 2px; }
