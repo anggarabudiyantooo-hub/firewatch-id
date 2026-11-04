@@ -426,8 +426,8 @@ const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 const indexHtml = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
 const homeHtml = fs.readFileSync(path.join(root, 'public', 'home.html'), 'utf8');
 const reportsHtml = fs.readFileSync(path.join(root, 'public', 'reports.html'), 'utf8');
-const operationsHtml = fs.readFileSync(path.join(root, 'public', 'operations.html'), 'utf8');
-const incidentHtml = fs.readFileSync(path.join(root, 'public', 'insiden.html'), 'utf8');
+const operationsHtml = fs.readFileSync(path.join(root, 'admin-ui', 'operations.html'), 'utf8');
+const incidentHtml = fs.readFileSync(path.join(root, 'admin-ui', 'insiden.html'), 'utf8');
 const workflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'archive-daily-reports.yml'), 'utf8');
 const archiveIndex = JSON.parse(fs.readFileSync(path.join(root, 'public', 'reports', 'archive', 'index.json'), 'utf8'));
 

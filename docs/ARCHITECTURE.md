@@ -112,7 +112,7 @@ memakai `no-store` agar keadaan "belum tahu" tidak ikut ter-cache.
 | `/api/volcano-so2` | - | SO₂ dari CAMS |
 | `/api/news` | 60 dtk | 13 topik |
 | `/api/casualties` | - | Angka korban dari berita |
-| `/api/status` | no-store | Umur tiap sumber |
+| `/api/status` | no-store | Proyeksi publik kesegaran saja (`lib/public-status.js`); tanpa endpoint, pesan galat, hitungan kuota, counter, atau log internal |
 | `/api/wind-field` | 1800 dtk | Medan angin |
 | `/api/air-quality` | 900 dtk, stale 1800 dtk | Grid US AQI; `forecast=1` menambahkan empat frame PM2.5 CAMS Global |
 | `/api/smoke-grid` | 1800 dtk, stale 3600 dtk | Batch CAMS PM2.5 total dan empat frame angin untuk raster interaktif; grid dibatasi per viewport dan ketinggian angin tetap eksplisit |
@@ -244,12 +244,16 @@ Ditambah `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`,
 `X-Frame-Options: SAMEORIGIN`, `Cross-Origin-Opener-Policy: same-origin`,
 `Referrer-Policy: no-referrer`.
 
-Seluruh API hanya-baca dan hanya menerima GET. Tidak ada autentikasi karena tidak ada
-data per-pengguna. Endpoint berkoordinat memvalidasi rentang dan membalas 400.
-Proksi Himawari memakai allowlist produk serta validasi zoom dan ubin.
+API data publik bersifat baca-saja; pengecualiannya `POST /api/ask/challenge`.
+Rute admin mutasi berada di `/api/admin/*` dan dijaga sesi/CSRF. Endpoint
+berkoordinat memvalidasi rentang dan membalas 400. Proksi citra memakai allowlist
+produk serta validasi zoom dan ubin.
 
-**Belum ada:** rate limiting per-IP. Ini risiko penghabisan kuota hulu yang nyata,
-lihat peta jalan.
+Rate limit diterapkan server-side per IP: 240/menit untuk rute normal, 90/menit
+untuk endpoint yang dapat memicu kerja hulu, 1.200/menit hanya untuk pola petak,
+dan 12/menit gabungan untuk `/api/ask` + `/api/ask/challenge`. Penghitung berada
+di `Map` per proses; ini pembatas burst, bukan kuota provider lintas instance,
+dan cold start dapat mengawali jatah baru.
 
 ## 6. Batasan yang diketahui
 
@@ -282,7 +286,7 @@ yang bisa berbeda dari kenyataan.
 | `lib/runbooks.js` | RB-001…RB-004; tiap langkah menunjuk berkas atau endpoint nyata di repo |
 | `lib/ops-store.js` | adaptor penyimpanan: `upstash` → `github` → `file` → `ephemeral`, dengan catatan mode yang ditampilkan di halaman |
 | `lib/ops-github.js` | mode `github`: keadaan disimpan pada satu issue berlabel `ops-state` |
-| `lib/ops-routes.js` | 20 rute `/api/operations`, `/api/incidents`, `/api/runbooks` (naik dari 28 menjadi 42 rute total) |
+| `lib/ops-routes.js` | rute admin `/api/admin/*` dan halaman Operations yang mewajibkan sesi |
 
 ### 7.2 Alur evaluasi
 
@@ -295,8 +299,9 @@ yang bisa berbeda dari kenyataan.
                             └─► ops-store  →  alert, insiden, metrik
 ```
 
-Rute baca (`/api/operations/health`, `/api/data-sources`, `/api/alerts`, …)
-hanya menyusun balasan dari keadaan itu; tidak ada permintaan hulu tambahan.
+Rute baca admin (`/api/admin/operations/health`, `/api/admin/data-sources`,
+`/api/admin/alerts`, …) hanya menyusun balasan dari keadaan itu; tidak ada
+permintaan hulu tambahan. Semua memerlukan cookie sesi admin.
 
 ### 7.3 Keputusan: instance dingin mengukur, bukan menampilkan "belum diketahui"
 
@@ -325,45 +330,53 @@ keadaan itu dilaporkan sebagai `UNKNOWN` beserta sebabnya.
 
 ---
 
-## 8. Peran akses (RBAC): diperketat 2 Nov 2026
+## 8. Autentikasi admin Operations (4 Nov 2026)
 
-```
-permintaan ──► x-ops-token?  ──► peran (VIEWER < OPERATOR < ADMIN)
-                    │                     │
-                    │                     ├─ GET data ops → VIEWER ke atas
-                    │                     ├─ tulis ops     → OPERATOR ke atas
-                    │                     └─ evaluate      → ADMIN
-                    ▼
-              tanpa token di server → fail-closed 503 (mode TERKUNCI)
-```
+Semua rute admin menggunakan satu identitas admin, bukan token bearer/RBAC.
+Owner mengatur `ADMIN_PASSWORD_HASH` (bcrypt cost 10-14) dan `SESSION_SECRET`
+acak minimal 32 byte langsung di Vercel. Nilai tersebut tidak berada di repo.
+Jika salah satu belum tersedia atau tidak valid, login fail-closed dengan 503.
 
-Aturan `lib/ops-auth.js`:
+- Cookie `__Host-siaga_admin` ditandatangani HMAC, beratribut `HttpOnly`,
+  `Secure`, `SameSite=Strict`, dan berlaku 8 jam.
+- Mutasi di `/api/admin/*` membutuhkan sesi sah, `Origin` same-origin,
+  `X-CSRF-Token`, dan JSON. Cookie tidak dibaca oleh JavaScript.
+- `/operations`, `/operations.html`, `/insiden/:id`, `/insiden.html`, dan
+  `/admin-assets/*` dijaga server-side. Berkas UI dipindah ke `admin-ui/`, di
+  luar `public/**`, supaya static delivery Vercel tidak melewati Express.
+- Login memakai backoff per IP dan penguncian 15 menit setelah delapan
+  kegagalan. Penghitung berada di memori per-instance, sehingga cold start atau
+  instance lain dapat memulai penghitung baru.
+- Aksi terautentikasi dan login/logout dicatat sebagai `admin`, tanpa password,
+  hash, cookie, CSRF, atau query string. Header `x-ops-actor` tidak dipercaya.
+- Logout menghapus cookie browser. Sesi stateless yang sudah dicuri tetap dapat
+  dipakai sampai expiry 8 jam; tidak ada revocation store terpusat.
+- `/api/alarm` tetap publik untuk monitor luar dan hanya mengembalikan ringkasan
+  kesehatan minimal. API data lama dipindah ke `/api/admin/*`; token env
+  `OPS_TOKEN_*`, `OPS_WRITE_TOKEN`, dan `OPS_READ_PROTECTED` tidak lagi
+  mengautentikasi dan harus dihapus dari Vercel setelah migrasi.
+- `/api/status` mempertahankan informasi kesegaran yang perlu dashboard, tetapi
+  tidak lagi mengirim host endpoint, pesan galat, retry counter, quota totals,
+  alert text, atau log internal. Pemantau uptime menerima flag ringkas tanpa
+  alasan/isi galat.
+- Kegagalan boot serverless di `api/index.js` hanya membalas JSON generik;
+  query `?debug=...` tidak dapat membuka stack, path, atau versi runtime.
+- Pembatasan hulu: 12/menit berbagi bucket untuk `/api/ask` dan
+  `/api/ask/challenge`; endpoint mahal 90/menit; petak gambar 1.200/menit
+  hanya pada pola tile. Metadata Sentinel/Himawari/aerosol masuk bucket mahal.
+  Hit disimpan per proses, sehingga cold start/instance lain dapat memulai
+  bucket baru; ini pembatas burst, bukan kuota global provider.
 
-1. **Fail-closed.** Tanpa token peran, semua API data operasional menolak baca
-   maupun tulis dengan `503`; `/api/operations/access` tetap publik untuk
-   menunjukkan instruksi konfigurasi tanpa memuat nilai rahasia.
-2. **Baca selalu berautentikasi.** Semua detail operasi (termasuk detail
-   insiden dan runbook) memerlukan VIEWER ke atas. `OPS_READ_PROTECTED` lama
-   diabaikan dan tidak bisa menonaktifkan penjaga.
-3. **Pemasangan lama tetap dikenali.** `OPS_WRITE_TOKEN` adalah alias token
-   ADMIN. Token peran dikirim lewat `x-ops-token`.
-4. **Pengecualian kesehatan publik terbatas.** `/api/alarm` tetap publik untuk
-   monitor luar dan hanya mengembalikan ringkasan kesehatan layanan, bukan
-   insiden, alert, audit, atau detail penyimpanan.
-5. **Token tidak dikirim balik.** Status akses hanya memuat peran yang ada,
-   nama env yang diperiksa, dan peran pemanggil. Perbandingan memakai digest
-   SHA-256 berukuran tetap dan `crypto.timingSafeEqual`; panel menyimpan token
-   hanya di `sessionStorage` tab aktif.
-
-Peran menentukan *boleh atau tidak*; nama pelaku tetap dari `x-ops-actor` dan
-tetap menentukan *siapa* yang tercatat di timeline serta log audit.
+Perubahan di dokumen ini mendeskripsikan branch pengamanan. Ia baru berlaku pada
+produksi setelah merge/deploy terverifikasi; owner mengatur Production secrets
+di Vercel secara langsung.
 
 ---
 
 ## 9. Troubleshooting berbasis bukti (P2)
 
 ```
-/api/operations/diagnose?service=|?alert=|?incident=   (atau tanpa sasaran → ringkasan armada)
+/api/admin/operations/diagnose?service=|?alert=|?incident=   (atau tanpa sasaran → ringkasan armada)
         │
         ├─ ukurBilaPerlu()          → instance dingin mengukur dulu (mekanisme sama seperti rute baca lain)
         ├─ lib/troubleshoot.js      → aturan tetap atas pengukuran tersimpan

@@ -46,7 +46,7 @@
    */
   function buka(id, opsi) {
     var box = opsi.box;
-    return C.ambil('/api/incidents/' + encodeURIComponent(id)).then(function (inc) {
+    return C.ambil('/api/admin/incidents/' + encodeURIComponent(id)).then(function (inc) {
       box.textContent = '';
 
       var head = el('div');
@@ -87,7 +87,7 @@
       bDiag.addEventListener('click', function () {
         bDiag.disabled = true;
         boxDiag.textContent = 'menghitung…';
-        C.ambilAman('/api/operations/diagnose?incident=' + encodeURIComponent(inc.incidentId), { headers: C.headerOps() })
+        C.ambilAman('/api/admin/operations/diagnose?incident=' + encodeURIComponent(inc.incidentId), { headers: C.headerOps() })
           .then(function (r) {
             bDiag.disabled = false;
             boxDiag.textContent = '';
@@ -135,18 +135,7 @@
       var kanan = el('div');
       kanan.appendChild(el('h2', null, 'Actions'));
 
-      var fPetugas = el('div', 'field');
-      fPetugas.appendChild(el('label', 'sr-only', 'Nama Anda'));
-      var iPetugas = el('input');
-      iPetugas.placeholder = 'nama Anda (ikut tercatat di timeline)';
-      iPetugas.value = C.petugasSaya();
-      iPetugas.maxLength = 60;
-      iPetugas.addEventListener('change', function () {
-        C.simpanPetugas(iPetugas.value);
-        C.toast('Nama aktivitas disimpan di perangkat ini.');
-      });
-      fPetugas.appendChild(iPetugas);
-      kanan.appendChild(fPetugas);
+
 
       function sesudah() {
         if (opsi.onBerubah) opsi.onBerubah();
@@ -159,7 +148,7 @@
         b.style.marginRight = '6px';
         b.addEventListener('click', function () {
           b.disabled = true;
-          C.kirim('/api/incidents/' + inc.incidentId + path, 'POST', body)
+          C.kirim('/api/admin/incidents/' + inc.incidentId + path, 'POST', body)
             .then(function () { C.toast('Tindakan tersimpan: ' + label.toLowerCase() + '.'); return sesudah(); })
             .catch(function (e) { b.disabled = false; C.toast(e.message); });
         });
@@ -175,7 +164,7 @@
       bTugas.addEventListener('click', function () {
         if (!idTugas.value.trim()) return C.toast('Isi nama penanggung jawab lebih dulu.');
         bTugas.disabled = true;
-        C.kirim('/api/incidents/' + inc.incidentId + '/assign', 'POST', { assignedTo: idTugas.value })
+        C.kirim('/api/admin/incidents/' + inc.incidentId + '/assign', 'POST', { assignedTo: idTugas.value })
           .then(function () { C.toast('Ditugaskan.'); return sesudah(); })
           .catch(function (e) { bTugas.disabled = false; C.toast(e.message); });
       });
@@ -205,7 +194,7 @@
       bCatatan.addEventListener('click', function () {
         if (!tCatatan.value.trim()) return C.toast('Catatan masih kosong.');
         bCatatan.disabled = true;
-        C.kirim('/api/incidents/' + inc.incidentId + '/notes', 'POST', { note: tCatatan.value })
+        C.kirim('/api/admin/incidents/' + inc.incidentId + '/notes', 'POST', { note: tCatatan.value })
           .then(function () { C.toast('Catatan tercatat di timeline.'); return sesudah(); })
           .catch(function (e) { bCatatan.disabled = false; C.toast(e.message); });
       });
@@ -232,7 +221,7 @@
         d.appendChild(body);
         boxRunbook.appendChild(d);
 
-        C.ambil('/api/runbooks/' + r.id).then(function (full) {
+        C.ambil('/api/admin/runbooks/' + r.id).then(function (full) {
           body.appendChild(el('p', null, full.summary));
           var selesai = langkahSelesai(inc.timeline, r.id);
           var ol = el('ol', 'steps');
@@ -258,7 +247,7 @@
               b.addEventListener('click', function () {
                 b.disabled = true;
                 // Catatan biasa: masuk timeline, tercatat pelakunya, ikut log audit.
-                C.kirim('/api/incidents/' + inc.incidentId + '/notes', 'POST',
+                C.kirim('/api/admin/incidents/' + inc.incidentId + '/notes', 'POST',
                   { note: kunciLangkah(r.id, n) + ' dikerjakan: ' + st.do })
                   .then(function () { C.toast('Langkah ' + r.id + ' #' + n + ' tercatat.'); return sesudah(); })
                   .catch(function (e) { b.disabled = false; C.toast(e.message); });

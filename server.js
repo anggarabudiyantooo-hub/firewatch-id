@@ -107,6 +107,7 @@ const regionalSmokeArtifact = require('./lib/smoke-grid-artifact');
 const { fetchDrought } = require('./lib/drought');
 const { summarize: summarizeCasualties } = require('./lib/casualty');
 const { Scheduler } = require('./lib/scheduler');
+const publicStatus = require('./lib/public-status');
 const { answer: ragAnswer } = require('./lib/rag');
 const { answerWithMuse, safeFailureCode, META_MODEL } = require('./lib/muse-agent');
 const aiHistoryStore = require('./lib/ai-history-store');
@@ -145,6 +146,8 @@ function provinceOf(lat, lon) {
 
 const app = express();
 app.disable('x-powered-by');
+// Vercel supplies the client address/protocol through its trusted proxy.
+if (process.env.VERCEL) app.set('trust proxy', 1);
 app.use(compression());
 // Badan JSON untuk modul operasional (insiden/alert). Aplikasi pemantauan
 // sendiri sebelumnya hanya punya endpoint GET, jadi middleware ini belum ada.
@@ -212,7 +215,7 @@ const RL_NORMAL = CONFIG.RATE_LIMIT.normal;
  * Biayanya pun berbeda: petak dilayani dari cache dan tidak memanggil
  * pihak ketiga berkuota untuk tiap permintaan.
  */
-const RL_TILE_PATHS = /^\/(himawari|sentinel|aerosol-raster)\//;
+const RL_TILE_PATHS = /^\/(?:himawari\/[^/]+\/\d+\/\d+\/\d+\.jpg|sentinel\/[^/]+\/\d+\/\d+\/\d+\.jpg|aerosol-raster\/[^/]+\/\d+\/\d+\/\d+\.png)$/;
 const RL_TILE = 1200;
 // Satu sesi pemakaian aktif, memuat halaman, menyalakan empat lapisan,
 // lalu memperbesar dan memperkecil peta berkali-kali, terukur hanya
@@ -222,16 +225,17 @@ const RL_TILE = 1200;
 // banyak pengguna sah sekaligus. Yang ingin dicegah adalah skrip yang
 // mengirim ribuan permintaan, bukan manusia yang menggeser peta.
 const RL_EXPENSIVE = CONFIG.RATE_LIMIT.expensive;
-// Muse requests can incur provider usage, so keep a separate per-IP burst cap.
+// Muse requests can incur provider usage; brief and challenge share one bucket.
 const RL_AI = 12;
-const RL_EXPENSIVE_PATHS = /^\/(overview|wind-field|air-quality|smoke-grid-static|smoke-grid|concessions|place|whose-land|air-point|news)/;
+const RL_AI_PATHS = /^\/(?:ask|ask\/challenge)$/;
+const RL_EXPENSIVE_PATHS = /^\/(?:overview|wind-field|air-quality|smoke-grid-static|smoke-grid|concessions|place|whose-land|air-point|news|hazard|volcano-ash|eruptions|drought|volcano-so2|flights|webcams(?:\/foto)?|cron|sentinel\/(?:meta|diag)|himawari\/meta|aerosol-raster\/meta)(?:\/|$)/;
 
 const hits = new Map();
 app.use('/api', (req, res, next) => {
   const ip = req.ip || 'x';
   const now = Date.now();
   const isTile = RL_TILE_PATHS.test(req.path);
-  const isAi = req.path === '/ask';
+  const isAi = RL_AI_PATHS.test(req.path);
   const expensive = !isTile && !isAi && RL_EXPENSIVE_PATHS.test(req.path);
   const limit = isTile ? RL_TILE : (isAi ? RL_AI : (expensive ? RL_EXPENSIVE : RL_NORMAL));
   const key = ip + (isTile ? '|t' : isAi ? '|ai' : expensive ? '|e' : '|n');
@@ -240,7 +244,12 @@ app.use('/api', (req, res, next) => {
   if (now - rec.t > RL_WINDOW_MS) { rec.n = 0; rec.t = now; }
   rec.n++;
   hits.set(key, rec);
-  if (hits.size > 5000) hits.clear();
+  if (hits.size > 5000) {
+    for (const [entryKey, entry] of hits) {
+      if (now - entry.t > RL_WINDOW_MS) hits.delete(entryKey);
+    }
+    while (hits.size > 5000) hits.delete(hits.keys().next().value);
+  }
 
   const resetSec = Math.max(1, Math.ceil((rec.t + RL_WINDOW_MS - now) / 1000));
   res.set('RateLimit-Limit', String(limit));
@@ -1184,6 +1193,11 @@ app.get('/api/health', (_req, res) => res.json({ ok: true, time: new Date().toIS
    Rute ops dipasang di sini agar server.js tidak bertambah panjang, dan
    supaya batas tanggung jawab jelas: modul ops hanya MEMBACA keadaan yang
    sudah diukur penjadwal, tidak menyentuh logika sumber hulu. */
+const adminAuth = require('./lib/admin-auth');
+adminAuth.registerRoutes(app);
+// Central boundary for the new admin namespace; sensitive handlers retain
+// their own session/CSRF guard for defense in depth.
+app.use('/api/admin', adminAuth.requireAdminRequest, adminAuth.auditAction);
 require('./lib/ops-routes')(app, { clusterHotspots, getHotspots, getAssetVersion });
 
 // Dibungkus jadi fungsi agar bisa dipakai ulang oleh mesin pencarian (/api/ask).
@@ -2790,7 +2804,7 @@ app.get('/api/casualties', async (_req, res) => {
  */
 app.get('/api/status', (_req, res) => {
   res.set('Cache-Control', 'no-store');
-  res.json(scheduler.status());
+  res.json(publicStatus(scheduler.status()));
 });
 
 /**
@@ -3404,7 +3418,7 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
  * menghasilkan URL baru, peramban pengguna tidak akan lagi memakai
  * berkas lama dari cache tanpa perlu hard-refresh manual.
  */
-const ASSET_FILES = ['app.js', 'app.css', 'i18n.js', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'smoke-grid-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css', 'site.css', 'site-nav.js', 'home.js', 'report-model.js', 'reports.js', 'assistant-widget.js', 'assistant-widget.css'];
+const ASSET_FILES = ['app.js', 'app.css', 'i18n.js', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'smoke-grid-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css', 'site.css', 'site-nav.js', 'home.js', 'report-model.js', 'reports.js', 'assistant-widget.js', 'assistant-widget.css', 'admin-login.js'];
 let assetVersion = null;
 
 function getAssetVersion() {
@@ -3451,14 +3465,14 @@ function sendIndex(res, status = 200) {
 function renderPublicPage(fileName) {
   const version = getAssetVersion();
   return fs.readFileSync(path.join(__dirname, 'public', fileName), 'utf8')
-    .replace(/(href|src)="\/(site\.css|i18n\.js|site-nav\.js|home\.js|report-model\.js|reports\.js|assistant-widget\.css|assistant-widget\.js)"/g,
+    .replace(/(href|src)="\/(site\.css|i18n\.js|site-nav\.js|home\.js|report-model\.js|reports\.js|assistant-widget\.css|assistant-widget\.js|admin-login\.js)"/g,
       (_match, attr, asset) => `${attr}="/${asset}?v=${version}"`);
 }
 
-function sendPublicPage(res, fileName, status = 200) {
+function sendPublicPage(res, fileName, status = 200, cacheControl = 'no-cache, must-revalidate') {
   res.status(status);
   res.set('Content-Type', 'text/html; charset=utf-8');
-  res.set('Cache-Control', 'no-cache, must-revalidate');
+  res.set('Cache-Control', cacheControl);
   res.send(renderPublicPage(fileName));
 }
 
@@ -3469,6 +3483,10 @@ app.get('/dashboard', (_req, res) => sendIndex(res));
 app.get('/dashboard/', (_req, res) => sendIndex(res));
 app.get('/reports', (_req, res) => sendPublicPage(res, 'reports.html'));
 app.get('/reports/', (_req, res) => sendPublicPage(res, 'reports.html'));
+app.get(['/admin-login', '/admin-login.html'], (_req, res) => {
+  res.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  return sendPublicPage(res, 'admin-login.html', 200, 'private, no-store, max-age=0');
+});
 
 // HTML shells are revalidated each visit; versioned assets can remain cached
 // long-term. Mutable archive/index.json has a short cache below, while each
@@ -3486,6 +3504,10 @@ app.get('/robots.txt', (req, res) => {
     'User-agent: *\n' +
     'Allow: /\n' +
     'Disallow: /api/\n' +
+    'Disallow: /operations\n' +
+    'Disallow: /insiden\n' +
+    'Disallow: /admin-assets/\n' +
+    'Disallow: /admin-login\n' +
     '\n' +
     `Sitemap: ${proto}://${host}/sitemap.xml\n`
   );
@@ -3516,6 +3538,9 @@ app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders(res, filePath) {
     if (filePath.endsWith(path.join('reports', 'archive', 'index.json'))) {
       res.setHeader('Cache-Control', 'public, max-age=60, must-revalidate');
+    } else if (filePath.endsWith('admin-login.js')) {
+      res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
     } else if (filePath.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-cache, must-revalidate');
     } else {

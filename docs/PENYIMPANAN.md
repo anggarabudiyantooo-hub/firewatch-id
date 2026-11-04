@@ -14,7 +14,7 @@ mode GitHub benar-benar dijalankan dan diuji dari ujung ke ujung.
    ada indeks yang perlu dirawat.
 2. **Adapternya sudah ada dan sudah diuji.** `lib/ops-store.js` memilih mode
    `upstash` → `github` → `file` → `ephemeral`, dan antarmuka
-   `/api/operations/store` menyatakan modenya apa adanya. Keduanya bisa dipasang
+   `/api/admin/operations/store` menyatakan modenya apa adanya. Keduanya bisa dipasang
    **hari ini** dengan menambah variabel lingkungan, tanpa mengubah satu baris
    kode aplikasi.
 3. **Neon menambah lapisan baru**: dependensi pengandar (`@neondatabase/serverless`
@@ -63,12 +63,11 @@ Repo yang dipakai saat ini: `anggarabudiyantooo-hub/firewatch-id` (**privat**).
 
 4. **Redeploy** (Deployments → … → Redeploy). Variabel lingkungan baru hanya
    terbaca oleh fungsi setelah deploy ulang.
-5. Verifikasi baca-saja: siapkan `OPS_TOKEN_VIEWER` (atau token peran lebih
-   tinggi) di environment shell, lalu jalankan `python3 scripts/verify-store.py`;
-   mode harus berubah menjadi `github`. Untuk membuktikan data benar-benar
-   bertahan, siapkan juga token OPERATOR/ADMIN dan jalankan
-   `python3 scripts/verify-store.py --tulis` (membuat satu insiden uji,
-   membacanya ulang, lalu menutupnya; insidennya tidak dihapus).
+5. Verifikasi setelah deploy: jalankan `python3 scripts/verify-store.py`.
+   Skrip meminta password admin lewat prompt tersembunyi dan mengirimkannya ke
+   endpoint login Production melalui HTTPS; password, cookie, dan CSRF tidak
+   dicetak. Untuk membuktikan data benar-benar bertahan, tambahkan `--tulis`
+   (membuat satu insiden uji, membacanya ulang, lalu menutupnya; tidak dihapus).
 6. Issue keadaan: dibuat otomatis saat penulisan pertama, berjudul
    `[ops] Keadaan operasional SIAGA.ID`, berlabel `ops-state`. Pada pemasangan
    ini issue tersebut sudah dibuat saat uji pemasangan (nomor **#1**) dan
@@ -99,11 +98,12 @@ yang dipakai. Itu disengaja: Upstash lebih cepat dan tidak punya batas 60 KB.
 
 ## Hal yang perlu diketahui setelah penyimpanan tetap aktif
 
-- **Peran akses (RBAC) wajib dikonfigurasi.** Tanpa `OPS_TOKEN_*` atau
-  `OPS_WRITE_TOKEN`, API operasional yang dilindungi fail-closed: baca dan tulis
-  ditolak dengan HTTP 503. Setelah token dipasang di environment server dan
-  deployment diulang, pembacaan memerlukan VIEWER, perubahan insiden OPERATOR,
-  dan evaluasi manual ADMIN. Lihat tabel peran di README.
+- **Login admin wajib dikonfigurasi.** `ADMIN_PASSWORD_HASH` (bcrypt) dan
+  `SESSION_SECRET` wajib diisi oleh owner langsung di Vercel Production. Tanpa
+  keduanya, login fail-closed dan halaman operasi tidak tersedia. API data
+  berada di `/api/admin/*`, memakai cookie sesi dan CSRF untuk mutasi.
+  `OPS_TOKEN_*`, `OPS_WRITE_TOKEN`, dan `OPS_READ_PROTECTED` adalah variabel
+  lama yang tidak lagi mengautentikasi; hapus dari Vercel setelah migrasi.
 - **Log audit ikut tersimpan** (200 entri terakhir). Itu memang tujuannya:
   jejak "siapa mengubah apa" harus bertahan lebih lama daripada satu instance.
 - **Insiden lama dari mode sementara tidak berpindah.** Yang tersimpan hanyalah
@@ -114,37 +114,35 @@ yang dipakai. Itu disengaja: Upstash lebih cepat dan tidak punya batas 60 KB.
 
 ## Memeriksa bila ada yang tidak beres
 
-Status akses awal yang aman dibaca publik:
+Endpoint status konfigurasi admin tidak lagi publik. Untuk memeriksa penyimpanan,
+jalankan helper baca-saja berikut; ia meminta password secara tersembunyi,
+melakukan login, lalu memakai cookie/CSRF hanya di memori proses:
 
 ```bash
-curl -s https://firewatch-id.vercel.app/api/operations/access | python3 -m json.tool
+python3 scripts/verify-store.py
 ```
 
-Endpoint `/api/operations/store` dan `?uji=1` memerlukan autentikasi VIEWER;
-`/api/operations/access` adalah pengecualian publik untuk petunjuk konfigurasi.
+`python3 scripts/verify-store.py --tulis` melakukan uji tulis, membaca insiden
+kembali pada permintaan terpisah, lalu menutupnya. Tidak ada secret yang harus
+ada di environment shell, dan password/cookie/CSRF tidak ditampilkan.
 
-Untuk detail penyimpanan, kirim token VIEWER dari environment lokal (jangan
-menaruh nilai token di repo atau riwayat shell):
+Endpoint `/api/admin/operations/store` (termasuk `?uji=1`) memerlukan sesi
+admin. `mode` menyatakan mode yang benar-benar dipakai, dan `lastError` memuat
+galat penyimpanan terakhir yang aman ditindaklanjuti.
 
-```bash
-curl -s -H "x-ops-token: $OPS_TOKEN_VIEWER" https://firewatch-id.vercel.app/api/operations/store | python3 -m json.tool
-```
-
-- `mode` menyatakan mode yang benar-benar dipakai, dan `lastError` memuat galat
-  terakhir dari penyimpanan (mis. `github_401_...` bila token tidak sah),
-  galat penyimpanan **tidak** pernah disembunyikan, dan tidak menjatuhkan
-  halaman.
-- `github_403` → token tidak punya izin *Issues: write*.
+- `github_403` → token server `OPS_GITHUB_TOKEN` tidak punya izin *Issues: write*.
 - `github_404` → `OPS_GITHUB_REPO` salah tulis, atau token tidak diberi akses ke
   repo itu (repo ini privat).
-- Bila mode tetap `ephemeral` padahal variabel sudah diisi: hampir selalu karena
-  **belum redeploy**.
+- Bila mode tetap `ephemeral` padahal variabel storage sudah diisi: hampir
+  selalu karena **belum redeploy**.
+- Jangan mengirim password admin, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`, atau
+  cookie sesi ke chat, log, atau issue.
 
 ## Terbukti di produksi (4 Okt 2026, 17.3x WIB)
 
 Pemasangan mode `github` diverifikasi ulang sesudah tokennya diperbaiki:
 
-- `GET /api/operations/store?uji=1` → `ok: true, langkah: "baca penuh", issue: 1`
+- `GET /api/admin/operations/store?uji=1` → `ok: true, langkah: "baca penuh", issue: 1`
   ("Keadaan terbaca utuh").
 - `python3 scripts/verify-store.py` → **3/3 LULUS** (baca-saja).
 - `python3 scripts/verify-store.py --tulis` → **8/8 LULUS**: insiden
@@ -159,22 +157,21 @@ Pemasangan mode `github` diverifikasi ulang sesudah tokennya diperbaiki:
   insiden `kosong: false`, satu batang pada 2026-10-04, MTTR LOW 0 menit,
   SLA 100% (target 4.320 menit), apa adanya, sekecil apa pun datanya.
 
-Catatan historis dan keamanan (audit baca-saja, 2 Nov 2026): penyimpanan
-produksi masih persisten (`github`), sedangkan `/api/operations/access` masih
-melaporkan mode `terbuka` dan belum ada token peran. Tidak ada permintaan tulis
-ke produksi yang dilakukan saat audit. Perubahan fail-closed di kode hanya
-melindungi produksi setelah patch ini masuk ke `main` dan ter-deploy; sampai itu
-terjadi, paparan live yang ditemukan masih perlu dianggap berlaku. Sebelum
-mengaktifkan kembali Operations setelah deploy, atur `OPS_TOKEN_VIEWER` /
-`OPS_TOKEN_OPERATOR` / `OPS_TOKEN_ADMIN` di environment Vercel Production dan
-redeploy. Jangan kirim nilainya lewat chat atau commit ke repo.
+Catatan keamanan: audit baca-saja 2 Nov 2026 mendapati storage produksi masih
+persisten (`github`) dan endpoint akses lama belum membatasi pembacaan. Audit
+keamanan 4 Nov mencatat rute/halaman yang masih publik pada deployment saat itu;
+lihat `docs/OPS-SECURITY-AUDIT.md`. Perubahan pada branch keamanan ini belum
+mengubah produksi sampai di-merge dan di-deploy. Setelah deploy terverifikasi,
+owner harus memasang `ADMIN_PASSWORD_HASH` dan `SESSION_SECRET` langsung di
+Vercel Production, lalu menghapus token RBAC lama. Jangan kirim nilai secret
+lewat chat atau commit ke repo.
 
 ## Bila penyimpanan gagal dibaca (dan cara memeriksanya)
 
 Sejak 4 Okt, kegagalan penyimpanan tidak lagi berubah menjadi "tidak ada
 insiden". Yang terjadi sekarang:
 
-- `/api/operations/store?uji=1` memanggil penyimpanan **saat itu juga** dan
+- `/api/admin/operations/store?uji=1` memanggil penyimpanan **saat itu juga** dan
   melaporkan langkah mana yang gagal beserta kode status hulunya, mis.
   `{"ok": false, "langkah": "daftar issue berlabel", "status": 401,
   "alasan": "Token ditolak GitHub (bad credentials), periksa OPS_GITHUB_TOKEN."}`
