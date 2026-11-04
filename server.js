@@ -2732,7 +2732,11 @@ async function handleAskRequest(req, res, mode = 'brief') {
         metaApiConfigured: true,
         failureCode,
         failureDetail,
-        notice: 'Muse Spark tidak dapat dijangkau. Jawaban ini memakai mode lokal, bukan hasil model Meta.'
+        notice: failureDetail === 'content_policy_violation'
+          ? (language === 'en'
+            ? 'Muse Spark declined this question because of its content filter. This local answer is not model output.'
+            : 'Muse Spark menolak pertanyaan ini karena filter kontennya. Jawaban lokal ini bukan keluaran model.')
+          : 'Muse Spark tidak dapat dijangkau. Jawaban ini memakai mode lokal, bukan hasil model Meta.'
       });
     }
   } catch {

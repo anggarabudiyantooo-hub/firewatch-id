@@ -211,7 +211,7 @@ Run against the keyed production deployment:
 | Phase | Pass | Fail | Notes |
 |---|---|---|---|
 | Tool (no model, no key) | 24 / 24 | 0 | Includes 3 malformed-argument rejections. |
-| Agent (Muse Spark) | 22 / 26 | 4 | See below. |
+| Agent (Muse Spark) | 25 / 26 | 1 | See below. |
 
 The first agent run scored **13/26** and was not hidden. Investigating it found four
 distinct causes, two of them real product bugs:
@@ -230,16 +230,47 @@ distinct causes, two of them real product bugs:
    `interpretation`. One further case asked about "the map frame" without giving a box, which
    is unanswerable as written; it now states the box explicitly.
 
-The remaining failures are reported, not tuned away: transient provider fallbacks under
-per-IP rate limits, and the model occasionally restating a figure from the question in a form
-the verifier will not accept. **The verifier is a product contract and was not loosened to
-make the score green.**
+Three further production runs then found three more real defects, each fixed in code rather
+than by editing the question:
 
-**Run-to-run variance matters more than the headline number.** Two consecutive production
-runs both scored 22/26, but failed different cases (A: Q06, Q08, Q13, Q14; B: Q03, Q06, Q08,
-Q13). Only **21 of 26 passed in both runs**. Q06, Q08 and Q13 failed twice and are the real
-signal; the rest is model variance and transient provider failure. A single eval number would
-overstate reliability, so both runs are disclosed.
+5. **Wall-clock budget too small (product).** A 10s per-request cap and 3 turns made
+   multi-tool questions abort mid-loop. Now 22s per request, 4 turns, 48s total, with each
+   request capped by the time left and an honest stop when under 3s remains. This sits inside
+   the 60s serverless limit. Recovered Q06.
+6. **Verifier read pollutant names as quantities (product).** `PM2.5` was scanned as the
+   number `2.5` and `PM10` as `10`, so a correct air-quality sentence was flagged as invented.
+   Pollutant names and unit suffixes are now stripped before the digit scan. `PM2.5 is 999`
+   still flags `999`. Recovered Q05 and Q13.
+7. **Volcano level lost its numeric form (product).** The server passed only `"III Siaga"` to
+   the tool, so the correct phrase "Level 3 (Siaga)" looked fabricated even though PVMBG
+   publishes `level: 3`. The tool now carries `levelNumber`, `levelRoman` and `levelStatus`.
+   `Merapi is 999 km away` still flags. Recovered Q08.
+
+**The verifier is a product contract and was not loosened to make the score green.** Every
+fix above made a real number available to the verifier or stopped it misreading a unit; none
+widened what counts as verified.
+
+### The one remaining failure, and why it was not hidden
+
+**Q18 fails because Meta's own content filter refuses the question**, returning HTTP 400 with
+`content_policy_violation`. The question is a harmless interpretation question ("does the map
+plume show an actually observed smoke trajectory?"). Six consecutive requests reproduced it
+deterministically. The English equivalent and two reworded Indonesian versions are all
+answered normally by `muse-spark`, so this is a provider-side false positive on one phrasing,
+not a defect in the agent.
+
+The case was deliberately **left unchanged**. Rewording it would have produced 26/26 while
+hiding a real behaviour users can hit. Instead the product was fixed where it was actually
+wrong: the fallback used to say "Muse Spark could not be reached", which is false when the
+model was reached and declined. The provider's error code is now read, sanitized to
+`[a-z0-9_]` (never the raw body, which could contain user text or credentials), and the UI
+distinguishes a content-filter refusal from an outage, suggesting a rephrase only in the
+refusal case.
+
+**Run-to-run variance matters more than the headline number.** Earlier runs scored 13/26,
+then 22/26 three times with different failing cases, then 25/26. Only after the three fixes
+above did the same cases pass repeatedly. A single eval number would overstate reliability,
+so the progression is disclosed rather than just the best run.
 
 Full per-case detail: [`evals/results.md`](evals/results.md).
 Reproduce with `npm run eval --origin=<your-deployment>`.
