@@ -1,0 +1,52 @@
+/* Tooltip aksesibel untuk kontrol dashboard. */
+
+.ui-info-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary, #8e96a3);
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  font: 600 12px/1 var(--font-data, monospace);
+  transition: color 160ms ease, background-color 160ms ease;
+}
+.ui-info-btn:hover,
+.ui-info-btn:focus-visible {
+  color: var(--text-primary, #f2f4f8);
+  background: var(--surface-3, #232833);
+}
+.ui-info-btn:focus-visible {
+  outline: 2px solid var(--status-info, #64d2ff);
+  outline-offset: 2px;
+}
+.ui-info-btn svg { display: block; }
+
+.ui-tooltip {
+  position: fixed;
+  z-index: 4000;
+  box-sizing: border-box;
+  max-width: 280px;
+  padding: 8px 12px;
+  border: 1px solid var(--hairline-strong, rgba(255, 255, 255, 0.16));
+  border-radius: 8px;
+  background: var(--surface-1, #14161a);
+  color: var(--text-secondary, #c6cbd4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font: 400 12px/1.45 var(--font-prose, system-ui, sans-serif);
+  pointer-events: auto;
+}
+.ui-tooltip[hidden] { display: none !important; }
+.ui-tooltip a { color: var(--status-info, #64d2ff); }
+.ui-tooltip b { color: var(--text-primary, #f2f4f8); }
+
+.ui-tip-source[hidden] { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-info-btn { transition: none; }
+}
