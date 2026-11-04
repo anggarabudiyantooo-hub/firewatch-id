@@ -138,6 +138,35 @@ async function main() {
   const assistantUi = fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8');
   const assistantHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
   const assistantServer = fs.readFileSync(path.join(__dirname, '../server.js'), 'utf8');
+  const opsRoutes = fs.readFileSync(path.join(__dirname, '../lib/ops-routes.js'), 'utf8');
+  const sharedAssistantUi = fs.readFileSync(path.join(__dirname, '../public/assistant-widget.js'), 'utf8');
+  const assistantPages = ['index.html', 'home.html', 'reports.html', 'operations.html', 'insiden.html']
+    .map(file => fs.readFileSync(path.join(__dirname, '../public', file), 'utf8'));
+  check('shared AI toggle and styles are included on every public/operations page',
+    assistantPages.length === 5 && assistantPages.every(html =>
+      html.includes('/assistant-widget.js') && html.includes('/assistant-widget.css'))
+      && sharedAssistantUi.includes("var dashboardFab = document.getElementById('aiFab')")
+      && sharedAssistantUi.includes('if (dashboardFab)')
+      && sharedAssistantUi.includes("fetchWithTimeout('/api/ask/status'")
+      && sharedAssistantUi.includes("fetchWithTimeout('/api/ask/challenge'")
+      && sharedAssistantUi.includes('function appendReceipts')
+      && assistantServer.includes("'assistant-widget.js', 'assistant-widget.css'")
+      && opsRoutes.includes('function renderOpsShell')
+      && opsRoutes.includes('getAssetVersion()'));
+  const statusStart = assistantServer.indexOf("app.get('/api/ask/status'");
+  const statusEnd = assistantServer.indexOf("app.get('/api/ask',", statusStart);
+  const statusRoute = statusStart >= 0 && statusEnd > statusStart
+    ? assistantServer.slice(statusStart, statusEnd) : '';
+  check('API status is uncached, exposes only key presence, and never claims a live model check',
+    statusRoute.includes("res.set('Cache-Control', 'no-store')")
+      && statusRoute.includes('metaApiConfigured: configured')
+      && statusRoute.includes('configuredModel: configured ? META_MODEL : null')
+      && statusRoute.includes("verification: 'not_performed'")
+      && !statusRoute.includes('provider:')
+      && !statusRoute.includes('apiKey:')
+      && assistantHtml.includes('Memeriksa konfigurasi Meta…')
+      && !assistantHtml.includes('mode lokal · Meta API belum aktif')
+      && sharedAssistantUi.includes('Meta key detected · not yet tested'));
   check('assistant UI renders evidence receipts, bilingual challenge action, and preserves the first answer',
     assistantUi.includes('function renderAskEvidence')
       && assistantUi.includes('function renderAskAnswerLine')
