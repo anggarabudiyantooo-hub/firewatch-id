@@ -86,7 +86,10 @@ not new features**.
 | 2026-11-05 | `aad1601` | Cron race condition: three workflows pushed to `main` with a bare `git push`, so a slow CAMS download lost its artifact when the archive cron pushed first (`! [rejected] ... fetch first`). They now share `scripts/ci-commit-push.sh`, which fetches and rebases before retrying and never force-pushes. Guard test added. |
 | 2026-11-05 | `2221f43` | Privacy defect: `/api/map-narrative` really does send the PNG to Meta, but the Reports page and README claimed images were "never uploaded". Added an explicit consent checkbox gating the narrative button, corrected the ID/EN privacy text, and removed the operator link from public footers. Guard test added. |
 | 2026-11-05 | `58e7fe9` | Reports page: labelled `?demo=1` fixture mode for repeatable recordings, and a 12-second bound on every archive read so a hung request cannot leave "Loading..." on screen forever. |
-| 2026-11-05 | (this commit) | Reports page: summary card above the issue body, assembled by code from the archive file (period, FIRMS totals, coarse-box province count, source status, record count, three-sentence narrative) with the method folded into an accordion. AQI/PM2.5 and regency counts are shown as unavailable because the daily archive does not store them. |
+| 2026-11-05 | `0c7d3e4` | Reports page: summary card assembled by code from the archive file (period, FIRMS totals, coarse-box province count, source status, record count, three-sentence narrative) with the method folded into an accordion. AQI/PM2.5 and regency counts are shown as unavailable because the daily archive does not store them. |
+| 2026-11-05 | `0982971` | Placement defect in that card: it rendered below the capture panel, not at the top as asked. Found by reading a frame of the filmed take, not by the tests. Moved into a host above the capture section and cleared on the weekly and empty paths so a stale card cannot sit over an error. |
+| 2026-11-05 | `030ff28` | Demo artefact: 34-second narrated Reports tour filmed with the `video-demo` skill. Its README states the footage source (a pinned copy, because production still serves the archive repo) and the measured 34.2 fps of real paint rather than the 60 fps encode rate. |
+| 2026-11-05 | `d8778dd` | Same privacy defect as `2221f43`, still visible in the submission video: the 3-minute demo showed "Images stay in your browser and are never uploaded". Segment 02 was re-recorded from the pinned copy and now shows the corrected text plus the consent step; the mixed segment sources are disclosed in the video README. |
 
 No new capability was added after the window closed. Every row above either fixes a defect
 found by running the eval against production, corrects an ID/EN label, or produces the demo
@@ -94,6 +97,10 @@ artefacts. The feature set was frozen at the end of 4 Nov. The three 5 Nov rows 
 defect fixes and recording aids, not new product features. The summary card requested in the
 same pass was built and is listed above; the per-layer capture toggles, the frame picker and
 the one-click "build a report now" were **not** built, and README section 7 lists them as gaps.
+
+Production has not picked any of this up yet: the Vercel project is still wired to the private
+archive repo, so the live site serves pre-5-Nov code. Repointing it is an account-side action
+that cannot be done from the repo.
 
 **Author metadata was normalised on 5 Nov.** Commits made through an assistant had been
 recorded under a tool identity (`Arena Agent`). They were rewritten to the repository owner's
