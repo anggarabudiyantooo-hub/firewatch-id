@@ -31,6 +31,15 @@ function makeButton(period) {
   return node;
 }
 
+async function waitFor(predicate, label, timeoutMs = 2000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (predicate()) return;
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  assert(predicate(), 'timed out waiting for ' + label);
+}
+
 async function run() {
   assert(index.reports.length > 0, 'daily archive fixture should exist');
   assert(Array.isArray(index.weeklyReports) && index.weeklyReports.length > 0, 'persistent weekly archive fixture should exist');
@@ -182,8 +191,9 @@ async function run() {
   assert(badNodes.archiveStatus.textContent.includes('Gagal memuat arsip mingguan'));
   badNodes.reportSelect.value = noDataEntry.weekId;
   badNodes.reportSelect.listeners.change();
-  await new Promise(resolve => setTimeout(resolve, 25));
-  assert(badNodes.reportContent.innerHTML.includes('N/A'));
+  const rendersNullMetricsAsNa = () => /<tr><td>[^<]*<\/td><td>N\/A<\/td><td>N\/A<\/td><td>N\/A<\/td>/.test(badNodes.reportContent.innerHTML)
+    && (badNodes.reportContent.innerHTML.match(/>N\/A<\/text>/g) || []).length >= 2;
+  await waitFor(rendersNullMetricsAsNa, 'weekly hotspot null metrics to render as N/A');
   assert(!badNodes.reportContent.innerHTML.includes('N/A: 0'));
 
   console.log('  ✓ Report page loads daily and persisted weekly archives with cache-busting versions');
