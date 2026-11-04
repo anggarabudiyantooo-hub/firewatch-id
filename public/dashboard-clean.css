@@ -432,3 +432,87 @@
 .tampilan-note-action:focus-visible { outline: 2px solid var(--clean-accent); outline-offset: 2px; }
 .safety-ops { margin-left: var(--clean-space-2); color: var(--text-tertiary); }
 @media (prefers-reduced-motion: reduce) { .tampilan-note-action { transition: none; } }
+
+/* Toggle AI tidak lagi menimpa dok atau safety bar.
+   Nilainya diukur dari tinggi dok + safety bar oleh dashboard-clean.js. */
+.ai-fab { bottom: var(--ai-fab-bottom, 72px); }
+.ai-popup { bottom: var(--ai-fab-bottom, 72px); }
+
+/* Tombol lipat dok dipaku di kanan kepala dok, bukan ikut tergulung
+   bersama strip tab. Sebelumnya ia berada di dalam .dock-tabs sehingga
+   terdorong keluar layar pada ponsel. */
+.dock-head > .dock-spacer {
+  flex: 0 0 auto;
+  margin-left: auto;
+  min-width: 0;
+  padding-left: var(--clean-space-2);
+}
+.dock-head > .dock-spacer .collapse { flex: 0 0 auto; }
+.dock-head .dock-tabs { flex: 1 1 auto; min-width: 0; }
+
+@media (max-width: 768px) {
+  #dockHint { display: none; }
+  /* Ponsel: toggle AI jadi ikon bundar kecil supaya tidak menutupi
+     strip dok maupun tombol lipatnya. Label tetap tersedia untuk
+     pembaca layar lewat aria-label dan title. */
+  .ai-fab {
+    right: 12px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  .ai-fab .ai-fab-txt { display: none; }
+  .ai-fab .ai-fab-ic { font-size: 16px; }
+  /* Safety bar ponsel: dulu satu baris nowrap dengan scroll tersembunyi,
+     sehingga tautan Operator berada di luar layar tanpa terlihat. */
+  .foot.safety-bar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 36px;
+    white-space: normal;
+    overflow-x: visible;
+    row-gap: var(--clean-space-1);
+    padding: 6px var(--clean-space-2);
+  }
+  .safety-ops { margin-left: 0; }
+}
+
+/* Akar lebar berlebih: body adalah grid tanpa kolom eksplisit, sehingga
+   kolom implisitnya sebesar max-content dan #main bisa lebih lebar dari
+   layar (terlihat di tablet 820px: main 932px). Semua rantai diberi
+   min-width:0 agar kolom peta boleh menyusut. */
+body.bloomberg { grid-template-columns: minmax(0, 1fr); }
+#main { min-width: 0; }
+#main-bloomberg-grid > .map-card,
+#main-bloomberg-grid > .inspector { min-width: 0; }
+#statsPanel.kpi-rail { min-width: 0; }
+.dock { min-width: 0; max-width: 100%; }
+/* Dua kolom hanya di layar lebar. Ponsel tetap satu kolom karena
+   inspektornya menjadi drawer, bukan kolom grid. */
+@media (min-width: 769px) {
+  #main-bloomberg-grid { grid-template-columns: minmax(0, 1fr) var(--inspector-w); }
+}
+@media (max-width: 768px) {
+  #main-bloomberg-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  :root { --inspector-w: 240px; }
+  #dockHint { display: none; }
+}
+
+@media (max-width: 768px) {
+  /* Sisakan ruang kanan kepala dok supaya toggle AI bundar tidak pernah
+     menutupi tombol lipat dok. */
+  .dock-head { padding-right: 60px; }
+  .ai-fab { width: 40px; height: 40px; }
+}
+
+/* Toggle AI mengambang di kolom kanan, jadi panel inspeksi menyisakan
+   ruang bawah sebesar tinggi toggle. Tanpa ini, baris lapisan terakhir
+   dan switch-nya bisa tertutup toggle. */
+@media (min-width: 769px) {
+  .inspector .scroll { padding-bottom: 52px; }
+}
