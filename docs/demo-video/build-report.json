@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-11-04T18:36:51.025Z",
+  "builtAt": "2026-11-04T20:02:01.863Z",
   "source": "Playwright screen recording of https://firewatch-id.vercel.app plus generated English narration",
   "totalSeconds": 180,
   "sizeMb": 7.8,
@@ -42,11 +42,11 @@
     },
     {
       "segment": "05-close",
-      "recordedSeconds": 19.6,
+      "recordedSeconds": 20.4,
       "narrationSeconds": 27.7,
       "targetSeconds": 24,
       "outputSeconds": 24,
-      "screenSpeedup": 0.82,
+      "screenSpeedup": 0.85,
       "narrationTempo": 1.155
     }
   ]

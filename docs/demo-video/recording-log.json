@@ -1,6 +1,6 @@
 {
   "origin": "https://firewatch-id.vercel.app",
-  "recordedAt": "2026-11-04T18:35:49.009Z",
+  "recordedAt": "2026-11-04T20:01:00.369Z",
   "log": [
     {
       "segment": "04-smoke-check",
@@ -16,16 +16,6 @@
       "segment": "04-smoke-check",
       "text": "saved docs/demo-video/segments/04-smoke-check.webm",
       "at": "2026-11-04T18:12:43.899Z"
-    },
-    {
-      "segment": "05-close",
-      "text": "build log shown on GitHub",
-      "at": "2026-11-04T18:13:00.572Z"
-    },
-    {
-      "segment": "05-close",
-      "text": "saved docs/demo-video/segments/05-close.webm",
-      "at": "2026-11-04T18:13:02.020Z"
     },
     {
       "segment": "02-report",
@@ -76,6 +66,16 @@
       "segment": "03-agent",
       "text": "saved docs/demo-video/segments/03-agent.webm",
       "at": "2026-11-04T18:35:48.973Z"
+    },
+    {
+      "segment": "05-close",
+      "text": "build log shown on GitHub",
+      "at": "2026-11-04T20:00:59.019Z"
+    },
+    {
+      "segment": "05-close",
+      "text": "saved docs/demo-video/segments/05-close.webm",
+      "at": "2026-11-04T20:01:00.315Z"
     }
   ]
 }
