@@ -10,6 +10,8 @@
   var mode = 'daily';
   var selectedDate = '';
   var loading = false;
+  var renderQueued = false;
+  var renderTask = null;
 
   function lang() { return window.SiagaI18n ? window.SiagaI18n.getLanguage() : 'id'; }
   function en() { return lang() === 'en'; }
@@ -656,63 +658,78 @@
       return issue;
     } catch (_error) { return null; }
   }
-  async function renderSelected() {
-    if (loading) return;
+  function renderSelected() {
+    if (loading) {
+      // Keep the latest selection/language change rather than silently dropping
+      // it while an earlier archive request is still in flight.
+      renderQueued = true;
+      return renderTask || Promise.resolve();
+    }
     loading = true;
-    updateTabs();
-    optionsForMode();
-    var select = document.getElementById('reportSelect');
-    selectedDate = select && select.value || selectedDate;
-    var selectedEntries = mode === 'weekly' ? weeklyEntries : archiveEntries;
-    var selectedEntryKey = function (item) { return mode === 'weekly' ? item.weekId : item.date; };
-    if (!selectedEntries.length || !selectedDate) {
-      emptyReport(mode === 'weekly'
-        ? copy('Arsip mingguan belum tersedia. Laporan mingguan akan muncul setelah snapshot harian tersimpan dan edisi ISO minggu ini dibuat.', 'No weekly archive is available yet. A weekly issue will appear after daily snapshots have been stored and an ISO-week issue is created.')
-        : copy('Arsip laporan belum memiliki snapshot harian. Setelah penyimpanan harian aktif, edisi pertama akan tampil di sini; arsip historis tidak dibuat mundur.', 'The report archive has no daily snapshots yet. Once daily capture is active, the first issue will appear here; no historical backfill is fabricated.'));
-      var statusEmpty = document.getElementById('archiveStatus');
-      if (statusEmpty) statusEmpty.textContent = copy('Edisi yang belum tersedia tidak dibuat mundur; feed yang hilang bukan nol.', 'Unavailable issues are not backfilled; missing feeds are not zero.');
-      loading = false;
-      return;
-    }
-    var entry = selectedEntries.find(function (item) { return selectedEntryKey(item) === selectedDate; });
-    var content = document.getElementById('reportContent');
-    if (content) content.innerHTML = '<div class="site-empty">' + escapeHtml(copy('Membuka snapshot terverifikasi…', 'Loading archived evidence…')) + '</div>';
-    var status = document.getElementById('archiveStatus');
-    if (status) status.textContent = copy('Membaca arsip sumber…', 'Reading archived sources…');
+    renderTask = renderSelectedOnce();
+    return renderTask;
+  }
+  async function renderSelectedOnce() {
+    try {
+      updateTabs();
+      optionsForMode();
+      var select = document.getElementById('reportSelect');
+      selectedDate = select && select.value || selectedDate;
+      var selectedEntries = mode === 'weekly' ? weeklyEntries : archiveEntries;
+      var selectedEntryKey = function (item) { return mode === 'weekly' ? item.weekId : item.date; };
+      if (!selectedEntries.length || !selectedDate) {
+        emptyReport(mode === 'weekly'
+          ? copy('Arsip mingguan belum tersedia. Laporan mingguan akan muncul setelah snapshot harian tersimpan dan edisi ISO minggu ini dibuat.', 'No weekly archive is available yet. A weekly issue will appear after daily snapshots have been stored and an ISO-week issue is created.')
+          : copy('Arsip laporan belum memiliki snapshot harian. Setelah penyimpanan harian aktif, edisi pertama akan tampil di sini; arsip historis tidak dibuat mundur.', 'The report archive has no daily snapshots yet. Once daily capture is active, the first issue will appear here; no historical backfill is fabricated.'));
+        var statusEmpty = document.getElementById('archiveStatus');
+        if (statusEmpty) statusEmpty.textContent = copy('Edisi yang belum tersedia tidak dibuat mundur; feed yang hilang bukan nol.', 'Unavailable issues are not backfilled; missing feeds are not zero.');
+        return;
+      }
+      var entry = selectedEntries.find(function (item) { return selectedEntryKey(item) === selectedDate; });
+      var content = document.getElementById('reportContent');
+      if (content) content.innerHTML = '<div class="site-empty">' + escapeHtml(copy('Membuka snapshot terverifikasi…', 'Loading archived evidence…')) + '</div>';
+      var status = document.getElementById('archiveStatus');
+      if (status) status.textContent = copy('Membaca arsip sumber…', 'Reading archived sources…');
 
-    var html = '';
-    var reportQuality = 'partial';
-    if (mode === 'daily') {
-      var snapshot = await getSnapshot(entry);
-      if (!snapshot) {
-        emptyReport(copy('Berkas snapshot ini tidak dapat dibaca atau skemanya tidak cocok.', 'This snapshot file could not be read or its schema is unsupported.'));
-        if (status) status.textContent = copy('Gagal memuat edisi terpilih.', 'Could not load the selected issue.');
-        loading = false;
-        return;
+      var html = '';
+      var reportQuality = 'partial';
+      if (mode === 'daily') {
+        var snapshot = await getSnapshot(entry);
+        if (!snapshot) {
+          emptyReport(copy('Berkas snapshot ini tidak dapat dibaca atau skemanya tidak cocok.', 'This snapshot file could not be read or its schema is unsupported.'));
+          if (status) status.textContent = copy('Gagal memuat edisi terpilih.', 'Could not load the selected issue.');
+          return;
+        }
+        html = renderDaily(snapshot);
+        reportQuality = snapshot.quality;
+        if (status) status.textContent = copy('Snapshot ', 'Snapshot ') + snapshot.reportDate + ' · ' + copy('diambil ', 'captured ') + formatDate(snapshot.capturedAt, true)
+          + ' · ' + fmtNumber(snapshot.coverage && snapshot.coverage.availableSources, 0) + '/' + fmtNumber(snapshot.coverage && snapshot.coverage.expectedSources, 0) + copy(' feed tersedia.', ' feeds available.');
+      } else {
+        var issue = await getWeeklyIssue(entry);
+        if (!issue) {
+          emptyReport(copy('Berkas arsip mingguan tidak dapat dibaca atau skemanya tidak cocok.', 'The archived weekly issue could not be read or its schema is unsupported.'));
+          if (status) status.textContent = copy('Gagal memuat arsip mingguan.', 'Could not load the weekly archive.');
+          return;
+        }
+        html = renderWeekly(issue);
+        reportQuality = issue.quality || (issue.complete ? 'complete' : 'partial');
+        if (status) status.textContent = fmtNumber(issue.dailySnapshotCount, 0) + '/' + fmtNumber(issue.expectedDailySnapshots, 0) + ' '
+          + copy('snapshot harian tersimpan untuk ', 'daily snapshots archived for ') + issue.weekId
+          + copy(' hingga ', ' through ') + issue.throughDate + (issue.complete ? '' : ' · ' + copy('cakupan parsial', 'partial coverage'));
       }
-      html = renderDaily(snapshot);
-      reportQuality = snapshot.quality;
-      if (status) status.textContent = copy('Snapshot ', 'Snapshot ') + snapshot.reportDate + ' · ' + copy('diambil ', 'captured ') + formatDate(snapshot.capturedAt, true)
-        + ' · ' + fmtNumber(snapshot.coverage && snapshot.coverage.availableSources, 0) + '/' + fmtNumber(snapshot.coverage && snapshot.coverage.expectedSources, 0) + copy(' feed tersedia.', ' feeds available.');
-    } else {
-      var issue = await getWeeklyIssue(entry);
-      if (!issue) {
-        emptyReport(copy('Berkas arsip mingguan tidak dapat dibaca atau skemanya tidak cocok.', 'The archived weekly issue could not be read or its schema is unsupported.'));
-        if (status) status.textContent = copy('Gagal memuat arsip mingguan.', 'Could not load the weekly archive.');
-        loading = false;
-        return;
+      if (content) content.innerHTML = html;
+      var printButton = document.getElementById('reportPrint');
+      if (printButton) printButton.disabled = !html;
+      if (content) content.setAttribute('data-report-quality', reportQuality);
+    } finally {
+      loading = false;
+      if (renderQueued) {
+        renderQueued = false;
+        await renderSelected();
+      } else {
+        renderTask = null;
       }
-      html = renderWeekly(issue);
-      reportQuality = issue.quality || (issue.complete ? 'complete' : 'partial');
-      if (status) status.textContent = fmtNumber(issue.dailySnapshotCount, 0) + '/' + fmtNumber(issue.expectedDailySnapshots, 0) + ' '
-        + copy('snapshot harian tersimpan untuk ', 'daily snapshots archived for ') + issue.weekId
-        + copy(' hingga ', ' through ') + issue.throughDate + (issue.complete ? '' : ' · ' + copy('cakupan parsial', 'partial coverage'));
     }
-    if (content) content.innerHTML = html;
-    var printButton = document.getElementById('reportPrint');
-    if (printButton) printButton.disabled = !html;
-    if (content) content.setAttribute('data-report-quality', reportQuality);
-    loading = false;
   }
   async function loadArchive() {
     var status = document.getElementById('archiveStatus');
@@ -745,20 +762,20 @@
   document.querySelectorAll('.report-period-tab').forEach(function (button) {
     button.addEventListener('click', function () {
       mode = button.getAttribute('data-period') === 'weekly' ? 'weekly' : 'daily';
-      renderSelected();
+      return renderSelected();
     });
     button.addEventListener('keydown', function (event) {
       if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
       event.preventDefault();
       mode = mode === 'daily' ? 'weekly' : 'daily';
       document.getElementById(mode === 'daily' ? 'periodDaily' : 'periodWeekly').focus();
-      renderSelected();
+      return renderSelected();
     });
   });
   var select = document.getElementById('reportSelect');
-  if (select) select.addEventListener('change', function () { selectedDate = select.value; renderSelected(); });
+  if (select) select.addEventListener('change', function () { selectedDate = select.value; return renderSelected(); });
   var printButton = document.getElementById('reportPrint');
   if (printButton) printButton.addEventListener('click', function () { if (!printButton.disabled) window.print(); });
-  window.addEventListener('siaga:languagechange', function () { optionsForMode(); renderSelected(); });
+  window.addEventListener('siaga:languagechange', function () { optionsForMode(); return renderSelected(); });
   loadArchive();
 })(typeof window !== 'undefined' ? window : null, typeof document !== 'undefined' ? document : null);
