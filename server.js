@@ -108,7 +108,7 @@ const { fetchDrought } = require('./lib/drought');
 const { summarize: summarizeCasualties } = require('./lib/casualty');
 const { Scheduler } = require('./lib/scheduler');
 const { answer: ragAnswer } = require('./lib/rag');
-const { answerWithMuse, safeFailureCode } = require('./lib/muse-agent');
+const { answerWithMuse, safeFailureCode, META_MODEL } = require('./lib/muse-agent');
 const aiHistoryStore = require('./lib/ai-history-store');
 const kamera = require('./lib/kamera');
 const flights = require('./lib/flights');
@@ -1184,7 +1184,7 @@ app.get('/api/health', (_req, res) => res.json({ ok: true, time: new Date().toIS
    Rute ops dipasang di sini agar server.js tidak bertambah panjang, dan
    supaya batas tanggung jawab jelas: modul ops hanya MEMBACA keadaan yang
    sudah diukur penjadwal, tidak menyentuh logika sumber hulu. */
-require('./lib/ops-routes')(app, { clusterHotspots, getHotspots });
+require('./lib/ops-routes')(app, { clusterHotspots, getHotspots, getAssetVersion });
 
 // Dibungkus jadi fungsi agar bisa dipakai ulang oleh mesin pencarian (/api/ask).
 async function buildOverview() {
@@ -1492,13 +1492,25 @@ async function gfsHistoryField(targetTime) {
   }
 }
 
+function gfsRunValidTime(run, fhour) {
+  const match = /^(\d{4})(\d{2})(\d{2})\s+(\d{2})Z$/.exec(String(run || ''));
+  if (!match) return null;
+  const date = new Date(Date.UTC(
+    Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4]) + (Number(fhour) || 0)
+  ));
+  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}
+
 async function windField(stepDeg, box) {
   const step = [0.25, 0.5, 1, 1.5, 2, 3, 5].includes(stepDeg) ? stepDeg : 2;
   const f = await gfsField(0);
   const points = gridPoints(f, step, box);
   const wrapCenter = box ? (box.west + box.east) / 2 : 0;
   const global = !box || box.east - box.west >= 360;
-  return { step, count: points.length, points, run: f.run, global, wrapCenter };
+  return {
+    step, count: points.length, points, run: f.run, fhour: Number(f.fhour) || 0,
+    validTime: gfsRunValidTime(f.run, f.fhour), global, wrapCenter
+  };
 }
 
 
@@ -2497,14 +2509,16 @@ function withDeadline(p, fallback, ms) {
   });
 }
 
-app.get('/api/ask', async (req, res) => {
-  const raw = String(req.query.q || '').trim();
+async function handleAskRequest(req, res, mode = 'brief') {
+  const input = mode === 'challenge' ? (req.body || {}) : (req.query || {});
+  const raw = String(input.q || '').trim();
   if (!raw) return res.status(400).json({ error: 'Pertanyaan tidak boleh kosong.' });
   if (raw.length > 200) {
     return res.status(400).json({ error: 'Pertanyaan maksimal 200 karakter.' });
   }
   const q = raw;
-  const language = String(req.query.lang || 'id').toLowerCase() === 'en' ? 'en' : 'id';
+  const language = String(input.lang || 'id').toLowerCase() === 'en' ? 'en' : 'id';
+  const challengeClaim = mode === 'challenge' ? String(input.claim || '').slice(0, 1800) : '';
   try {
     const [overview, attribution, news, volcano, quakes, shelters] = await Promise.all([
       withDeadline(buildOverview(), {}),
@@ -2539,8 +2553,29 @@ app.get('/api/ask', async (req, res) => {
     const localAnswer = ragAnswer(q, ctx, language);
     const apiKey = String(process.env.MODEL_API_KEY || '').trim();
     if (!apiKey) {
+      if (mode === 'challenge') {
+        return res.json({
+          query: q,
+          language,
+          mode,
+          intent: 'evidence_challenge',
+          answer: [language === 'en'
+            ? 'A skeptical challenge requires a Muse Spark call. Local mode cannot independently test this answer.'
+            : 'Uji bantahan memerlukan panggilan Muse Spark. Mode lokal tidak dapat menguji jawaban ini secara mandiri.'],
+          sources: [],
+          indexed: 0,
+          updatedAt: new Date().toISOString(),
+          provider: 'local-rag',
+          model: null,
+          agent: { turns: 0, toolCalls: 0, tools: [] },
+          evidence: [],
+          metaApiConfigured: false,
+          notice: 'Uji bantahan tidak dijalankan oleh Muse Spark.'
+        });
+      }
       return res.json({
         ...localAnswer,
+        mode,
         provider: 'local-rag',
         model: null,
         metaApiConfigured: false,
@@ -2549,13 +2584,35 @@ app.get('/api/ask', async (req, res) => {
     }
 
     try {
-      const answer = await answerWithMuse(q, ctx, { apiKey, language });
+      const answer = await answerWithMuse(q, ctx, { apiKey, language, mode, challengeClaim });
       return res.json(answer);
     } catch (error) {
       const failureCode = safeFailureCode(error);
       console.warn('[ask:muse-fallback]', failureCode);
+      if (mode === 'challenge') {
+        return res.json({
+          query: q,
+          language,
+          mode,
+          intent: 'evidence_challenge',
+          answer: [language === 'en'
+            ? 'Muse Spark was unavailable, so the skeptical challenge was not run. This fallback does not verify or falsify the answer.'
+            : 'Muse Spark tidak tersedia, jadi uji bantahan tidak dijalankan. Fallback ini tidak memverifikasi atau membantah jawaban.'],
+          sources: [],
+          indexed: 0,
+          updatedAt: new Date().toISOString(),
+          provider: 'local-fallback',
+          model: 'muse-spark-1.3',
+          agent: { turns: 0, toolCalls: 0, tools: [] },
+          evidence: [],
+          metaApiConfigured: true,
+          failureCode,
+          notice: 'Uji bantahan tidak dijalankan oleh Muse Spark.'
+        });
+      }
       return res.json({
         ...localAnswer,
+        mode,
         provider: 'local-fallback',
         model: 'muse-spark-1.3',
         metaApiConfigured: true,
@@ -2566,7 +2623,22 @@ app.get('/api/ask', async (req, res) => {
   } catch {
     res.status(502).json({ error: 'Pencarian sedang tidak tersedia.' });
   }
+}
+
+app.get('/api/ask/status', (_req, res) => {
+  const configured = Boolean(String(process.env.MODEL_API_KEY || '').trim());
+  res.set('Cache-Control', 'no-store');
+  // Hanya publikasikan status konfigurasi, bukan nilai atau fragmen API key.
+  // Keberadaan key bukan bukti bahwa layanan Meta dapat dijangkau; itu baru
+  // diketahui setelah /api/ask berhasil menjawab dengan provider muse-spark.
+  res.json({
+    metaApiConfigured: configured,
+    configuredModel: configured ? META_MODEL : null,
+    verification: 'not_performed'
+  });
 });
+app.get('/api/ask', (req, res) => handleAskRequest(req, res, 'brief'));
+app.post('/api/ask/challenge', (req, res) => handleAskRequest(req, res, 'challenge'));
 
 /* ---------- orkestrasi penyegaran data ---------- */
 /**
@@ -3332,7 +3404,7 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
  * menghasilkan URL baru, peramban pengguna tidak akan lagi memakai
  * berkas lama dari cache tanpa perlu hard-refresh manual.
  */
-const ASSET_FILES = ['app.js', 'app.css', 'i18n.js', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'smoke-grid-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css', 'site.css', 'site-nav.js', 'home.js', 'report-model.js', 'reports.js'];
+const ASSET_FILES = ['app.js', 'app.css', 'i18n.js', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'smoke-grid-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css', 'site.css', 'site-nav.js', 'home.js', 'report-model.js', 'reports.js', 'assistant-widget.js', 'assistant-widget.css'];
 let assetVersion = null;
 
 function getAssetVersion() {
@@ -3354,7 +3426,7 @@ function renderIndex() {
   // Fase 2.1: label sudut peta dari BBOX config, bukan hardcoded
   const corners = BBOX_CORNERS; // { nw, ne, sw, se } dari lib/config.js
   let html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
-    .replace(/(href|src)="\/(app\.css|app\.js|i18n\.js|smoke-geometry\.js|smoke-cloud-layer\.js|smoke-grid-layer\.js|wind-particles\.js|wind-viewport\.js|map-resize\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css|site\.css|site-nav\.js)"/g,
+    .replace(/(href|src)="\/(app\.css|app\.js|i18n\.js|smoke-geometry\.js|smoke-cloud-layer\.js|smoke-grid-layer\.js|wind-particles\.js|wind-viewport\.js|map-resize\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css|site\.css|site-nav\.js|assistant-widget\.css|assistant-widget\.js)"/g,
       (_m, attr, file) => `${attr}="${file}?v=${v}"`);
   // Inject BBOX corners ke HTML (fallback jika JS belum load)
   try {
@@ -3379,7 +3451,7 @@ function sendIndex(res, status = 200) {
 function renderPublicPage(fileName) {
   const version = getAssetVersion();
   return fs.readFileSync(path.join(__dirname, 'public', fileName), 'utf8')
-    .replace(/(href|src)="\/(site\.css|i18n\.js|site-nav\.js|home\.js|report-model\.js|reports\.js)"/g,
+    .replace(/(href|src)="\/(site\.css|i18n\.js|site-nav\.js|home\.js|report-model\.js|reports\.js|assistant-widget\.css|assistant-widget\.js)"/g,
       (_match, attr, asset) => `${attr}="/${asset}?v=${version}"`);
 }
 

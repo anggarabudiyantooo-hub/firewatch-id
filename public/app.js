@@ -387,14 +387,11 @@
   var state = {
     data: null, attr: null, news: [], newsTopics: [], newsTopic: 'semua', minConf: 0, minFrp: 10,
     concOn: false, concBusy: false, colorBy: 'confidence',
-    // windOn harus cocok dengan keadaan awal kotak-centang di index.html.
-    // Bila keduanya tidak sinkron, loadWind() berjalan untuk lapisan yang
-    // kotaknya kosong dan menghabiskan kuota tanpa ada yang tergambar.
-    // windLevel 'auto' berarti mengikuti ketinggian abu yang sedang aktif.
-    // Default itu dipilih supaya perbandingan angin-abu selalu berada pada
-    // lapisan atmosfer yang sama, bukan permukaan lawan ketinggian.
+    // Flow angin adalah overlay model mandiri; tidak dikunci ke frame CAMS.
+    // Tetap opt-in agar tidak mengunduh medan angin sebelum pengguna meminta.
+    // Aras AUTO mengikuti ketinggian abu yang sedang aktif bila tersedia.
     windLevel: 'auto', windLevelUsed: '10m', windMeta: null,
-    wind: null, windKey: null, windOn: false, windBusy: false, particles: null, plumeHour: 0,
+    wind: null, windKey: null, windOn: false, windBusy: false, windPending: false, particles: null, plumeHour: 0,
     smokeSelection: null, smokePlaying: false, smokePlaybackTimer: null,
     aerosolOn: false, aerosolLayer: null, aerosolMeta: null, aerosolRequest: 0,
     air: null, airKey: null, smokeGrid: null, airOn: false, airBusy: false, airPendingQ: null,
@@ -1495,35 +1492,33 @@
         : (english ? 'Model valid time is unavailable.' : 'Waktu berlaku model tidak tersedia.'));
     }
 
-    var windFrame = state.windOn && modelRasterIsOn() ? smokeWindFrame() : null;
-    var separateWind = state.windOn && !modelRasterIsOn() && state.wind
+    var independentWind = state.windOn && state.wind
       && Array.isArray(state.wind.points) && state.wind.points.length >= 4;
-    var windVector = state.windOn && state.particles && typeof state.particles.sampleAt === 'function'
-      && (windFrame || separateWind) ? state.particles.sampleAt(lat, lon) : null;
+    var windVector = independentWind && state.particles
+      && typeof state.particles.sampleAt === 'function'
+      ? state.particles.sampleAt(lat, lon) : null;
     if (windVector) {
       var speed = Math.sqrt(windVector[0] * windVector[0] + windVector[1] * windVector[1]);
       var toward = (Math.atan2(windVector[0], windVector[1]) * 180 / Math.PI + 360) % 360;
-      var wind = state.smokeGrid && state.smokeGrid.windForecast;
-      var level = windFrame
-        ? (wind && wind.level === '10m' ? '10 m' : wind && wind.level ? wind.level + ' hPa' : 'model')
-        : (state.windMeta && state.windMeta.levelLabel || (english ? 'separate layer' : 'angin terpisah'));
-      var windSource = windFrame
-        ? (wind && wind.level === '10m' ? 'NOAA GFS' : 'Open-Meteo (GFS/ECMWF)')
-        : (state.windMeta && state.windMeta.hPa ? 'Open-Meteo (GFS/ECMWF)' : 'NOAA GFS');
-      rows.push((english ? 'Wind ' : 'Angin ') + level + ' · ' + windSource + ': ' + nf.format(speed)
+      var windMeta = state.windMeta || state.wind;
+      var level = windMeta.levelLabel || (windMeta.level === '10m' ? '10 m'
+        : windMeta.level || (english ? 'model level unavailable' : 'aras model tidak tersedia'));
+      var windSource = windMeta.hPa ? 'Open-Meteo (GFS/ECMWF)' : 'NOAA GFS 1°';
+      rows.push((english ? 'Independent wind ' : 'Angin model mandiri ') + level + ' · ' + windSource + ': ' + nf.format(speed)
         + ' m/s ' + (english ? 'toward ' : 'menuju ') + Math.round(toward) + '°'
-        + (separateWind ? (english ? ' · separate layer, own model time' : ' · layer terpisah, waktu model sendiri') : ''));
-      var windValidTime = windFrame && windFrame.validTime
-        ? windFrame.validTime : separateWind && state.windMeta && state.windMeta.validTime;
+        + (english ? ' · independent model field; not aligned to CAMS/playback'
+          : ' · medan model mandiri; tidak diselaraskan dengan CAMS/linimasa'));
+      var windValidTime = windMeta.validTime || windMeta.modelTime;
       if (windValidTime) {
-        rows.push((english ? 'Wind valid: ' : 'Waktu berlaku angin: ') + formatPm25Time(windValidTime));
+        rows.push((english ? 'Wind model valid: ' : 'Waktu berlaku model angin: ') + formatPm25Time(windValidTime));
+      } else if (windMeta.run) {
+        rows.push((english ? 'NOAA GFS run: ' : 'Siklus NOAA GFS: ') + windMeta.run
+          + (Number.isFinite(Number(windMeta.fhour)) ? ' f' + windMeta.fhour : ''));
       }
-    } else if (state.windOn && modelRasterIsOn() && !windFrame) {
+    } else if (state.windOn) {
       rows.push(english
-        ? 'No wind frame aligned with this model time is available; particles are paused.'
-        : 'Frame angin selaras untuk waktu model ini tidak tersedia; partikel dijeda.');
-    } else if (state.windOn && !modelRasterIsOn()) {
-      rows.push(english ? 'Wind data is unavailable at this location.' : 'Data angin tidak tersedia di lokasi ini.');
+        ? 'Independent modeled wind is not available at this location; no flow sample is shown.'
+        : 'Medan angin model mandiri tidak tersedia di lokasi ini; sampel aliran tidak ditampilkan.');
     }
 
     var caveat = kind === 'pm25'
@@ -3108,8 +3103,9 @@
     var useSmokeGrid = modelRasterIsOn();
     var q = 'step=' + step + '&aqi=' + (state.airOn ? '1' : '0');
     if (useSmokeGrid) {
-      q += '&wind=' + (state.windOn ? '1' : '0');
-      if (state.windOn) q += '&level=' + encodeURIComponent(resolveWindLevel());
+      // Aliran angin diambil terpisah lewat /api/wind-field; jangan memaksa
+      // frame CAMS dan angin menjadi satu waktu/grid atau meminta grid angin duplikat.
+      q += '&wind=0';
     } else {
       q += '&forecast=0';
     }
@@ -3606,11 +3602,11 @@
           : (english ? 'Smoke plume ' + smokeHourShortLabel(hour) : smokeHourShortLabel(hour).toLowerCase());
       _tlSel.setAttribute('aria-valuetext', timelineAria);
     }
-    var windTimelineNote = smokeWindTimelineNote();
+    var windTimelineNote = independentWindTimelineNote();
     if (_smokePlaybackStatus && windTimelineNote) {
       _smokePlaybackStatus.textContent += ' ' + windTimelineNote;
     }
-    if (_tlSel && rasterOn && state.windOn && hour >= 0 && windTimelineNote) {
+    if (_tlSel && state.windOn && windTimelineNote) {
       _tlSel.setAttribute('aria-valuetext', _tlSel.getAttribute('aria-valuetext')
         + '. ' + windTimelineNote);
     }
@@ -3630,63 +3626,21 @@
   }
 
 
-  function smokeWindFrame() {
-    if (!modelRasterIsOn() || !state.windOn || Number(state.plumeHour) < 0 || !state.smokeGrid) return null;
-    var wind = state.smokeGrid.windForecast;
-    var frames = wind && Array.isArray(wind.frames) ? wind.frames : [];
-    var index = pm25FrameIndex();
-    var frame = frames[index];
-    if (!frame || !Array.isArray(frame.points) || frame.points.length < 4) return null;
-    var camsTimes = state.smokeGrid.pm25Forecast && state.smokeGrid.pm25Forecast.validTimes;
-    var targetTime = camsTimes && camsTimes[index];
-    var camsMs = Date.parse(targetTime || '');
-    var windTargetMs = Date.parse(frame.targetTime || '');
-    var windValidMs = Date.parse(frame.validTime || '');
-    if (![camsMs, windTargetMs, windValidMs].every(Number.isFinite)
-        || Math.abs(camsMs - windTargetMs) > 90 * 60 * 1000
-        || Math.abs(camsMs - windValidMs) > 90 * 60 * 1000) return null;
-    return frame;
-  }
-
-  function smokeWindTimelineNote() {
-    if (!modelRasterIsOn() || !state.windOn || Number(state.plumeHour) < 0) return '';
+  function independentWindTimelineNote() {
+    if (!state.windOn) return '';
     var english = getLanguage() === 'en';
-    var windForecast = state.smokeGrid && state.smokeGrid.windForecast;
-    var frame = smokeWindFrame();
-    if (!frame) {
-      if (state.pm25Loading) {
-        return english ? 'Loading the wind frame aligned to CAMS.' : 'Memuat frame angin yang diselaraskan dengan CAMS.';
-      }
-      return english
-        ? 'No aligned wind frame is available for this CAMS time; particles are paused.'
-        : 'Frame angin selaras tidak tersedia untuk waktu CAMS ini; partikel dijeda.';
-    }
-    var index = pm25FrameIndex();
-    var camsTimes = state.smokeGrid.pm25Forecast && state.smokeGrid.pm25Forecast.validTimes;
-    var target = frame.targetTime || (camsTimes && camsTimes[index]);
-    var valid = frame.validTime || target;
-    var targetMs = Date.parse(target || '');
-    var validMs = Date.parse(valid || '');
-    var offset = Number.isFinite(targetMs) && Number.isFinite(validMs)
-      ? Math.round(Math.abs(targetMs - validMs) / 60000) : null;
-    var level = windForecast && windForecast.level || frame.level || '10m';
-    var levelLabel = level === '10m' ? '10 m' : level + ' hPa';
-    var source = level === '10m' ? 'NOAA GFS' : 'Open-Meteo (GFS/ECMWF)';
-    var validLabel = valid ? formatPm25Time(valid) : (english ? 'time unavailable' : 'waktu tidak tersedia');
-    var targetLabel = target ? formatPm25Time(target) : (english ? 'time unavailable' : 'waktu tidak tersedia');
-    var offsetNote = offset && offset > 0
-      ? (english ? '; nearest wind output is ' + offset + ' min from target' : '; keluaran angin terdekat berjarak ' + offset + ' menit dari target')
+    var meta = state.windMeta || {};
+    var validTime = meta.validTime || meta.modelTime;
+    var timeNote = validTime
+      ? (english ? ' Wind model valid: ' : ' Waktu berlaku model angin: ') + formatPm25Time(validTime)
       : '';
     return english
-      ? 'Wind particles · ' + levelLabel + ' · ' + source + ' · valid ' + validLabel
-        + '; aligned to CAMS ' + targetLabel + offsetNote + '.'
-      : 'Partikel angin · ' + levelLabel + ' · ' + source + ' · berlaku ' + validLabel
-        + '; selaras dengan CAMS ' + targetLabel + offsetNote + '.';
+      ? 'Wind flow is an independent modeled field, not synchronized to the selected CAMS or plume time.' + timeNote
+      : 'Aliran angin memakai medan model terpisah, tidak diselaraskan dengan waktu CAMS atau plume yang dipilih.' + timeNote;
   }
 
   function syncWindParticles(preserveParticlePositions) {
-    var field = null;
-    if (state.windOn) field = modelRasterIsOn() ? smokeWindFrame() : state.wind;
+    var field = state.windOn ? state.wind : null;
     if (!state.windOn || !field || !Array.isArray(field.points) || field.points.length < 4) {
       if (state.particles) state.particles.stop();
       return;
@@ -3728,17 +3682,36 @@
     var box = $('windBadge');
     if (!box) return;
     clear(box);
-    var m = state.windMeta;
+    var m = state.windMeta || state.wind;
     if (!state.windOn || !m) { box.hidden = true; return; }
+    var english = getLanguage() === 'en';
+    var source = m.hPa ? 'Open-Meteo (GFS/ECMWF)' : 'NOAA GFS 1°';
+    var validTime = m.validTime || m.modelTime;
+    var hasPoints = Number(m.count) > 0;
     box.hidden = false;
+    box.setAttribute('aria-label', english
+      ? 'Independent modeled wind source, valid time, and CAMS timeline caveat'
+      : 'Sumber dan waktu berlaku angin model mandiri serta caveat linimasa CAMS');
 
-    box.appendChild(el('span', 'wb-lab', 'ANGIN'));
-    box.appendChild(el('span', 'wb-h', m.levelLabel || 'permukaan'));
+    box.appendChild(el('span', 'wb-lab', english ? 'WIND' : 'ANGIN'));
+    box.appendChild(el('span', 'wb-h', m.levelLabel || (m.level === '10m' ? '10 m' : m.level || (english ? 'model level' : 'aras model'))));
     if (state.windLevel === 'auto') {
-      box.appendChild(el('span', 'wb-auto', 'AUTO · ikut abu'));
+      box.appendChild(el('span', 'wb-auto', english ? 'AUTO · follows ash' : 'AUTO · ikut abu'));
     }
-    box.appendChild(el('span', 'wb-src', m.hPa ? 'Open-Meteo' : 'NOAA GFS'));
-    box.appendChild(el('span', 'wb-mode', 'MODEL'));
+    box.appendChild(el('span', 'wb-src', source));
+    if (validTime) {
+      box.appendChild(el('span', 'wb-valid', (english ? 'Valid: ' : 'Berlaku: ') + formatPm25Time(validTime)));
+    } else if (m.run) {
+      box.appendChild(el('span', 'wb-valid', (english ? 'GFS run: ' : 'Siklus GFS: ') + m.run
+        + (Number.isFinite(Number(m.fhour)) ? ' f' + m.fhour : '')));
+    } else {
+      box.appendChild(el('span', 'wb-valid', english ? 'Valid time unavailable' : 'Waktu berlaku tidak tersedia'));
+    }
+    box.appendChild(el('span', 'wb-note', english
+      ? (hasPoints ? 'MODELED FIELD' : 'NO MODEL WIND GRID IN THIS VIEWPORT · NO FLOW SHOWN')
+        + ' · NOT AN OBSERVATION · NOT TIME-ALIGNED WITH CAMS OR PLUME TIMELINE'
+      : (hasPoints ? 'MEDAN MODEL' : 'TIDAK ADA GRID ANGIN MODEL DI VIEWPORT · ALIRAN TIDAK DITAMPILKAN')
+        + ' · BUKAN OBSERVASI · TIDAK SELARAS DENGAN WAKTU CAMS ATAU LINIMASA PLUME'));
   }
 
   function resolveWindLevel() {
@@ -3768,8 +3741,27 @@
     return '300';
   }
 
+  function windFieldHint(field) {
+    var english = getLanguage() === 'en';
+    var count = Number(field && field.count) || 0;
+    if (!count) return english
+      ? 'No modeled wind field is available in this area.'
+      : 'Medan angin model tidak tersedia di area ini.';
+    var source = field && field.hPa ? 'Open-Meteo (GFS/ECMWF)' : 'NOAA GFS 1°';
+    var validTime = field && (field.validTime || field.modelTime);
+    var timeNote = validTime
+      ? (english ? ' · valid ' : ' · berlaku ') + formatPm25Time(validTime)
+      : field && field.run ? (english ? ' · GFS run ' : ' · siklus GFS ') + field.run
+        + (Number.isFinite(Number(field.fhour)) ? ' f' + field.fhour : '')
+        : '';
+    return nf.format(count) + (english ? ' modeled wind-grid points · ' : ' titik medan angin model · ')
+      + source + timeNote + (english
+        ? '. Independent field; not synchronized to CAMS or plume playback.'
+        : '. Medan mandiri; tidak diselaraskan dengan CAMS atau linimasa plume.');
+  }
+
   function loadWind() {
-    if (!state.windOn || state.windBusy) return Promise.resolve();
+    if (!state.windOn) return Promise.resolve();
     var z = map.getZoom();
     var step = windStepFor(z);
     var b = map.getBounds();
@@ -3782,20 +3774,20 @@
       showHint('Batas tampilan peta tidak valid.', 5000);
       return Promise.resolve();
     }
+    if (state.windBusy) {
+      state.windPending = true;
+      return Promise.resolve();
+    }
     if (state.windKey === q) {
       // Data yang sama masih tersimpan, jadi tidak perlu diambil ulang -
       // tetapi pengguna baru saja menyalakan lapisan dan tetap berhak
       // memperoleh konfirmasi bahwa ada sesuatu yang tergambar.
       drawWind();
-      var n = state.wind && state.wind.count;
-      showHint(n
-        ? nf.format(n) + ' titik medan angin · ' + ((state.wind && state.wind.source) || 'NOAA GFS')
-          + '. Garis mengalir ke arah asap terbawa.'
-        : 'Tidak ada data angin pada area ini.', 5000);
+      showHint(windFieldHint(state.windMeta || state.wind), 7000);
       return Promise.resolve();
     }
     state.windBusy = true;
-    showHint('Memuat arah angin…');
+    showHint(getLanguage() === 'en' ? 'Loading independent modeled wind flow…' : 'Memuat aliran angin model mandiri…');
     return fetchT('/api/wind-field?' + q, { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('x')); })
       .then(function (d) {
@@ -3804,13 +3796,20 @@
         state.windKey = q;
         drawWind();
         renderWindBadge();
-        showHint(d.count
-          ? nf.format(d.count) + ' titik medan angin · ' + (d.source || 'NOAA GFS') + '. Garis mengalir ke arah asap terbawa.'
-          : 'Tidak ada data angin pada area ini.', 5000);
+        showHint(windFieldHint(d), 7000);
 
       })
-      .catch(function () { showHint('Gagal memuat data arah angin.'); })
-      .then(function () { state.windBusy = false; });
+      .catch(function () {
+        showHint(getLanguage() === 'en'
+          ? 'Could not load the independent modeled wind field.'
+          : 'Gagal memuat medan angin model mandiri.');
+      })
+      .then(function () {
+        state.windBusy = false;
+        var pending = state.windPending;
+        state.windPending = false;
+        if (pending && state.windOn) loadWind();
+      });
   }
 
   /* ---------- batas konsesi ---------- */
@@ -5756,8 +5755,7 @@
     state.windOn = e.target.checked;
     if (state.windOn) {
       map.addLayer(gWind);
-      if (modelRasterIsOn()) loadAir();
-      else loadWind();
+      loadWind();
     } else {
       map.removeLayer(gWind);
       syncWindParticles(false);
@@ -5775,8 +5773,7 @@
       state.windOn = true;
       map.addLayer(gWind);
     }
-    if (modelRasterIsOn()) loadAir();
-    else if (state.windOn) loadWind();
+    if (state.windOn) loadWind();
     updateForecastStatus();
   });
 
@@ -5794,7 +5791,7 @@
     clearTimeout(moveTimer);
     moveTimer = setTimeout(function () {
       if (state.concOn) loadConcessions();
-      if (state.windOn && !modelRasterIsOn()) loadWind();
+      if (state.windOn) loadWind();
       if (state.airOn || modelRasterIsOn()) loadAir();
     }, 800);
   });
@@ -6019,6 +6016,9 @@
     var english = getLanguage() === 'en';
     var calls = d && d.agent && Number(d.agent.toolCalls) || 0;
     if (d && d.provider === 'muse-spark') {
+      if (d.mode === 'challenge') {
+        return english ? 'Muse Spark · skeptical pass · ' + calls + ' tool calls' : 'Muse Spark · uji balik · ' + calls + ' panggilan alat';
+      }
       return english ? 'Muse Spark · ' + calls + ' tool calls' : 'Muse Spark · ' + calls + ' panggilan alat';
     }
     if (d && d.provider === 'local-fallback') {
@@ -6030,8 +6030,303 @@
     return 'intent: ' + ((d && d.intent) || 'data');
   }
 
-  function renderAsk(d) {
-    var box = $('askOut');
+  function askEvidenceToolLabel(tool, english) {
+    var labels = {
+      get_fire_situation: ['Situasi titik api', 'Fire situation'],
+      get_province_hotspots: ['Peringkat provinsi', 'Province ranking'],
+      get_modeled_impacted_places: ['Dampak model plume', 'Modeled plume impact'],
+      get_volcano_status: ['Status gunung api', 'Volcano status'],
+      get_earthquake_status: ['Ringkasan gempa', 'Earthquake summary'],
+      get_displacement_status: ['Laporan pengungsian', 'Displacement reports'],
+      get_air_quality_status: ['Kualitas udara model', 'Modeled air quality'],
+      get_regional_haze_reports: ['Laporan kabut regional', 'Regional haze reports'],
+      get_land_overlap_summary: ['Irisan titik api-konsesi', 'Hotspot-concession overlap'],
+      rejected: ['Panggilan alat ditolak', 'Tool call rejected']
+    };
+    return labels[tool] ? labels[tool][english ? 1 : 0] : (english ? 'Evidence result' : 'Hasil bukti');
+  }
+
+  function askEvidenceTypeLabel(kind, english) {
+    var labels = {
+      fire: ['deteksi hotspot', 'hotspot detections'],
+      'wind-model': ['model cuaca', 'weather model'],
+      volcano: ['status gunung', 'volcano status'],
+      earthquake: ['data gempa', 'earthquake data'],
+      displacement: ['laporan pengungsian', 'displacement reports'],
+      'air-quality-model': ['model kualitas udara', 'air-quality model'],
+      'land-overlap': ['analisis irisan lahan', 'land-overlap analysis'],
+      'regional-report': ['laporan regional', 'regional reports'],
+      source: ['sumber data', 'source data']
+    };
+    return labels[kind] ? labels[kind][english ? 1 : 0] : String(kind || (english ? 'source' : 'sumber'));
+  }
+
+  function askEvidenceCoverageLabel(key, english) {
+    var labels = {
+      detectedHotspots: ['Deteksi hotspot', 'Hotspot detections'],
+      highConfidenceHotspots: ['Keyakinan tinggi', 'High-confidence detections'],
+      totalFrpMw: ['Total FRP (MW)', 'Total FRP (MW)'],
+      hotspotsReturned: ['Titik dikirim', 'Detections returned'],
+      hotspotsTotal: ['Total titik', 'Total detections'],
+      hotspotsTruncated: ['Data titik dipotong', 'Detection list truncated'],
+      modelStatus: ['Status model', 'Model status'],
+      modelInputClusters: ['Klaster input model', 'Model input clusters'],
+      modeledClusters: ['Klaster termodelkan', 'Modeled clusters'],
+      visualClustersTruncated: ['Tampilan klaster dipotong', 'Displayed clusters truncated'],
+      assignedDetections: ['Deteksi terpetakan ke provinsi', 'Detections assigned to provinces'],
+      unassignedDetections: ['Deteksi belum terpetakan', 'Unassigned detections'],
+      rankingTruncated: ['Peringkat dipotong', 'Ranking truncated'],
+      placesReturned: ['Lokasi model dikembalikan', 'Modeled places returned'],
+      monitoredCount: ['Gunung dipantau', 'Volcanoes monitored'],
+      eruptingCount: ['Laporan gunung meletus', 'Erupting volcano reports'],
+      eruptionReports24h: ['Laporan letusan 24 jam', 'Eruption reports in 24 hours'],
+      reportsStale: ['Laporan kedaluwarsa', 'Reports stale'],
+      windowHours: ['Jendela data (jam)', 'Data window (hours)'],
+      eventCount: ['Kejadian gempa', 'Earthquake events'],
+      magnitude5Plus: ['Gempa M5+', 'M5+ earthquakes'],
+      tsunamiFlags: ['Penanda tsunami pada feed', 'Tsunami flags in feed'],
+      availableFeeds: ['Feed tersedia', 'Feeds available'],
+      expectedFeeds: ['Feed diharapkan', 'Feeds expected'],
+      feedCoverageComplete: ['Cakupan feed lengkap', 'Feed coverage complete'],
+      active: ['Status kejadian aktif', 'Active event status'],
+      activeEventCount: ['Kejadian aktif dilaporkan', 'Active events reported'],
+      totalReportedPeople: ['Orang dilaporkan', 'People reported'],
+      recentlyEndedCount: ['Kejadian baru berakhir', 'Recently ended events'],
+      highestPointLabel: ['Titik model tertinggi', 'Highest modeled point'],
+      modeledAqi: ['AQI model', 'Modeled AQI'],
+      modeledPm25: ['PM2.5 model (µg/m³)', 'Modeled PM2.5 (µg/m³)'],
+      availableReports: ['Laporan tersedia', 'Reports available'],
+      analyzedHotspots: ['Hotspot dianalisis', 'Hotspots analyzed'],
+      totalHotspots: ['Total hotspot', 'Total hotspots'],
+      sampleSize: ['Ukuran sampel', 'Sample size'],
+      sampled: ['Menggunakan sampel', 'Sampled subset']
+    };
+    return labels[key] ? labels[key][english ? 1 : 0] : String(key || '');
+  }
+
+  function askEvidenceSourceLabel(source, english) {
+    var labels = {
+      source: ['sumber', 'source'],
+      composite: ['gabungan', 'composite'],
+      pvmbg: ['PVMBG', 'PVMBG'],
+      eruptionReports: ['laporan letusan', 'eruption reports'],
+      quake: ['gempa', 'earthquake'],
+      shelter: ['pengungsian', 'displacement']
+    };
+    return labels[source] ? labels[source][english ? 1 : 0] : String(source || (english ? 'source' : 'sumber'));
+  }
+
+  function askEvidenceStateLabel(state, english) {
+    if (state === 'available') return english ? 'available' : 'tersedia';
+    if (state === 'unavailable') return english ? 'unavailable' : 'tidak tersedia';
+    if (state === 'rejected') return english ? 'rejected' : 'ditolak';
+    return english ? 'unknown' : 'tidak diketahui';
+  }
+
+  function askEvidenceBasisLabel(basis, english) {
+    var labels = {
+      acquisition: ['akuisisi', 'acquisition'],
+      event: ['waktu kejadian', 'event time'],
+      'official-update': ['pembaruan resmi', 'official update'],
+      report: ['waktu laporan', 'report time'],
+      'report-date': ['tanggal laporan', 'report date'],
+      observation: ['waktu observasi', 'observation time'],
+      published: ['waktu publikasi', 'publication time']
+    };
+    return labels[basis] ? labels[basis][english ? 1 : 0] : String(basis || '');
+  }
+
+  function renderAskEvidence(evidence) {
+    if (!Array.isArray(evidence) || !evidence.length) return null;
+    var english = getLanguage() === 'en';
+    var details = el('details', 'ask-evidence');
+    var summary = el('summary', 'ask-evidence-summary', (english ? 'EVIDENCE TRACE' : 'JEJAK BUKTI')
+      + ' · ' + evidence.length + (english ? ' tool receipts' : ' hasil alat'));
+    summary.setAttribute('data-i18n-skip', '');
+    details.appendChild(summary);
+    var list = el('div', 'ask-evidence-list');
+    var traceNote = el('p', 'ask-evidence-note', english
+      ? 'Receipt links show which tool result was cited; they do not independently certify a claim.'
+      : 'Tautan [E1]/[C1] menunjukkan hasil alat yang dirujuk; bukan sertifikasi independen atas klaim.');
+    traceNote.setAttribute('data-i18n-skip', '');
+    list.appendChild(traceNote);
+
+    evidence.slice(0, 8).forEach(function (item) {
+      if (!item || typeof item !== 'object') return;
+      var card = el('article', 'ask-evidence-card');
+      var receiptId = /^[EC][1-8]$/.test(String(item.id || '')) ? String(item.id) : '';
+      if (receiptId) card.id = 'ask-evidence-' + receiptId;
+      var head = el('div', 'ask-evidence-card-head');
+      var title = item.label || askEvidenceToolLabel(item.tool, english);
+      var titleNode = el('strong', 'ask-evidence-title', title);
+      titleNode.setAttribute('data-i18n-skip', '');
+      head.appendChild(titleNode);
+      var state = item.state || (item.available === true ? 'available' : item.available === false ? 'unavailable' : 'unknown');
+      if (['available', 'unavailable', 'rejected', 'unknown'].indexOf(state) < 0) state = 'unknown';
+      var stateNode = el('span', 'ask-evidence-badge ask-evidence-' + state, askEvidenceStateLabel(state, english));
+      stateNode.setAttribute('data-i18n-skip', '');
+      head.appendChild(stateNode);
+      card.appendChild(head);
+
+      var types = Array.isArray(item.dataTypes) ? item.dataTypes.map(function (kind) {
+        return askEvidenceTypeLabel(kind, english);
+      }).filter(Boolean) : [];
+      if (types.length) {
+        var typeLine = el('div', 'ask-evidence-line');
+        var typeLab = el('b', 'ask-evidence-label', english ? 'DATA TYPE' : 'JENIS DATA');
+        typeLab.setAttribute('data-i18n-skip', '');
+        typeLine.appendChild(typeLab);
+        typeLine.appendChild(el('span', '', types.join(' · ')));
+        card.appendChild(typeLine);
+      }
+
+      var sourceTimes = Array.isArray(item.sourceTimes) ? item.sourceTimes : [];
+      if (sourceTimes.length) {
+        sourceTimes.forEach(function (time) {
+          if (!time) return;
+          var timeLine = el('div', 'ask-evidence-line');
+          var timeLabel = el('b', 'ask-evidence-label', String(time.label || (english ? 'SOURCE TIME' : 'WAKTU SUMBER')));
+          timeLabel.setAttribute('data-i18n-skip', '');
+          timeLine.appendChild(timeLabel);
+          timeLine.appendChild(el('span', '', String(time.value || '')));
+          if (time.basis) {
+            timeLine.appendChild(el('em', 'ask-evidence-basis', askEvidenceBasisLabel(time.basis, english)));
+          }
+          card.appendChild(timeLine);
+        });
+      }
+      var timeNotes = Array.isArray(item.timeNotes) ? item.timeNotes.filter(Boolean) : [];
+      if (!sourceTimes.length && item.tool !== 'rejected' && !timeNotes.length) {
+        var noTime = el('div', 'ask-evidence-line ask-evidence-muted', english
+          ? 'Source observation/valid time was not provided by this tool result.'
+          : 'Waktu observasi/valid sumber tidak disediakan oleh hasil alat ini.');
+        noTime.setAttribute('data-i18n-skip', '');
+        card.appendChild(noTime);
+      }
+      timeNotes.slice(0, 5).forEach(function (note) {
+        var timeNote = el('div', 'ask-evidence-line ask-evidence-muted',
+          (english ? 'TIME LIMIT · ' : 'BATAS WAKTU · ') + String(note));
+        timeNote.setAttribute('data-i18n-skip', '');
+        card.appendChild(timeNote);
+      });
+
+      if (item.snapshotAt) {
+        var snapshotLine = el('div', 'ask-evidence-line ask-evidence-muted',
+          (english ? 'Dashboard snapshot assembled: ' : 'Snapshot dashboard dirakit: ')
+          + item.snapshotAt + (english ? ' · not necessarily the source valid time' : ' · belum tentu waktu valid sumber'));
+        snapshotLine.setAttribute('data-i18n-skip', '');
+        card.appendChild(snapshotLine);
+      }
+
+      var freshness = Array.isArray(item.freshness) ? item.freshness : [];
+      freshness.forEach(function (row) {
+        if (!row) return;
+        var parts = [askEvidenceSourceLabel(row.source, english)];
+        if (typeof row.healthy === 'boolean') parts.push(english
+          ? (row.healthy ? 'healthy' : 'not healthy') : (row.healthy ? 'sehat' : 'tidak sehat'));
+        if (row.lastSuccessfulAt) parts.push((english ? 'last success ' : 'sukses terakhir ') + row.lastSuccessfulAt);
+        if (row.lastOkAgeMs !== null && row.lastOkAgeMs !== undefined) {
+          parts.push((english ? 'age ' : 'usia ') + Math.round(Number(row.lastOkAgeMs) / 60000) + (english ? ' min' : ' mnt'));
+        }
+        var freshLine = el('div', 'ask-evidence-line ask-evidence-muted', (english ? 'SOURCE FRESHNESS · ' : 'KESEGARAN SUMBER · ') + parts.join(' · '));
+        freshLine.setAttribute('data-i18n-skip', '');
+        card.appendChild(freshLine);
+      });
+
+      var coverage = Array.isArray(item.coverage) ? item.coverage : [];
+      if (coverage.length) {
+        var coverageWrap = el('div', 'ask-evidence-coverage');
+        var coverageLabel = el('b', 'ask-evidence-label', english ? 'COVERAGE / COUNTS' : 'CAKUPAN / HITUNGAN');
+        coverageLabel.setAttribute('data-i18n-skip', '');
+        coverageWrap.appendChild(coverageLabel);
+        coverage.forEach(function (entry) {
+          if (!entry) return;
+          var value = typeof entry.value === 'boolean'
+            ? (entry.value ? (english ? 'yes' : 'ya') : (english ? 'no' : 'tidak'))
+            : String(entry.value);
+          var row = el('div', 'ask-evidence-metric');
+          row.appendChild(el('span', '', askEvidenceCoverageLabel(entry.key, english)));
+          row.appendChild(el('b', '', value));
+          coverageWrap.appendChild(row);
+        });
+        card.appendChild(coverageWrap);
+      }
+
+      var limitations = Array.isArray(item.limitations) ? item.limitations.filter(Boolean) : [];
+      if (limitations.length) {
+        var limitsWrap = el('div', 'ask-evidence-limits');
+        var limitsLabel = el('b', 'ask-evidence-label', english ? 'LIMITS' : 'BATAS INTERPRETASI');
+        limitsLabel.setAttribute('data-i18n-skip', '');
+        limitsWrap.appendChild(limitsLabel);
+        limitations.slice(0, 3).forEach(function (limit) {
+          var line = el('div', 'ask-evidence-limit', String(limit));
+          line.setAttribute('data-i18n-skip', '');
+          limitsWrap.appendChild(line);
+        });
+        card.appendChild(limitsWrap);
+      }
+
+      var sources = Array.isArray(item.sources) ? item.sources : [];
+      if (sources.length) {
+        var sourceWrap = el('div', 'ask-evidence-sources');
+        sources.forEach(function (source) {
+          if (!source) return;
+          var url = safeAskSourceUrl(source.url);
+          if (url) {
+            var link = el('a', 'src-pill', String(source.title || source.kind || (english ? 'Source' : 'Sumber')).slice(0, 46));
+            link.href = url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.setAttribute('data-i18n-skip', '');
+            sourceWrap.appendChild(link);
+          }
+        });
+        if (sourceWrap.childNodes.length) card.appendChild(sourceWrap);
+      }
+
+      list.appendChild(card);
+    });
+    details.appendChild(list);
+    return details;
+  }
+
+  function renderAskAnswerLine(line, cls, evidenceIds, box, english) {
+    var node = el('div', cls);
+    var text = String(line == null ? '' : line);
+    var marker = /\[([EC])(\d{1,3})\]/g;
+    var match;
+    var cursor = 0;
+    while ((match = marker.exec(text))) {
+      node.appendChild(document.createTextNode(text.slice(cursor, match.index)));
+      let id = match[1] + match[2];
+      if (evidenceIds.indexOf(id) >= 0) {
+        var ref = el('a', 'ask-evidence-ref', '[' + id + ']');
+        ref.href = '#ask-evidence-' + id;
+        ref.setAttribute('aria-label', english ? 'Open evidence receipt ' + id : 'Buka bukti ' + id);
+        ref.addEventListener('click', function (event) {
+          event.preventDefault();
+          var trace = box.querySelector('details.ask-evidence');
+          if (trace) trace.open = true;
+          var target = box.querySelector('#ask-evidence-' + id);
+          if (target && typeof target.scrollIntoView === 'function') {
+            target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        });
+        node.appendChild(ref);
+      } else {
+        var invalid = el('span', 'ask-evidence-ref-invalid', '[' + id + ']');
+        invalid.title = english ? 'No matching tool receipt was returned.' : 'Tidak ada receipt alat yang cocok.';
+        node.appendChild(invalid);
+      }
+      cursor = marker.lastIndex;
+    }
+    node.appendChild(document.createTextNode(text.slice(cursor)));
+    node.setAttribute('data-i18n-skip', '');
+    return node;
+  }
+
+  function renderAsk(d, targetBox) {
+    var box = targetBox || $('askOut');
     clear(box);
     var english = getLanguage() === 'en';
     if (d && d.provider === 'local-rag') {
@@ -6051,14 +6346,19 @@
       box.appendChild(el('p', 'empty', english ? 'No answer is available for that query.' : 'Tidak ada hasil untuk kueri itu.'));
       return;
     }
+    var evidenceRecords = d.provider === 'muse-spark' && Array.isArray(d.evidence) ? d.evidence : [];
+    var evidenceIds = evidenceRecords.map(function (item) { return item && item.id; })
+      .filter(function (id) { return /^[EC][1-8]$/.test(String(id || '')); });
     d.answer.forEach(function (line, i) {
       var cls = 'ask-line';
       if (i === 0) cls += ' ask-head';
       else if (/^(Catatan:|Ketidakpastian|Uncertainty|bukan advisory|bukan sertifikat|indikatif)/i.test(line)) cls += ' ask-note';
-      var answerLine = el('div', cls, line);
-      answerLine.setAttribute('data-i18n-skip', '');
-      box.appendChild(answerLine);
+      box.appendChild(renderAskAnswerLine(line, cls, evidenceIds, box, english));
     });
+    if (d.provider === 'muse-spark') {
+      var evidenceTrail = renderAskEvidence(d.evidence);
+      if (evidenceTrail) box.appendChild(evidenceTrail);
+    }
     if (d.sources && d.sources.length) {
       var srcWrap = el('div', 'ask-src');
       var sourceLabel = english ? 'SOURCES (' : 'SUMBER (';
@@ -6084,6 +6384,76 @@
       });
       box.appendChild(srcWrap);
     }
+    if (d.provider === 'muse-spark' && d.mode !== 'challenge') {
+      var challengeButton = el('button', 'ask-challenge-btn', english
+        ? 'TRY TO FALSIFY THIS BRIEF'
+        : 'CARI BUKTI YANG BISA MENGGUGURKAN');
+      challengeButton.type = 'button';
+      challengeButton.setAttribute('data-i18n-skip', '');
+      challengeButton.addEventListener('click', function () {
+        runEvidenceChallenge(d.query, d.answer.join('\n'), challengeButton);
+      });
+      box.appendChild(challengeButton);
+    }
+  }
+
+  function runEvidenceChallenge(q, claim, button) {
+    if (!q) return;
+    var host = $('askOut');
+    var english = getLanguage() === 'en';
+    Array.prototype.slice.call(host.querySelectorAll('details.ask-challenge[data-state="failed"]'))
+      .forEach(function (panel) { panel.remove(); });
+    var panel = el('details', 'ask-challenge');
+    panel.open = true;
+    panel.setAttribute('data-state', 'running');
+    var summary = el('summary', 'ask-challenge-summary', english
+      ? 'SKEPTICAL PASS · TRY TO FALSIFY THE BRIEF'
+      : 'UJI BALIK · COBA GUGURKAN BRIEF');
+    summary.setAttribute('data-i18n-skip', '');
+    panel.appendChild(summary);
+    var disclaimer = el('p', 'ask-challenge-note', english
+      ? 'This pass searches the available sources for counter-signals; it is not independent ground-truth verification.'
+      : 'Pass ini mencari sinyal penyangkal dalam sumber yang tersedia; bukan verifikasi ground-truth independen.');
+    disclaimer.setAttribute('data-i18n-skip', '');
+    panel.appendChild(disclaimer);
+    var body = el('div', 'ask-challenge-body');
+    body.appendChild(el('p', 'ask-busy', english ? 'SEARCHING FOR COUNTER-SIGNALS…' : 'MENCARI SINYAL PENYANGKAL…'));
+    panel.appendChild(body);
+    host.appendChild(panel);
+
+    if (button) {
+      button.disabled = true;
+      button.textContent = english ? 'CHALLENGE RUNNING…' : 'UJI BANTAHAN BERJALAN…';
+    }
+    $('askMeta').textContent = english ? 'Muse Spark · skeptical pass · working' : 'Muse Spark · uji balik · berjalan';
+    fetchT('/api/ask/challenge', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: q, lang: getLanguage(), claim: String(claim || '').slice(0, 1800) })
+    }, 55000)
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('challenge')); })
+      .then(function (d) {
+        panel.setAttribute('data-state', d.provider === 'muse-spark' ? 'complete' : 'not-run');
+        renderAsk(d, body);
+        $('askMeta').textContent = askModeLabel(d);
+        if (button) {
+          button.textContent = english
+            ? (d.provider === 'muse-spark' ? 'CHALLENGE COMPLETE' : 'CHALLENGE NOT RUN BY MUSE SPARK')
+            : (d.provider === 'muse-spark' ? 'UJI BANTAHAN SELESAI' : 'UJI TIDAK DIJALANKAN OLEH MUSE SPARK');
+          button.disabled = true;
+        }
+      })
+      .catch(function () {
+        panel.setAttribute('data-state', 'failed');
+        clear(body);
+        body.appendChild(el('p', 'empty', english
+          ? 'The skeptical pass is temporarily unavailable. Try again.'
+          : 'Uji balik sementara tidak tersedia. Coba lagi.'));
+        if (button) {
+          button.disabled = false;
+          button.textContent = english ? 'RETRY SKEPTICAL PASS' : 'ULANGI UJI BALIK';
+        }
+      });
   }
 
   function runAsk(q) {
@@ -6900,6 +7270,7 @@
     if (state.casualties) renderCasualties();
     if (state.streams) renderSiaran(state.streams);
     if (state.windy) renderWindy(state.windy);
+    renderWindBadge();
     if (state.flights) drawFlights();
     if (state.drought) { renderDroughtCard(); renderDryList(); }
     if (state.air) {
@@ -6970,7 +7341,7 @@
     // Data gunung dibutuhkan dua sakelar (abu & letusan); muat sekali inisial.
     if (state.volcanoOn || state.ashOn) loadAsh();
     if (modelRasterIsOn()) loadAir();
-    else if (state.windOn) loadWind();
+    if (state.windOn) loadWind();
     if (state.flightsOn) loadFlights();
     setTimeout(function () {
       try { map.invalidateSize(); } catch (e) {}

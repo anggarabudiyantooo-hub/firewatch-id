@@ -160,8 +160,10 @@ check('raster PM2.5/AOD/debu memakai grid kontinu, pane tersendiri, dan timeline
 
 check('klien memakai endpoint statis untuk grid CAMS dan tidak memanggil Open-Meteo langsung', () => {
   assert.ok(app.includes("var q = 'step=' + step + '&aqi=' + (state.airOn ? '1' : '0')"));
-  assert.ok(app.includes("q += '&wind=' + (state.windOn ? '1' : '0')"));
-  assert.ok(app.includes("if (state.windOn) q += '&level=' + encodeURIComponent(resolveWindLevel())"));
+  assert.ok(app.includes("q += '&wind=0';"));
+  assert.ok(app.includes("var field = state.windOn ? state.wind : null;"));
+  assert.ok(app.includes("return fetchT('/api/wind-field?' + q"));
+  assert.ok(app.includes('state.windMeta = d'));
   assert.ok(app.includes("q += '&forecast=0'"));
   assert.ok(app.includes("(useSmokeGrid ? '/api/smoke-grid-static?' : '/api/air-quality?') + q"));
   assert.ok(app.includes("if (state.airOn) drawAir()"));
