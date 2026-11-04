@@ -468,7 +468,10 @@ check('daily archive workflow runs after the Vercel refresh and stores dated JSO
   assert(workflow.includes('(02:30 WIB)'));
   assert(workflow.includes('contents: write'));
   assert(workflow.includes('node scripts/archive-daily-report.js'));
-  assert(workflow.includes('git push origin HEAD:main'));
+  // Push ke main kini lewat skrip bersama yang fetch dan rebase dulu, supaya
+  // cron lain yang mendorong lebih dulu tidak membuat artefak ini terbuang.
+  assert(workflow.includes('bash scripts/ci-commit-push.sh'));
+  assert(workflow.includes('public/reports/archive'));
   assert.strictEqual(archiveIndex.schemaVersion, 1);
   assert(Array.isArray(archiveIndex.reports));
   archiveIndex.reports.forEach(entry => {

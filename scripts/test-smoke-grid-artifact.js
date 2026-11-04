@@ -287,7 +287,11 @@ async function main() {
     const workflow = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'refresh-smoke-grid.yml'), 'utf8');
     assert.match(workflow, /git status --porcelain -- public\/data\/smoke-grid\.json/);
     assert.match(workflow, /if: steps\.diff\.outputs\.changed == 'true'/);
-    assert.match(workflow, /git add public\/data\/smoke-grid\.json/);
+    // Artefak kini di-commit lewat skrip bersama yang melakukan fetch dan
+    // rebase sebelum mencoba lagi, supaya cron lain yang mendorong lebih dulu
+    // tidak membuat push ditolak. Nama artefak tetap harus disebut di workflow.
+    assert.match(workflow, /bash scripts\/ci-commit-push\.sh/);
+    assert.match(workflow, /public\/data\/smoke-grid\.json/);
   });
 
   console.log('\n' + passed + '/12 uji artefak CAMS regional lulus.');

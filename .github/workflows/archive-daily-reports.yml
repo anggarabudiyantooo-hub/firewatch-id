@@ -41,13 +41,6 @@ jobs:
 
       - name: Commit new daily archive
         run: |
-          set -euo pipefail
-          if git diff --quiet -- public/reports/archive; then
-            echo "No new daily report archive was created."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/reports/archive
-          git commit -m "data(report): archive daily evidence $(TZ=Asia/Jakarta date +%Y-%m-%d)"
-          git push origin HEAD:main
+          bash scripts/ci-commit-push.sh \
+            "data(report): archive daily evidence $(TZ=Asia/Jakarta date +%Y-%m-%d)" \
+            public/reports/archive

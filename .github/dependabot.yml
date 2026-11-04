@@ -29,6 +29,17 @@ updates:
       - dependency-name: express
         update-types:
           - version-update:semver-major
+      # pbf 5.x dan @mapbox/vector-tile 3.x hanya menyediakan ESM, sementara
+      # lib/concession.js memakainya lewat require() dari CommonJS. Menaikkannya
+      # membuat ERR_REQUIRE_ESM di Vercel, dan scripts/check-bundle.js sudah
+      # menolaknya di gerbang uji. Migrasi ke dynamic import() adalah pekerjaan
+      # tersendiri, bukan PR otomatis.
+      - dependency-name: pbf
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@mapbox/vector-tile"
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: github-actions
     directory: /
