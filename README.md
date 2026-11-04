@@ -279,7 +279,10 @@ Reproduce with `npm run eval --origin=<your-deployment>`.
 
 ## 9. Privacy and safety
 
-- Map captures and report snapshots live in browser `sessionStorage` only. They are never uploaded.
+- Map captures and report snapshots live in browser `sessionStorage` and are not uploaded on their own.
+  Requesting the AI narrative is an explicit opt-in: the PNG and the structured data are then sent to
+  the Meta Model API, held in server memory for one request, and not written to disk here. The narrative
+  button stays disabled until the consent box is ticked, and every new capture asks again.
 - Cek Asap photos are re-encoded in the browser, which strips EXIF including GPS. The image is
   forwarded to the Meta Model API for assessment, held in server memory for one request, then
   discarded. It is never written to disk, a database or the report archive. This is stated on the page.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Regresi: toggle AI tidak menutupi kontrol, tombol lipat dok selalu
-// terjangkau, dan tautan Operator ditemukan di semua halaman.
+// terjangkau, dan pintu Operator tidak dipromosikan di halaman publik.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -42,11 +42,15 @@ ok('rantai utama memakai min-width nol', /#main \{ min-width: 0; \}/.test(css) &
 ok('dua kolom hanya di layar lebar', /@media \(min-width: 769px\) \{\s*\n\s*#main-bloomberg-grid \{ grid-template-columns: minmax\(0, 1fr\) var\(--inspector-w\); \}/.test(css));
 ok('ponsel tetap satu kolom agar peta penuh', /@media \(max-width: 768px\) \{\s*\n\s*#main-bloomberg-grid \{ grid-template-columns: minmax\(0, 1fr\); \}/.test(css));
 
-console.log('\n== tautan Operator ditemukan ==');
+console.log('\n== pintu Operator tidak dipromosikan di halaman publik ==');
 ok('safety bar ponsel membungkus, tidak menyembunyikan tautan', /\.foot\.safety-bar \{[\s\S]*?flex-wrap: wrap;[\s\S]*?overflow-x: visible;/.test(css));
-for (const page of ['public/index.html', 'public/home.html', 'public/reports.html', 'public/tentang-data.html']) {
-  ok(`tautan Operator ada di ${page}`, read(page).includes('href="/admin-login"'));
+// Tautan Operator sengaja dihapus dari footer publik supaya pengunjung biasa
+// tidak diarahkan ke pintu masuk operator. Rute loginnya sendiri tetap ada dan
+// tetap menuntut sesi; yang diuji di bawah adalah proteksinya, bukan tautannya.
+for (const page of ['public/index.html', 'public/home.html', 'public/reports.html', 'public/tentang-data.html', 'public/cek-asap.html']) {
+  ok(`tautan Operator tidak ada di ${page}`, !read(page).includes('href="/admin-login"'));
 }
+ok('halaman login tetap tersedia sebagai rute', read('public/admin-login.html').length > 0);
 ok('rute operations tetap menuntut sesi admin', /adminAuth\.requirePageSession, \(_req, res\) => sendPrivatePage\('operations\.html'/.test(ops));
 ok('aset operations tetap dilindungi', /app\.use\(\['\/operations', '\/insiden'\], adminAuth\.requirePageSession/.test(ops));
 

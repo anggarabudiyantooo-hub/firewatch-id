@@ -64,10 +64,28 @@
     narrative.id = 'mapCaptureNarrative';
     narrative.hidden = true;
 
+    // Gambar peta benar-benar dikirim ke Meta saat narasi diminta, jadi
+    // pengiriman itu harus disetujui lebih dulu, bukan diasumsikan.
+    var consent = el('label', 'map-capture-consent');
+    consent.id = 'mapCaptureConsentLabel';
+    consent.setAttribute('data-i18n-skip', '');
+    var consentBox = el('input');
+    consentBox.type = 'checkbox';
+    consentBox.id = 'mapCaptureConsent';
+    consent.appendChild(consentBox);
+    consent.appendChild(el('span', null,
+      t('Kirim gambar peta ini ke Meta untuk dianalisis. Gambar dan data terstruktur dikirim ke Meta Model API, diproses satu permintaan, dan tidak disimpan di server ini. Meta memprosesnya menurut kebijakan privasi mereka. Tanpa centang ini, gambar tidak dikirim ke mana pun.',
+        'Send this map image to Meta for analysis. The image and the structured data go to the Meta Model API, are processed for one request, and are not stored on this server. Meta processes them under their own privacy policy. Without this box checked, the image is not sent anywhere.')));
+
     var actions = el('div', 'map-capture-actions');
     var btnNarrate = el('button', 'map-capture-btn-primary', t('Narasi AI dari gambar', 'AI narrative from image'));
     btnNarrate.type = 'button';
     btnNarrate.id = 'mapCaptureNarrate';
+    btnNarrate.disabled = true;
+    btnNarrate.title = t('Centang persetujuan di atas dulu.', 'Tick the consent box above first.');
+    consentBox.addEventListener('change', function () {
+      btnNarrate.disabled = !consentBox.checked;
+    });
     btnNarrate.addEventListener('click', requestNarrative);
     var btnPng = el('button', 'map-capture-btn', t('Unduh PNG', 'Download PNG'));
     btnPng.type = 'button';
@@ -90,6 +108,7 @@
     panel.appendChild(status);
     panel.appendChild(figure);
     panel.appendChild(metaBox);
+    panel.appendChild(consent);
     panel.appendChild(narrative);
     panel.appendChild(actions);
     dialog.appendChild(panel);
@@ -135,6 +154,12 @@
   async function open(options) {
     targetMapId = (options && options.mapId) || 'map';
     var dialog = ensureDialog();
+    var priorConsent = document.getElementById('mapCaptureConsent');
+    if (priorConsent) {
+      priorConsent.checked = false;
+      var priorBtn = document.getElementById('mapCaptureNarrate');
+      if (priorBtn) priorBtn.disabled = true;
+    }
     dialog.hidden = false;
     var narrative = document.getElementById('mapCaptureNarrative');
     narrative.hidden = true;
@@ -213,6 +238,14 @@
 
   async function requestNarrative() {
     if (!last) return;
+    var consentBox = document.getElementById('mapCaptureConsent');
+    if (!consentBox || !consentBox.checked) {
+      var warn = document.getElementById('mapCaptureNarrative');
+      warn.hidden = false;
+      warn.textContent = t('Gambar belum dikirim. Centang persetujuan dulu bila Anda ingin gambar dianalisis Meta.',
+        'The image has not been sent. Tick the consent box first if you want Meta to analyse the image.');
+      return;
+    }
     var box = document.getElementById('mapCaptureNarrative');
     var btn = document.getElementById('mapCaptureNarrate');
     btn.disabled = true;

@@ -23,31 +23,31 @@ Branch used for this submission: `feat/hackathon-final`
 
 | Date | Commit | What landed |
 |---|---|---|
-| 2026-11-02 | `307d3bb` | First Muse Spark integration: `lib/muse-agent.js`, bounded tool-calling agent, situation briefing, compact fire history. Model `muse-spark-1.3`, Chat Completions, key server-side only. |
-| 2026-11-04 | `413ffeb` | Evidence casefiles (`[E1]`-`[E8]` receipts with tool, arguments, source times, limitations), skeptical challenge pass (`/api/ask/challenge`), wind overlay. |
-| 2026-11-04 | `3ce573b` | Site-wide assistant toggle and truthful configuration status: `/api/ask/status` reports whether a key exists, and explicitly says verification has not been performed. |
-| 2026-11-04 | `90d8f24` | Seven coordinate/bbox tools (`get_hotspots_in_area`, `get_places_in_area`, `get_air_quality_at` with PM2.5 forecast, `get_wind_at`, `get_volcano_near`, `compare_time_windows`, `get_source_health`), schema-required arguments, post-hoc numeric verifier with one repair pass, "Show on map" buttons driven only by tool output, per-feed health, `local_deterministic` labelling for non-model answers. |
+| 2026-11-02 | `398d109` | First Muse Spark integration: `lib/muse-agent.js`, bounded tool-calling agent, situation briefing, compact fire history. Model `muse-spark-1.3`, Chat Completions, key server-side only. |
+| 2026-11-04 | `1748425` | Evidence casefiles (`[E1]`-`[E8]` receipts with tool, arguments, source times, limitations), skeptical challenge pass (`/api/ask/challenge`), wind overlay. |
+| 2026-11-04 | `3c1b97f` | Site-wide assistant toggle and truthful configuration status: `/api/ask/status` reports whether a key exists, and explicitly says verification has not been performed. |
+| 2026-11-04 | `8728289` | Seven coordinate/bbox tools (`get_hotspots_in_area`, `get_places_in_area`, `get_air_quality_at` with PM2.5 forecast, `get_wind_at`, `get_volcano_near`, `compare_time_windows`, `get_source_health`), schema-required arguments, post-hoc numeric verifier with one repair pass, "Show on map" buttons driven only by tool output, per-feed health, `local_deterministic` labelling for non-model answers. |
 
 ### 1.2 Map screenshot and multimodal report (P0-B)
 
 | Date | Commit | What landed |
 |---|---|---|
-| 2026-11-04 | `7a21b64` | `public/map-screenshot.js`: dependency-free Leaflet pane compositor, `crossOrigin: 'anonymous'` on all 9 tile layers, honest `CANVAS_TAINTED_CORS` / `MAP_NOT_READY` / `CAPTURE_EMPTY` failures. Responsive chrome with WIB stamp, bbox, zoom, basemap, timeline frame, colour legend, attribution and the 112 disclaimer baked into the PNG. `lib/map-narrative.js`: Muse Spark receives the image plus structured JSON, every figure verified against the data, one repair pass, flagged remainder, labelled local fallback. `POST /api/map-narrative` with its own per-IP bucket. |
-| 2026-11-04 | `769c5d6` | `/reports` mini map (`report-map.js`), snapshot block with before/after two frames, `POST /api/map-summary` so a report always has code-computed numbers even without a narrative, and `report-pdf.js`, a hand-written one-page PDF 1.4 writer (JPEG DCTDecode, no dependency). Fixed an SVG sizing bug that had silently skipped vector hotspot layers. |
+| 2026-11-04 | `cad3e6a` | `public/map-screenshot.js`: dependency-free Leaflet pane compositor, `crossOrigin: 'anonymous'` on all 9 tile layers, honest `CANVAS_TAINTED_CORS` / `MAP_NOT_READY` / `CAPTURE_EMPTY` failures. Responsive chrome with WIB stamp, bbox, zoom, basemap, timeline frame, colour legend, attribution and the 112 disclaimer baked into the PNG. `lib/map-narrative.js`: Muse Spark receives the image plus structured JSON, every figure verified against the data, one repair pass, flagged remainder, labelled local fallback. `POST /api/map-narrative` with its own per-IP bucket. |
+| 2026-11-04 | `ed93edf` | `/reports` mini map (`report-map.js`), snapshot block with before/after two frames, `POST /api/map-summary` so a report always has code-computed numbers even without a narrative, and `report-pdf.js`, a hand-written one-page PDF 1.4 writer (JPEG DCTDecode, no dependency). Fixed an SVG sizing bug that had silently skipped vector hotspot layers. |
 
 ### 1.3 Citizen report check (P1)
 
 | Date | Commit | What landed |
 |---|---|---|
-| 2026-11-04 | `e254dae` | `lib/smoke-check.js` + `/cek-asap` (alias `/smoke-check`): Muse Spark vision describes only what is visible and may not emit digits, locations, causes or names; code gathers FIRMS detections within 50 km, CAMS AQI at the point, GFS wind, PVMBG volcanoes within 150 km, observatory eruption reports and dated regional haze reports; the verdict *supported / not yet supported / not enough data* is computed by code. Browser re-encode strips EXIF including GPS, 6 MB cap, no server retention, rejection of non-sky material and images of people. |
+| 2026-11-04 | `b0e38f7` | `lib/smoke-check.js` + `/cek-asap` (alias `/smoke-check`): Muse Spark vision describes only what is visible and may not emit digits, locations, causes or names; code gathers FIRMS detections within 50 km, CAMS AQI at the point, GFS wind, PVMBG volcanoes within 150 km, observatory eruption reports and dated regional haze reports; the verdict *supported / not yet supported / not enough data* is computed by code. Browser re-encode strips EXIF including GPS, 6 MB cap, no server retention, rejection of non-sky material and images of people. |
 
 ### 1.4 Evaluation, audit and documentation
 
 | Date | Commit | What landed |
 |---|---|---|
-| 2026-11-04 | `e254dae` | `evals/cases.json` (20 data questions + 6 refusal cases) and `evals/run.js` with a no-key tool phase and a key-gated agent phase that reports SKIPPED rather than passing. |
-| 2026-11-04 | `2ad88e0` | `scripts/audit-secrets.js` in the test gate (tracked files and git history, values never printed), English `README.md`, this build log, `docs/DEMO-SCRIPT.md`, `docs/PRE-SUBMIT-CHECKLIST.md`. The previous Indonesian README was moved to `docs/README.id.md`, not deleted. |
-| 2026-11-04 | `a95216a` | Fixes found by running the agent eval against production: the numeric verifier rejected every negative latitude, `get_province_hotspots` hid its own row count, and the harness scored correct refusals as violations. Regression tests added (42 agent checks, 66 coordinate-tool checks). |
+| 2026-11-04 | `b0e38f7` | `evals/cases.json` (20 data questions + 6 refusal cases) and `evals/run.js` with a no-key tool phase and a key-gated agent phase that reports SKIPPED rather than passing. |
+| 2026-11-04 | `6eae784` | `scripts/audit-secrets.js` in the test gate (tracked files and git history, values never printed), English `README.md`, this build log, `docs/DEMO-SCRIPT.md`, `docs/PRE-SUBMIT-CHECKLIST.md`. The previous Indonesian README was moved to `docs/README.id.md`, not deleted. |
+| 2026-11-04 | `a16046c` | Fixes found by running the agent eval against production: the numeric verifier rejected every negative latitude, `get_province_hotspots` hid its own row count, and the harness scored correct refusals as violations. Regression tests added (42 agent checks, 66 coordinate-tool checks). |
 
 ### 1.5 Supporting work inside the window
 
@@ -55,16 +55,16 @@ These are not headline AI features, but they were built in the window and the de
 
 | Date | Commit | What landed |
 |---|---|---|
-| 2026-11-02 | `752d093` | Restored the Home and Reports pages (PR #15). |
-| 2026-11-02 | `da5e9ed` | Hardened report URL scheme validation. |
-| 2026-11-02 | `f1873a3` | Hardened Operations auth and moved the shortcut. |
-| 2026-11-04 | `7f9bdbc`, `e1c235c`, `ef577cb`, `ae5312b` | Report fixes: missing weekly hotspot values labelled instead of zeroed, archive selection preserved, weekly fixtures isolated (PR #17). |
-| 2026-11-04 | `a700643`, `2c73d18` | Locked down Operations and admin APIs, addressed admin CodeQL findings (PR #18). |
-| 2026-11-04 | `d0fdb80` | Written exploration findings before touching the dashboard. |
-| 2026-11-04 | `d5a7fc6`, `4c92f65`, `6444200`, `ba05006`, `b043240`, `71340b8` | Dashboard clean-UI refactor: accessible tooltips, accordion layer panel, progressive disclosure, dock closed by default, methodology relocated to `/tentang-data`, visual polish and safety bar (PR #19). |
-| 2026-11-04 | `fdabfcc` | Control feedback, AQI legend alignment, Operator link (PR #20). |
-| 2026-11-04 | `0c286a1` | AI toggle no longer covers controls, reachable dock, Operator link on every page (PR #21). |
-| 2026-11-04 | `804d227` | Footer no longer covered by the global assistant toggle; admin login has a way back (PR #22). |
+| 2026-11-02 | `2439e34` | Restored the Home and Reports pages (PR #15). |
+| 2026-11-02 | `f4943c6` | Hardened report URL scheme validation. |
+| 2026-11-02 | `f5720c4` | Hardened Operations auth and moved the shortcut. |
+| 2026-11-04 | `d45bb21`, `4a9f00b`, `8c687f7`, `63bf499` | Report fixes: missing weekly hotspot values labelled instead of zeroed, archive selection preserved, weekly fixtures isolated (PR #17). |
+| 2026-11-04 | `3519d55`, `25d99b7` | Locked down Operations and admin APIs, addressed admin CodeQL findings (PR #18). |
+| 2026-11-04 | `edd8c2d` | Written exploration findings before touching the dashboard. |
+| 2026-11-04 | `e9ea2c1`, `bd00445`, `fbc3dc0`, `91c17e3`, `65ed5c8`, `25c9955` | Dashboard clean-UI refactor: accessible tooltips, accordion layer panel, progressive disclosure, dock closed by default, methodology relocated to `/tentang-data`, visual polish and safety bar (PR #19). |
+| 2026-11-04 | `cd03cba` | Control feedback, AQI legend alignment, Operator link (PR #20). |
+| 2026-11-04 | `94b4dbf` | AI toggle no longer covers controls, reachable dock, Operator link on every page (PR #21). |
+| 2026-11-04 | `af81822` | Footer no longer covered by the global assistant toggle; admin login has a way back (PR #22). |
 
 ### 1.6 Finalisation on 5 November WIB (outside the claimed window, before the deadline)
 
@@ -75,13 +75,13 @@ not new features**.
 
 | Date (WIB) | Commit | What landed |
 |---|---|---|
-| 2026-11-05 | `351c61f` | Agent wall-clock budget (48 s) and turn bound raised to 4, after production evals showed repeated `META_API_TIMEOUT` and `META_API_TURN_LIMIT` rather than model error. |
-| 2026-11-05 | `510bf7e` | `find_place` tool so the agent resolves a named city instead of asking the user for a bounding box. The prompt had literally instructed it to ask. |
-| 2026-11-05 | `2849364`, `988127e` | ID/EN parity fixes found by inspecting demo video frames: map legend, capture button, assistant footer, quick chip, dust tab and the AQI category. Regression tests added. |
-| 2026-11-05 | `1283c38` | Verifier no longer reads pollutant names as quantities. `PM2.5` was scanned as the figure 2.5 and `PM10` as 10, flagging correct air-quality answers. |
-| 2026-11-05 | `988127e` | The 3-minute demo video, its Playwright recorder and its assembler. |
-| 2026-11-05 | `b9de6f2` | Volcano tool carries PVMBG's numeric level (`levelNumber`, `levelRoman`, `levelStatus`), so "Level 3 (Siaga)" is grounded in tool output instead of looking invented. |
-| 2026-11-05 | `f0fb474` | Provider error codes are read and sanitized (`safeFailureDetail`) instead of discarded, and the fallback distinguishes a content-filter refusal from an outage in both languages. This is what made the Q18 root cause visible. |
+| 2026-11-05 | `69386c0` | Agent wall-clock budget (48 s) and turn bound raised to 4, after production evals showed repeated `META_API_TIMEOUT` and `META_API_TURN_LIMIT` rather than model error. |
+| 2026-11-05 | `c8da6bd` | `find_place` tool so the agent resolves a named city instead of asking the user for a bounding box. The prompt had literally instructed it to ask. |
+| 2026-11-05 | `ccbbd89`, `e3766ad` | ID/EN parity fixes found by inspecting demo video frames: map legend, capture button, assistant footer, quick chip, dust tab and the AQI category. Regression tests added. |
+| 2026-11-05 | `83ba5a7` | Verifier no longer reads pollutant names as quantities. `PM2.5` was scanned as the figure 2.5 and `PM10` as 10, flagging correct air-quality answers. |
+| 2026-11-05 | `e3766ad` | The 3-minute demo video, its Playwright recorder and its assembler. |
+| 2026-11-05 | `d6f6876` | Volcano tool carries PVMBG's numeric level (`levelNumber`, `levelRoman`, `levelStatus`), so "Level 3 (Siaga)" is grounded in tool output instead of looking invented. |
+| 2026-11-05 | `f40fcc5` | Provider error codes are read and sanitized (`safeFailureDetail`) instead of discarded, and the fallback distinguishes a content-filter refusal from an outage in both languages. This is what made the Q18 root cause visible. |
 
 No new capability was added after the window closed. Every row above either fixes a defect
 found by running the eval against production, corrects an ID/EN label, or produces the demo
@@ -135,13 +135,13 @@ npm run eval:tools                                            # deterministic ev
   figure is exactly the kind of number this project refuses to publish.
 - **P2 Muse Voice Transcribe.** Skipped to keep the window focused on P0 and P1.
 - **Agent-phase eval is not a perfect score: 25/26, reproduced twice.** The first production run scored 13/26
-  and exposed two real product bugs and two harness bugs, all fixed in `a95216a`. Three later
+  and exposed two real product bugs and two harness bugs, all fixed in `a16046c`. Three later
   runs found three more product bugs (wall-clock budget, pollutant names read as quantities,
-  volcano level losing its numeric form), fixed in `351c61f`, `1283c38` and `b9de6f2`.
+  volcano level losing its numeric form), fixed in `69386c0`, `83ba5a7` and `d6f6876`.
   The one remaining failure, Q18, is **Meta's content filter refusing a harmless Indonesian
   question** (`content_policy_violation`); the English and reworded Indonesian equivalents
   answer normally. That case was deliberately not reworded to reach 26/26. Instead the
-  fallback message was corrected to say "declined", not "unreachable" (`f0fb474`).
+  fallback message was corrected to say "declined", not "unreachable" (`f40fcc5`).
   Two consecutive production runs scored 25/26 with the identical single failure, so the
   score is stable rather than a lucky run.
   Numbers are recorded in `evals/results.md` and are not rounded up. The tool phase runs

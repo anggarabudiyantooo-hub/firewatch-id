@@ -99,6 +99,22 @@
   .map-capture-meta dd { margin-bottom: 6px; }
 }
 
+.map-capture-consent {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 10px 0 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.08);
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.map-capture-consent input { margin-top: 2px; flex: 0 0 auto; width: 16px; height: 16px; }
+.map-capture-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
 @media (prefers-reduced-motion: reduce) {
   .map-capture-btn, .map-capture-btn-primary { transition: none; }
 }

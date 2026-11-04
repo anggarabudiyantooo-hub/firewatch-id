@@ -135,6 +135,13 @@ async function failureModes(browser) {
   await page.route('**/api/map-narrative', (route) => route.abort());
   await page.click('#reportMapCaptureBtn');
   await waitStatus(page, '#mapCaptureStatus');
+  // Gambar hanya boleh dikirim setelah persetujuan eksplisit. Sebelum dicentang
+  // tombolnya harus mati; ini yang menjaga klaim privasi tetap benar.
+  const disabledBefore = await page.isDisabled('#mapCaptureNarrate');
+  ok('tombol narasi mati sebelum persetujuan', disabledBefore === true, 'disabled=' + disabledBefore);
+  await page.check('#mapCaptureConsent');
+  const enabledAfter = await page.isEnabled('#mapCaptureNarrate');
+  ok('tombol narasi hidup setelah persetujuan dicentang', enabledAfter === true, 'enabled=' + enabledAfter);
   await page.click('#mapCaptureNarrate');
   await page.waitForFunction(() => {
     const box = document.getElementById('mapCaptureNarrative');

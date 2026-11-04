@@ -3,7 +3,7 @@
 /**
  * Blok "Tangkapan peta" pada halaman Laporan.
  *
- * Gambar hanya hidup di sessionStorage peramban: tidak diunggah, tidak
+ * Gambar hanya hidup di sessionStorage peramban: tidak diunggah sendiri, tidak
  * disimpan di server, dan hilang saat tab ditutup. Blok ini menampilkan
  * angka yang dihitung kode, narasi berlabel, dan ekspor PNG/PDF.
  */
@@ -181,8 +181,8 @@
     actions.appendChild(remove);
     host.appendChild(actions);
     host.appendChild(el('p', 'report-capture-note',
-      t('Tangkapan disimpan di sessionStorage peramban, tidak diunggah ke server. Maksimal dua frame; frame tertua dibuang saat frame baru ditambahkan.',
-        'Snapshots live in browser sessionStorage and are never uploaded. At most two frames are kept; the oldest is dropped when a new one is added.')));
+      t('Tangkapan disimpan di sessionStorage peramban dan tidak diunggah dengan sendirinya. Gambar hanya dikirim ke Meta bila Anda menyetujui narasi AI. Maksimal dua frame; frame tertua dibuang saat frame baru ditambahkan.',
+        'Snapshots live in browser sessionStorage and are not uploaded on their own. The image is sent to Meta only when you consent to the AI narrative. At most two frames are kept; the oldest is dropped when a new one is added.')));
   }
 
   function boot() {

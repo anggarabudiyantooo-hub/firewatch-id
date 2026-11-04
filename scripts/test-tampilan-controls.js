@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Regresi tab Tampilan: umpan balik kontrol terkunci raster asap,
-// legenda AQI selaras sistem desain, dan tautan Operator tanpa membuka auth.
+// legenda AQI selaras sistem desain, dan pintu operator tanpa membuka auth.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -47,10 +47,10 @@ ok('baris legenda menumpuk label di atas isi', html.includes('class="row legend-
 ok('label dan isi legenda memakai ukuran sama', /#p-tampilan \.rl \{ font: 500 var\(--clean-font-control\)/.test(css));
 
 console.log('\n== akses Operator ==');
-ok('tautan Operator menuju halaman login, bukan data', html.includes('href="/admin-login" class="safety-ops">Operator</a>'));
+ok('tautan Operator tidak lagi dipajang di footer publik', !html.includes('href="/admin-login"'));
 ok('rute operations tetap menuntut sesi admin', /app\.get\(\['\/operations', '\/operations\/', '\/operations\.html'\],\s*\n?\s*adminAuth\.requirePageSession/.test(ops));
 ok('aset operations tetap dilindungi requirePageSession', /app\.use\(\['\/operations', '\/insiden'\], adminAuth\.requirePageSession/.test(ops));
-ok('tautan Operator punya padanan EN', /'Operator': 'Operator'/.test(i18n));
+ok('padanan EN Operator tetap ada untuk halaman login', /'Operator': 'Operator'/.test(i18n));
 
 console.log(`\n${pass}/${pass + fail} uji tab Tampilan lulus.\n`);
 process.exit(fail ? 1 : 0);

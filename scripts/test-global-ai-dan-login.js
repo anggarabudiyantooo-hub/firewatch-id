@@ -23,8 +23,10 @@ ok('penanda dipasang bersama pembuatan fab', /fab\.id = 'globalAiFab';[\s\S]{0,2
 ok('footer menyisakan ruang setinggi toggle', /body\.has-global-ai \.site-footer \{ padding-bottom: 84px; \}/.test(widgetCss));
 ok('ruang disesuaikan untuk layar kecil', /@media \(max-width: 600px\) \{[\s\S]*?body\.has-global-ai \.site-footer \{ padding-bottom: 76px; \}/.test(widgetCss));
 ok('cetak tidak mewarisi ruang kosong besar', /@media print \{[\s\S]*?body\.has-global-ai \.site-footer \{ padding-bottom: 18px; \}/.test(widgetCss));
-ok('tautan Operator tetap ada di footer kedua halaman',
-  read('public/home.html').includes('href="/admin-login"') && read('public/reports.html').includes('href="/admin-login"'));
+// Pintu operator tidak lagi dipromosikan di footer publik; rute loginnya tetap
+// ada dan diuji perlindungannya di tempat lain.
+ok('tautan Operator tidak dipromosikan di footer publik',
+  !read('public/home.html').includes('href="/admin-login"') && !read('public/reports.html').includes('href="/admin-login"'));
 
 console.log('\n== halaman login punya jalan kembali ==');
 ok('ada navigasi kembali berlabel', /<nav class="back" aria-label="Kembali ke situs">/.test(login));
