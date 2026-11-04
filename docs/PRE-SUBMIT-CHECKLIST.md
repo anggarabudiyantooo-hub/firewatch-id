@@ -71,10 +71,13 @@ Test in a private window, on desktop and on a phone:
 
 ## 7. Submission artefacts
 
-- [ ] Demo video is **3 minutes or less**, in English, and the link opens without a login
-      (test in a private window).
-- [ ] The video shows: problem, report with snapshot and narrative, agent with evidence trail,
-      Cek Asap, and the closing "what was built" segment.
+- [x] Demo video is **exactly 3:00**, in English, 1440x900 H.264 + AAC, committed at
+      `docs/demo-video/siaga-id-demo-3min.mp4`. It opens from the public repo without a login.
+      Narration is synthetic; screen playback is time-compressed where it waited on the model,
+      and `build-report.json` records every speed factor.
+- [x] The video shows: problem, report with snapshot and narrative, agent with evidence trail
+      (including `find_place` resolving Pekanbaru), Cek Asap, and the closing "what was built".
+      `recording-log.json` records every step; no step failed during the final recording.
 - [ ] The video does not show any key, token, admin session or personal data.
 - [ ] Submission form names the Meta model used: `muse-spark-1.3` via the Meta Model API.
 - [ ] Track selected: **Build for Your World**.

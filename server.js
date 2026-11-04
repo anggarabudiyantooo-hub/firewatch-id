@@ -109,7 +109,7 @@ const { summarize: summarizeCasualties } = require('./lib/casualty');
 const { Scheduler } = require('./lib/scheduler');
 const publicStatus = require('./lib/public-status');
 const { answer: ragAnswer } = require('./lib/rag');
-const { answerWithMuse, safeFailureCode, META_MODEL } = require('./lib/muse-agent');
+const { answerWithMuse, safeFailureCode, safeFailureDetail, META_MODEL } = require('./lib/muse-agent');
 const mapNarrative = require('./lib/map-narrative');
 const smokeCheck = require('./lib/smoke-check');
 const VOLCANO_COORDS = require('./lib/volcano-coords-snapshot');
@@ -2698,7 +2698,8 @@ async function handleAskRequest(req, res, mode = 'brief') {
       return res.json(answer);
     } catch (error) {
       const failureCode = safeFailureCode(error);
-      console.warn('[ask:muse-fallback]', failureCode);
+      const failureDetail = safeFailureDetail(error);
+      console.warn('[ask:muse-fallback]', failureCode, failureDetail || '');
       if (mode === 'challenge') {
         return res.json({
           query: q,
@@ -2718,6 +2719,7 @@ async function handleAskRequest(req, res, mode = 'brief') {
           evidence: [],
           metaApiConfigured: true,
           failureCode,
+          failureDetail,
           notice: 'Uji bantahan tidak dijalankan oleh Muse Spark.'
         });
       }
@@ -2729,6 +2731,7 @@ async function handleAskRequest(req, res, mode = 'brief') {
         model: 'muse-spark-1.3',
         metaApiConfigured: true,
         failureCode,
+        failureDetail,
         notice: 'Muse Spark tidak dapat dijangkau. Jawaban ini memakai mode lokal, bukan hasil model Meta.'
       });
     }

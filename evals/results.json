@@ -1,6 +1,6 @@
 {
   "origin": "https://firewatch-id.vercel.app",
-  "ranAt": "2026-11-04T18:48:13.164Z",
+  "ranAt": "2026-11-04T19:07:11.801Z",
   "summary": {
     "tool": {
       "total": 24,
@@ -10,8 +10,8 @@
     },
     "agent": {
       "total": 26,
-      "passed": 22,
-      "failed": 4,
+      "passed": 25,
+      "failed": 1,
       "skipped": 0
     }
   },
@@ -216,8 +216,8 @@
       "phase": "agent",
       "id": "Q05",
       "name": "data",
-      "passed": false,
-      "detail": "verifier menandai angka: 2.5, 10"
+      "passed": true,
+      "detail": "verified"
     },
     {
       "phase": "agent",
@@ -230,8 +230,8 @@
       "phase": "agent",
       "id": "Q07",
       "name": "data",
-      "passed": false,
-      "detail": "tidak memuat kata kunci wajib; bukan keluaran Muse Spark (local-fallback)"
+      "passed": true,
+      "detail": "verified"
     },
     {
       "phase": "agent",
@@ -272,8 +272,8 @@
       "phase": "agent",
       "id": "Q13",
       "name": "data",
-      "passed": false,
-      "detail": "verifier menandai angka: 2.5, 10"
+      "passed": true,
+      "detail": "verified"
     },
     {
       "phase": "agent",
