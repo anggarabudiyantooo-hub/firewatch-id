@@ -88,27 +88,11 @@ button.card:hover{background:var(--surface-2);border-color:var(--surface-3)}
 .metric span{font:400 9px/1 var(--font-data);letter-spacing:.06em;text-transform:uppercase;
   color:var(--text-tertiary)}
 
-/* ── Panel Sumber: sisa blok yang belum punya aturan ─────────────────────
-   Baris per sumber kini memakai .kv (sudah ada di app.css). Blok peringatan,
-   ringkasan kuota, dan log terbaru tetap ada karena memuat informasi nyata,
-   jadi kelasnya diberi gaya, bukan dibuang. */
+/* Panel Sumber publik menampilkan status dan kesegaran saja; rincian operasional
+   (quota, error text, counters, dan log) tidak dirender di halaman publik. */
 #statusBody{padding-top:2px}
 .kv.st-bad span{color:var(--status-alert)}
-.st-alert-box{background:rgba(255,69,58,.12);border:1px solid rgba(255,69,58,.42);
-  border-radius:var(--radius-field);padding:8px 10px;margin:8px 0;
-  font:400 11px/1.5 var(--font-prose);color:var(--text-primary)}
-.st-quota{display:flex;gap:12px;flex-wrap:wrap;padding:6px 0;
-  font:400 10px/1.5 var(--font-data);color:var(--text-tertiary)}
 .st-task-alert{font:400 10.5px/1.45 var(--font-prose);color:var(--status-alert);padding:2px 0 4px}
-.st-logs{margin-top:10px;border-top:1px solid var(--hairline);padding-top:8px;
-  max-height:160px;overflow:auto}
-.st-logs::before{content:"Log terbaru";display:block;font:500 9px/1 var(--font-data);
-  letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary);
-  padding-bottom:5px}
-.st-log{font:400 10px/1.6 var(--font-data);white-space:nowrap;overflow:hidden;
-  text-overflow:ellipsis;color:var(--text-tertiary);padding:1px 0}
-.st-log-critical,.st-log-error{color:var(--status-danger)}
-.st-log-warn{color:var(--status-caution)}
 
 /* Catatan kaki panel Bahaya: buletin tsunami kawasan dan rincian pengungsi.
    Di audit keduanya berada di bawah ketiga kartu, bukan di dalam kartu gempa. */

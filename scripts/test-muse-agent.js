@@ -140,8 +140,10 @@ async function main() {
   const assistantServer = fs.readFileSync(path.join(__dirname, '../server.js'), 'utf8');
   const opsRoutes = fs.readFileSync(path.join(__dirname, '../lib/ops-routes.js'), 'utf8');
   const sharedAssistantUi = fs.readFileSync(path.join(__dirname, '../public/assistant-widget.js'), 'utf8');
-  const assistantPages = ['index.html', 'home.html', 'reports.html', 'operations.html', 'insiden.html']
-    .map(file => fs.readFileSync(path.join(__dirname, '../public', file), 'utf8'));
+  const assistantPages = ['index.html', 'home.html', 'reports.html']
+    .map(file => fs.readFileSync(path.join(__dirname, '../public', file), 'utf8'))
+    .concat(['operations.html', 'insiden.html'].map(file =>
+      fs.readFileSync(path.join(__dirname, '../admin-ui', file), 'utf8')));
   check('shared AI toggle and styles are included on every public/operations page',
     assistantPages.length === 5 && assistantPages.every(html =>
       html.includes('/assistant-widget.js') && html.includes('/assistant-widget.css'))
