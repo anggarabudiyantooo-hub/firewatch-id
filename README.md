@@ -135,7 +135,8 @@ Optional manual browser tests (need Playwright, Chromium and a running server):
 
 ```bash
 npx playwright install chromium
-node scripts/manual-map-capture.js     # 20 checks, desktop + mobile + failure mode
+node scripts/manual-map-capture.js     # 22 checks, desktop + mobile + image consent + failure mode
+node scripts/manual-reports-demo.js    # 11 checks, demo label, archive timeout, 390px
 node scripts/manual-agent-ui.js        # 10 checks, assistant panel
 node scripts/manual-smoke-check.js     # 29 checks, Cek Asap
 ```
@@ -164,6 +165,34 @@ Vercel Hobby allows one native cron per day, so a GitHub Actions schedule calls
 `GET /api/cron` with `CRON_SECRET` every few minutes. Details in
 [`docs/README.id.md`](docs/README.id.md).
 
+### Reports page: capture, consent, demo mode
+
+**How a capture works.** "Capture map" composites the live Leaflet map into a PNG entirely
+in the browser. Tile servers send `Access-Control-Allow-Origin: *`, so the canvas is not
+tainted and `toDataURL` succeeds. Legend, attribution, WIB timestamp, bounding box, zoom,
+timeline frame and the active layer list are drawn into the image itself, so a PNG that
+travels without the page still carries its own provenance. The numeric rows beside it come
+from `/api/map-summary`, which is deterministic code and never calls a model.
+
+**What is sent to Meta, and what is not.** Captures live in browser `sessionStorage` and are
+not uploaded on their own. The AI narrative is a separate, explicit opt-in: the dialog shows
+a consent box naming Meta, and the narrative button stays disabled until it is ticked. Only
+then does the browser POST the PNG plus the structured data to `/api/map-narrative`, which
+forwards both to the Meta Model API (`muse-spark-1.3`, `image_url` content part), holds them
+in memory for that one request, and writes nothing to disk. Every new capture asks again.
+Figures in the narrative are checked against the structured data by the numeric verifier;
+anything not present there is flagged rather than silently kept. Without consent the image
+goes nowhere, and `?demo=1` never sends it either.
+
+**Demo mode.** `/reports?demo=1` reads the stored archive with `force-cache` and stops
+refreshing the index, so a recording looks the same on every run. A visible badge reads
+"Demo data: stored archive, not live data" in ID and EN. It is a fixture view, not live data,
+and it is labelled as one on screen.
+
+**Empty and failed states.** Every archive read is bounded by a 12-second `AbortController`.
+A failed index says so plainly and points at "Capture map" to build a report from the latest
+data, instead of leaving "Loading..." on screen forever. Missing issues are never backfilled.
+
 ## 7. Limitations and honest gaps
 
 - **Thermal detections are not fires.** A FIRMS pixel is a heat anomaly, not a confirmed
@@ -189,6 +218,25 @@ Vercel Hobby allows one native cron per day, so a GitHub Actions schedule calls
   number this project refuses to publish.
 - **Rate limits are per IP.** Indonesian mobile carriers use CGNAT, so limits are deliberately
   loose (12 text AI requests/min, 6 image AI requests/min) and shared by legitimate users.
+
+### Requested but not done (5 Nov, after the window)
+
+The last review pass asked for more than the remaining time allowed. Done: image consent and
+the corrected privacy text, the operator link removed from public footers, demo mode, archive
+timeouts, and the tests for all of it. **Not done, and not claimed anywhere:**
+
+- Per-layer capture toggles (CAMS PM2.5 frame, indicative plume, volcanic ash, official PVMBG
+  hazard radius, concession borders) and a `Now/+6/+12/+18h` frame picker inside the capture
+  panel. Today the capture records whichever layers are already active on the dashboard, and
+  the two-frame comparison uses two captures taken by hand.
+- A summary card pinned above the report body (period, hotspot count, regencies in the model
+  area, worst AQI/PM2.5, source status, map thumbnail, 2-3 sentence narrative) with the
+  methodology text folded into an accordion.
+- A one-click "Build a report now" that composes an issue from the latest data. The empty
+  state currently points at "Capture map" instead of doing it automatically.
+
+These are listed as gaps rather than described as features. Nothing above is presented as
+shipped, and no fixture is presented as live.
 
 ## 8. Evaluation
 

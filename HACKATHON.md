@@ -83,9 +83,26 @@ not new features**.
 | 2026-11-05 | `d6f6876` | Volcano tool carries PVMBG's numeric level (`levelNumber`, `levelRoman`, `levelStatus`), so "Level 3 (Siaga)" is grounded in tool output instead of looking invented. |
 | 2026-11-05 | `f40fcc5` | Provider error codes are read and sanitized (`safeFailureDetail`) instead of discarded, and the fallback distinguishes a content-filter refusal from an outage in both languages. This is what made the Q18 root cause visible. |
 
+| 2026-11-05 | `aad1601` | Cron race condition: three workflows pushed to `main` with a bare `git push`, so a slow CAMS download lost its artifact when the archive cron pushed first (`! [rejected] ... fetch first`). They now share `scripts/ci-commit-push.sh`, which fetches and rebases before retrying and never force-pushes. Guard test added. |
+| 2026-11-05 | `2221f43` | Privacy defect: `/api/map-narrative` really does send the PNG to Meta, but the Reports page and README claimed images were "never uploaded". Added an explicit consent checkbox gating the narrative button, corrected the ID/EN privacy text, and removed the operator link from public footers. Guard test added. |
+| 2026-11-05 | `58e7fe9` | Reports page: labelled `?demo=1` fixture mode for repeatable recordings, and a 12-second bound on every archive read so a hung request cannot leave "Loading..." on screen forever. |
+
 No new capability was added after the window closed. Every row above either fixes a defect
 found by running the eval against production, corrects an ID/EN label, or produces the demo
-artefacts. The feature set was frozen at the end of 4 Nov.
+artefacts. The feature set was frozen at the end of 4 Nov. The three 5 Nov rows above are
+defect fixes and recording aids, not new product features; the per-layer capture toggles and
+the pinned summary card that were requested in the same pass were **not** built, and README
+section 7 lists them as gaps.
+
+**Author metadata was normalised on 5 Nov.** Commits made through an assistant had been
+recorded under a tool identity (`Arena Agent`). They were rewritten to the repository owner's
+identity with `git filter-repo --mailmap`, so every human-directed commit now shows one author.
+This changed commit SHAs, and the 35 SHAs quoted in this file were remapped to the new ones.
+**No commit date was altered, no commit was dropped, and no file content changed**: the tree
+hash before and after the rewrite is identical (`0db5eaa5f613a725ea4421bd671ce94e9f7348f8`)
+and the count stayed at 264. Automated `github-actions[bot]` and `dependabot[bot]` commits keep
+their bot identity, because they are machine work and are not claimed as human work. The use of
+AI assistance on this project remains disclosed here and in `docs/AI_HISTORY.md`.
 
 Automated `data(cams)`, `data(report)` and `chore(snapshot)` commits in the window are
 scheduled data refreshes, not features, and are not claimed as work.
