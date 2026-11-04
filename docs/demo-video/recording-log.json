@@ -1,6 +1,6 @@
 {
   "origin": "https://firewatch-id.vercel.app",
-  "recordedAt": "2026-11-04T20:01:00.369Z",
+  "recordedAt": "2026-11-04T20:52:20.114Z",
   "log": [
     {
       "segment": "04-smoke-check",
@@ -70,12 +70,12 @@
     {
       "segment": "05-close",
       "text": "build log shown on GitHub",
-      "at": "2026-11-04T20:00:59.019Z"
+      "at": "2026-11-04T20:52:19.230Z"
     },
     {
       "segment": "05-close",
       "text": "saved docs/demo-video/segments/05-close.webm",
-      "at": "2026-11-04T20:01:00.315Z"
+      "at": "2026-11-04T20:52:20.077Z"
     }
   ]
 }
