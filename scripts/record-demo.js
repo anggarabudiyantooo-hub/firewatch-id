@@ -233,7 +233,7 @@ async function segment(browser, name, fn) {
 
   // 05 - Penutup (15s): HACKATHON.md di GitHub.
   await segment(browser, '05-close', async page => {
-    await page.goto('https://github.com/anggarabudiyantooo-hub/siaga-id/blob/main/HACKATHON.md', { waitUntil: 'domcontentloaded' });
+    await page.goto('https://github.com/anggarabudiyantooo-hub/firewatch-id/blob/main/HACKATHON.md', { waitUntil: 'domcontentloaded' });
     await settle(page, 7000);
     await page.mouse.wheel(0, 500);
     await settle(page, 4000);

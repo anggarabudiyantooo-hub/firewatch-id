@@ -12,7 +12,7 @@ already existed. Nothing here is backdated. Every row can be checked with
 in the early hours of 5 Nov WIB therefore carries a 4 Nov UTC date; it is quarantined in
 section 1.6 rather than counted as window work.
 
-Repository: <https://github.com/anggarabudiyantooo-hub/siaga-id>
+Repository: <https://github.com/anggarabudiyantooo-hub/firewatch-id>
 Branch used for this submission: `feat/hackathon-final`
 
 ---

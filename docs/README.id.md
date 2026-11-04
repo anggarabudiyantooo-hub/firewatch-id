@@ -1,6 +1,6 @@
 # SIAGA ID: Pemantauan Bencana Real-Time + Operations Center
 
-[![Gerbang uji](https://github.com/anggarabudiyantooo-hub/siaga-id/actions/workflows/ci.yml/badge.svg)](https://github.com/anggarabudiyantooo-hub/siaga-id/actions/workflows/ci.yml)
+[![Gerbang uji](https://github.com/anggarabudiyantooo-hub/firewatch-id/actions/workflows/ci.yml/badge.svg)](https://github.com/anggarabudiyantooo-hub/firewatch-id/actions/workflows/ci.yml)
 
 Pemantauan bencana Indonesia dari sumber resmi dan terbuka: letusan gunung api dan
 sebaran abu, gempa dan tsunami, pengungsi, serta titik api dan asap karhutla.

@@ -2,9 +2,9 @@
 
 **Meta Global AI Developer Hackathon submission · Track: Build for Your World**
 
-[![Test gate](https://github.com/anggarabudiyantooo-hub/siaga-id/actions/workflows/ci.yml/badge.svg)](https://github.com/anggarabudiyantooo-hub/siaga-id/actions/workflows/ci.yml)
+[![Test gate](https://github.com/anggarabudiyantooo-hub/firewatch-id/actions/workflows/ci.yml/badge.svg)](https://github.com/anggarabudiyantooo-hub/firewatch-id/actions/workflows/ci.yml)
 
-Live: <https://firewatch-id.vercel.app> · Repo: <https://github.com/anggarabudiyantooo-hub/siaga-id> · License: [MIT](LICENSE)
+Live: <https://firewatch-id.vercel.app> · Repo: <https://github.com/anggarabudiyantooo-hub/firewatch-id> · License: [MIT](LICENSE)
 
 > A public-interest tool, **not a replacement for official sources**. For emergency
 > decisions follow BMKG, BNPB/BPBD, PVMBG and KLHK. Emergency number in Indonesia: **112**.
