@@ -110,6 +110,8 @@ const { Scheduler } = require('./lib/scheduler');
 const publicStatus = require('./lib/public-status');
 const { answer: ragAnswer } = require('./lib/rag');
 const { answerWithMuse, safeFailureCode, META_MODEL } = require('./lib/muse-agent');
+const mapNarrative = require('./lib/map-narrative');
+const VOLCANO_COORDS = require('./lib/volcano-coords-snapshot');
 const aiHistoryStore = require('./lib/ai-history-store');
 const kamera = require('./lib/kamera');
 const flights = require('./lib/flights');
@@ -152,6 +154,10 @@ app.use(compression());
 // Badan JSON untuk modul operasional (insiden/alert). Aplikasi pemantauan
 // sendiri sebelumnya hanya punya endpoint GET, jadi middleware ini belum ada.
 // Batas 32 kB cukup untuk catatan investigasi dan menahan badan besar.
+// Tangkapan peta dikirim sebagai data URL PNG, jauh di atas 32kb. Parser
+// khusus dipasang lebih dulu; body-parser melewati permintaan yang sudah
+// diurai sehingga parser global di bawah tidak menolak bodi ini.
+app.use('/api/map-narrative', express.json({ limit: '4mb' }));
 app.use(express.json({ limit: '32kb' }));
 app.use(helmet({
   contentSecurityPolicy: {
@@ -228,6 +234,10 @@ const RL_EXPENSIVE = CONFIG.RATE_LIMIT.expensive;
 // Muse requests can incur provider usage; brief and challenge share one bucket.
 const RL_AI = 12;
 const RL_AI_PATHS = /^\/(?:ask|ask\/challenge)$/;
+// Narasi bergambar lebih mahal daripada tanya-jawab teks: satu permintaan
+// membawa citra dan memanggil model dengan masukan gambar.
+const RL_AI_IMAGE = 6;
+const RL_AI_IMAGE_PATHS = /^\/map-narrative$/;
 const RL_EXPENSIVE_PATHS = /^\/(?:overview|wind-field|air-quality|smoke-grid-static|smoke-grid|concessions|place|whose-land|air-point|news|hazard|volcano-ash|eruptions|drought|volcano-so2|flights|webcams(?:\/foto)?|cron|sentinel\/(?:meta|diag)|himawari\/meta|aerosol-raster\/meta)(?:\/|$)/;
 
 const hits = new Map();
@@ -235,10 +245,11 @@ app.use('/api', (req, res, next) => {
   const ip = req.ip || 'x';
   const now = Date.now();
   const isTile = RL_TILE_PATHS.test(req.path);
-  const isAi = RL_AI_PATHS.test(req.path);
-  const expensive = !isTile && !isAi && RL_EXPENSIVE_PATHS.test(req.path);
-  const limit = isTile ? RL_TILE : (isAi ? RL_AI : (expensive ? RL_EXPENSIVE : RL_NORMAL));
-  const key = ip + (isTile ? '|t' : isAi ? '|ai' : expensive ? '|e' : '|n');
+  const isAiImage = RL_AI_IMAGE_PATHS.test(req.path);
+  const isAi = !isAiImage && RL_AI_PATHS.test(req.path);
+  const expensive = !isTile && !isAi && !isAiImage && RL_EXPENSIVE_PATHS.test(req.path);
+  const limit = isTile ? RL_TILE : (isAiImage ? RL_AI_IMAGE : (isAi ? RL_AI : (expensive ? RL_EXPENSIVE : RL_NORMAL)));
+  const key = ip + (isTile ? '|t' : isAiImage ? '|aii' : isAi ? '|ai' : expensive ? '|e' : '|n');
 
   const rec = hits.get(key) || { n: 0, t: now };
   if (now - rec.t > RL_WINDOW_MS) { rec.n = 0; rec.t = now; }
@@ -2654,6 +2665,83 @@ app.get('/api/ask/status', (_req, res) => {
 app.get('/api/ask', (req, res) => handleAskRequest(req, res, 'brief'));
 app.post('/api/ask/challenge', (req, res) => handleAskRequest(req, res, 'challenge'));
 
+/* ---------- narasi multimodal untuk tangkapan peta ---------- */
+/**
+ * Angka untuk narasi dihitung di SERVER dari kotak pandang, bukan diterima
+ * dari klien. Klien hanya mengirim gambar dan metadata tampilan; bila klien
+ * mengirim angka palsu, angka itu tidak pernah masuk ringkasan.
+ */
+async function buildMapNarrativeData(box) {
+  const [hs, air, wind, pvmbg] = await Promise.all([
+    withDeadline(getHotspots(), null, 6000),
+    withDeadline(airQualityField(1.5, box, false, true), null, 6000),
+    withDeadline(windField(3, box), null, 6000),
+    withDeadline(scheduler.get('pvmbg'), null, 3000)
+  ]);
+  const hotspots = ((hs && hs.hotspots) || []).map(h => ({
+    lat: h.lat, lon: h.lon, frp: h.frp, confidence: h.confidence,
+    province: provinceOf(h.lat, h.lon)
+  }));
+  const coords = new Map((VOLCANO_COORDS.volcanoes || []).map(v => [String(v.name).toLowerCase(), v]));
+  const volcanoes = ((pvmbg && pvmbg.volcanoes) || []).map(v => {
+    const c = coords.get(String(v.name).toLowerCase());
+    if (!c) return null;
+    const level = [v.roman, v.status].filter(Boolean).join(' ');
+    return { name: v.name, lat: c.lat, lon: c.lon, level: level || String(v.level || '') };
+  }).filter(Boolean);
+  return {
+    box,
+    hotspots,
+    windowHours: hs && hs.windowHours != null ? hs.windowHours : null,
+    hotspotsUpdatedAt: (hs && (hs.updatedAt || hs.newestAcq)) || null,
+    airPoints: (air && air.points) || [],
+    windPoints: (wind && wind.points) || [],
+    windRun: (wind && wind.run) || null,
+    volcanoes,
+    regions: REGIONS
+  };
+}
+
+app.post('/api/map-narrative', async (req, res) => {
+  const body = req.body || {};
+  const language = String(body.language || 'id').toLowerCase() === 'en' ? 'en' : 'id';
+  const box = mapNarrative.normalizeBox(body.meta && body.meta.bounds);
+  if (!box) {
+    return res.status(400).json({ ok: false, error: 'BOUNDS_INVALID' });
+  }
+  // Kotak pandang dibatasi agar satu permintaan tidak memicu pengambilan
+  // data global berulang lewat kunci cache yang selalu baru.
+  const span = Math.max(box.east - box.west, box.north - box.south);
+  const queryBox = span > 24 ? CONFIG.BBOX : box;
+  try {
+    const data = await buildMapNarrativeData(queryBox);
+    const structured = mapNarrative.buildStructured(body.meta, data, language);
+    const apiKey = String(process.env.MODEL_API_KEY || '').trim();
+    const result = await mapNarrative.narrateMap(
+      { image: body.image, meta: body.meta, structured, language },
+      { apiKey }
+    );
+    res.set('Cache-Control', 'no-store');
+    return res.json({
+      ok: true,
+      narrative: result.narrative,
+      provider: result.provider,
+      model: result.model,
+      verified: result.verified,
+      unverifiedNumbers: result.unverifiedNumbers,
+      repairAttempts: result.repairAttempts || 0,
+      failureCode: result.failureCode || null,
+      disclaimer: result.disclaimer,
+      structured: result.structured,
+      metaApiConfigured: Boolean(apiKey),
+      generatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.warn('[map-narrative]', error && error.message);
+    return res.status(502).json({ ok: false, error: 'MAP_NARRATIVE_FAILED' });
+  }
+});
+
 /* ---------- orkestrasi penyegaran data ---------- */
 /**
  * Satu tempat yang menentukan seberapa sering tiap sumber diperbarui.
@@ -3418,7 +3506,7 @@ app.get('/api/sentinel/:product/:z/:x/:y.jpg', async (req, res) => {
  * menghasilkan URL baru, peramban pengguna tidak akan lagi memakai
  * berkas lama dari cache tanpa perlu hard-refresh manual.
  */
-const ASSET_FILES = ['app.js', 'app.css', 'i18n.js', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'smoke-grid-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css', 'site.css', 'site-nav.js', 'home.js', 'report-model.js', 'reports.js', 'assistant-widget.js', 'assistant-widget.css', 'admin-login.js', 'ui-tooltip.js', 'ui-tooltip.css', 'dashboard-clean.css', 'dashboard-clean.js', 'tentang-data.css'];
+const ASSET_FILES = ['app.js', 'app.css', 'i18n.js', 'smoke-geometry.js', 'smoke-cloud-layer.js', 'smoke-grid-layer.js', 'wind-particles.js', 'wind-viewport.js', 'map-resize.js', 'v3-ui.js', 'v3-fix.css', 'v3-audit.css', 'site.css', 'site-nav.js', 'home.js', 'report-model.js', 'reports.js', 'assistant-widget.js', 'assistant-widget.css', 'admin-login.js', 'ui-tooltip.js', 'ui-tooltip.css', 'dashboard-clean.css', 'dashboard-clean.js', 'tentang-data.css', 'map-screenshot.js', 'map-capture-ui.js', 'map-capture.css'];
 let assetVersion = null;
 
 function getAssetVersion() {
@@ -3440,7 +3528,7 @@ function renderIndex() {
   // Fase 2.1: label sudut peta dari BBOX config, bukan hardcoded
   const corners = BBOX_CORNERS; // { nw, ne, sw, se } dari lib/config.js
   let html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
-    .replace(/(href|src)="\/(app\.css|app\.js|i18n\.js|smoke-geometry\.js|smoke-cloud-layer\.js|smoke-grid-layer\.js|wind-particles\.js|wind-viewport\.js|map-resize\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css|site\.css|site-nav\.js|assistant-widget\.css|assistant-widget\.js|ui-tooltip\.css|ui-tooltip\.js|dashboard-clean\.css|dashboard-clean\.js)"/g,
+    .replace(/(href|src)="\/(app\.css|app\.js|i18n\.js|smoke-geometry\.js|smoke-cloud-layer\.js|smoke-grid-layer\.js|wind-particles\.js|wind-viewport\.js|map-resize\.js|v3-ui\.js|v3-fix\.css|v3-audit\.css|site\.css|site-nav\.js|assistant-widget\.css|assistant-widget\.js|ui-tooltip\.css|ui-tooltip\.js|dashboard-clean\.css|dashboard-clean\.js|map-screenshot\.js|map-capture-ui\.js|map-capture\.css)"/g,
       (_m, attr, file) => `${attr}="${file}?v=${v}"`);
   // Inject BBOX corners ke HTML (fallback jika JS belum load)
   try {
@@ -3465,7 +3553,7 @@ function sendIndex(res, status = 200) {
 function renderPublicPage(fileName) {
   const version = getAssetVersion();
   return fs.readFileSync(path.join(__dirname, 'public', fileName), 'utf8')
-    .replace(/(href|src)="\/(site\.css|i18n\.js|site-nav\.js|home\.js|report-model\.js|reports\.js|assistant-widget\.css|assistant-widget\.js|admin-login\.js|app\.css|dashboard-clean\.css|tentang-data\.css)"/g,
+    .replace(/(href|src)="\/(site\.css|i18n\.js|site-nav\.js|home\.js|report-model\.js|reports\.js|assistant-widget\.css|assistant-widget\.js|admin-login\.js|app\.css|dashboard-clean\.css|tentang-data\.css|map-capture\.css)"/g,
       (_match, attr, asset) => `${attr}="/${asset}?v=${version}"`);
 }
 

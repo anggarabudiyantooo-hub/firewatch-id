@@ -265,16 +265,16 @@
   // Basemap: gelap (default), citra satelit, dan relief, mengikuti pilihan SiPongi.
   var BASEMAPS = {
     gelap: L.layerGroup([
-      L.tileLayer(AGS + 'Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12, attribution: ATTR }),
-      L.tileLayer(AGS + 'Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12 })
+      L.tileLayer(AGS + 'Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12, attribution: ATTR, crossOrigin: 'anonymous' }),
+      L.tileLayer(AGS + 'Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12, crossOrigin: 'anonymous' })
     ]),
     citra: L.layerGroup([
-      L.tileLayer(AGS + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12, attribution: ATTR }),
-      L.tileLayer(AGS + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12 })
+      L.tileLayer(AGS + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12, attribution: ATTR, crossOrigin: 'anonymous' }),
+      L.tileLayer(AGS + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12, crossOrigin: 'anonymous' })
     ]),
     relief: L.layerGroup([
-      L.tileLayer(AGS + 'World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12, attribution: ATTR }),
-      L.tileLayer(AGS + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12 })
+      L.tileLayer(AGS + 'World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12, attribution: ATTR, crossOrigin: 'anonymous' }),
+      L.tileLayer(AGS + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12, crossOrigin: 'anonymous' })
     ])
   };
   // Peta dasar citra satelit dipakai sejak awal: bentang alam, punggungan
@@ -1825,6 +1825,7 @@
     // sehingga citra hilang total begitu peta diperbesar. Dengan maxNativeZoom
     // 5, Leaflet meregangkan petak z=5 untuk zoom lebih dalam.
     state.himaLayer = L.tileLayer('/api/himawari/' + product + '/{z}/{x}/{y}.jpg', {
+      crossOrigin: 'anonymous',
       pane: 'himaPane', maxNativeZoom: 5, maxZoom: 12,
       opacity: himaOpacity(product),
       attribution: 'Citra: Himawari-9 / JMA'
@@ -2137,6 +2138,7 @@
 
     var layers = pick.map(function (t) {
       return L.tileLayer(himaUrl(t), {
+        crossOrigin: 'anonymous',
         pane: 'himaPane', maxNativeZoom: 5, maxZoom: 12,
         opacity: 0, className: 'hima-frame',
         // Batasi unduhan serentak agar jaringan tidak tersumbat oleh
@@ -4733,6 +4735,7 @@
         removeAerosolLayer();
         var tileErrors = 0;
         var layer = L.tileLayer('/api/aerosol-raster/' + meta.date + '/{z}/{x}/{y}.png', {
+                crossOrigin: 'anonymous',
           minZoom: 4,
           maxZoom: 12,
           maxNativeZoom: Number(meta.maxNativeZoom) || 6,
@@ -7260,4 +7263,41 @@
       try { map.invalidateSize(); } catch (e) {}
     }, 260);
   })();
+  /**
+   * Konteks peta baca-saja untuk penangkap layar dan asisten.
+   * Sengaja tidak mengekspos instance peta: hanya nilai yang sudah
+   * dihitung aplikasi, supaya tidak ada jalur ubah state dari luar.
+   */
+  window.SiagaMapContext = function () {
+    var b = map.getBounds();
+    var c = map.getCenter();
+    var layers = [];
+    var boxes = document.querySelectorAll('.layer-toggle, #layerPanel input[type="checkbox"]');
+    for (var i = 0; i < boxes.length; i++) {
+      if (!boxes[i].checked || !boxes[i].id) continue;
+      var id = boxes[i].id;
+      var label = document.querySelector('label.layer-name[for="' + id + '"]')
+        || document.querySelector('label[for="' + id + '"]');
+      var name = label ? label.textContent.trim() : '';
+      if (!name) {
+        var wrap = boxes[i].closest('label');
+        var span = wrap ? wrap.querySelector('span') : null;
+        name = span ? span.textContent.trim() : (boxes[i].getAttribute('aria-label') || id);
+      }
+      layers.push({ id: id, label: name.replace(/\s+/g, ' ').slice(0, 60) });
+    }
+    var timeLabel = document.getElementById('smokeTimeLabel');
+    var attr = document.querySelector('.leaflet-control-attribution');
+    return {
+      bounds: { west: +b.getWest().toFixed(4), south: +b.getSouth().toFixed(4), east: +b.getEast().toFixed(4), north: +b.getNorth().toFixed(4) },
+      center: { lat: +c.lat.toFixed(4), lon: +c.lng.toFixed(4) },
+      zoom: map.getZoom(),
+      basemap: activeBase,
+      satelliteProduct: state.himaProduct || state.s2Product || null,
+      timelineFrame: timeLabel ? timeLabel.textContent.trim() : null,
+      activeLayers: layers,
+      attribution: attr ? attr.textContent.replace(/\s+/g, ' ').trim() : '',
+      capturedAt: new Date().toISOString()
+    };
+  };
 })();
