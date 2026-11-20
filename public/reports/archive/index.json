@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "timeZone": "Asia/Jakarta",
-  "generatedAt": "2026-11-19T01:19:42.378Z",
+  "generatedAt": "2026-11-20T01:22:20.183Z",
   "reports": [
     {
       "date": "2026-10-29",
@@ -254,6 +254,20 @@
       "eventCount": 74,
       "availableSources": 5,
       "expectedSources": 5
+    },
+    {
+      "date": "2026-11-20",
+      "file": "2026-11-20.json",
+      "capturedAt": "2026-11-20T01:22:11.098Z",
+      "period": {
+        "start": "2026-11-19T01:22:11.098Z",
+        "end": "2026-11-20T01:22:11.098Z",
+        "durationHours": 24
+      },
+      "quality": "partial",
+      "eventCount": 63,
+      "availableSources": 5,
+      "expectedSources": 5
     }
   ],
   "weeklyReports": [
@@ -308,17 +322,17 @@
     {
       "weekId": "2026-W47",
       "file": "weekly/2026-W47.json",
-      "throughDate": "2026-11-19",
-      "capturedAt": "2026-11-19T01:19:33.171Z",
+      "throughDate": "2026-11-20",
+      "capturedAt": "2026-11-20T01:22:11.098Z",
       "period": {
         "start": "2026-11-14T23:26:37.947Z",
-        "end": "2026-11-19T01:19:33.171Z",
-        "durationHours": 97.88200666666667
+        "end": "2026-11-20T01:22:11.098Z",
+        "durationHours": 121.92587527777778
       },
       "quality": "partial",
-      "dailySnapshotCount": 4,
+      "dailySnapshotCount": 5,
       "expectedDailySnapshots": 7,
-      "eventCount": 200,
+      "eventCount": 223,
       "referenceCount": 129
     }
   ]
